@@ -1,0 +1,13 @@
+project_id = "qjiwudwzhkdekxkscuuk"
+
+[functions.chat]
+verify_jwt = false
+
+[functions.verify-rbq-license]
+verify_jwt = false
+
+[functions.seed-demo-pro]
+verify_jwt = false
+
+[functions.search-suggestions]
+verify_jwt = false
