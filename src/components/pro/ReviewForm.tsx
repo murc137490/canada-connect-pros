@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Camera, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import StarRating from "./StarRating";
 
@@ -15,6 +16,7 @@ interface ReviewFormProps {
 
 export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [rating, setRating] = useState(0);
   const [title, setTitle] = useState("");
@@ -26,7 +28,7 @@ export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProp
   const handlePhotoAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (photos.length + files.length > 5) {
-      toast({ title: "Max 5 photos allowed", variant: "destructive" });
+      toast({ title: t.reviews.maxPhotos, variant: "destructive" });
       return;
     }
     setPhotos((prev) => [...prev, ...files]);
@@ -46,7 +48,7 @@ export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProp
     e.preventDefault();
     if (!user) return;
     if (rating === 0) {
-      toast({ title: "Please select a rating", variant: "destructive" });
+      toast({ title: t.reviews.pleaseSelectRating, variant: "destructive" });
       return;
     }
 
@@ -87,7 +89,7 @@ export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProp
         }
       }
 
-      toast({ title: "Review submitted!", description: "Thank you for your feedback." });
+      toast({ title: t.reviews.reviewSubmitted, description: t.reviews.thankYouFeedback });
       onSubmitted();
       setRating(0);
       setTitle("");
@@ -95,7 +97,7 @@ export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProp
       setPhotos([]);
       setPhotoPreviewUrls([]);
     } catch (err: any) {
-      toast({ title: "Error submitting review", description: err.message, variant: "destructive" });
+      toast({ title: t.reviews.errorSubmitting, description: err.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -104,51 +106,53 @@ export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProp
   if (!user) return null;
 
   return (
-    <form onSubmit={handleSubmit} className="bg-card border rounded-2xl p-6 space-y-4">
-      <h3 className="font-heading font-bold text-card-foreground">Leave a Review</h3>
+    <form onSubmit={handleSubmit} className="bg-card border rounded-lg p-2.5 space-y-2 text-[0.6rem] sm:text-[0.62rem]">
+      <h3 className="font-heading font-bold text-card-foreground text-[0.72rem] leading-tight">{t.reviews.leaveReview}</h3>
 
       <div>
-        <label className="text-sm text-muted-foreground block mb-1">Your Rating</label>
-        <StarRating rating={rating} interactive onRate={setRating} size={28} />
+        <label className="text-[0.6rem] text-muted-foreground block mb-0.5">{t.reviews.yourRating}</label>
+        <StarRating rating={rating} interactive onRate={setRating} size={17} />
       </div>
 
       <Input
-        placeholder="Review title (optional)"
+        placeholder={t.reviews.reviewTitlePlaceholder}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         maxLength={100}
+        className="h-7 text-[0.6rem] px-2 py-1"
       />
 
       <Textarea
-        placeholder="Tell others about your experience..."
+        placeholder={t.reviews.tellOthers}
         value={content}
         onChange={(e) => setContent(e.target.value)}
         maxLength={1000}
-        rows={4}
+        rows={2}
+        className="text-[0.6rem] min-h-[3rem] py-1.5 px-2"
       />
 
       {/* Photo previews */}
       {photoPreviewUrls.length > 0 && (
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-1 flex-wrap">
           {photoPreviewUrls.map((url, i) => (
-            <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border">
+            <div key={i} className="relative w-12 h-12 rounded-md overflow-hidden border">
               <img src={url} alt="" className="w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => removePhoto(i)}
                 className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full p-0.5"
               >
-                <X size={12} />
+                <X size={8} />
               </button>
             </div>
           ))}
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <label className="inline-flex items-center gap-2 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-          <Camera size={18} />
-          <span>Add Photos</span>
+      <div className="flex items-center justify-between gap-2">
+        <label className="inline-flex items-center gap-1 text-[0.6rem] text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+          <Camera size={12} />
+          <span>{t.reviews.addPhotos}</span>
           <input
             type="file"
             accept="image/*"
@@ -158,8 +162,8 @@ export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProp
           />
         </label>
 
-        <Button type="submit" disabled={submitting} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
-          {submitting ? <Loader2 className="animate-spin" size={16} /> : "Submit Review"}
+        <Button type="submit" disabled={submitting} className="bg-secondary text-secondary-foreground hover:bg-secondary/90 h-7 text-[0.6rem] px-2.5 shrink-0">
+          {submitting ? <Loader2 className="animate-spin" size={12} /> : t.reviews.submitReview}
         </Button>
       </div>
     </form>

@@ -2,13 +2,24 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? "";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? "";
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+if (typeof SUPABASE_URL !== "string" || !SUPABASE_URL.startsWith("https://")) {
+  console.warn(
+    "[Supabase] Missing or invalid VITE_SUPABASE_URL. Add it to .env. Auth and data will not work until fixed."
+  );
+}
+if (typeof SUPABASE_ANON_KEY !== "string" || SUPABASE_ANON_KEY.length < 100) {
+  console.warn(
+    "[Supabase] Missing or invalid VITE_SUPABASE_ANON_KEY. Add it to .env. Auth and data will not work until fixed."
+  );
+}
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+const url = SUPABASE_URL.startsWith("https://") ? SUPABASE_URL : "https://placeholder.supabase.co";
+const key = SUPABASE_ANON_KEY.length >= 100 ? SUPABASE_ANON_KEY : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1wbGFjZWhvbGRlciIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTIwMDAsImV4cCI6MTk2MDc2ODAwMH0.placeholder";
+
+export const supabase = createClient<Database>(url, key, {
   auth: {
     storage: localStorage,
     persistSession: true,

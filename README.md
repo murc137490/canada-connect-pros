@@ -6,7 +6,7 @@ React + Vite + TypeScript front-end for a Canadian home services marketplace, us
 
 - **Frontend**: Vite, React, TypeScript, Tailwind CSS, shadcn-ui, React Router
 - **Backend**: Supabase (Postgres, Auth, Edge Functions)
-- **AI**: OpenAI Chat Completions API via a Supabase Edge Function
+- **AI**: Hugging Face Inference API (Mistral) via Supabase Edge Functions
 
 ### Getting started
 
@@ -25,11 +25,10 @@ VITE_SUPABASE_URL=<your-supabase-url>
 VITE_SUPABASE_ANON_KEY=<your-supabase-anon-or-publishable-key>
 ```
 
-In your Supabase project, configure Edge Function environment variables (Settings → Functions):
+In your Supabase project, configure Edge Function secrets (Settings → Edge Functions):
 
-- `SUPABASE_URL` = your Supabase project URL
-- `SUPABASE_ANON_KEY` = your anon/publishable key
-- `OPENAI_API_KEY` = your OpenAI API key
+- `SUPABASE_URL` and `SUPABASE_ANON_KEY` are usually set automatically.
+- `HUGGINGFACE_API_KEY` = your Hugging Face API token (from https://huggingface.co/settings/tokens)
 
 3. **Run the dev server**
 
@@ -42,11 +41,70 @@ npm run dev
 - The app uses Supabase auth via the `supabase` client in `src/integrations/supabase/client.ts`.
 - `AuthContext` in `src/contexts/AuthContext.tsx` provides session/user state and sign-in/sign-up helpers.
 
-### AI / ChatGPT integration
+### Pro approval (pending until admin)
 
-- A Supabase Edge Function (`supabase/functions/chat/index.ts`) exposes a secure API route for OpenAI Chat Completions.
-- The Support page (`src/pages/Support.tsx`) calls this route from the frontend while keeping the OpenAI API key on the server.
-- In Supabase, the function must be named **`chat`** (or you’ll need to change `CHAT_URL` in `Support.tsx`). Set `OPENAI_API_KEY`, `SUPABASE_URL`, and `SUPABASE_ANON_KEY` in Project Settings → Edge Functions.
+- When a pro submits **Create Pro Account**, their row in **`pro_profiles`** is created with **`is_verified: false`** (pending).
+- **Public listings** (e.g. “Find pros” on a service) only show profiles where **`is_verified = true`**.
+- **As admin:** In Supabase go to **Table Editor → `pro_profiles`**, find the pro’s row, set **`is_verified`** to **`true`** and save. They then appear in search results for clients.
+
+### Pro profile photos (Create Pro Account)
+
+- The **Create Pro Account** page uploads profile and before/after photos (PNG, JPG) to Supabase Storage.
+- Create a Storage bucket named **`pro-photos`** in your Supabase project (Storage → New bucket).
+- Set the bucket to **public** (or add a policy that allows public read) and allow **authenticated** uploads (e.g. policy: `authenticated` users can `INSERT`, public can `SELECT`). Without this bucket, uploads will fail with a storage error.
+
+### AI / Hugging Face integration
+
+- **Support page**: The AI assistant uses the **`ai-chat-hf`** Edge Function, which calls the Hugging Face Inference API (e.g. Mistral-7B-Instruct) to answer questions. Deploy **`ai-chat-hf`** and set **`HUGGINGFACE_API_KEY`** in Supabase Edge Function secrets.
+- **Hero “Describe your project”**: The home page uses the **`search-suggestions`** Edge Function, which also uses Hugging Face to summarize the user’s request and suggest matching services. Deploy **`search-suggestions`** and set **`HUGGINGFACE_API_KEY`** in Edge Function secrets.
+- No OpenAI or ChatGPT is used; all AI features run on Hugging Face.
+
+### Troubleshooting: AI not connecting
+
+If the **AI Support assistant** (Support page) or the **hero “Describe your project”** suggestions don’t work, check the following.
+
+**1. On this side (your app / .env)**
+
+- In the project root you must have a **`.env`** file with:
+  - `VITE_SUPABASE_URL` = your Supabase project URL (e.g. `https://xxxxx.supabase.co`)
+  - `VITE_SUPABASE_ANON_KEY` = the **anon public** key from Supabase (Project Settings → API → “anon public”), not the service role key.
+- Restart the dev server after changing `.env` (`npm run dev`).
+
+**2. Supabase: Edge Function secrets**
+
+- In **Supabase Dashboard** go to **Project Settings** (gear) → **Edge Functions**.
+- Under **Secrets**, add:
+  - **Name:** `HUGGINGFACE_API_KEY` (exact spelling).
+  - **Value:** your Hugging Face API token (from https://huggingface.co/settings/tokens).
+- `SUPABASE_URL` and `SUPABASE_ANON_KEY` are usually set automatically.
+
+**3. Deploy the AI functions**
+
+- The app uses two Edge Functions:
+  - **`ai-chat-hf`** — Support page AI assistant (Hugging Face / Mistral).
+  - **`search-suggestions`** — Hero “Describe your project” (Hugging Face).
+- Deploy them from the Supabase Dashboard or via CLI. After changing secrets, **redeploy** so they pick up the new values.
+
+**4. AI Support assistant (Support page) only**
+
+- You must be **signed in**. If you’re not logged in, the chat returns “Please sign in to use the AI assistant.”
+- If you see **“Invalid API key”** or 401: ensure you’re logged in and `.env` has `VITE_SUPABASE_ANON_KEY` equal to Supabase → Project Settings → API → anon public key.
+- If the error mentions **HUGGINGFACE_API_KEY**: add `HUGGINGFACE_API_KEY` in Edge Function secrets and redeploy **`ai-chat-hf`**.
+
+**5. Hero “Describe your project” only**
+
+- No login required. If suggestions never appear, open the browser **Developer console** (F12 → Console) for the backend error.
+- Ensure **`search-suggestions`** is deployed and **`HUGGINGFACE_API_KEY`** is set in Edge Function secrets; then redeploy **`search-suggestions`**.
+
+**6. Quick checklist**
+
+| Check | Where |
+|-------|--------|
+| `.env` has `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` | Project root |
+| Supabase secret `HUGGINGFACE_API_KEY` is set | Dashboard → Project Settings → Edge Functions |
+| Functions `ai-chat-hf` and `search-suggestions` are deployed | Dashboard → Edge Functions |
+| For Support page: you are logged in | App |
+| Redeploy functions after changing secrets | Supabase Dashboard |
 
 ---
 
@@ -85,4 +143,5 @@ git push -u origin main
 
 - Your site will be at `https://your-project.vercel.app`.
 - The app talks to Supabase and your **Supabase Edge Functions** (e.g. `chat`) by URL; no extra config on Vercel is needed for that.
+- **Language**: EN/FR toggle in header; **Pro account**: `/create-pro-account` (public profile + contract); **Dashboard**: `/dashboard` (bookings, favorites, reviews, invoices); **Booking Guarantee** on home page.
 - To see new code changes online: push to `main` on GitHub and Vercel will redeploy automatically (if you left the default “Deploy on push” on).

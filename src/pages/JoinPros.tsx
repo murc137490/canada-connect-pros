@@ -3,103 +3,138 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Shield, TrendingUp, Users, Star, ArrowRight, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-
-const benefits = [
-  {
-    icon: TrendingUp,
-    title: "Grow Your Business",
-    description: "Get matched with customers actively looking for your services across Canada.",
-  },
-  {
-    icon: Users,
-    title: "Reach More Customers",
-    description: "Access thousands of homeowners and businesses in your area.",
-  },
-  {
-    icon: Star,
-    title: "Build Your Reputation",
-    description: "Collect reviews and ratings that help you stand out from the competition.",
-  },
-  {
-    icon: Shield,
-    title: "Secure Payments",
-    description: "Get paid securely and on time through our trusted payment system.",
-  },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
+import GradientText from "@/components/GradientText";
+import ShinyText from "@/components/ShinyText";
+import Noise from "@/components/Noise";
+import CardNav from "@/components/CardNav";
+import type { CardNavItem } from "@/components/CardNav";
+import ProPlansContent from "@/components/ProPlansContent";
+import MovingStarsBackground from "@/components/MovingStarsBackground";
 
 export default function JoinPros() {
   const { user } = useAuth();
+  const { t } = useLanguage();
+  const { resolvedTheme } = useTheme();
+
+  const benefits = [
+    { icon: TrendingUp, title: t.joinPros.growTitle, description: t.joinPros.growDesc },
+    { icon: Users, title: t.joinPros.reachTitle, description: t.joinPros.reachDesc },
+    { icon: Star, title: t.joinPros.buildTitle, description: t.joinPros.buildDesc },
+    { icon: Shield, title: t.joinPros.secureTitle, description: t.joinPros.secureDesc },
+  ];
+
+  const cardNavItems: CardNavItem[] = [
+    { label: t.joinPros.growTitle, bgColor: "hsl(var(--primary) / 0.15)", textColor: "hsl(var(--foreground))", description: t.joinPros.growDesc },
+    { label: t.joinPros.reachTitle, bgColor: "hsl(var(--primary) / 0.12)", textColor: "hsl(var(--foreground))", description: t.joinPros.reachDesc },
+    { label: t.joinPros.buildTitle, bgColor: "hsl(var(--primary) / 0.1)", textColor: "hsl(var(--foreground))", description: t.joinPros.buildDesc },
+    { label: t.joinPros.secureTitle, bgColor: "hsl(var(--primary) / 0.08)", textColor: "hsl(var(--foreground))", description: t.joinPros.secureDesc },
+  ];
 
   return (
     <Layout>
+      <div className="min-h-screen bg-gradient-page">
       <div className="bg-primary text-primary-foreground">
-        <div className="container py-16 text-center">
-          <h1 className="font-heading text-4xl md:text-5xl font-extrabold mb-4">
-            Join the <span className="text-maple-300">Premiere Services</span> Pro Network
-          </h1>
-          <p className="text-primary-foreground/70 text-lg max-w-2xl mx-auto">
-            Connect with customers in your area, grow your business, and be part of Canada's fastest-growing service marketplace.
+        <div className="container py-10 md:py-16 px-4 md:px-6 text-center">
+          <GradientText
+            colors={["#fff", "hsl(var(--secondary))", "#EABB1F", "#fff"]}
+            animationSpeed={6}
+            showBorder={false}
+            className="font-heading text-3xl md:text-5xl font-extrabold mb-3 md:mb-4"
+          >
+            {t.joinPros.title}
+          </GradientText>
+          <p className="text-primary-foreground/70 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+            {t.joinPros.subtitle}
           </p>
         </div>
       </div>
 
-      {/* Benefits */}
-      <section className="py-16">
-        <div className="container">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {!user && (
+      <section className="py-10 md:py-16">
+        <div className="container px-4 md:px-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {benefits.map((b) => (
-              <div key={b.title} className="bg-card border rounded-2xl p-6 card-hover">
-                <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center mb-4">
-                  <b.icon size={24} className="text-secondary" />
+              <div key={b.title} className="relative bg-card border rounded-2xl p-5 md:p-6 card-hover space-y-3 overflow-hidden">
+                <Noise patternAlpha={12} patternRefreshInterval={3} className="rounded-2xl" />
+                <div className="relative z-10">
+                  <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
+                    <b.icon size={24} className="text-secondary" />
+                  </div>
+                  <h3 className="font-heading font-bold text-foreground mt-3">
+                    <ShinyText
+                      text={b.title}
+                      speed={2.5}
+                      color="hsl(var(--foreground))"
+                      shineColor={resolvedTheme === "dark" ? "#000" : "#fff"}
+                      spread={100}
+                      className="font-heading font-bold"
+                    />
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{b.description}</p>
                 </div>
-                <h3 className="font-heading font-bold text-foreground mb-2">{b.title}</h3>
-                <p className="text-sm text-muted-foreground">{b.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
+      )}
 
-      {/* Sign Up CTA / Login Gate */}
-      <section className="py-16 bg-muted/50">
-        <div className="container max-w-lg text-center">
-          {user ? (
-            <>
-              <h2 className="font-heading text-2xl font-bold text-foreground mb-4">
-                Ready to Get Started?
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                Fill out your profile to start receiving job requests.
-              </p>
-              <Button size="lg" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 gap-2">
-                Complete Your Pro Profile <ArrowRight size={18} />
+      {user ? (
+        <section className="relative min-h-screen pb-16 md:pb-24 px-4 md:px-6 overflow-visible">
+          <MovingStarsBackground
+            starColor={resolvedTheme === "dark" ? "#FFF" : "#000"}
+            className={cn(
+              "absolute inset-0 rounded-none min-h-full",
+              resolvedTheme === "dark"
+                ? "bg-[radial-gradient(ellipse_at_bottom,_#262626_0%,_#000_100%)]"
+                : "bg-[radial-gradient(ellipse_at_bottom,_#f5f5f5_0%,_#fff_100%)]"
+            )}
+            pointerEvents={false}
+          />
+          <div className="relative z-10 pt-10 md:pt-16 pb-8">
+            <div className="container max-w-3xl mb-8">
+              <CardNav
+                logoText="Premiere Services"
+                items={cardNavItems}
+                ctaLabel={t.joinPros.completeProfile}
+                ctaHref="/create-pro-account"
+                baseColor="transparent"
+              />
+            </div>
+            <div className="container">
+              <ProPlansContent />
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="py-10 md:py-16 bg-muted/50">
+          <div className="container max-w-lg px-4 md:px-6 text-center space-y-4 md:space-y-6">
+            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+              <Lock size={28} className="text-primary" />
+            </div>
+            <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">
+              {t.joinPros.loginToBecome}
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              {t.joinPros.loginMessage}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button size="lg" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 gap-2" asChild>
+                <Link to="/auth?mode=signup&redirect=/join-pros">
+                  {t.joinPros.createAccount} <ArrowRight size={18} />
+                </Link>
               </Button>
-            </>
-          ) : (
-            <>
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                <Lock size={28} className="text-primary" />
-              </div>
-              <h2 className="font-heading text-2xl font-bold text-foreground mb-3">
-                Log In to Become a Pro
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                You need to create an account or log in to access the Pro registration page.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button size="lg" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 gap-2" asChild>
-                  <Link to="/auth?mode=signup&redirect=/join-pros">
-                    Create Account <ArrowRight size={18} />
-                  </Link>
-                </Button>
-                <Button size="lg" variant="outline" asChild>
-                  <Link to="/auth?mode=login&redirect=/join-pros">Log In</Link>
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-      </section>
+              <Button size="lg" variant="outline" className="text-white border-white/80 hover:bg-white hover:text-primary" asChild>
+                <Link to="/auth?mode=login&redirect=/join-pros">{t.nav.logIn}</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+      </div>
     </Layout>
   );
 }

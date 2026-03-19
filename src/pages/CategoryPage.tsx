@@ -1,11 +1,15 @@
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { serviceCategories } from "@/data/services";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getCategoryName } from "@/i18n/constants";
+import { getSubcategoryName, getServiceName } from "@/i18n/serviceTranslations";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function CategoryPage() {
   const { slug } = useParams<{ slug: string }>();
+  const { locale } = useLanguage();
   const category = serviceCategories.find((c) => c.slug === slug);
 
   if (!category) {
@@ -31,27 +35,27 @@ export default function CategoryPage() {
             <ArrowLeft size={16} />
             All Services
           </Link>
-          <h1 className="font-heading text-3xl md:text-4xl font-extrabold mb-2">{category.name}</h1>
+          <h1 className="font-heading text-3xl md:text-4xl font-extrabold mb-2">{getCategoryName(category, locale)}</h1>
           <p className="text-primary-foreground/70 text-lg">{category.description}</p>
           <p className="text-sm text-primary-foreground/50 mt-2">{totalServices} services available</p>
         </div>
       </div>
 
-      <div className="container py-10">
+      <div className="container py-10 space-y-6">
         {category.subcategories.map((sub) => (
-          <div key={sub.name} className="mb-10">
-            <h2 className="font-heading font-bold text-xl text-foreground mb-4">{sub.name}</h2>
+          <div key={sub.name} className="subservice-tab p-5 md:p-6">
+            <h2 className="font-heading font-bold text-xl text-foreground mb-4">{getSubcategoryName(category.slug, sub.name, locale)}</h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {sub.services.map((svc) => (
-              <Link
+                <Link
                   key={svc.slug}
-                  to={`/services/${category.slug}/${svc.slug}`}
-                  className="flex items-center justify-between p-4 rounded-xl border bg-card card-hover cursor-pointer group"
+                  to={`/services/${category.slug}/${svc.slug}/pros`}
+                  className="subservice-tab-inner flex items-center justify-between p-4 cursor-pointer group"
                 >
-                  <span className="text-card-foreground font-medium">{svc.name}</span>
+                  <span className="text-card-foreground font-medium">{getServiceName(svc.slug, locale, svc.name)}</span>
                   <ChevronRight
                     size={16}
-                    className="text-muted-foreground group-hover:text-secondary transition-colors"
+                    className="text-muted-foreground group-hover:text-secondary transition-colors shrink-0"
                   />
                 </Link>
               ))}

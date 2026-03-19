@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { MapPin, ShieldCheck, DollarSign } from "lucide-react";
+import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import StarRating from "./StarRating";
+import ShinyText from "@/components/ShinyText";
 import { cn } from "@/lib/utils";
+import { formatLocationCity } from "@/lib/locationDisplay";
 
 export interface ProCardData {
   id: string;
@@ -18,6 +21,8 @@ export interface ProCardData {
   hasLicense: boolean;
   serviceSlug: string;
   categorySlug: string;
+  /** Distance in km from search location (when sorted by proximity) */
+  distanceKm?: number | null;
 }
 
 interface ProCardProps {
@@ -27,6 +32,8 @@ interface ProCardProps {
 }
 
 export default function ProCard({ pro, className, highlight }: ProCardProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const initials = pro.fullName
     ?.split(" ")
     .map((n) => n[0])
@@ -51,7 +58,16 @@ export default function ProCard({ pro, className, highlight }: ProCardProps) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <h3 className="font-heading font-bold text-card-foreground truncate">{pro.businessName}</h3>
+          <h3 className="font-heading font-bold text-card-foreground truncate">
+            <ShinyText
+              text={pro.businessName}
+              speed={2.5}
+              color={isDark ? "#fff" : "#0f0f0f"}
+              shineColor={isDark ? "#0f0f0f" : "#fff"}
+              spread={100}
+              className={cn("font-heading font-bold", isDark ? "text-white" : "text-[#0f0f0f]")}
+            />
+          </h3>
           {pro.hasLicense && (
             <ShieldCheck size={16} className="text-green-600 dark:text-green-400 shrink-0" />
           )}
@@ -68,7 +84,13 @@ export default function ProCard({ pro, className, highlight }: ProCardProps) {
 
           {pro.location && (
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin size={12} /> {pro.location}
+              <MapPin size={12} /> {formatLocationCity(pro.location) || pro.location}
+            </span>
+          )}
+
+          {pro.distanceKm != null && (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin size={12} /> ~{Math.round(pro.distanceKm)} km away
             </span>
           )}
 

@@ -3,12 +3,25 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
+export const NAME_TAKEN_MESSAGE = "This name is already taken.";
+export const EMAIL_ALREADY_IN_USE_MESSAGE = "EMAIL_ALREADY_IN_USE";
+
+function isEmailAlreadyRegistered(msg: string): boolean {
+  const m = msg.toLowerCase();
+  return m.includes("already registered") || m.includes("user already exists") || m.includes("already been registered") || m.includes("email already") || m.includes("already in use");
+}
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (params: {
+    email: string;
+    password: string;
+    fullName: string;
+    emailLanguage?: "en" | "fr";
+  }) => Promise<void>;
+  signIn: (emailOrName: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -35,19 +48,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (params: {
+    email: string;
+    password: string;
+    fullName: string;
+    emailLanguage?: "en" | "fr";
+  }) => {
+    const { email, password, fullName, emailLanguage = "en" } = params;
+    const trimmedEmail = email.trim();
+    const trimmedName = fullName.trim();
+    if (!trimmedEmail) throw new Error("Email is required.");
+    if (!trimmedName) throw new Error("Name is required.");
     const { error } = await supabase.auth.signUp({
-      email,
+      email: trimmedEmail,
       password,
       options: {
-        data: { full_name: fullName },
+        data: {
+          full_name: trimmedName,
+          email_language: emailLanguage === "fr" ? "fr" : "en",
+        },
         emailRedirectTo: window.location.origin,
       },
     });
-    if (error) throw error;
+    if (error) {
+      if (isEmailAlreadyRegistered(error.message)) {
+        throw new Error(EMAIL_ALREADY_IN_USE_MESSAGE);
+      }
+      throw error;
+    }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (emailOrName: string, password: string) => {
+    const input = emailOrName.trim();
+    let email = input;
+    if (!input.includes("@")) {
+      const { data, error: rpcError } = await supabase.rpc("get_email_for_name", { full_name: input });
+      if (rpcError) throw rpcError;
+      const resolved = typeof data === "string" ? data : Array.isArray(data) ? data[0] : (data as { get_email_for_name?: string } | null)?.get_email_for_name;
+      email = (typeof resolved === "string" ? resolved : null) ?? "";
+      if (!email || !email.includes("@")) {
+        throw new Error("Name not found. Sign up first or use your email.");
+      }
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
   };

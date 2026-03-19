@@ -96,17 +96,26 @@ export type Database = {
       pro_profiles: {
         Row: {
           availability: string | null
+          banner_image_url: string | null
           bio: string | null
           business_name: string
           created_at: string
+          email_language: string | null
           id: string
+          id_document_url: string | null
           is_verified: boolean | null
           latitude: number | null
           location: string | null
           longitude: number | null
+          personal_photo_url: string | null
           phone: string | null
           price_max: number | null
           price_min: number | null
+          pro_accent_color: string | null
+          service_at_workspace_only: boolean | null
+          service_radius_km: number | null
+          service_tags: string[] | null
+          subscription_tier: string | null
           updated_at: string
           user_id: string
           website: string | null
@@ -114,17 +123,26 @@ export type Database = {
         }
         Insert: {
           availability?: string | null
+          banner_image_url?: string | null
           bio?: string | null
           business_name: string
           created_at?: string
+          email_language?: string | null
           id?: string
+          id_document_url?: string | null
           is_verified?: boolean | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          personal_photo_url?: string | null
           phone?: string | null
           price_max?: number | null
           price_min?: number | null
+          pro_accent_color?: string | null
+          service_at_workspace_only?: boolean | null
+          service_radius_km?: number | null
+          service_tags?: string[] | null
+          subscription_tier?: string | null
           updated_at?: string
           user_id: string
           website?: string | null
@@ -132,17 +150,26 @@ export type Database = {
         }
         Update: {
           availability?: string | null
+          banner_image_url?: string | null
           bio?: string | null
           business_name?: string
           created_at?: string
+          email_language?: string | null
           id?: string
+          id_document_url?: string | null
           is_verified?: boolean | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          personal_photo_url?: string | null
           phone?: string | null
           price_max?: number | null
           price_min?: number | null
+          pro_accent_color?: string | null
+          service_at_workspace_only?: boolean | null
+          service_radius_km?: number | null
+          service_tags?: string[] | null
+          subscription_tier?: string | null
           updated_at?: string
           user_id?: string
           website?: string | null
@@ -193,28 +220,43 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
+          birthday: string | null
           created_at: string
+          email_language: string | null
           full_name: string | null
           id: string
+          phone: string | null
           updated_at: string
           user_id: string
+          username: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
+          birthday?: string | null
           created_at?: string
+          email_language?: string | null
           full_name?: string | null
           id?: string
+          phone?: string | null
           updated_at?: string
           user_id: string
+          username?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
+          birthday?: string | null
           created_at?: string
+          email_language?: string | null
           full_name?: string | null
           id?: string
+          phone?: string | null
           updated_at?: string
           user_id?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -316,6 +358,57 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "reviews_pro_profile_id_fkey"
+            columns: ["pro_profile_id"]
+            isOneToOne: false
+            referencedRelation: "pro_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          id: string
+          booking_id: string | null
+          pro_profile_id: string
+          amount_cents: number
+          currency: string
+          square_payment_id: string | null
+          status: string
+          idempotency_key: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          booking_id?: string | null
+          pro_profile_id: string
+          amount_cents: number
+          currency?: string
+          square_payment_id?: string | null
+          status?: string
+          idempotency_key: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          booking_id?: string | null
+          pro_profile_id?: string
+          amount_cents?: number
+          currency?: string
+          square_payment_id?: string | null
+          status?: string
+          idempotency_key?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_pro_profile_id_fkey"
             columns: ["pro_profile_id"]
             isOneToOne: false
             referencedRelation: "pro_profiles"

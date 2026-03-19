@@ -1,9 +1,17 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Loader2, Sparkles, ArrowRight } from "lucide-react";
-import ProCard, { type ProCardData } from "./ProCard";
-import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import AvatarCircles, { type AvatarItem } from "@/components/AvatarCircles";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+interface ProItem {
+  id: string;
+  user_id: string;
+  business_name: string;
+  imageUrl: string;
+}
 
 interface RecommendationSidebarProps {
   currentProId: string;
@@ -11,88 +19,76 @@ interface RecommendationSidebarProps {
   categorySlug?: string;
 }
 
+const PLACEHOLDER_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%239ca3af'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+
 export default function RecommendationSidebar({
   currentProId,
   serviceSlug,
   categorySlug,
 }: RecommendationSidebarProps) {
-  const [pros, setPros] = useState<ProCardData[]>([]);
+  const { t } = useLanguage();
+  const [profileCards, setProfileCards] = useState<ProItem[]>([]);
+  const [avatarItems, setAvatarItems] = useState<AvatarItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSimilarPros = async () => {
       setLoading(true);
 
-      // Get pros offering similar services
-      let query = supabase
+      const { data: proData } = await supabase
         .from("pro_profiles")
-        .select("*")
+        .select("id, user_id, business_name")
+        .eq("is_verified", true)
         .neq("id", currentProId)
-        .limit(5);
+        .limit(20);
 
-      const { data: proData } = await query;
-      if (!proData) { setLoading(false); return; }
-
-      const enriched: ProCardData[] = [];
-      for (const pro of proData) {
-        // Get rating
-        const { data: ratingData } = await supabase.rpc("get_pro_avg_rating", {
-          p_pro_profile_id: pro.id,
-        });
-        const avgRating = ratingData?.[0]?.avg_rating || 0;
-        const reviewCount = ratingData?.[0]?.review_count || 0;
-
-        // Get name
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("user_id", pro.user_id)
-          .single();
-
-        // Check license
-        const { data: licenses } = await supabase
-          .from("pro_licenses")
-          .select("is_verified")
-          .eq("pro_profile_id", pro.id)
-          .eq("is_verified", true)
-          .limit(1);
-
-        // Get service info
-        const { data: services } = await supabase
-          .from("pro_services")
-          .select("service_slug, category_slug")
-          .eq("pro_profile_id", pro.id)
-          .limit(1);
-
-        enriched.push({
-          id: pro.id,
-          businessName: pro.business_name,
-          fullName: profile?.full_name || "Pro",
-          avatarUrl: null,
-          location: pro.location,
-          priceMin: pro.price_min ? Number(pro.price_min) : null,
-          priceMax: pro.price_max ? Number(pro.price_max) : null,
-          avgRating: Number(avgRating),
-          reviewCount: Number(reviewCount),
-          isVerified: pro.is_verified || false,
-          hasLicense: (licenses?.length || 0) > 0,
-          serviceSlug: services?.[0]?.service_slug || "",
-          categorySlug: services?.[0]?.category_slug || "",
-        });
+      if (!proData?.length) {
+        setProfileCards([]);
+        setAvatarItems([]);
+        setTotalCount(0);
+        setLoading(false);
+        return;
       }
 
-      // Sort by rating desc, then review count desc
-      enriched.sort((a, b) => {
-        if (b.avgRating !== a.avgRating) return b.avgRating - a.avgRating;
-        return b.reviewCount - a.reviewCount;
-      });
+      const allItems: ProItem[] = [];
+      const avatarList: AvatarItem[] = [];
 
-      setPros(enriched);
+      for (let i = 0; i < proData.length; i++) {
+        const pro = proData[i];
+        let imageUrl = "";
+
+        const { data: primaryPhoto } = await supabase
+          .from("pro_photos")
+          .select("url")
+          .eq("pro_profile_id", pro.id)
+          .eq("is_primary", true)
+          .limit(1)
+          .maybeSingle();
+
+        if (primaryPhoto?.url) {
+          imageUrl = primaryPhoto.url;
+        } else {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("avatar_url")
+            .eq("user_id", pro.user_id)
+            .single();
+          if (profile?.avatar_url) imageUrl = profile.avatar_url;
+        }
+
+        allItems.push({ ...pro, imageUrl: imageUrl || PLACEHOLDER_AVATAR });
+        avatarList.push({ imageUrl: imageUrl || PLACEHOLDER_AVATAR, profileUrl: `/pro/${pro.id}` });
+      }
+
+      setProfileCards(allItems.slice(0, 3));
+      setAvatarItems(avatarList.slice(3));
+      setTotalCount(proData.length);
       setLoading(false);
     };
 
     fetchSimilarPros();
-  }, [currentProId, serviceSlug, categorySlug]);
+  }, [currentProId]);
 
   if (loading) {
     return (
@@ -102,30 +98,56 @@ export default function RecommendationSidebar({
     );
   }
 
-  if (pros.length === 0) return null;
+  if (totalCount === 0) return null;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Sparkles size={18} className="text-secondary" />
-        <h3 className="font-heading font-bold text-foreground">Better Match?</h3>
+        <h3 className="font-heading font-bold text-black">{t.services.betterMatch}</h3>
       </div>
-      <p className="text-sm text-muted-foreground">
-        Based on ratings, pricing, and availability, these pros might also be a great fit:
+      <p className="text-sm text-black/80">
+        {t.services.betterMatchDesc}
       </p>
 
-      <div className="space-y-3">
-        {pros.map((pro) => (
-          <ProCard key={pro.id} pro={pro} />
+      {/* First 3 profiles as cards */}
+      <div className="space-y-2">
+        {profileCards.map((pro) => (
+          <Link
+            key={pro.id}
+            to={`/pro/${pro.id}`}
+            className="flex items-center gap-3 rounded-lg border border-gray-200 bg-[#F7F7F7] dark:bg-muted/50 dark:border-gray-700 p-2.5 hover:bg-gray-100 dark:hover:bg-muted transition-colors"
+          >
+            <Avatar className="h-10 w-10 rounded-full shrink-0">
+              <AvatarImage src={pro.imageUrl} />
+              <AvatarFallback className="text-xs bg-muted">{pro.business_name.slice(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <span className="font-medium text-[#1F2937] dark:text-foreground text-sm truncate flex-1">{pro.business_name}</span>
+            <ArrowRight size={14} className="text-muted-foreground shrink-0" />
+          </Link>
         ))}
       </div>
 
+      {/* Remaining avatars + count */}
+      {avatarItems.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <AvatarCircles
+            numPeople={totalCount - 3}
+            avatarUrls={avatarItems}
+            maxAvatars={6}
+            size="sm"
+            otherLabel={totalCount - 3 <= 1 ? t.services.oneProAvailable : (t.services.prosAvailable ?? "{count} pros available").replace("{count}", String(totalCount - 3))}
+          />
+        </div>
+      )}
+
       {categorySlug && serviceSlug && (
-        <Button variant="ghost" size="sm" className="w-full gap-1" asChild>
-          <Link to={`/services/${categorySlug}/${serviceSlug}/pros`}>
-            View All Pros <ArrowRight size={14} />
-          </Link>
-        </Button>
+        <Link
+          to={`/services/${categorySlug}/${serviceSlug}/pros`}
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+        >
+          {t.services.viewAllPros} <ArrowRight size={14} />
+        </Link>
       )}
     </div>
   );

@@ -1,0 +1,6 @@
+-- ============================================================
+-- Admin accept: no table needed.
+-- The admin is hardcoded (email murc137490@gmail.com or name "aymen").
+-- Just deploy the Edge Function "accept-pro" (see supabase/functions/accept-pro/index.ts).
+-- Then log in as that user and open /admin to accept pending pros.
+-- ============================================================

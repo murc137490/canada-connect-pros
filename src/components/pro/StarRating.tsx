@@ -39,9 +39,9 @@ export default function StarRating({
               size={size}
               className={cn(
                 filled
-                  ? "fill-secondary text-secondary"
+                  ? "fill-amber-500 text-amber-500"
                   : halfFilled
-                  ? "fill-secondary/50 text-secondary"
+                  ? "fill-amber-500/50 text-amber-500"
                   : "fill-muted text-muted-foreground/30"
               )}
             />

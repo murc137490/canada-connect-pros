@@ -9,13 +9,19 @@ export default {
       center: true,
       padding: "2rem",
       screens: {
-        "2xl": "1400px",
+        sm: "640px",
+        md: "768px",
+        lg: "1024px",
+        xl: "1280px",
+        "2xl": "1536px",
       },
     },
     extend: {
       fontFamily: {
-        heading: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-        body: ['Inter', 'system-ui', 'sans-serif'],
+        heading: ['"DM Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+        body: ['"DM Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+        brand: ['"Playfair Display"', 'Georgia', 'serif'],
+        logo: ['"Righteous"', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

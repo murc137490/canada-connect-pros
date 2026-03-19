@@ -1,3 +1,4 @@
+// DEPRECATED: This app uses ai-chat-hf (Hugging Face) for the Support page. You can delete this function or keep it unused.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -78,7 +79,7 @@ Key information:
 - We cover Ontario, BC, Alberta, Quebec and expanding to other provinces
 - Satisfaction guarantee on all services
 - Phone support: 1-800-PREMIERE (Mon-Fri, 8am-8pm EST)
-- Email: support@premiereservices.ca
+- Email: premiereservicescontact@gmail.com
 - Response time for email: within 24 hours
 
 Be friendly, helpful, and concise. If you don't know something specific, direct users to contact support via phone or email.`,

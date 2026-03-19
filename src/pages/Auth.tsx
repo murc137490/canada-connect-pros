@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
+import MagicCard from "@/components/MagicCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, NAME_TAKEN_MESSAGE, EMAIL_ALREADY_IN_USE_MESSAGE } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Auth() {
@@ -17,64 +20,172 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [emailLanguage, setEmailLanguage] = useState<"en" | "fr">("en");
   const [loading, setLoading] = useState(false);
+  const [emailAlreadyExists, setEmailAlreadyExists] = useState(false);
+  const [nameTaken, setNameTaken] = useState(false);
   const { signIn, signUp } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const modeFromUrl = searchParams.get("mode") === "signup" ? "signup" : "login";
+    setMode(modeFromUrl);
+  }, [searchParams]);
+
+  const isEmailAlreadyRegistered = (msg: string) => {
+    const m = msg.toLowerCase();
+    return m.includes("already registered") || m.includes("user already exists") || m.includes("already been registered") || m.includes("email already");
+  };
+
+  function nameSuggestions(name: string): string[] {
+    const trimmed = name.trim();
+    if (!trimmed) return [];
+    const slug = trimmed.toLowerCase().replace(/\s+/g, "");
+    const suggestions: string[] = [];
+    for (let i = 1; i <= 3; i++) suggestions.push(`${trimmed} ${i}`);
+    suggestions.push(`${slug}48`, `${slug}99`);
+    return suggestions;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setEmailAlreadyExists(false);
+    setNameTaken(false);
     setLoading(true);
     try {
       if (mode === "signup") {
-        await signUp(email, password, fullName);
-        toast({ title: "Account created!", description: "Check your email to confirm your account." });
+        await signUp({
+          email: email.trim(),
+          password,
+          fullName: fullName.trim(),
+          emailLanguage,
+        });
+        toast({ title: t.auth.toastCreated });
       } else {
-        await signIn(email, password);
-        toast({ title: "Welcome back!" });
+        await signIn(email.trim(), password);
+        toast({ title: t.auth.toastWelcome });
         navigate(redirect);
       }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const msg = (err as Error).message ?? "";
+      if (mode === "signup" && (msg === EMAIL_ALREADY_IN_USE_MESSAGE || isEmailAlreadyRegistered(msg))) {
+        setEmailAlreadyExists(true);
+      } else if (mode === "signup" && msg === NAME_TAKEN_MESSAGE) {
+        setNameTaken(true);
+      } else {
+        toast({ title: t.auth.toastError, description: msg === EMAIL_ALREADY_IN_USE_MESSAGE ? t.auth.emailAlreadyExists : msg, variant: "destructive" });
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const setModeLogin = () => { setMode("login"); setEmailAlreadyExists(false); setNameTaken(false); navigate(`/auth?mode=login&redirect=${encodeURIComponent(redirect)}`, { replace: true }); };
+  const setModeSignup = () => { setMode("signup"); setEmailAlreadyExists(false); setNameTaken(false); navigate(`/auth?mode=signup&redirect=${encodeURIComponent(redirect)}`, { replace: true }); };
+
   return (
     <Layout>
-      <div className="min-h-[80vh] flex items-center justify-center py-16">
-        <div className="w-full max-w-md px-6">
-          <div className="text-center mb-8">
-            <span className="text-4xl mb-4 block">⭐</span>
-            <h1 className="font-heading text-2xl font-extrabold text-foreground">
-              {mode === "login" ? "Welcome Back" : "Create Your Account"}
-            </h1>
-            <p className="text-muted-foreground text-sm mt-2">
-              {mode === "login"
-                ? "Log in to access your account and find local pros."
-                : "Join Premiere Services to hire pros or offer your services."}
-            </p>
+      <div className="min-h-[80vh] flex items-center justify-center py-10 md:py-16 px-4">
+        <div className="w-full max-w-md space-y-6 md:space-y-8">
+          <MagicCard className="p-0">
+            <Card className="border-none shadow-none bg-transparent">
+              <CardHeader className="space-y-1 pb-2">
+                <div className="flex rounded-lg border border-border bg-muted/30 p-1">
+            <button
+              type="button"
+              onClick={setModeLogin}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${mode === "login" ? "bg-background text-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              {t.auth.logIn}
+            </button>
+            <button
+              type="button"
+              onClick={setModeSignup}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${mode === "signup" ? "bg-background text-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              {t.auth.signUpLink}
+            </button>
           </div>
-
+                <CardTitle className="text-center pt-2 font-heading text-2xl">
+                  {mode === "login" ? t.auth.welcomeBack : t.auth.createAccount}
+                </CardTitle>
+                <CardDescription className="text-center">
+                  {mode === "login" ? t.auth.loginSubtitle : t.auth.signupSubtitle}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "signup" && (
-              <div>
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="Jane Smith" className="mt-1.5" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-foreground dark:text-white">{t.auth.fullName} *</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    autoComplete="name"
+                    placeholder={t.auth.placeholderName}
+                    className="mt-1.5 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-white/60 bg-background dark:bg-card"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    minLength={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-foreground dark:text-white">{t.auth.email} *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder={t.auth.placeholderEmail}
+                    className="mt-1.5 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-white/60 bg-background dark:bg-card"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="emailLang">{t.auth.emailLanguageLabel}</Label>
+                  <select
+                    id="emailLang"
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+                    value={emailLanguage}
+                    onChange={(e) => setEmailLanguage(e.target.value === "fr" ? "fr" : "en")}
+                  >
+                    <option value="en">{t.auth.emailLanguageEn}</option>
+                    <option value="fr">{t.auth.emailLanguageFr}</option>
+                  </select>
+                  {t.auth.emailLanguageHint && (
+                    <p className="text-xs text-muted-foreground">{t.auth.emailLanguageHint}</p>
+                  )}
+                </div>
+              </>
+            )}
+            {mode === "login" && (
+              <div className="space-y-2">
+                <Label htmlFor="emailOrName" className="text-foreground dark:text-white">{t.auth.emailOrName}</Label>
+                <Input
+                  id="emailOrName"
+                  type="text"
+                  autoComplete="username"
+                  placeholder={t.auth.emailOrNamePlaceholder}
+                  className="mt-1.5 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-white/60 bg-background dark:bg-card"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
             )}
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="you@example.com" className="mt-1.5" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-foreground dark:text-white">{t.auth.password}</Label>
               <div className="relative mt-1.5">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
+                  placeholder={t.auth.placeholderPassword}
+                  className="text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-white/60 bg-background dark:bg-card"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -90,6 +201,59 @@ export default function Auth() {
               </div>
             </div>
 
+            {emailAlreadyExists && (
+              <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 space-y-3">
+                <p className="text-sm font-medium text-foreground">{t.auth.emailAlreadyExists}</p>
+                <p className="text-sm text-muted-foreground">{t.auth.emailAlreadyExistsPrompt}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      setMode("login");
+                      setEmailAlreadyExists(false);
+                    }}
+                  >
+                    {t.auth.logIn}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEmailAlreadyExists(false);
+                      setEmail("");
+                    }}
+                  >
+                    {t.auth.useDifferentEmail}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {nameTaken && (
+              <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 space-y-3">
+                <p className="text-sm font-medium text-foreground">{t.auth.nameTaken}</p>
+                <p className="text-xs text-muted-foreground">{t.auth.nameTakenSuggestions}</p>
+                <div className="flex flex-wrap gap-2">
+                  {nameSuggestions(fullName).map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      className="text-sm px-3 py-1.5 rounded-md bg-background border border-input hover:bg-muted"
+                      onClick={() => {
+                        setFullName(suggestion);
+                        setNameTaken(false);
+                      }}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <Button
               type="submit"
               className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 gap-2"
@@ -97,22 +261,25 @@ export default function Auth() {
               disabled={loading}
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-              {mode === "login" ? "Log In" : "Create Account"}
+              {mode === "login" ? t.auth.logIn : t.auth.createAccountButton}
               {!loading && <ArrowRight size={16} />}
             </Button>
           </form>
-
-          <div className="text-center mt-6">
-            <p className="text-sm text-muted-foreground">
-              {mode === "login" ? "Don't have an account?" : "Already have an account?"}{" "}
-              <button
-                onClick={() => setMode(mode === "login" ? "signup" : "login")}
-                className="text-secondary font-medium hover:underline"
-              >
-                {mode === "login" ? "Sign up" : "Log in"}
-              </button>
-            </p>
-          </div>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-2 border-t border-border pt-4">
+                <p className="text-sm text-muted-foreground leading-relaxed text-center">
+                  {mode === "login" ? t.auth.noAccount : t.auth.haveAccount}{" "}
+                  <button
+                    type="button"
+                    onClick={mode === "login" ? setModeSignup : setModeLogin}
+                    className="text-secondary font-medium hover:underline"
+                  >
+                    {mode === "login" ? t.auth.signUpLink : t.auth.logInLink}
+                  </button>
+                </p>
+              </CardFooter>
+            </Card>
+          </MagicCard>
         </div>
       </div>
     </Layout>

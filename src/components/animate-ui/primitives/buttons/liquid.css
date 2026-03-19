@@ -1,0 +1,129 @@
+/* Cycling gradient: yellow, blue, white (same as Join the Premiere Services Pro Network) */
+@keyframes liquid-button-gradient-cycle {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.liquid-button-root {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.1);
+  border: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  /* Constantly cycling gradient: yellow, blue, white */
+  background: linear-gradient(
+    90deg,
+    #EABB1F 0%,
+    hsl(var(--secondary)) 33.33%,
+    #fff 66.66%,
+    #EABB1F 100%
+  );
+  background-size: 300% 100%;
+  animation: liquid-button-gradient-cycle 6s linear infinite;
+}
+
+.liquid-button-root:focus-within {
+  box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.1), 0 0 0 3.5px rgba(58, 108, 217, 0.5);
+  outline: 0;
+}
+
+/* White by default; gradient only appears on hover when fill animation runs */
+.liquid-button-root.liquid-button-root--white-until-hover {
+  background: #fff;
+  animation: none;
+}
+
+.liquid-button-root.liquid-button-root--white-until-hover .liquid-button-trigger {
+  color: #1f2937;
+}
+
+/* Fine light / shine that sweeps left to right first */
+.liquid-button-shine {
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 7px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 35%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0.35) 65%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-position: -100% 0;
+  transition: background-position 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-delay: var(--liquid-fill-delay, 0s);
+}
+
+.liquid-button-root:hover .liquid-button-shine,
+.liquid-button-root:focus-within .liquid-button-shine {
+  background-position: 100% 0;
+}
+
+/* Fill rises from bottom to top after the shine; same cycling gradient so no white corners */
+.liquid-button-fill {
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(
+    90deg,
+    #EABB1F 0%,
+    hsl(var(--secondary)) 33.33%,
+    #fff 66.66%,
+    #EABB1F 100%
+  );
+  background-size: 300% 100%;
+  animation: liquid-button-gradient-cycle 6s linear infinite;
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-delay: calc(var(--liquid-fill-delay, 0s) + 0.25s);
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 7px;
+}
+
+.liquid-button-root:hover .liquid-button-fill,
+.liquid-button-root:focus-within .liquid-button-fill {
+  transform: scaleY(1.02);
+}
+
+.liquid-button-root:active .liquid-button-fill {
+  transition-duration: 0.15s;
+}
+
+.liquid-button-trigger {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 6px;
+  transition: transform 0.2s ease;
+  background: transparent;
+  border: none;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.liquid-button-root:hover .liquid-button-trigger {
+  transform: scale(var(--liquid-hover-scale, 1.05));
+}
+
+.liquid-button-root:active .liquid-button-trigger {
+  transform: scale(var(--liquid-tap-scale, 0.95));
+}
