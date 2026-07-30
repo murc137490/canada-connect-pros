@@ -6,15 +6,15 @@
 
 @layer base {
   :root {
-    /* Brand (reverted): navy + blue + soft orange */
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* Wealthsimple-like surfaces: white canvas; brand colors on CTAs */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 0 0% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 0 0% 8%;
 
     /* Primary: deep navy, Secondary: blue, Accent: soft orange */
     --primary: 222 76% 24%;
@@ -23,8 +23,8 @@
     --secondary: 217 75% 45%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 215 20% 94%;
-    --muted-foreground: 215 15% 40%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
 
     --accent: 35 92% 60%;
     --accent-foreground: 222 47% 11%;
@@ -32,8 +32,8 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 90%;
-    --input: 215 20% 90%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
     --ring: 222 76% 24%;
 
     --radius: 0.625rem;
@@ -71,24 +71,26 @@
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 0 0% 95%;
-    --card: 222 47% 14%;
-    --card-foreground: 0 0% 95%;
-    --popover: 222 47% 14%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 222 76% 30%;
+    color-scheme: dark;
+    /* Pure black canvas; brand colors stay on CTAs */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 222 76% 36%;
     --primary-foreground: 0 0% 100%;
     --secondary: 217 75% 55%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 222 37% 15%;
-    --muted-foreground: 222 15% 70%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 70%;
     --accent: 35 92% 60%;
     --accent-foreground: 222 47% 11%;
-    --destructive: 0 62% 30%;
+    --destructive: 0 62% 40%;
     --destructive-foreground: 0 0% 100%;
-    --border: 222 32% 20%;
-    --input: 222 32% 20%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
     --ring: 35 92% 60%;
   }
 }
@@ -127,53 +129,30 @@
     background: transparent;
   }
   body {
-    @apply text-foreground;
+    @apply bg-background text-foreground;
     font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Light: soft neutral with subtle blue tint */
-    background: linear-gradient(
-      180deg,
-      hsl(0 0% 99.5%) 0%,
-      hsl(162 20% 98%) 25%,
-      hsl(162 15% 97%) 50%,
-      hsl(46 30% 97%) 75%,
-      hsl(46 20% 98%) 100%
-    );
-    background-attachment: fixed;
+    background-color: hsl(var(--background));
     min-height: 100vh;
   }
   .bg-gradient-page {
-    background: linear-gradient(
-      180deg,
-      hsl(210 40% 99%) 0%,
-      hsl(210 40% 97%) 30%,
-      hsl(215 30% 95%) 70%,
-      hsl(215 24% 93%) 100%
-    );
+    background: hsl(var(--background));
     min-height: 100%;
-  }
-  .dark body {
-    background: linear-gradient(
-      180deg,
-      hsl(222 47% 14%) 0%,
-      hsl(222 47% 12%) 40%,
-      hsl(220 40% 10%) 100%
-    );
-    background-attachment: fixed;
-  }
-  .dark .bg-gradient-page {
-    background: linear-gradient(
-      180deg,
-      hsl(222 47% 16%) 0%,
-      hsl(222 47% 13%) 50%,
-      hsl(220 40% 11%) 100%
-    );
   }
   .dark body,
   .dark .bg-gradient-page {
     color: hsl(var(--foreground));
+    background: hsl(var(--background));
+  }
+
+  @supports (view-transition-name: none) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation-duration: 0.25s;
+      animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+    }
   }
   .dark input:not([type="checkbox"]):not([type="radio"]),
   .dark textarea {
@@ -427,6 +406,23 @@
     transform: translateY(0);
   }
 
+  .how-step {
+    opacity: 0.92;
+  }
+  .how-step.how-step-active {
+    border-color: hsl(var(--secondary) / 0.45);
+    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-2px);
+  }
+
+  .home-chapter + .home-chapter {
+    border-top: 1px solid hsl(var(--border) / 0.55);
+  }
+  .home-chapter.bg-primary + .home-chapter,
+  .home-chapter + .home-chapter.bg-primary {
+    border-top-color: transparent;
+  }
+
   /* Brand logo: navy + orange with outline for clarity */
   .brand-logo-outline {
     -webkit-text-stroke: 1px black;
@@ -521,4 +517,168 @@
 @keyframes shine-border {
   0%, 100% { background-position: 100% 50%; }
   50% { background-position: 0% 50%; }
+}
+
+/* Dashboard / plans: animated tier borders (Starter blue, Growth green, Pro purple–orange) */
+@keyframes current-plan-border-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.current-plan-border {
+  background-size: 300% 100%;
+  animation: current-plan-border-shift 22s linear infinite;
+  will-change: background-position;
+}
+
+.current-plan-border--starter {
+  background-image: linear-gradient(
+    90deg,
+    #ffffff,
+    #2563eb,
+    #0f172a,
+    #60a5fa,
+    #e2e8f0,
+    #1e293b,
+    #2563eb,
+    #ffffff
+  );
+}
+
+.dark .current-plan-border--starter {
+  background-image: linear-gradient(
+    90deg,
+    #f8fafc,
+    #3b82f6,
+    #020617,
+    #93c5fd,
+    #cbd5e1,
+    #0f172a,
+    #2563eb,
+    #f8fafc
+  );
+}
+
+.current-plan-border--growth {
+  background-image: linear-gradient(
+    90deg,
+    #ffffff,
+    #22c55e,
+    #0f172a,
+    #14b8a6,
+    #d1fae5,
+    #059669,
+    #34d399,
+    #ffffff
+  );
+}
+
+.dark .current-plan-border--growth {
+  background-image: linear-gradient(
+    90deg,
+    #f8fafc,
+    #22c55e,
+    #022c22,
+    #2dd4bf,
+    #a7f3d0,
+    #047857,
+    #4ade80,
+    #f8fafc
+  );
+}
+
+.current-plan-border--pro {
+  background-image: linear-gradient(
+    90deg,
+    #ffffff,
+    #a855f7,
+    #0f172a,
+    #f97316,
+    #fce7f3,
+    #7c3aed,
+    #fb923c,
+    #ffffff
+  );
+}
+
+.dark .current-plan-border--pro {
+  background-image: linear-gradient(
+    90deg,
+    #f8fafc,
+    #c084fc,
+    #1e1b4b,
+    #f97316,
+    #fde68a,
+    #9333ea,
+    #ea580c,
+    #f8fafc
+  );
+}
+
+/* Legacy alias (starter blue) */
+.current-plan-rainbow-border {
+  background-size: 300% 100%;
+  animation: current-plan-border-shift 22s linear infinite;
+  will-change: background-position;
+}
+
+.current-plan-rainbow-border:not([class*="current-plan-border--"]) {
+  background-image: linear-gradient(
+    90deg,
+    #ffffff,
+    #2563eb,
+    #0f172a,
+    #60a5fa,
+    #e2e8f0,
+    #1e293b,
+    #2563eb,
+    #ffffff
+  );
+}
+
+.dark .current-plan-rainbow-border:not([class*="current-plan-border--"]) {
+  background-image: linear-gradient(
+    90deg,
+    #f8fafc,
+    #3b82f6,
+    #020617,
+    #93c5fd,
+    #cbd5e1,
+    #0f172a,
+    #2563eb,
+    #f8fafc
+  );
+}
+
+.current-plan-name {
+  font-weight: 600;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.current-plan-name--starter {
+  background-image: linear-gradient(90deg, #93c5fd, #3b82f6, #2563eb);
+}
+
+.current-plan-name--growth {
+  background-image: linear-gradient(90deg, #22c55e, #14b8a6, #059669);
+}
+
+.current-plan-name--pro {
+  background-image: linear-gradient(90deg, #a855f7, #f97316, #c084fc);
+}
+
+/* Section title on current-plan card (neutral, readable) */
+.current-plan-rainbow-heading {
+  display: block;
+  color: #000000;
+}
+
+.dark .current-plan-rainbow-heading {
+  color: #ffffff;
 }

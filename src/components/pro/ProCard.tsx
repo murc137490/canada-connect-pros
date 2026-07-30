@@ -1,12 +1,10 @@
 import { Link } from "react-router-dom";
-import { MapPin, ShieldCheck, DollarSign } from "lucide-react";
+import { Heart, ShieldCheck, DollarSign } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import StarRating from "./StarRating";
 import ShinyText from "@/components/ShinyText";
 import { cn } from "@/lib/utils";
-import { formatLocationCity } from "@/lib/locationDisplay";
-
 export interface ProCardData {
   id: string;
   businessName: string;
@@ -29,9 +27,13 @@ interface ProCardProps {
   pro: ProCardData;
   className?: string;
   highlight?: boolean;
+  /** Saved / heart state for logged-in clients */
+  isFavorite?: boolean;
+  onFavoriteClick?: (e: React.MouseEvent) => void;
+  favoriteDisabled?: boolean;
 }
 
-export default function ProCard({ pro, className, highlight }: ProCardProps) {
+export default function ProCard({ pro, className, highlight, isFavorite, onFavoriteClick, favoriteDisabled }: ProCardProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const initials = pro.fullName
@@ -40,14 +42,38 @@ export default function ProCard({ pro, className, highlight }: ProCardProps) {
     .join("")
     .toUpperCase() || "?";
 
+  const showHeart = onFavoriteClick != null;
+
   return (
-    <Link
-      to={`/pros/${pro.id}`}
+    <div
       className={cn(
-        "flex gap-4 p-4 rounded-2xl border bg-card card-hover",
+        "relative flex gap-4 p-4 rounded-2xl border bg-card card-hover",
         highlight && "ring-2 ring-secondary",
         className
       )}
+    >
+      {showHeart && (
+        <button
+          type="button"
+          disabled={favoriteDisabled}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onFavoriteClick(e);
+          }}
+          className="absolute right-3 top-3 z-10 rounded-full p-1.5 hover:bg-muted/80 transition-colors disabled:opacity-50"
+          title={isFavorite ? "Remove from saved" : "Save pro"}
+          aria-pressed={isFavorite}
+        >
+          <Heart
+            className={cn("h-5 w-5", isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500")}
+            strokeWidth={isFavorite ? 0 : 2}
+          />
+        </button>
+      )}
+    <Link
+      to={`/pros/${pro.id}`}
+      className="flex gap-4 flex-1 min-w-0 pr-8"
     >
       <Avatar className="w-16 h-16 shrink-0">
         <AvatarImage src={pro.avatarUrl || undefined} alt={pro.fullName} />
@@ -82,18 +108,6 @@ export default function ProCard({ pro, className, highlight }: ProCardProps) {
             </span>
           </div>
 
-          {pro.location && (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin size={12} /> {formatLocationCity(pro.location) || pro.location}
-            </span>
-          )}
-
-          {pro.distanceKm != null && (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin size={12} /> ~{Math.round(pro.distanceKm)} km away
-            </span>
-          )}
-
           {(pro.priceMin || pro.priceMax) && (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-secondary">
               <DollarSign size={12} />
@@ -107,5 +121,6 @@ export default function ProCard({ pro, className, highlight }: ProCardProps) {
         </div>
       </div>
     </Link>
+    </div>
   );
 }

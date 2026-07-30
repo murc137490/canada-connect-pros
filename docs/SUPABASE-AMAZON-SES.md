@@ -1,13 +1,13 @@
-# Connect Supabase to Amazon SES (use premiereservicescontact@gmail.com)
+# Connect Supabase to Amazon SES (use support@premiereservices.ca)
 
-Supabase can send transactional email (confirm signup, magic link, password reset, etc.) through **Amazon SES** instead of the default provider. To have everything go through **premiereservicescontact@gmail.com**:
+Supabase can send transactional email (confirm signup, magic link, password reset, etc.) through **Amazon SES** instead of the default provider. To have everything go through **support@premiereservices.ca**:
 
 ---
 
 ## 1. Amazon SES setup
 
 1. **AWS Console** → **Amazon SES** → **Verified identities**.
-2. **Create identity** → **Email address** → enter **premiereservicescontact@gmail.com**.
+2. **Create identity** → **Email address** → enter **support@premiereservices.ca**.
 3. SES sends a verification email to that address; **verify it** (click the link in the inbox).
 4. If the account is still in **Sandbox**, request **production access** in SES so you can send to any address (not only verified ones).
 5. **Create SMTP credentials** (SES → **SMTP settings** → **Create SMTP credentials**). AWS will generate a **username** and **password** for you — you do **not** choose these yourself. After creation, download or copy them; the password is shown only once.
@@ -31,14 +31,14 @@ In **Supabase Dashboard** → your project → **Project Settings** → **Auth**
 
 | Setting | What to use |
 |--------|-------------------------------|
-| **Sender email** | `premiereservicescontact@gmail.com` |
+| **Sender email** | `support@premiereservices.ca` |
 | **Sender name** | e.g. `Premiere Services` |
 | **Host** | `email-smtp.<region>.amazonaws.com` (e.g. `email-smtp.us-east-1.amazonaws.com` — use the region where you use SES) |
 | **Port** | `587` (TLS) or `465` (SSL) |
 | **Username** | The **SMTP username** AWS gave you when you created SMTP credentials |
 | **Password** | The **SMTP password** AWS gave you when you created SMTP credentials |
 
-Enable **Custom SMTP** and save. Supabase will then use this for all auth-related emails (confirmation, password reset, magic link, etc.) and they will appear as sent from **premiereservicescontact@gmail.com**.
+Enable **Custom SMTP** and save. Supabase will then use this for all auth-related emails (confirmation, password reset, magic link, etc.) and they will appear as sent from **support@premiereservices.ca**.
 
 ---
 
@@ -56,6 +56,6 @@ The SMTP host, port, username, and password stay the same (SES SMTP credentials 
 
 ## 5. Summary
 
-- **Verified identity in SES:** `premiereservicescontact@gmail.com` (or your domain address).
-- **Supabase:** SMTP enabled with SES host, port 587, and the SES SMTP username/password; sender email = **premiereservicescontact@gmail.com**.
+- **Verified identity in SES:** `support@premiereservices.ca` (or your domain address).
+- **Supabase:** SMTP enabled with SES host, port 587, and the SES SMTP username/password; sender email = **support@premiereservices.ca**.
 - After that, Supabase auth emails are sent through that address.

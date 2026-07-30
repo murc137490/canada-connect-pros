@@ -1,35 +1,47 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, ArrowRight, Check, X } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { getAllServices } from "@/data/services";
+import { getAllServices, getCategorySummariesForAI, getFlatServiceRecords } from "@/data/services";
+import type { ServiceRecordForAI } from "@/data/services";
+import { fetchProOfferedServiceRecordsForHero } from "@/lib/heroProOfferedServices";
 import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
 import SplitText from "@/components/SplitText";
+import { geocodePostalToLocation } from "@/lib/geocode";
+import { BROWSE_POSTAL_CHANGED_EVENT, getBrowsePostalLocation, setBrowsePostalLocation } from "@/lib/browsePostalStorage";
+import { cleanSupportQuery } from "@/lib/supportAiQuery";
+import { searchProsByBusinessOrName, type ProBusinessSearchHit } from "@/lib/searchProBusiness";
 
 const SEARCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-suggestions`;
-
-type ConversationMessage = { role: "user" | "assistant"; content: string };
 
 interface SearchResponse {
   summary?: string | null;
   suggestions?: string[];
   followUpQuestions?: string[];
   clarifyingMessage?: string | null;
-  bestMatch?: { serviceName?: string; categoryName?: string } | null;
+  bestMatch?: {
+    serviceName?: string | null;
+    categoryName?: string | null;
+    serviceSlug?: string | null;
+    categorySlug?: string | null;
+    subcategory?: string | null;
+  } | null;
   error?: string;
   details?: string;
-}
-
-/** Canadian postal code (A1A 1A1) or US ZIP (12345 or 12345-6789). Returns true if valid. */
-function isValidPostalOrZip(value: string): boolean {
-  const t = value.trim();
-  if (!t) return false;
-  const normalized = t.replace(/\s+/g, "").toUpperCase();
-  const canadian = /^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(normalized);
-  const usZip = /^\d{5}(-\d{4})?$/.test(t);
-  return canadian || usZip;
+  topFour?: {
+    serviceName: string;
+    serviceSlug: string;
+    categorySlug: string;
+    categoryName: string;
+  }[];
+  followUpMatches?: {
+    serviceName: string;
+    serviceSlug: string;
+    categorySlug: string;
+    categoryName: string;
+  }[];
 }
 
 /** Find a service by name (exact or contains match, case-insensitive) for navigation */
@@ -47,36 +59,119 @@ function findServiceByName(serviceName: string): { categorySlug: string; service
 export default function HeroSection() {
   const { t, locale } = useLanguage();
   const [query, setQuery] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [postalResolved, setPostalResolved] = useState<{
+    lat: number;
+    lng: number;
+    city: string | null;
+    province: string | null;
+  } | null>(null);
+  const [postalLoading, setPostalLoading] = useState(false);
+  const [postalError, setPostalError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
-  const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([]);
   const [clarifyingMessage, setClarifyingMessage] = useState<string | null>(null);
   const [bestMatch, setBestMatch] = useState<SearchResponse["bestMatch"]>(null);
-  const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
+  const [followUpMatches, setFollowUpMatches] = useState<
+    { serviceName: string; serviceSlug: string; categorySlug: string; categoryName: string }[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
-  const [locationQuery, setLocationQuery] = useState("");
+  const [proOfferedRecords, setProOfferedRecords] = useState<ServiceRecordForAI[]>([]);
+  const [proNameMatches, setProNameMatches] = useState<ProBusinessSearchHit[]>([]);
   const navigate = useNavigate();
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [textareaFocused, setTextareaFocused] = useState(false);
 
+  const normalizedPostal = useMemo(
+    () => postalCode.trim().toUpperCase().replace(/\s+/g, " "),
+    [postalCode]
+  );
+  const isPostalLocked = query.trim().length > 0;
+
+  const resolvePostal = useCallback(async (): Promise<boolean> => {
+    if (!normalizedPostal) return false;
+    setPostalLoading(true);
+    setPostalError(null);
+    const geo = await geocodePostalToLocation(normalizedPostal);
+    setPostalLoading(false);
+    if (!geo) {
+      setPostalResolved(null);
+      setPostalError(t.index.checkServiceError);
+      return false;
+    }
+    setPostalResolved({
+      lat: geo.lat,
+      lng: geo.lng,
+      city: geo.city,
+      province: geo.province,
+    });
+    return true;
+  }, [normalizedPostal, t.index.checkServiceError]);
+
+  useEffect(() => {
+    const syncFromStorage = () => {
+      const saved = getBrowsePostalLocation();
+      if (!saved) return;
+      setPostalCode(saved.postal);
+      setPostalResolved({
+        lat: saved.lat,
+        lng: saved.lng,
+        city: saved.city ?? null,
+        province: saved.province ?? null,
+      });
+      setPostalError(null);
+    };
+    syncFromStorage();
+    window.addEventListener(BROWSE_POSTAL_CHANGED_EVENT, syncFromStorage);
+    return () => window.removeEventListener(BROWSE_POSTAL_CHANGED_EVENT, syncFromStorage);
+  }, []);
+
+  useEffect(() => {
+    if (!postalResolved || !normalizedPostal) return;
+    setBrowsePostalLocation({
+      postal: normalizedPostal,
+      lat: postalResolved.lat,
+      lng: postalResolved.lng,
+      city: postalResolved.city,
+      province: postalResolved.province,
+    });
+  }, [postalResolved, normalizedPostal]);
+
+  /** Full catalog for HF + slug routing (stable for the session). */
+  const aiCatalog = useMemo(
+    () => ({
+      serviceRecords: getFlatServiceRecords(),
+      categorySummaries: getCategorySummariesForAI(),
+    }),
+    []
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProOfferedServiceRecordsForHero(locale).then((rows) => {
+      if (!cancelled) setProOfferedRecords(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [locale]);
+
   const runSearch = useCallback(
-    async (userQuery: string, history: ConversationMessage[]) => {
-      if (!userQuery.trim()) return;
+    async (userQuery: string) => {
+      const cleaned = cleanSupportQuery(userQuery);
+      if (!cleaned) return;
       setLoading(true);
-      setAiSummary(null);
       setSuggestions([]);
-      setFollowUpQuestions([]);
+      setFollowUpMatches([]);
+      setProNameMatches([]);
       setClarifyingMessage(null);
       setBestMatch(null);
       setError(false);
       setErrorDetails(null);
       try {
-        const allServices = getAllServices();
-        const serviceNames = allServices.map((s) => s.name);
-
+        const proSearchPromise = searchProsByBusinessOrName(cleaned, 6);
         const response = await fetch(SEARCH_URL, {
           method: "POST",
           headers: {
@@ -85,32 +180,37 @@ export default function HeroSection() {
             apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? "",
           },
           body: JSON.stringify({
-            query: userQuery.trim(),
+            query: cleaned,
             locale,
-            conversationHistory: history,
-            serviceNames,
+            serviceRecords: aiCatalog.serviceRecords,
+            categorySummaries: aiCatalog.categorySummaries,
+            proOfferedRecords,
           }),
         });
 
-        const data = (await response.json().catch(() => ({}))) as SearchResponse;
+        const [data, proHits] = await Promise.all([
+          response.json().catch(() => ({})) as Promise<SearchResponse>,
+          proSearchPromise,
+        ]);
+
+        setProNameMatches(proHits);
 
         if (response.ok) {
-          setAiSummary(data.summary ?? null);
           setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
-          setFollowUpQuestions(Array.isArray(data.followUpQuestions) ? data.followUpQuestions : []);
           setClarifyingMessage(data.clarifyingMessage ?? null);
           setBestMatch(data.bestMatch ?? null);
-          setConversationHistory((prev) => [
-            ...prev,
-            { role: "user", content: userQuery.trim() },
-            { role: "assistant", content: data.summary ?? "" },
-          ]);
+          const follow =
+            Array.isArray(data.followUpMatches) && data.followUpMatches.length > 0
+              ? data.followUpMatches
+              : Array.isArray(data.topFour) && data.topFour.length > 1
+                ? data.topFour.slice(1, 4)
+                : [];
+          setFollowUpMatches(follow.filter((x) => x?.serviceSlug));
         } else {
           const errMsg = data.error || `Error ${response.status}`;
           const details = typeof data.details === "string" ? data.details : (data as { details?: { message?: string } }).details?.message;
           console.warn("Hero AI suggestions failed:", errMsg, details);
           setSuggestions([]);
-          setAiSummary(null);
           setErrorDetails(details || errMsg);
           setError(true);
         }
@@ -118,41 +218,45 @@ export default function HeroSection() {
         const msg = err instanceof Error ? err.message : String(err);
         console.error("Search suggestions error:", err);
         setSuggestions([]);
-        setAiSummary(null);
         setErrorDetails(msg);
         setError(true);
       } finally {
         setLoading(false);
       }
     },
-    [locale]
+    [aiCatalog, proOfferedRecords, locale]
   );
 
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     if (query.trim().length < 2) {
       setSuggestions([]);
-      setAiSummary(null);
-      setFollowUpQuestions([]);
       setClarifyingMessage(null);
       setBestMatch(null);
-      setConversationHistory([]);
+      setFollowUpMatches([]);
+      setProNameMatches([]);
       setError(false);
       setErrorDetails(null);
       return;
     }
 
     debounceTimer.current = setTimeout(() => {
-      runSearch(query.trim(), conversationHistory);
+      runSearch(query.trim());
     }, 500);
 
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
-  }, [query]);
+  }, [query, runSearch]);
 
   // Auto-grow textarea when user types or when AI content appears; keep small when idle and empty
-  const isActive = textareaFocused || query.length > 0 || loading || aiSummary != null;
+  const isActive =
+    textareaFocused ||
+    query.length > 0 ||
+    loading ||
+    suggestions.length > 0 ||
+    followUpMatches.length > 0 ||
+    bestMatch != null;
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -165,23 +269,28 @@ export default function HeroSection() {
     el.style.height = "";
     const next = Math.min(maxH, Math.max(minH, el.scrollHeight));
     el.style.height = `${next}px`;
-  }, [query, isActive, loading, aiSummary]);
-
-  const handleFollowUpClick = (followUpText: string) => {
-    setQuery(followUpText);
-    // Effect will run and call runSearch with updated query and current conversationHistory
-  };
-
-  const locationParam = locationQuery.trim() ? `&location=${encodeURIComponent(locationQuery.trim())}` : "";
+  }, [query, isActive, loading, suggestions.length, bestMatch, followUpMatches.length]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!normalizedPostal) return;
     if (query.trim()) {
       const q = query.trim();
-      if (aiSummary || suggestions.length > 0) {
-        navigate(`/services?q=${encodeURIComponent(aiSummary || q)}${locationParam}`);
+      if (!postalResolved) {
+        void resolvePostal();
+        return;
+      }
+      const geoParams = new URLSearchParams({
+        postal: normalizedPostal,
+        lat: String(postalResolved.lat),
+        lng: String(postalResolved.lng),
+      });
+      if (postalResolved.city) geoParams.set("city", postalResolved.city);
+      if (postalResolved.province) geoParams.set("province", postalResolved.province);
+      if (bestMatch || suggestions.length > 0 || followUpMatches.length > 0) {
+        navigate(`/services?q=${encodeURIComponent(q)}&${geoParams.toString()}`);
       } else {
-        runSearch(q, conversationHistory);
+        runSearch(q);
       }
     }
   };
@@ -189,74 +298,47 @@ export default function HeroSection() {
   const goToService = (serviceName: string) => {
     const resolved = findServiceByName(serviceName);
     if (resolved) {
-      navigate(`/services/${resolved.categorySlug}/${resolved.serviceSlug}/pros${locationParam ? `?location=${encodeURIComponent(locationQuery.trim())}` : ""}`);
+      navigate(`/services/${resolved.categorySlug}/${resolved.serviceSlug}/pros`);
     } else {
-      navigate(`/services?q=${encodeURIComponent(serviceName)}${locationParam}`);
+      navigate(`/services?q=${encodeURIComponent(serviceName)}`);
     }
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    goToService(suggestion);
+  const goToProsFromSlugs = (categorySlug: string, serviceSlug: string) => {
+    navigate(`/services/${categorySlug}/${serviceSlug}/pros`);
   };
 
   const hasResults =
-    aiSummary || suggestions.length > 0 || followUpQuestions.length > 0 || clarifyingMessage || bestMatch;
+    suggestions.length > 0 ||
+    clarifyingMessage ||
+    bestMatch != null ||
+    followUpMatches.length > 0 ||
+    proNameMatches.length > 0;
+
+  const resultChipClass =
+    "inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/95 px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/15";
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">
+    <section className="relative flex min-h-[100dvh] flex-col justify-center overflow-x-hidden overflow-y-visible pb-12 pt-[calc(3.5rem+env(safe-area-inset-top,0px))] md:min-h-screen md:items-center md:justify-center md:overflow-hidden md:pb-0 md:pt-0">
       <img
         src={heroBg}
         alt={t.index.heroImageAlt}
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover scale-[1.02]"
       />
       <div className="absolute inset-0 bg-hero-overlay" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[hsl(222_76%_12%/0.55)] to-transparent" />
 
-      <div className="container relative z-10 py-8 md:py-16 px-4 md:px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="mb-16 md:mb-20 animate-fade-up flex flex-col items-center gap-2">
-            <SplitText
-              text={t.index.heroLocationLabel}
-              className="text-maple-200 text-sm opacity-90 block"
-              tag="p"
-              splitType="chars"
-              delay={35}
-              duration={1}
-              from={{ opacity: 0, y: 25 }}
-              to={{ opacity: 1, y: 0 }}
-              threshold={0.05}
-              textAlign="center"
-            />
-            <div className="flex items-center justify-center gap-2">
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  placeholder={t.index.heroLocationPlaceholder}
-                  value={locationQuery}
-                  onChange={(e) => setLocationQuery(e.target.value)}
-                  className={`w-fit min-w-[200px] max-w-[260px] glass-card rounded-full px-5 py-2.5 text-center text-foreground placeholder:text-muted-foreground outline-none text-sm ${locationQuery.trim().length > 0 ? "pr-9" : ""}`}
-                />
-                {locationQuery.trim().length > 0 && (
-                  <>
-                    {isValidPostalOrZip(locationQuery) ? (
-                      <span className="absolute right-3 flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white shrink-0 pointer-events-none" aria-hidden>
-                        <Check size={12} strokeWidth={2.5} />
-                      </span>
-                    ) : (
-                      <span className="absolute right-3 flex items-center justify-center w-5 h-5 rounded-full bg-red-500/90 text-white shrink-0 pointer-events-none" aria-hidden>
-                        <X size={12} strokeWidth={2.5} />
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
+      <div className="relative z-10 w-full max-w-full px-3 py-2 md:container md:px-6 md:py-16">
+        <div className="mx-auto max-w-4xl text-center">
+          <p className="mb-4 animate-fade-up font-logo text-lg tracking-tight text-white/95 drop-shadow-sm sm:text-xl md:mb-6 md:text-2xl">
+            {t.index.heroBrand}
+          </p>
 
-          <div className="mb-8 animate-fade-up-delay">
-            <h1 className="font-heading text-5xl md:text-7xl font-extrabold text-gradient-hero leading-tight mb-8 max-w-4xl mx-auto hero-project-title">
+          <div className="mb-3 animate-fade-up-delay md:mb-5">
+            <h1 className="hero-project-title mx-auto mb-3 max-w-4xl px-1 font-heading text-4xl font-extrabold leading-[1.08] tracking-tight text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.35),0_2px_24px_rgba(0,0,0,0.25)] sm:text-5xl md:mb-4 md:text-7xl">
               <SplitText
                 text={t.index.heroProjectTitle}
-                className="inline-block"
+                className="inline-block text-white"
                 tag="span"
                 splitType="words"
                 delay={30}
@@ -265,135 +347,188 @@ export default function HeroSection() {
                 to={{ opacity: 1, y: 0 }}
                 threshold={0.05}
                 textAlign="center"
+                playOnMount
               />
             </h1>
+            <p className="mx-auto max-w-xl px-2 text-sm leading-relaxed text-white/85 [text-shadow:0_1px_2px_rgba(0,0,0,0.25)] md:text-base">
+              {t.index.heroSupport}
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto animate-fade-up-delay-2">
-            <div className="glass-card glass-hover rounded-2xl px-5 py-3 relative w-full max-w-2xl mx-auto">
-              <div className="flex items-start gap-3">
-                <div className="relative flex-1 min-w-0">
+          <form onSubmit={handleSubmit} className="relative mx-auto mt-6 max-w-2xl animate-fade-up-delay-2 md:mt-8">
+            <div className="relative mx-auto w-full max-w-2xl">
+              <label className="mb-2 block text-center text-[11px] font-medium uppercase tracking-[0.16em] text-white/70">
+                {t.index.heroPostalHint}
+              </label>
+              <div className="mb-3 flex items-center justify-center">
+                <input
+                  type="text"
+                  placeholder="A1A 1A1"
+                  value={postalCode}
+                  onChange={(e) => {
+                    setPostalCode(e.target.value);
+                    setPostalResolved(null);
+                    setPostalError(null);
+                  }}
+                  onBlur={() => {
+                    if (!isPostalLocked && normalizedPostal) void resolvePostal();
+                  }}
+                  disabled={isPostalLocked}
+                  maxLength={9}
+                  aria-label={t.index.heroPostalHint}
+                  className={`block w-[12ch] rounded-xl border px-3 py-2.5 text-center text-sm font-medium text-white caret-white backdrop-blur-md placeholder:text-white/40 focus:outline-none focus:ring-2 disabled:text-white/50 disabled:opacity-70 [text-shadow:0_1px_2px_rgba(0,0,0,0.25)] ${
+                    !postalResolved
+                      ? "animate-pulse border-accent/60 bg-white/15 shadow-[0_0_20px_rgba(234,187,31,0.35)] focus:ring-accent/50"
+                      : "border-white/30 bg-white/12 focus:ring-white/40"
+                  }`}
+                />
+              </div>
+              {postalLoading ? (
+                <p className="mb-3 text-center text-xs text-white/85 [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
+                  {t.makeRequest.step3Detecting}
+                </p>
+              ) : postalError ? (
+                <p className="mb-3 text-center text-xs text-amber-200">{postalError}</p>
+              ) : null}
+
+              <div className="relative rounded-2xl border border-white/25 bg-white/10 p-3 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.45)] backdrop-blur-md">
+                {postalResolved ? (
+                  <div className="mb-1.5 flex justify-end px-1">
+                    <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/95">
+                      {postalResolved.city
+                        ? `${postalResolved.city}${postalResolved.province ? `, ${postalResolved.province}` : ""}`
+                        : normalizedPostal}
+                    </span>
+                  </div>
+                ) : null}
+                <div className="relative">
                   <textarea
                     ref={textareaRef}
-                    placeholder={t.index.heroProjectPlaceholder}
+                    placeholder={normalizedPostal ? t.index.heroProjectPlaceholder : t.index.heroPostalHint}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => setTextareaFocused(true)}
                     onBlur={() => setTextareaFocused(false)}
                     rows={1}
-                    className="w-full min-h-[2.5rem] max-h-32 bg-transparent outline-none text-foreground placeholder:text-muted-foreground px-2 py-2 pr-9 text-base resize-none overflow-y-auto transition-[height] duration-300 ease-out"
+                    className="w-full min-h-[2.75rem] max-h-32 resize-none overflow-y-auto bg-transparent px-2 py-2.5 pr-11 text-sm text-white caret-white outline-none transition-[height] duration-300 ease-out placeholder:text-white/55 disabled:text-white/45 disabled:placeholder:text-white/40 sm:pr-12 sm:text-base [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]"
                     style={{ overflowWrap: "break-word" }}
+                    disabled={!normalizedPostal || !postalResolved}
                   />
                   {loading && (
-                    <div className="absolute right-2 top-3 flex items-center gap-2">
-                      <Sparkles className="text-secondary animate-pulse shrink-0" size={20} />
+                    <div className="pointer-events-none absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-2">
+                      <Sparkles className="shrink-0 animate-pulse text-accent" size={20} />
                     </div>
                   )}
                 </div>
-              </div>
 
-              {loading && (
-                <div className="mt-3 pt-3 border-t border-white/20 dark:border-gray-700/30 space-y-2">
-                  <p className="text-xs font-medium text-foreground/80 px-2">{t.index.heroAiThinking}</p>
-                  <div className="h-1.5 w-full rounded-full overflow-hidden bg-white/20 dark:bg-black/20">
-                    <div className="h-full w-full rounded-full ai-thinking-gauge" />
+                {loading && (
+                  <div className="mt-3 space-y-2 border-t border-white/20 pt-3">
+                    <p className="px-1 text-xs font-medium text-white/85">{t.index.heroAiThinking}</p>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/20">
+                      <div className="ai-thinking-gauge h-full w-full rounded-full" />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {error && !loading && (
-                <div className="mt-3 pt-3 border-t border-white/20 dark:border-gray-700/30 px-2 space-y-1">
-                  <p className="text-sm text-amber-200 dark:text-amber-400/90">{t.index.heroAiError}</p>
-                  {errorDetails && (
-                    <p className="text-xs text-foreground/70 break-words" title={errorDetails}>
-                      {errorDetails.length > 120 ? `${errorDetails.slice(0, 120)}…` : errorDetails}
-                    </p>
-                  )}
-                </div>
-              )}
+                {error && !loading && (
+                  <div className="mt-3 space-y-1 border-t border-white/20 px-1 pt-3">
+                    <p className="text-sm text-amber-200">{t.index.heroAiError}</p>
+                    {errorDetails && (
+                      <p className="break-words text-xs text-white/70" title={errorDetails}>
+                        {errorDetails.length > 120 ? `${errorDetails.slice(0, 120)}…` : errorDetails}
+                      </p>
+                    )}
+                  </div>
+                )}
 
-              {hasResults && !loading && (
-                <div className="mt-3 pt-3 border-t border-white/20 dark:border-gray-700/30 space-y-3 text-left">
-                  {aiSummary && (
-                    <p className="text-sm text-foreground/90 px-2">
-                      <span className="font-semibold opacity-90">{t.index.heroWeUnderstood}</span>
-                      <span className="italic">&ldquo;{aiSummary}&rdquo;</span>
-                    </p>
-                  )}
-                  {clarifyingMessage && (
-                    <p className="text-sm text-foreground/80 px-2">{clarifyingMessage}</p>
-                  )}
-                  {followUpQuestions.length > 0 && (
-                    <>
-                      <p className="text-xs font-medium text-foreground/80 px-2">
-                        {t.index.heroFollowUpPrompt}
-                      </p>
-                      <div className="flex flex-wrap gap-2 px-2">
-                        {followUpQuestions.map((q, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => handleFollowUpClick(q)}
-                            className="glass-card px-4 py-2.5 rounded-full text-sm font-medium text-foreground hover:bg-white/30 dark:hover:bg-gray-700/40 transition-all border border-white/20 dark:border-gray-600/30"
-                          >
-                            {q}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  {bestMatch?.serviceName && (() => {
-                    const resolved = findServiceByName(bestMatch.serviceName);
-                    const categoryLabel = resolved && bestMatch.categoryName
-                      ? getCategoryName({ name: bestMatch.categoryName, slug: resolved.categorySlug }, locale)
-                      : bestMatch.categoryName ?? "";
-                    const serviceLabel = resolved
-                      ? getServiceName(resolved.serviceSlug, locale, bestMatch.serviceName)
-                      : bestMatch.serviceName;
-                    return (
-                    <div className="px-2">
-                      <p className="text-xs font-medium text-foreground/80 mb-2">
-                        {t.index.heroBestMatch}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => goToService(bestMatch.serviceName!)}
-                        className="inline-flex items-center gap-2 glass-card px-4 py-2.5 rounded-full text-sm font-semibold text-foreground hover:bg-white/30 dark:hover:bg-gray-700/40 transition-all border border-white/20 dark:border-gray-600/30"
-                      >
-                        {categoryLabel ? `${categoryLabel} → ${serviceLabel}` : serviceLabel}
-                        <ArrowRight size={14} />
-                      </button>
-                      <span className="ml-2 text-xs text-foreground/70">
-                        ({t.index.heroViewPros})
-                      </span>
-                    </div>
-                    );
-                  })()}
-                  {suggestions.length > 0 && (
-                    <>
-                      <p className="text-xs font-medium text-foreground/80 px-2">
-                        {t.index.heroChooseService}
-                      </p>
-                      <div className="flex flex-wrap gap-2 px-2">
-                        {suggestions.map((suggestion, idx) => {
-                          const resolved = findServiceByName(suggestion);
-                          const label = resolved ? getServiceName(resolved.serviceSlug, locale, suggestion) : suggestion;
-                          return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => handleSuggestionClick(suggestion)}
-                            className="glass-card px-4 py-2.5 rounded-full text-sm font-medium text-foreground hover:bg-white/30 dark:hover:bg-gray-700/40 transition-all border border-white/20 dark:border-gray-600/30"
-                          >
-                            {label}
-                          </button>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
+                {hasResults && !loading && (
+                  <div className="mt-3 space-y-3 border-t border-white/20 pt-3 text-left">
+                    {clarifyingMessage && (
+                      <p className="px-1 text-sm text-white/90">{clarifyingMessage}</p>
+                    )}
+                    {bestMatch?.serviceName &&
+                      (() => {
+                        const resolved =
+                          bestMatch.serviceSlug && bestMatch.categorySlug
+                            ? { categorySlug: bestMatch.categorySlug, serviceSlug: bestMatch.serviceSlug }
+                            : findServiceByName(bestMatch.serviceName);
+                        const categoryLabel =
+                          resolved && bestMatch.categoryName
+                            ? getCategoryName({ name: bestMatch.categoryName, slug: resolved.categorySlug }, locale)
+                            : bestMatch.categoryName ?? "";
+                        const serviceLabel = resolved
+                          ? getServiceName(resolved.serviceSlug, locale, bestMatch.serviceName)
+                          : bestMatch.serviceName;
+                        return (
+                          <div className="px-1">
+                            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/70">
+                              {t.index.heroBestMatch}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  bestMatch.serviceSlug && bestMatch.categorySlug
+                                    ? goToProsFromSlugs(bestMatch.categorySlug, bestMatch.serviceSlug)
+                                    : goToService(bestMatch.serviceName!)
+                                }
+                                className={resultChipClass}
+                              >
+                                {categoryLabel ? `${categoryLabel} → ${serviceLabel}` : serviceLabel}
+                                <ArrowRight size={14} />
+                              </button>
+                              <span className="text-xs text-white/70">({t.index.heroViewPros})</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    {proNameMatches.length > 0 && (
+                      <>
+                        <p className="px-1 text-xs font-medium uppercase tracking-wide text-white/70">
+                          {t.index.heroProMatches}
+                        </p>
+                        <div className="flex flex-wrap gap-2 px-1">
+                          {proNameMatches.map((pro) => (
+                            <button
+                              key={pro.proProfileId}
+                              type="button"
+                              onClick={() => navigate(`/pros/${pro.proProfileId}`)}
+                              className={resultChipClass}
+                            >
+                              {pro.businessName}
+                              {pro.fullName && pro.fullName.toLowerCase() !== pro.businessName.toLowerCase()
+                                ? ` (${pro.fullName})`
+                                : ""}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    {followUpMatches.length > 0 && (
+                      <>
+                        <p className="px-1 text-xs font-medium uppercase tracking-wide text-white/70">
+                          {t.index.heroFollowUpServices}
+                        </p>
+                        <div className="flex flex-wrap gap-2 px-1">
+                          {followUpMatches.map((m, idx) => {
+                            const followLabel = getServiceName(m.serviceSlug, locale, m.serviceName);
+                            return (
+                              <button
+                                key={`${m.serviceSlug}-${idx}`}
+                                type="button"
+                                onClick={() => goToProsFromSlugs(m.categorySlug, m.serviceSlug)}
+                                className={resultChipClass}
+                              >
+                                {followLabel}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </form>
         </div>

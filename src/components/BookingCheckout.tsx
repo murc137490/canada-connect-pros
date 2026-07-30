@@ -2,9 +2,14 @@ import { useState, useMemo } from "react";
 import { CreditCard, ArrowLeft, Check } from "lucide-react";
 import SquareBookingPayment from "@/components/SquareBookingPayment";
 import { Button } from "@/components/ui/button";
+import { computeBookingInvoiceFromBaseCents } from "@/lib/bookingInvoiceAmounts";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const TAX_RATE = 0.15;
-const PROCESSING_FEE = 0.05;
+export type BookingPaymentMeta = {
+  squarePaymentId?: string | null;
+  idempotencyKey: string;
+  paymentMethodLabel?: string | null;
+};
 
 export interface BookingCheckoutProps {
   serviceName: string;
@@ -12,10 +17,12 @@ export interface BookingCheckoutProps {
   dateLabel: string;
   /** Service subtotal in cents (before tax & processing fee). */
   baseAmountCents: number;
+  /** When the pro uses Square Connect, tokenization uses this seller location (same app ID as OAuth). */
+  squareLocationId?: string | null;
   currency?: string;
   proProfileId: string;
   clientId: string;
-  onPaymentComplete: () => Promise<{ bookingId?: string } | void>;
+  onPaymentComplete: (meta: BookingPaymentMeta) => Promise<{ bookingId?: string; bookingPublicCode?: string } | void>;
   onError: (message: string) => void;
   onDone: () => void;
 }
@@ -25,6 +32,7 @@ export default function BookingCheckout({
   durationLabel,
   dateLabel,
   baseAmountCents,
+  squareLocationId,
   currency = "cad",
   proProfileId,
   clientId,
@@ -32,37 +40,33 @@ export default function BookingCheckout({
   onError,
   onDone,
 }: BookingCheckoutProps) {
+  const { t } = useLanguage();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [confirmationRef, setConfirmationRef] = useState<string>("");
   const [completing, setCompleting] = useState(false);
 
-  const { subtotal, tax, processingFee, totalCents, totalDollars } = useMemo(() => {
-    const sub = Math.max(0, baseAmountCents / 100);
-    const taxAmt = sub * TAX_RATE;
-    const proc = sub * PROCESSING_FEE;
-    const total = sub + taxAmt + proc;
-    const cents = Math.max(500, Math.round(total * 100));
-    return {
-      subtotal: sub,
-      tax: taxAmt,
-      processingFee: proc,
-      totalCents: cents,
-      totalDollars: total.toFixed(2),
-    };
-  }, [baseAmountCents]);
+  const { subtotal, gst, qst, processingFee, totalCents, totalDollars } = useMemo(
+    () => computeBookingInvoiceFromBaseCents(baseAmountCents),
+    [baseAmountCents]
+  );
 
   const handleBack = () => {
     if (step > 1 && step < 3) setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s));
   };
 
-  const handleSquareSuccess = async () => {
+  const handleSquareSuccess = async (meta: BookingPaymentMeta) => {
     setCompleting(true);
     try {
-      const result = await onPaymentComplete();
-      const id = result && typeof result === "object" && "bookingId" in result && result.bookingId
-        ? String(result.bookingId).slice(0, 8).toUpperCase()
-        : Math.random().toString(36).slice(2, 10).toUpperCase();
-      setConfirmationRef(id);
+      const result = await onPaymentComplete(meta);
+      let ref = "";
+      if (result && typeof result === "object") {
+        const pub =
+          "bookingPublicCode" in result && typeof result.bookingPublicCode === "string"
+            ? result.bookingPublicCode.trim().toUpperCase()
+            : "";
+        if (pub) ref = pub;
+      }
+      setConfirmationRef(ref || "-");
       setStep(3);
     } catch (e) {
       onError((e as Error).message ?? "Could not complete booking");
@@ -72,8 +76,8 @@ export default function BookingCheckout({
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto rounded-2xl shadow-xl overflow-hidden bg-white text-gray-900 border border-gray-200">
-      {/* Header — Bolt-style */}
+    <div className="w-full max-w-lg mx-auto rounded-2xl shadow-xl overflow-hidden bg-white dark:bg-card text-foreground border border-border">
+      {/* Header - Bolt-style */}
       <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white px-5 py-4">
         <div className="flex items-center gap-3 mb-3">
           {step > 1 && step < 3 && (
@@ -101,12 +105,12 @@ export default function BookingCheckout({
         {step === 1 && (
           <div className="space-y-5">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Review your booking</h3>
-              <p className="text-sm text-gray-500">Confirm details before payment</p>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Review your booking</h3>
+              <p className="text-sm text-muted-foreground">Confirm details before payment</p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-100">
-              <div className="border-b border-gray-200 pb-3">
-                <h4 className="font-semibold text-gray-900 mb-2 text-sm">Service details</h4>
+            <div className="bg-muted rounded-xl p-4 space-y-3 border border-border">
+              <div className="border-b border-border pb-3">
+                <h4 className="font-semibold text-foreground mb-2 text-sm">Service details</h4>
                 <div className="space-y-1.5 text-sm">
                   <Row label="Service" value={serviceName} />
                   {durationLabel ? <Row label="Duration" value={durationLabel} /> : null}
@@ -114,21 +118,25 @@ export default function BookingCheckout({
                 </div>
               </div>
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2 text-sm">Price breakdown</h4>
+                <h4 className="font-semibold text-foreground mb-2 text-sm">Price breakdown</h4>
                 <div className="space-y-1.5 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Service</span>
-                    <span className="text-gray-900">${subtotal.toFixed(2)} {currency.toUpperCase()}</span>
+                    <span className="text-muted-foreground">Service</span>
+                    <span className="text-foreground">${subtotal.toFixed(2)} {currency.toUpperCase()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Processing fee</span>
-                    <span className="text-gray-900">${processingFee.toFixed(2)}</span>
+                    <span className="text-muted-foreground">{t.dashboard.invoiceGst}</span>
+                    <span className="text-foreground">${gst.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Tax (8%)</span>
-                    <span className="text-gray-900">${tax.toFixed(2)}</span>
+                    <span className="text-muted-foreground">{t.dashboard.invoiceQst}</span>
+                    <span className="text-foreground">${qst.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-base font-semibold pt-2 border-t border-gray-200">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t.dashboard.invoiceProcessing}</span>
+                    <span className="text-foreground">${processingFee.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-semibold pt-2 border-t border-border">
                     <span>Total</span>
                     <span>${totalDollars} {currency.toUpperCase()}</span>
                   </div>
@@ -144,17 +152,21 @@ export default function BookingCheckout({
         {step === 2 && (
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Payment</h3>
-              <p className="text-sm text-gray-500">Card, Apple Pay, or Google Pay via Square</p>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Payment</h3>
+              <p className="text-sm text-muted-foreground">
+                {t.terms.checkoutPaymentMethodsViaSquare ?? "Card, Apple Pay, or Google Pay via Square"}
+              </p>
             </div>
-            <div className="rounded-xl border border-gray-200 p-3 bg-white shadow-sm">
-              <div className="flex items-center gap-2 text-gray-900 font-medium mb-3 text-sm">
+            <div className="rounded-xl border border-border p-3 bg-white dark:bg-background shadow-sm">
+              <div className="flex items-center gap-2 text-foreground font-medium mb-3 text-sm">
                 <CreditCard className="w-5 h-5" />
                 <span>Payment</span>
               </div>
-              <div className="rounded-lg overflow-hidden border border-gray-100 bg-white p-3">
+              <div className="rounded-lg overflow-hidden border border-border bg-white dark:bg-muted p-3">
                 <SquareBookingPayment
                   amountCents={totalCents}
+                  baseAmountCents={baseAmountCents}
+                  squareLocationId={squareLocationId}
                   currency={currency}
                   proProfileId={proProfileId}
                   clientId={clientId}
@@ -164,7 +176,7 @@ export default function BookingCheckout({
               </div>
             </div>
             {completing && (
-              <p className="text-sm text-center text-gray-600">Confirming your booking…</p>
+              <p className="text-sm text-center text-muted-foreground">Confirming your booking…</p>
             )}
           </div>
         )}
@@ -175,17 +187,17 @@ export default function BookingCheckout({
               <Check className="w-8 h-8 text-green-600" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-1">Booking confirmed</h3>
-              <p className="text-sm text-gray-600">Your payment went through successfully</p>
+              <h3 className="text-xl font-semibold text-foreground mb-1">Booking confirmed</h3>
+              <p className="text-sm text-muted-foreground">Your payment went through successfully</p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-4 text-left space-y-2 text-sm border border-gray-100">
+            <div className="bg-muted rounded-xl p-4 text-left space-y-2 text-sm border border-border">
               <div className="flex justify-between">
-                <span className="text-gray-600">Confirmation</span>
-                <span className="font-mono font-medium text-gray-900">#{confirmationRef}</span>
+                <span className="text-muted-foreground">Confirmation</span>
+                <span className="font-mono font-medium text-foreground">#{confirmationRef}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Total paid</span>
-                <span className="font-semibold text-gray-900">${totalDollars} {currency.toUpperCase()}</span>
+                <span className="text-muted-foreground">Total paid</span>
+                <span className="font-semibold text-foreground">${totalDollars} {currency.toUpperCase()}</span>
               </div>
             </div>
             <Button type="button" className="w-full bg-gray-900 hover:bg-gray-800 text-white" onClick={onDone}>
@@ -201,8 +213,8 @@ export default function BookingCheckout({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-2">
-      <span className="text-gray-600 shrink-0">{label}</span>
-      <span className="font-medium text-gray-900 text-right">{value}</span>
+      <span className="text-muted-foreground shrink-0">{label}</span>
+      <span className="font-medium text-foreground text-right">{value}</span>
     </div>
   );
 }
@@ -213,7 +225,7 @@ function StepDot({ n, done, current, label }: { n: number; done: boolean; curren
     <div className="flex flex-col items-center gap-1 min-w-0">
       <div
         className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-          active ? "bg-white text-gray-900" : "bg-gray-600 text-white"
+          active ? "bg-white text-foreground" : "bg-gray-600 text-white"
         }`}
       >
         {done ? <Check className="w-3.5 h-3.5" /> : n}

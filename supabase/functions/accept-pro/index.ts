@@ -8,6 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+import { callerIsPlatformModerator } from "../_shared/platformAdmin.ts";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -50,8 +52,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const email = (user.email ?? "").toLowerCase();
-    if (email !== "premiereservicescontact@gmail.com") {
+    const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey);
+    if (!(await callerIsPlatformModerator(adminClient, user.id, user.email))) {
       return new Response(JSON.stringify({ error: "Forbidden: admin only" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -67,10 +69,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey);
     const { error } = await adminClient
       .from("pro_profiles")
-      .update({ is_verified: true, updated_at: new Date().toISOString() })
+      .update({
+        is_verified: true,
+        updated_at: new Date().toISOString(),
+        approval_baseline_json: null,
+        profile_last_edited_at: null,
+      })
       .eq("user_id", proUserId);
 
     if (error) {

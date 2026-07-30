@@ -1,29 +1,31 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { serviceCategories, getAllServices } from "@/data/services";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
-import { geocodeAddress, distanceKm } from "@/lib/geocode";
 import { ArrowLeft, ArrowRight, Loader2, SlidersHorizontal, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProCard, { type ProCardData } from "@/components/pro/ProCard";
 import StarBorder from "@/components/StarBorder";
 import GradientText from "@/components/GradientText";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProListPage() {
   const { categorySlug, serviceSlug } = useParams<{ categorySlug: string; serviceSlug: string }>();
-  const [searchParams] = useSearchParams();
-  const locationQuery = searchParams.get("location")?.trim() || "";
   const { locale, t } = useLanguage();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const [pros, setPros] = useState<ProCardData[]>([]);
   const [topPicks, setTopPicks] = useState<ProCardData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [sortBy, setSortBy] = useState(locationQuery ? "distance" : "rating");
+  const [sortBy, setSortBy] = useState("rating");
+  const [savedProIds, setSavedProIds] = useState<Set<string>>(new Set());
 
   const category = serviceCategories.find((c) => c.slug === categorySlug);
   const allServices = getAllServices();
@@ -58,15 +60,6 @@ export default function ProListPage() {
 
       if (!proData) { setPros([]); setLoading(false); return; }
 
-      let coords: { lat: number; lng: number } | null = null;
-      if (locationQuery) {
-        const geo = await geocodeAddress(locationQuery);
-        if (geo) {
-          coords = { lat: geo.lat, lng: geo.lng };
-          setUserCoords(coords);
-        }
-      }
-
       const enriched: ProCardData[] = [];
       for (const pro of proData) {
         const [profileRes, ratingRes, licenseRes, photosRes] = await Promise.all([
@@ -76,18 +69,11 @@ export default function ProListPage() {
           supabase.from("pro_photos").select("url, is_primary").eq("pro_profile_id", pro.id).order("is_primary", { ascending: false }).limit(1),
         ]);
         const primaryPhoto = (photosRes.data as { url: string }[] | null)?.[0];
-        const proLat = pro.latitude != null ? Number(pro.latitude) : null;
-        const proLng = pro.longitude != null ? Number(pro.longitude) : null;
-        const distance =
-          coords && proLat != null && proLng != null
-            ? distanceKm(coords.lat, coords.lng, proLat, proLng)
-            : null;
         enriched.push({
           id: pro.id,
           businessName: pro.business_name,
           fullName: profileRes.data?.full_name || t.common.proFallback,
           avatarUrl: primaryPhoto?.url ?? null,
-          location: pro.location ?? null,
           priceMin: pro.price_min ? Number(pro.price_min) : null,
           priceMax: pro.price_max ? Number(pro.price_max) : null,
           avgRating: Number(ratingRes.data?.[0]?.avg_rating || 0),
@@ -96,7 +82,6 @@ export default function ProListPage() {
           hasLicense: (licenseRes.data?.length || 0) > 0,
           serviceSlug: serviceSlug || "",
           categorySlug: categorySlug || "",
-          distanceKm: distance,
         });
       }
 
@@ -119,15 +104,64 @@ export default function ProListPage() {
     };
 
     fetchPros();
-  }, [categorySlug, serviceSlug, locationQuery]);
+  }, [categorySlug, serviceSlug]);
+
+  useEffect(() => {
+    if (!categorySlug || !serviceSlug || !service) return;
+    void supabase.rpc("increment_service_browse_stats", {
+      p_category_slug: categorySlug,
+      p_service_slug: serviceSlug,
+    });
+  }, [categorySlug, serviceSlug, service]);
+
+  useEffect(() => {
+    if (!user) {
+      setSavedProIds(new Set());
+      return;
+    }
+    (async () => {
+      const { data, error } = await supabase.from("client_saved_pros").select("pro_profile_id").eq("user_id", user.id);
+      if (error) {
+        toast({ title: t.auth.toastError, description: error.message, variant: "destructive" });
+        return;
+      }
+      setSavedProIds(new Set((data || []).map((r) => (r as { pro_profile_id: string }).pro_profile_id)));
+    })();
+  }, [user, toast, t.auth.toastError]);
+
+  const handleToggleSavePro = async (proId: string) => {
+    if (!user) {
+      navigate("/auth?mode=login&redirect=" + encodeURIComponent(window.location.pathname));
+      return;
+    }
+    if (savedProIds.has(proId)) {
+      const { error } = await supabase.from("client_saved_pros").delete().eq("user_id", user.id).eq("pro_profile_id", proId);
+      if (error) {
+        toast({ title: t.auth.toastError, description: error.message, variant: "destructive" });
+        return;
+      }
+      setSavedProIds((prev) => {
+        const n = new Set(prev);
+        n.delete(proId);
+        return n;
+      });
+    } else {
+      const { error } = await supabase
+        .from("client_saved_pros")
+        .upsert({ user_id: user.id, pro_profile_id: proId }, { onConflict: "user_id,pro_profile_id" });
+      if (error) {
+        toast({ title: t.auth.toastError, description: error.message, variant: "destructive" });
+        return;
+      }
+      setSavedProIds((prev) => new Set(prev).add(proId));
+    }
+  };
 
   // Sort; exclude top pick IDs from main list so they only appear in Top picks section
   const topPickIds = new Set(topPicks.map((p) => p.id));
   const otherPros = pros.filter((p) => !topPickIds.has(p.id));
   const sorted = [...otherPros].sort((a, b) => {
     switch (sortBy) {
-      case "distance":
-        return (a.distanceKm ?? 99999) - (b.distanceKm ?? 99999);
       case "rating": return b.avgRating - a.avgRating;
       case "price-low": return (a.priceMin || 0) - (b.priceMin || 0);
       case "price-high": return (b.priceMax || 0) - (a.priceMax || 0);
@@ -168,9 +202,6 @@ export default function ProListPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {locationQuery && (
-                  <SelectItem value="distance">{t.services.sortDistance ?? "Distance (nearest)"}</SelectItem>
-                )}
                 <SelectItem value="rating">{t.services.sortRating}</SelectItem>
                 <SelectItem value="reviews">{t.services.sortReviews}</SelectItem>
                 <SelectItem value="price-low">{t.services.sortPriceLow}</SelectItem>
@@ -205,7 +236,12 @@ export default function ProListPage() {
                 </p>
                 <div className="grid md:grid-cols-3 gap-4 mb-6">
                   {topPicks.map((pro) => (
-                    <ProCard key={pro.id} pro={pro} />
+                    <ProCard
+                      key={pro.id}
+                      pro={pro}
+                      isFavorite={savedProIds.has(pro.id)}
+                      onFavoriteClick={() => handleToggleSavePro(pro.id)}
+                    />
                   ))}
                 </div>
               </div>
@@ -217,7 +253,12 @@ export default function ProListPage() {
             )}
             <div className="grid md:grid-cols-2 gap-4">
               {sorted.length > 0 ? sorted.map((pro) => (
-                <ProCard key={pro.id} pro={pro} />
+                <ProCard
+                  key={pro.id}
+                  pro={pro}
+                  isFavorite={savedProIds.has(pro.id)}
+                  onFavoriteClick={() => handleToggleSavePro(pro.id)}
+                />
               )) : null}
             </div>
 

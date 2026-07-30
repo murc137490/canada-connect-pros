@@ -18,6 +18,8 @@ interface SplitTextProps {
   textAlign?: "left" | "center" | "right";
   tag?: keyof JSX.IntrinsicElements;
   onLetterAnimationComplete?: () => void;
+  /** Animate on mount (no ScrollTrigger). Use for above-the-fold hero so text is never stuck at opacity 0 on mobile. */
+  playOnMount?: boolean;
 }
 
 export default function SplitText({
@@ -34,11 +36,11 @@ export default function SplitText({
   textAlign = "center",
   tag: Tag = "p",
   onLetterAnimationComplete,
+  playOnMount = false,
 }: SplitTextProps) {
   const ref = useRef<HTMLElement>(null);
   const [chars, setChars] = useState<string[]>([]);
   const [words, setWords] = useState<string[]>([]);
-  const doneRef = useRef(false);
 
   useEffect(() => {
     if (splitType === "chars") {
@@ -51,7 +53,6 @@ export default function SplitText({
   useEffect(() => {
     const el = ref.current;
     if (!el || !text) return;
-    if (doneRef.current) return;
     const count = splitType === "chars" ? chars.length : words.length;
     if (count === 0) return;
 
@@ -77,24 +78,29 @@ export default function SplitText({
           duration,
           ease,
           stagger: delay / 1000,
-          scrollTrigger: {
-            trigger: el,
-            start,
-            once: true,
-          },
+          ...(playOnMount
+            ? {}
+            : {
+                scrollTrigger: {
+                  trigger: el,
+                  start,
+                  once: true,
+                },
+              }),
           onComplete: () => {
-            doneRef.current = true;
             onLetterAnimationComplete?.();
           },
         }
       );
     }, el);
-    return () => ctx.revert();
-  }, [text, splitType, chars.length, words.length, delay, duration, ease, threshold, rootMargin, JSON.stringify(from), JSON.stringify(to), onLetterAnimationComplete]);
+    return () => {
+      ctx.revert();
+    };
+  }, [text, splitType, chars.length, words.length, delay, duration, ease, threshold, rootMargin, playOnMount, JSON.stringify(from), JSON.stringify(to), onLetterAnimationComplete]);
 
   const style: React.CSSProperties = {
     textAlign,
-    overflow: "hidden",
+    overflow: playOnMount ? "visible" : "hidden",
     display: "inline-block",
     whiteSpace: "normal",
     wordWrap: "break-word",

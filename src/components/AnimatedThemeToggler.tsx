@@ -8,7 +8,22 @@ export default function AnimatedThemeToggler({ className = "" }: { className?: s
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
+  const buttonClassName = cn(
+    "relative h-9 w-9 shrink-0 rounded-lg border border-border bg-background/80 flex items-center justify-center overflow-hidden transition-colors hover:bg-muted/80",
+    className
+  );
+
+  if (!mounted) {
+    return (
+      <button
+        type="button"
+        className={buttonClassName}
+        aria-hidden="true"
+        tabIndex={-1}
+        disabled
+      />
+    );
+  }
 
   const isDark = theme === "dark";
 
@@ -16,10 +31,7 @@ export default function AnimatedThemeToggler({ className = "" }: { className?: s
     <button
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className={cn(
-        "relative h-9 w-9 rounded-lg border border-border bg-background/80 flex items-center justify-center overflow-hidden transition-colors hover:bg-muted/80",
-        className
-      )}
+      className={buttonClassName}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
       <Sun

@@ -9,6 +9,8 @@ export interface UserMenuItem {
   link: string;
   emoji: string;
   show: boolean;
+  /** Optional unread count badge on this row (e.g. booking history). */
+  badge?: number;
 }
 
 interface UserMenuDropdownProps {
@@ -17,6 +19,8 @@ interface UserMenuDropdownProps {
   triggerLabel: string;
   accentColor?: string;
   triggerClassName?: string;
+  /** Extra class on the dropdown panel (e.g. user-menu-panel--dashboard). */
+  panelClassName?: string;
   /** Notification badge count (e.g. new quotes); shown next to trigger, hidden when 0 */
   notificationCount?: number;
 }
@@ -27,6 +31,7 @@ export default function UserMenuDropdown({
   triggerLabel,
   accentColor = "#007A56",
   triggerClassName,
+  panelClassName,
   notificationCount = 0,
 }: UserMenuDropdownProps) {
   const { t } = useLanguage();
@@ -47,9 +52,14 @@ export default function UserMenuDropdown({
     };
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("touchstart", handleClickOutside);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", onKey);
     };
   }, [open, close]);
 
@@ -82,7 +92,7 @@ export default function UserMenuDropdown({
         </button>
         {notificationCount > 0 && (
           <span
-            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center px-1"
+            className="absolute -top-1 -right-1 hidden min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-xs font-bold 2xl:flex items-center justify-center px-1"
             aria-label={`${notificationCount} new notification${notificationCount !== 1 ? "s" : ""}`}
           >
             {notificationCount > 99 ? "99+" : notificationCount}
@@ -97,7 +107,7 @@ export default function UserMenuDropdown({
       />
 
       <div
-        className={`user-menu-panel ${open ? "is-open" : ""}`}
+        className={`user-menu-panel ${panelClassName ?? ""} ${open ? "is-open" : ""}`.trim()}
         aria-hidden={!open}
         role="menu"
       >
@@ -110,7 +120,14 @@ export default function UserMenuDropdown({
                 role="menuitem"
                 onClick={close}
               >
-                <span className="sm-panel-itemLabel">{item.label}</span>
+                <span className="sm-panel-itemLabel inline-flex items-center gap-2">
+                  {item.label}
+                  {item.badge != null && item.badge > 0 && (
+                    <span className="min-w-[1.125rem] h-[1.125rem] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                      {item.badge > 99 ? "99+" : item.badge}
+                    </span>
+                  )}
+                </span>
               </Link>
             </li>
           ))}

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Send, Bot, HelpCircle, BookOpen, Phone, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import GradientText from "@/components/GradientText";
 import TextType from "@/components/TextType";
 import BlurText from "@/components/BlurText";
+import { cleanSupportQuery, inferSupportReplyLanguage } from "@/lib/supportAiQuery";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -29,7 +30,7 @@ export default function Support() {
       prev.length === 0
         ? [{ role: "assistant", content: initialMessage }]
         : prev[0]?.role === "assistant"
-          ? [{ ...prev[0], content: initialMessage }, ...prev.slice(1) ]
+          ? [{ ...prev[0], content: initialMessage }, ...prev.slice(1)]
           : prev
     );
   }, [initialMessage]);
@@ -51,38 +52,27 @@ export default function Support() {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg: ChatMessage = { role: "user", content: input.trim() };
-    const updatedMessages = [...messages, userMsg];
-    setMessages(updatedMessages);
+    const raw = input.trim();
+    if (!raw || loading) return;
+
+    const cleaned = cleanSupportQuery(raw);
+    const replyLang = inferSupportReplyLanguage(messages, cleaned);
+
+    const userMsg: ChatMessage = { role: "user", content: raw };
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       if (!session) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: t.support.signInToUse },
-        ]);
+        setMessages((prev) => [...prev, { role: "assistant", content: t.support.signInToUse }]);
         setLoading(false);
         return;
       }
-
-      // User's preferred language for emails = same for AI replies (fr or en)
-      let aiLanguage: "fr" | "en" = "en";
-      if (user?.id) {
-        const { data: profile } = await supabase.from("profiles").select("email_language").eq("user_id", user.id).single();
-        const lang = (profile as { email_language?: string } | null)?.email_language;
-        if (lang === "fr") aiLanguage = "fr";
-      }
-
-      // Build context from last few messages so the model can follow the conversation
-      const recent = updatedMessages.slice(-6);
-      const contextMessage = recent
-        .map((m) => (m.role === "user" ? `User: ${m.content}` : `Assistant: ${m.content}`))
-        .join("\n");
 
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       if (!anonKey) {
@@ -90,6 +80,8 @@ export default function Support() {
         setLoading(false);
         return;
       }
+
+      /** Conversational support assistant (HF) — same path for every message; no rigid service list. */
       const resp = await fetch(AI_CHAT_URL, {
         method: "POST",
         headers: {
@@ -98,14 +90,19 @@ export default function Support() {
           apikey: anonKey,
         },
         body: JSON.stringify({
-          message: contextMessage,
+          message: cleaned,
           access_token: session.access_token,
-          language: aiLanguage,
+          language: replyLang,
+          intent: "support_help",
+          conversation_history: messages
+            .slice(-16)
+            .filter((m) => m.role === "user" || m.role === "assistant")
+            .map(({ role, content }) => ({ role, content })),
         }),
       });
 
-      const data = await resp.json().catch(() => ({})) as { message?: string; error?: string; details?: string };
-      const reply = data.message;
+      const data = (await resp.json().catch(() => ({}))) as { message?: string; error?: string; details?: string };
+      const reply = data.message?.trim();
       const errMsg = data.error;
       const details = data.details;
 
@@ -114,27 +111,15 @@ export default function Support() {
           ? `${errMsg || "Error"}: ${details}`
           : errMsg
             ? `The assistant couldn't respond: ${errMsg}`
-            : `Request failed (${resp.status}). Check that HUGGINGFACE_API_KEY is set in Supabase Edge Function secrets.`;
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: displayMsg },
-        ]);
+            : `Request failed (${resp.status}).`;
+        setMessages((prev) => [...prev, { role: "assistant", content: displayMsg }]);
         return;
       }
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: (reply && reply.trim()) || t.support.noReply },
-      ]);
+      setMessages((prev) => [...prev, { role: "assistant", content: reply || t.support.noReply }]);
     } catch (e) {
-      console.error("Chat error:", e);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: t.support.errorGeneric,
-        },
-      ]);
+      console.error("Support AI error:", e);
+      setMessages((prev) => [...prev, { role: "assistant", content: t.support.errorGeneric }]);
     } finally {
       setLoading(false);
     }
@@ -145,18 +130,10 @@ export default function Support() {
       <div className="min-h-screen pt-14 bg-gradient-page">
         <div className="container py-8 md:py-16 px-4 md:px-6">
           <div className="text-center mb-10 md:mb-16 space-y-2">
-            <GradientText
-              colors={["#007A56", "#2C698C", "#EABB1F"]}
-              animationSpeed={10}
-              className="inline-block"
-            >
-              <h1 className="font-heading text-3xl md:text-5xl lg:text-6xl font-extrabold">
-                {t.support.title}
-              </h1>
+            <GradientText colors={["#007A56", "#2C698C", "#EABB1F"]} animationSpeed={10} className="inline-block">
+              <h1 className="font-heading text-3xl md:text-5xl lg:text-6xl font-extrabold">{t.support.title}</h1>
             </GradientText>
-            <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-              {t.support.subtitle}
-            </p>
+            <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto leading-relaxed">{t.support.subtitle}</p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8 md:gap-10 max-w-6xl mx-auto">
@@ -165,9 +142,7 @@ export default function Support() {
                 <div className="glass-card w-12 h-12 rounded-2xl flex items-center justify-center shrink-0">
                   <HelpCircle size={24} className="text-secondary" />
                 </div>
-                <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">
-                  {t.support.faqTitle}
-                </h2>
+                <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">{t.support.faqTitle}</h2>
               </div>
 
               <div className="space-y-3">
@@ -180,6 +155,7 @@ export default function Support() {
                 ].map((faq, i) => (
                   <div key={`${locale}-${i}`} className="glass-card rounded-2xl overflow-hidden">
                     <button
+                      type="button"
                       onClick={() => setOpenFaq(openFaq === i ? null : i)}
                       className="w-full flex items-center justify-between p-5 text-left hover:bg-white/20 dark:hover:bg-gray-800/20 transition-colors"
                       aria-expanded={openFaq === i}
@@ -211,13 +187,13 @@ export default function Support() {
                         <div className="px-5 pb-5 pt-2">
                           {openFaq === i && (
                             <BlurText
-                            text={faq.a}
-                            animateBy="words"
-                            direction="top"
-                            delay={30}
-                            stepDuration={0.25}
-                            className="text-muted-foreground leading-relaxed"
-                          />
+                              text={faq.a}
+                              animateBy="words"
+                              direction="top"
+                              delay={30}
+                              stepDuration={0.25}
+                              className="text-muted-foreground leading-relaxed"
+                            />
                           )}
                         </div>
                       </div>
@@ -227,12 +203,15 @@ export default function Support() {
               </div>
 
               <div className="grid sm:grid-cols-2 gap-3 mt-6 md:mt-8">
-                <a href="tel:+15017990735" className="glass-card glass-hover rounded-xl p-3 md:p-4 space-y-1 min-w-0 block hover:opacity-90 transition-opacity">
+                <a
+                  href="tel:+14509101400"
+                  className="glass-card glass-hover rounded-xl p-3 md:p-4 space-y-1 min-w-0 block hover:opacity-90 transition-opacity"
+                >
                   <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0">
                     <Phone size={16} className="text-secondary" />
                   </div>
                   <h3 className="font-heading font-bold text-foreground text-sm">{t.support.callUs}</h3>
-                  <p className="text-xs text-muted-foreground">+1 501 799 0735</p>
+                  <p className="text-xs text-muted-foreground">+1 450 910 1400</p>
                   <p className="text-[11px] text-muted-foreground leading-tight">{t.support.contactHours}</p>
                 </a>
                 <div className="glass-card glass-hover rounded-xl p-3 md:p-4 space-y-1 min-w-0">
@@ -240,9 +219,14 @@ export default function Support() {
                     <BookOpen size={16} className="text-secondary" />
                   </div>
                   <h3 className="font-heading font-bold text-foreground text-sm">{t.support.email}</h3>
-                  <p className="text-[11px] text-muted-foreground break-all min-w-0 select-text cursor-text" title="Select to copy">premiereservicescontact@gmail.com</p>
+                  <p className="text-[11px] text-muted-foreground break-all min-w-0 select-text cursor-text" title="Select to copy">
+                    support@premiereservices.ca
+                  </p>
                   <p className="text-[11px] text-muted-foreground leading-tight">{t.support.contactResponse}</p>
-                  <a href="mailto:premiereservicescontact@gmail.com?subject=Premiere%20Services%20-%20Support" className="inline-block mt-2 text-xs font-medium text-primary hover:underline focus:outline-none dark:text-sky-400 dark:hover:text-sky-300">
+                  <a
+                    href="mailto:support@premiereservices.ca?subject=Premiere%20Services%20-%20Support"
+                    className="inline-block mt-2 text-xs font-medium text-primary hover:underline focus:outline-none dark:text-sky-400 dark:hover:text-sky-300"
+                  >
                     Send email →
                   </a>
                 </div>
@@ -259,6 +243,9 @@ export default function Support() {
                   <p className="text-xs opacity-70">{t.support.poweredBy}</p>
                 </div>
               </div>
+              {user ? (
+                <p className="border-b border-white/10 px-5 py-3 text-xs text-muted-foreground">{t.support.aiLanguageHint}</p>
+              ) : null}
 
               <div ref={scrollRef} className="h-96 overflow-y-auto p-5 space-y-4">
                 {messages.map((msg, i) => (
@@ -269,10 +256,8 @@ export default function Support() {
                       </div>
                     )}
                     <div
-                      className={`max-w-[80%] px-4 py-3 rounded-2xl ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted/50 text-foreground"
+                      className={`max-w-[80%] px-4 py-3 rounded-2xl whitespace-pre-wrap ${
+                        msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-foreground"
                       }`}
                     >
                       {msg.content}

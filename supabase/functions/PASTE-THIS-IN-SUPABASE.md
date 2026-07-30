@@ -88,8 +88,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const systemContent = context
-      ? `You are the Premiere Services AI support assistant for a Canadian home services marketplace. Use the following database results when relevant to answer the user.\n\nDatabase results:\n${context}\n\nBe friendly, helpful, and concise. Phone: 1-800-PREMIERE. Email: premiereservicescontact@gmail.com. If you don't know something, direct users to contact support.`
-      : `You are the Premiere Services AI support assistant for a Canadian home services marketplace. Help customers find and hire verified pros. Be friendly and concise. Phone: 1-800-PREMIERE. Email: premiereservicescontact@gmail.com.`;
+      ? `You are the Premiere Services AI support assistant for a Canadian home services marketplace. Use the following database results when relevant to answer the user.\n\nDatabase results:\n${context}\n\nBe friendly, helpful, and concise. Phone: 1-800-PREMIERE. Email: support@premiereservices.ca. If you don't know something, direct users to contact support.`
+      : `You are the Premiere Services AI support assistant for a Canadian home services marketplace. Help customers find and hire verified pros. Be friendly and concise. Phone: 1-800-PREMIERE. Email: support@premiereservices.ca.`;
 
     const hfResp = await fetch(HF_CHAT_URL, {
       method: "POST",

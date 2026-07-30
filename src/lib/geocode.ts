@@ -107,6 +107,13 @@ export async function geocodePostalToLocation(postalOrAddress: string): Promise<
   }
 }
 
+/** Extract a Canadian postal code from free text (e.g. pro profile address). */
+export function extractCanadianPostal(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const m = text.toUpperCase().match(/\b[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d\b/);
+  return m ? m[0].replace(/\s+/g, " ").trim() : null;
+}
+
 /** Haversine distance in km between two points */
 export function distanceKm(
   lat1: number,

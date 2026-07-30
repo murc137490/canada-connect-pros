@@ -2,15 +2,21 @@ import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import {
   TERMS_FULL_SECTIONS,
+  TERMS_FULL_SECTIONS_FR,
   TERMS_PROVIDER_AGREEMENT,
+  TERMS_PROVIDER_AGREEMENT_FR,
   LAST_UPDATED,
+  LAST_UPDATED_FR,
   COMPANY_NAME,
 } from "@/content/termsContent";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ArrowLeft, RefreshCw, Shield, UserCheck } from "lucide-react";
 
 export default function TermsOfService() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const fullSections = locale === "fr" ? TERMS_FULL_SECTIONS_FR : TERMS_FULL_SECTIONS;
+  const providerAgreement = locale === "fr" ? TERMS_PROVIDER_AGREEMENT_FR : TERMS_PROVIDER_AGREEMENT;
+  const lastUpdated = locale === "fr" ? LAST_UPDATED_FR : LAST_UPDATED;
 
   return (
     <Layout>
@@ -27,7 +33,7 @@ export default function TermsOfService() {
             {t.terms.fullTitle}
           </h1>
           <p className="text-sm text-muted-foreground mb-10">
-            {t.terms.lastUpdated}: {LAST_UPDATED}
+            {t.terms.lastUpdated}: {lastUpdated}
           </p>
 
           {/* Booking Guarantee at the top */}
@@ -61,7 +67,7 @@ export default function TermsOfService() {
           </div>
 
           <div className="prose prose-slate dark:prose-invert max-w-none space-y-10">
-            {TERMS_FULL_SECTIONS.map((section) => (
+            {fullSections.map((section) => (
               <section key={section.title}>
                 <h2 className="font-heading text-xl font-semibold text-foreground mb-2">
                   {section.title}
@@ -77,7 +83,7 @@ export default function TermsOfService() {
             <h2 className="font-heading text-2xl font-bold text-foreground mb-6">
               {t.terms.providerAgreementTitle}
             </h2>
-            {TERMS_PROVIDER_AGREEMENT.map((section) => (
+            {providerAgreement.map((section) => (
               <section key={section.title} className="mb-8">
                 <h3 className="font-heading text-lg font-semibold text-foreground mb-2">
                   {section.title}
@@ -90,7 +96,7 @@ export default function TermsOfService() {
           </div>
 
           <p className="mt-12 text-sm text-muted-foreground">
-            {COMPANY_NAME}. {t.terms.governingLaw}.
+            {COMPANY_NAME}. {t.terms.governingLaw}
           </p>
         </div>
       </div>

@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -18,10 +20,14 @@ type PendingPro = {
 
 export default function AdminAcceptPros() {
   const { user, session } = useAuth();
+  const { locale, t } = useLanguage();
+  const d = t.dashboard;
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isAdmin = !!user && user.email === "premiereservicescontact@gmail.com";
+  const { isPlatformAdmin, ready } = usePlatformAdmin();
+  const waitingForAdminProfile = !!user && !ready && !isPlatformAdmin;
   const [pending, setPending] = useState<PendingPro[]>([]);
+  const [publicNumberByUserId, setPublicNumberByUserId] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
@@ -30,7 +36,10 @@ export default function AdminAcceptPros() {
       setLoading(false);
       return;
     }
-    if (!isAdmin) {
+    if (waitingForAdminProfile) {
+      return;
+    }
+    if (!isPlatformAdmin) {
       setLoading(false);
       return;
     }
@@ -40,17 +49,31 @@ export default function AdminAcceptPros() {
         .select("id, user_id, business_name, created_at")
         .eq("is_verified", false)
         .order("created_at", { ascending: false });
-      setPending((list as PendingPro[]) ?? []);
+      const rows = (list as PendingPro[]) ?? [];
+      setPending(rows);
+      const ids = [...new Set(rows.map((p) => p.user_id))];
+      if (ids.length === 0) {
+        setPublicNumberByUserId({});
+        setLoading(false);
+        return;
+      }
+      const { data: profs } = await supabase.from("profiles").select("user_id, public_user_number").in("user_id", ids);
+      const map: Record<string, string> = {};
+      (profs ?? []).forEach((r: { user_id: string; public_user_number: string | null }) => {
+        if (r.public_user_number) map[r.user_id] = r.public_user_number;
+      });
+      setPublicNumberByUserId(map);
       setLoading(false);
     })();
-  }, [user, isAdmin]);
+  }, [user, isPlatformAdmin, waitingForAdminProfile]);
 
   useEffect(() => {
     if (loading) return;
-    if (!user || !isAdmin) {
+    if (waitingForAdminProfile) return;
+    if (!user || !isPlatformAdmin) {
       navigate("/", { replace: true });
     }
-  }, [user, isAdmin, loading, navigate]);
+  }, [user, isPlatformAdmin, loading, waitingForAdminProfile, navigate]);
 
   const handleAccept = async (proUserId: string) => {
     if (!session?.access_token || !SUPABASE_URL) return;
@@ -68,16 +91,25 @@ export default function AdminAcceptPros() {
       if (!res.ok) {
         throw new Error(data.error || res.statusText);
       }
-      toast({ title: "Pro accepted. They now appear in search." });
+      toast({
+        title:
+          locale === "fr"
+            ? "Pro accepté. Il apparaît maintenant dans la recherche."
+            : "Pro accepted. They now appear in search.",
+      });
       setPending((prev) => prev.filter((p) => p.user_id !== proUserId));
     } catch (e) {
-      toast({ title: "Failed to accept", description: (e as Error).message, variant: "destructive" });
+      toast({
+        title: locale === "fr" ? "Échec de l’acceptation" : "Failed to accept",
+        description: (e as Error).message,
+        variant: "destructive",
+      });
     } finally {
       setAcceptingId(null);
     }
   };
 
-  if (loading) {
+  if (loading || waitingForAdminProfile) {
     return (
       <Layout>
         <div className="container py-16 flex justify-center">
@@ -91,14 +123,15 @@ export default function AdminAcceptPros() {
     <Layout>
       <div className="container py-8 max-w-3xl">
         <h1 className="font-heading text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
-          <ShieldCheck size={28} /> Accept pros
+          <ShieldCheck size={28} /> {d.adminAcceptProsTitle ?? "Accept pros"}
         </h1>
         <p className="text-muted-foreground mb-6">
-          Only you (admin) can see this page. Accept applications to give pros access to the pro section; they will not appear in search until accepted.
+          {d.adminAcceptProsPageOnlyYou ??
+            "Only you (admin) can see this page. Accept applications to give pros access to the pro section; they will not appear in search until accepted."}
         </p>
 
         {pending.length === 0 ? (
-          <p className="text-muted-foreground">No pending pros right now.</p>
+          <p className="text-muted-foreground">{d.adminNoPendingPros ?? "No pending pros right now."}</p>
         ) : (
           <ul className="space-y-3">
             {pending.map((p) => (
@@ -109,10 +142,21 @@ export default function AdminAcceptPros() {
                 <div>
                   <p className="font-medium text-foreground">{p.business_name}</p>
                   <p className="text-sm text-muted-foreground">
-                    Applied {new Date(p.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
+                    {(d.adminAppliedOn ?? "Applied {{date}}").replace(
+                      "{{date}}",
+                      new Date(p.created_at).toLocaleDateString(locale === "fr" ? "fr-CA" : "en-CA", {
+                        dateStyle: "medium",
+                      }),
+                    )}
                   </p>
-                  <p className="text-xs text-muted-foreground font-mono truncate max-w-[280px]" title={p.user_id}>
-                    {p.user_id}
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium">{d.accountMemberId ?? "Member ID"}</span>{" "}
+                    <span
+                      className="font-mono truncate max-w-[200px] inline-block align-bottom"
+                      title={`Internal: ${p.user_id}`}
+                    >
+                      {publicNumberByUserId[p.user_id] ?? "-"}
+                    </span>
                   </p>
                 </div>
                 <Button
@@ -124,7 +168,7 @@ export default function AdminAcceptPros() {
                   {acceptingId === p.user_id ? (
                     <Loader2 size={16} className="animate-spin" />
                   ) : (
-                    "Accept"
+                    d.approve ?? "Accept"
                   )}
                 </Button>
               </li>

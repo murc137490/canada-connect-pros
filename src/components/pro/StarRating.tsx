@@ -8,6 +8,8 @@ interface StarRatingProps {
   interactive?: boolean;
   onRate?: (rating: number) => void;
   className?: string;
+  /** Empty stars: white fill + amber outline (use inside a white pill on dark headers). */
+  emptyStarsLightSurface?: boolean;
 }
 
 export default function StarRating({
@@ -17,6 +19,7 @@ export default function StarRating({
   interactive = false,
   onRate,
   className,
+  emptyStarsLightSurface = false,
 }: StarRatingProps) {
   return (
     <div className={cn("flex items-center gap-0.5", className)}>
@@ -37,12 +40,19 @@ export default function StarRating({
           >
             <Star
               size={size}
+              strokeWidth={emptyStarsLightSurface ? (filled ? 0 : 2) : undefined}
               className={cn(
-                filled
-                  ? "fill-amber-500 text-amber-500"
-                  : halfFilled
-                  ? "fill-amber-500/50 text-amber-500"
-                  : "fill-muted text-muted-foreground/30"
+                emptyStarsLightSurface
+                  ? filled
+                    ? "fill-amber-500 text-amber-500"
+                    : halfFilled
+                      ? "fill-amber-500/60 text-amber-500"
+                      : "fill-white text-amber-500"
+                  : filled
+                    ? "fill-amber-500 text-amber-500"
+                    : halfFilled
+                      ? "fill-amber-500/50 text-amber-500"
+                      : "fill-muted text-muted-foreground/30"
               )}
             />
           </button>

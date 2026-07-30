@@ -1,4 +1,5 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef, type MutableRefObject } from "react";
+import { useApplePaySquareMissingHint } from "@/hooks/useApplePaySquareMissingHint";
 import {
   ApplePay,
   CreditCard,
@@ -8,6 +9,7 @@ import {
 } from "react-square-web-payments-sdk";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const SQUARE_APP_ID = import.meta.env.VITE_SQUARE_APPLICATION_ID as string | undefined;
 const SQUARE_LOCATION_ID = import.meta.env.VITE_SQUARE_LOCATION_ID as string | undefined;
@@ -34,28 +36,59 @@ const CARD_STYLE = {
   },
 } as const;
 
+export type SquareBookingPaymentSuccessMeta = {
+  squarePaymentId?: string | null;
+  idempotencyKey: string;
+  paymentMethodLabel?: string | null;
+};
+
 export interface SquareBookingPaymentProps {
   amountCents: number;
+  /** Service subtotal in cents; with Square Connect the Edge function sends app_fee_money = 2.1% of this (platform share). */
+  baseAmountCents: number;
+  /** Seller location when pro uses OAuth Connect; otherwise env default. */
+  squareLocationId?: string | null;
   currency?: string;
   proProfileId: string;
   clientId: string;
-  onSuccess: () => void;
+  onSuccess: (meta: SquareBookingPaymentSuccessMeta) => void;
   onError: (message: string) => void;
   submitLabel?: string;
 }
 
 export default function SquareBookingPayment({
   amountCents,
+  baseAmountCents,
+  squareLocationId,
   currency = "cad",
   proProfileId,
   clientId,
   onSuccess,
   onError,
 }: SquareBookingPaymentProps) {
+  const { t } = useLanguage();
+  const terms = t.terms;
+  const plans = t.plans;
   const [loading, setLoading] = useState(false);
+  const idempotencyKeyRef: MutableRefObject<string> = useRef(
+    (() => {
+      try {
+        return crypto.randomUUID();
+      } catch {
+        return `booking-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+      }
+    })()
+  );
+  const applePayAnchorRef = useRef<HTMLDivElement>(null);
+  const locationReady = !!(typeof squareLocationId === "string" && squareLocationId.trim()) || !!SQUARE_LOCATION_ID;
+  const squareSdkReady = !!(SQUARE_APP_ID && locationReady);
+  const showApplePayBeta = useApplePaySquareMissingHint(applePayAnchorRef, squareSdkReady);
+  const applePayBetaText = (terms.applePayBetaTestingNote ?? "").trim();
 
   const amountStr = (amountCents / 100).toFixed(2);
   const currencyCode = currency.toUpperCase().slice(0, 3);
+  const locationIdForSdk =
+    typeof squareLocationId === "string" && squareLocationId.trim() ? squareLocationId.trim() : SQUARE_LOCATION_ID;
 
   const createPaymentRequest = useCallback(
     () => ({
@@ -109,10 +142,11 @@ export default function SquareBookingPayment({
         body: JSON.stringify({
           source_id: sourceId,
           amount_cents: amountCents,
+          base_amount_cents: baseAmountCents,
           currency: currencyCode,
           pro_profile_id: proProfileId,
           client_id: clientId,
-          idempotency_key: `booking-${proProfileId}-${clientId}-${Date.now()}`.slice(0, 45),
+          idempotency_key: idempotencyKeyRef.current,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -120,7 +154,17 @@ export default function SquareBookingPayment({
         onError(data.details ?? data.error ?? "Payment failed");
         return;
       }
-      onSuccess();
+      const squarePaymentId =
+        typeof data.payment_id === "string" && data.payment_id.trim() ? data.payment_id.trim() : null;
+      const paymentMethodLabel =
+        typeof data.payment_method_label === "string" && data.payment_method_label.trim()
+          ? data.payment_method_label.trim()
+          : null;
+      onSuccess({
+        squarePaymentId,
+        idempotencyKey: idempotencyKeyRef.current,
+        paymentMethodLabel,
+      });
     } catch (err) {
       const msg = (err as Error).message ?? "";
       if (msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
@@ -135,53 +179,62 @@ export default function SquareBookingPayment({
     }
   };
 
-  if (!SQUARE_APP_ID || !SQUARE_LOCATION_ID) {
+  if (!SQUARE_APP_ID || !locationIdForSdk) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+      <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground space-y-3">
         <p>
-          Square is not configured. Add <code className="bg-muted px-1 rounded">VITE_SQUARE_APPLICATION_ID</code> and{" "}
-          <code className="bg-muted px-1 rounded">VITE_SQUARE_LOCATION_ID</code> to <code className="bg-muted px-1 rounded">.env</code>{" "}
-          (see docs/SQUARE-SETUP.md).
+          Square is not configured. Add <code className="bg-muted px-1 rounded">VITE_SQUARE_APPLICATION_ID</code> and a location: either{" "}
+          <code className="bg-muted px-1 rounded">VITE_SQUARE_LOCATION_ID</code> or connect the pro&apos;s Square account in the dashboard. See{" "}
+          <code className="bg-muted px-1 rounded">docs/SQUARE-SETUP.md</code>.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 relative rounded-lg bg-white p-1 text-gray-900">
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm space-y-1">
-        <div className="flex justify-between text-gray-900">
+    <div className="space-y-4 relative rounded-lg bg-white dark:bg-muted p-1 text-foreground">
+      <div className="rounded-lg border border-border bg-muted dark:bg-background/80 p-3 text-sm space-y-1">
+        <div className="flex justify-between text-foreground">
           <span>Charged total</span>
           <span className="font-medium">
             ${amountStr} {currencyCode}
           </span>
         </div>
-        <p className="text-xs text-gray-600">Visa, Mastercard, Amex, Discover · Apple Pay · Google Pay</p>
+        <p className="text-xs text-muted-foreground">
+          {terms.checkoutPaymentNetworksLine ?? "Visa, Mastercard, Amex, Discover · Apple Pay · Google Pay"}
+        </p>
       </div>
       {loading && (
-        <div className="absolute inset-0 bg-white/90 flex items-center justify-center z-10 rounded-lg">
-          <Loader2 size={24} className="animate-spin text-gray-600" />
+        <div className="absolute inset-0 bg-white/90 dark:bg-background/90 flex items-center justify-center z-10 rounded-lg">
+          <Loader2 size={24} className="animate-spin text-muted-foreground" />
         </div>
       )}
       <PaymentForm
         applicationId={SQUARE_APP_ID}
-        locationId={SQUARE_LOCATION_ID}
+        locationId={locationIdForSdk}
         createPaymentRequest={createPaymentRequest}
         cardTokenizeResponseReceived={async (token) => {
           await handleTokenize(token as { status?: string; token?: string; errors?: unknown });
         }}
       >
         <div className="space-y-3">
-          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Digital wallet</p>
-          <div className="flex flex-col sm:flex-row gap-2 min-h-[48px]">
-            <div className="flex-1 min-w-0 [&_#rswps-apple-pay]:w-full [&_#rswps-apple-pay]:max-w-full">
-              <ApplePay id="rswps-apple-pay" />
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            {plans?.checkoutDigitalWallet ?? "Digital wallet"}
+          </p>
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+            <div ref={applePayAnchorRef} className="min-h-[48px] min-w-0">
+              <ApplePay id="rswps-apple-pay-container" />
             </div>
-            <div className="flex-1 min-w-0 min-h-[48px]">
+            <div className="min-h-[48px] min-w-0">
               <GooglePay id="rswps-google-pay-container" buttonSizeMode="fill" buttonType="long" />
             </div>
           </div>
-          <Divider>Or card</Divider>
+          {showApplePayBeta && applePayBetaText ? (
+            <p className="text-xs leading-relaxed text-amber-900 dark:text-amber-100 rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-1.5">
+              {applePayBetaText}
+            </p>
+          ) : null}
+          <Divider>{terms.checkoutDividerCard ?? "Or card"}</Divider>
           <CreditCard style={CARD_STYLE} />
         </div>
       </PaymentForm>

@@ -27,13 +27,13 @@ export default function CookieConsent() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-card border-t border-border shadow-lg">
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-card border-t border-border text-card-foreground shadow-lg">
       <div className="container max-w-3xl flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <p className="text-sm text-muted-foreground flex-1">
           {t.cookies.message}
         </p>
-        <div className="flex gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={decline}>
+        <div className="flex flex-wrap gap-2 shrink-0 [&_button]:shadow-sm">
+          <Button variant="outline" size="sm" onClick={decline} className="border-border bg-background">
             {t.cookies.decline}
           </Button>
           <Button size="sm" onClick={accept}>

@@ -7,115 +7,24 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const HF_CHAT_URL = "https://router.huggingface.co/v1/chat/completions";
-const HF_MODEL = "featherless-Chat-Models/Mistral-7B-Instruct-v0.2:featherless-ai";
+/** Serverless HF Inference (replaces deprecated api-inference.huggingface.co — see HF Inference Providers docs). */
+const HF_EMBED_URL =
+  "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction";
 
-// Fallback when frontend does not send serviceNames (e.g. old clients)
-const SERVICE_NAMES_FALLBACK =
-  "Plumber, Electrician, HVAC System, Roof Repair, Window Replacement, Painting, Landscaping, Snow Removal, House Cleaning, Moving, Local Moving, Dog Walking, Pet Sitting, Home Inspection, Exterminator, Locksmith, Massage Therapy, Personal Trainer, Math Tutor, French Tutor, Catering, Photographer, Accountant, Basement Remodel, Bathroom Remodel, Kitchen Remodel, Furnace Repair, AC Repair, Drain Cleaning, Toilet Repair, Deep Cleaning, Office Cleaning, Snow Plowing, Lawn Care, Tree Trimming, Pool Cleaning, and many more specific services. Use ONLY exact names from the list provided.";
-
-function buildSystemEn(serviceList: string): string {
-  return `You are a helpful Canadian home services assistant for Premiere Services. The user describes a project or need in their own words. Always respond in English.
-
-Important: (1) If the user writes in another language (e.g. French, Spanish), interpret their intent and still respond in English; translate or infer what they need. (2) Tolerate spelling mistakes and typos. Interpret misspellings as the nearest intended word (e.g. "electrisian" for "electrician", "cleening" for "cleaning"). (3) You MUST suggest only SPECIFIC services from the exact list below. Never suggest only a category name like "Home Improvement" or "Cleaning" — always pick specific services from the list (e.g. Plumber, Bathroom Remodel, House Cleaning, Furnace Repair, Snow Removal).
-
-Your tasks:
-1. Summarize their request in one short, clear sentence that captures what they need.
-2. If the request is vague, ask 1–2 short clarifying questions in followUpQuestions.
-3. Suggest 4–6 specific services that match their need. Use ONLY exact service names from this list — copy the names exactly as written: ${serviceList}
-4. Pick the single best-matching service for bestMatch.serviceName (exact name from the list) and its category for bestMatch.categoryName (e.g. Home Improvement, Cleaning, Outdoor & Seasonal).
-
-Return valid JSON only, no markdown or extra text:
-{"summary": "one-sentence summary", "suggestions": ["Exact Service A", "Exact Service B", ...], "followUpQuestions": ["optional question?"], "clarifyingMessage": "optional", "bestMatch": {"serviceName": "Exact Service Name from list", "categoryName": "Category Name"}}`;
+interface ServiceRecordForAI {
+  name: string;
+  slug: string;
+  categoryName: string;
+  categorySlug: string;
+  subcategory: string;
+  embedText: string;
 }
 
-function buildSystemFr(serviceList: string): string {
-  return `Tu es l'assistant des services à la maison de Première Services au Canada. L'utilisateur décrit un projet ou un besoin. Réponds toujours en français.
-
-Important : (1) Si l'utilisateur écrit dans une autre langue, interprète son intention et réponds en français. (2) Tolère les fautes d'orthographe. (3) Tu DOIS suggérer uniquement des services SPÉCIFIQUES de la liste exacte ci-dessous. Ne suggère jamais seulement un nom de catégorie comme "Home Improvement" ou "Cleaning" — choisis toujours des services précis de la liste (ex. Plumber, Bathroom Remodel, House Cleaning).
-
-Tes tâches :
-1. Résume sa demande en une phrase courte et claire.
-2. Si la demande est floue, pose 1–2 questions dans followUpQuestions.
-3. Suggère 4–6 services précis. Utilise UNIQUEMENT les noms exacts de cette liste (copie les noms tels quels) : ${serviceList}
-4. Choisis le meilleur service pour bestMatch.serviceName (nom exact de la liste) et sa catégorie pour bestMatch.categoryName.
-
-Retourne du JSON valide uniquement :
-{"summary": "résumé", "suggestions": ["Service A", "Service B", ...], "followUpQuestions": ["question?"], "clarifyingMessage": "optionnel", "bestMatch": {"serviceName": "Nom exact de la liste", "categoryName": "Nom de catégorie"}}`;
-}
-
-/** Fallback when Hugging Face fails: keyword → specific service names (must exist in app) */
-const KEYWORD_FALLBACK: { keywords: string[]; services: string[]; category: string }[] = [
-  { keywords: ["plumb", "pipe", "leak", "faucet", "toilet", "drain", "water heater", "sump"], services: ["Plumber", "Drain Cleaning", "Water Heater Installation", "Toilet Repair"], category: "Home Improvement" },
-  { keywords: ["electric", "wiring", "outlet", "panel", "ev charger", "solar"], services: ["Electrician", "EV Charger Installation", "Solar Panel Installation", "Panel Upgrade"], category: "Home Improvement" },
-  { keywords: ["hvac", "furnace", "ac", "heat", "air", "thermostat", "duct"], services: ["HVAC System", "Furnace Repair", "AC Repair", "Air Duct Cleaning"], category: "Home Improvement" },
-  { keywords: ["roof", "shingle", "gutter", "ice dam"], services: ["Roof Repair", "Roof Replacement", "Ice Dam Removal"], category: "Home Improvement" },
-  { keywords: ["window", "door", "garage door"], services: ["Window Replacement", "Window Repair", "Door Installation", "Garage Door Repair"], category: "Home Improvement" },
-  { keywords: ["paint", "painting"], services: ["Interior Painting", "Exterior Painting", "Cabinet Painting"], category: "Home Improvement" },
-  { keywords: ["clean", "cleaning", "housekeeping"], services: ["House Cleaning", "Deep Cleaning", "Carpet Cleaning", "Office Cleaning"], category: "Cleaning" },
-  { keywords: ["landscape", "lawn", "yard", "garden", "tree"], services: ["Landscaping Design", "Lawn Care", "Tree Trimming", "Tree Removal", "Garden Design"], category: "Outdoor & Seasonal" },
-  { keywords: ["snow", "plow", "ice", "driveway"], services: ["Snow Plowing", "Snow Removal", "Ice Dam Removal", "Driveway Salting"], category: "Outdoor & Seasonal" },
-  { keywords: ["move", "mover", "moving", "pack"], services: ["Local Moving", "Long Distance Moving", "Packing Services"], category: "Moving & Storage" },
-  { keywords: ["dog", "pet", "cat", "walk", "sit"], services: ["Dog Walking", "Pet Sitting", "Dog Grooming"], category: "Pets" },
-  { keywords: ["inspect", "inspection"], services: ["Home Inspection"], category: "Home Security & Inspection" },
-  { keywords: ["pest", "exterminat", "bug", "rodent"], services: ["Exterminator", "Pest Control"], category: "Home Security & Inspection" },
-  { keywords: ["lock", "key", "locksmith"], services: ["Locksmith"], category: "Home Security & Inspection" },
-  { keywords: ["massage", "spa", "facial"], services: ["Massage Therapy", "Facial Treatment"], category: "Wellness" },
-  { keywords: ["tutor", "lesson", "learn", "math", "french"], services: ["Math Tutor", "French Tutor", "Piano Lessons"], category: "Lessons & Tutoring" },
-  { keywords: ["remodel", "renovat", "basement", "bathroom", "kitchen"], services: ["Basement Remodel", "Bathroom Remodel", "Kitchen Remodel"], category: "Home Improvement" },
-  { keywords: ["floor", "carpet", "tile", "hardwood"], services: ["Hardwood Flooring", "Carpet Installation", "Tile Installation", "Laminate Flooring"], category: "Home Improvement" },
-  { keywords: ["fence", "fencing"], services: ["Fence Installation", "Fence Repair", "Privacy Fence"], category: "Home Improvement" },
-  { keywords: ["pool", "hot tub"], services: ["Pool Cleaning", "Pool Installation", "Hot Tub Installation"], category: "Outdoor & Seasonal" },
-];
-
-/** Resolve AI suggestion to a canonical name from the app's service list (case-insensitive, then exact) */
-function resolveToCanonical(name: string, serviceNames: string[]): string | null {
-  if (!name || !serviceNames.length) return null;
-  const n = name.trim();
-  const lower = n.toLowerCase();
-  const exact = serviceNames.find((s) => s === n);
-  if (exact) return exact;
-  const ci = serviceNames.find((s) => s.toLowerCase() === lower);
-  if (ci) return ci;
-  const includes = serviceNames.find((s) => s.toLowerCase().includes(lower) || lower.includes(s.toLowerCase()));
-  if (includes) return includes;
-  return null;
-}
-
-function fallbackSuggestions(
-  query: string,
-  serviceNames?: string[]
-): { summary: string; suggestions: string[]; bestMatch: { serviceName: string; categoryName: string } | null } {
-  const q = query.toLowerCase();
-  const matched: string[] = [];
-  let best: { serviceName: string; categoryName: string } | null = null;
-  for (const row of KEYWORD_FALLBACK) {
-    if (row.keywords.some((k) => q.includes(k))) {
-      for (const s of row.services) {
-        if (!matched.includes(s)) {
-          if (!serviceNames || serviceNames.length === 0 || serviceNames.includes(s)) matched.push(s);
-        }
-      }
-      if (!best && row.services.length) {
-        const pick = serviceNames?.includes(row.services[0]) ? row.services[0] : row.services.find((s) => !serviceNames || serviceNames.includes(s)) ?? row.services[0];
-        best = { serviceName: pick, categoryName: row.category };
-      }
-    }
-  }
-  if (matched.length === 0) {
-    const defaults = ["House Cleaning", "Plumber", "Electrician", "HVAC System", "Landscaping Design", "Snow Removal"];
-    for (const s of defaults) {
-      if (!serviceNames || serviceNames.includes(s)) matched.push(s);
-      if (matched.length >= 6) break;
-    }
-    if (matched.length === 0 && serviceNames?.length) matched.push(...serviceNames.slice(0, 6));
-    best = matched.length ? { serviceName: matched[0], categoryName: "Home Improvement" } : null;
-  }
-  return {
-    summary: query,
-    suggestions: matched.slice(0, 6),
-    bestMatch: best,
-  };
+interface CategorySummaryForAI {
+  name: string;
+  slug: string;
+  serviceCount: number;
+  subcategories: { name: string; serviceCount: number }[];
 }
 
 interface ChatMessage {
@@ -127,16 +36,316 @@ interface RequestBody {
   query?: string;
   locale?: "en" | "fr";
   conversationHistory?: ChatMessage[];
-  /** Full list of service names from the app — API uses this for exact matching and filtering */
   serviceNames?: string[];
+  serviceRecords?: ServiceRecordForAI[];
+  categorySummaries?: CategorySummaryForAI[];
+  /** Distinct labels pros list (display_name + catalog slug); used only for "You might also consider" ranking. */
+  proOfferedRecords?: ServiceRecordForAI[];
 }
 
-interface ParsedResponse {
-  summary?: string;
-  suggestions?: string[];
-  followUpQuestions?: string[];
-  clarifyingMessage?: string;
-  bestMatch?: { serviceName?: string; categoryName?: string };
+interface BestMatchOut {
+  serviceName: string | null;
+  categoryName: string | null;
+  serviceSlug: string | null;
+  categorySlug: string | null;
+  subcategory: string | null;
+}
+
+/** Fallback catalog if client sends no serviceRecords (slug + meta for routing). */
+const FALLBACK_SERVICES: { en: string; fr: string; slug: string; categorySlug: string; categoryName: string }[] = [
+  { en: "Kitchen Remodel", fr: "Rénovation de cuisine", slug: "kitchen-remodel", categorySlug: "home-improvement", categoryName: "Home Improvement" },
+  { en: "Refrigerator Repair", fr: "Réparation de réfrigérateur", slug: "refrigerator-repair", categorySlug: "home-improvement", categoryName: "Home Improvement" },
+  { en: "Appliance Repair", fr: "Réparation d'électroménagers", slug: "appliance-repair", categorySlug: "home-improvement", categoryName: "Home Improvement" },
+  { en: "HVAC Services", fr: "Services CVC", slug: "hvac-services", categorySlug: "home-improvement", categoryName: "Home Improvement" },
+  { en: "House Cleaning", fr: "Ménage résidentiel", slug: "house-cleaning", categorySlug: "cleaning", categoryName: "Cleaning" },
+];
+
+function meanPool2D(rows: number[][]): number[] {
+  if (rows.length === 0) return [];
+  const dim = rows[0].length;
+  const out = new Array(dim).fill(0);
+  for (const row of rows) {
+    for (let i = 0; i < dim; i++) out[i] += row[i] ?? 0;
+  }
+  const n = rows.length;
+  return out.map((x) => x / n);
+}
+
+/** Turn HF feature-extraction output into one 384-d vector. */
+function flattenEmbedding(raw: unknown): number[] | null {
+  if (raw == null) return null;
+  if (Array.isArray(raw) && raw.length === 0) return null;
+  // Flat vector
+  if (Array.isArray(raw) && typeof raw[0] === "number") return raw as number[];
+  // [seq, dim]
+  if (Array.isArray(raw) && Array.isArray(raw[0]) && typeof (raw[0] as number[])[0] === "number") {
+    return meanPool2D(raw as number[][]);
+  }
+  // [1, seq, dim] or nested batch
+  if (Array.isArray(raw) && Array.isArray(raw[0])) {
+    const inner = raw[0];
+    if (Array.isArray(inner) && typeof inner[0] === "number") return meanPool2D(inner as number[][]);
+    if (Array.isArray(inner) && Array.isArray(inner[0])) return meanPool2D(inner as number[][]);
+  }
+  return null;
+}
+
+/** Router / legacy wrappers sometimes nest the tensor array. */
+function unwrapInferenceJson(data: unknown): unknown {
+  if (data != null && typeof data === "object" && !Array.isArray(data)) {
+    const o = data as Record<string, unknown>;
+    if (Array.isArray(o.embeddings)) return o.embeddings;
+    if (Array.isArray(o.data)) return o.data;
+  }
+  return data;
+}
+
+/** Batch API: one tensor per input, or stacked — normalize to N vectors. */
+function parseBatchEmbeddings(data: unknown, n: number): number[][] | null {
+  if (!Array.isArray(data)) return null;
+  if (data.length === n) {
+    const out: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      const v = flattenEmbedding(data[i]);
+      if (!v) return null;
+      out.push(v);
+    }
+    return out;
+  }
+  // Single stacked response for batch — try one pooled vector per slice
+  if (n === 1) {
+    const v = flattenEmbedding(data);
+    return v ? [v] : null;
+  }
+  return null;
+}
+
+async function hfEmbed(
+  hfKey: string,
+  inputs: string | string[]
+): Promise<number[][]> {
+  const res = await fetch(HF_EMBED_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${hfKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ inputs }),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`HF embed ${res.status}: ${t.slice(0, 500)}`);
+  }
+  const data = unwrapInferenceJson(await res.json());
+  const arr = Array.isArray(inputs) ? inputs : [inputs];
+  const n = arr.length;
+  let vecs = parseBatchEmbeddings(data, n);
+  if (!vecs && n === 1) {
+    const v = flattenEmbedding(data);
+    if (v) vecs = [v];
+  }
+  if (!vecs || vecs.length !== n) {
+    // Last resort: sequential single calls (rare shape mismatch)
+    const single: number[][] = [];
+    for (const text of arr) {
+      const r = await fetch(HF_EMBED_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${hfKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ inputs: text }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const d = unwrapInferenceJson(await r.json());
+      const v = flattenEmbedding(d);
+      if (!v) throw new Error("Could not parse embedding");
+      single.push(v);
+    }
+    return single;
+  }
+  return vecs;
+}
+
+function l2normalize(v: number[]): number[] {
+  let s = 0;
+  for (const x of v) s += x * x;
+  const m = Math.sqrt(s) || 1;
+  return v.map((x) => x / m);
+}
+
+function cosineSim(a: number[], b: number[]): number {
+  let dot = 0;
+  for (let i = 0; i < a.length; i++) dot += a[i] * b[i];
+  return dot;
+}
+
+/** Hybrid: MiniLM can confuse short queries (e.g. "phone" vs "house"); nudge by intent. */
+/** Extra nudge when query words overlap known aliases (lightweight; embeddings still primary). */
+function aliasBoost(query: string, record: ServiceRecordForAI): number {
+  const q = query.toLowerCase();
+  let bonus = 0;
+  if (/\b(roof|toiture|shingle|gutter|attic|leak)\b/i.test(q) && /roof/i.test(record.slug)) bonus += 0.18;
+  if (/\b(deck|patio|terrasse|backyard|balcony)\b/i.test(q) && /deck|patio/i.test(record.slug)) bonus += 0.18;
+  if (/\b(fridge|freezer|réfrig|doesn'?t cool|not cooling|broken fridge)\b/i.test(q) && /refrigerator|appliance/i.test(record.slug)) bonus += 0.15;
+  return bonus;
+}
+
+function keywordBoost(query: string, record: ServiceRecordForAI): number {
+  const techOrMobile =
+    /\b(phone|iphone|android|mobile|smartphone|tablet|laptop|computer|pc|macbook|wifi|router|network|internet|software|virus|email|printer|monitor|screen|help\s*desk|device)\b/i.test(
+      query
+    ) ||
+    /\b(tech|it)\b/i.test(query) ||
+    /\b(téléphone|mobile|ordinateur|informatique|wifi|logiciel)\b/i.test(query);
+
+  let bonus = 0;
+
+  if (techOrMobile) {
+    if (record.slug === "it-support") bonus += 0.42;
+    if (record.slug === "web-development") bonus += 0.12;
+  }
+
+  if (/\brepair\b/i.test(query)) {
+    if (record.categorySlug === "cleaning" && !/\b(clean|maid|house|deep|move|ménage|nettoyage)\b/i.test(query)) {
+      bonus -= 0.22;
+    }
+    if (record.slug === "it-support" && techOrMobile) bonus += 0.08;
+    if (
+      record.slug === "appliance-repair" &&
+      /\b(fridge|refrigerator|washer|dryer|oven|dishwasher|microwave|appliance|électroménager)\b/i.test(query)
+    ) {
+      bonus += 0.28;
+    }
+  }
+
+  return bonus;
+}
+
+interface CachedCatalog {
+  hash: string;
+  records: ServiceRecordForAI[];
+  vectors: number[][];
+}
+
+let catalogCache: CachedCatalog | null = null;
+let proOfferCache: CachedCatalog | null = null;
+
+function hashCatalog(records: ServiceRecordForAI[]): string {
+  return records.map((r) => `${r.slug}|${r.embedText}`).join("¦");
+}
+
+function sanitizeProRecords(raw: ServiceRecordForAI[] | undefined): ServiceRecordForAI[] {
+  if (!raw?.length) return [];
+  const out: ServiceRecordForAI[] = [];
+  const seen = new Set<string>();
+  for (const r of raw) {
+    const slug = (r.slug ?? "").trim();
+    const cat = (r.categorySlug ?? "").trim();
+    if (!slug || !cat) continue;
+    const name = (r.name ?? "").trim() || slug;
+    const dedupe = `${cat}|${slug}|${name.toLowerCase()}`;
+    if (seen.has(dedupe)) continue;
+    seen.add(dedupe);
+    out.push({
+      name,
+      slug,
+      categoryName: (r.categoryName ?? "").trim() || cat,
+      categorySlug: cat,
+      subcategory: (r.subcategory ?? "").trim(),
+      embedText: (r.embedText ?? "").trim() || `${name} | ${name}`,
+    });
+    if (out.length >= 500) break;
+  }
+  return out;
+}
+
+function recordsFromBody(serviceRecords: ServiceRecordForAI[] | undefined): ServiceRecordForAI[] {
+  if (serviceRecords?.length) {
+    return serviceRecords.map((r) => ({
+      name: r.name,
+      slug: r.slug,
+      categoryName: r.categoryName,
+      categorySlug: r.categorySlug,
+      subcategory: r.subcategory || "",
+      embedText: r.embedText || `${r.name} | ${r.name}`,
+    }));
+  }
+  return FALLBACK_SERVICES.map((s) => ({
+    name: s.en,
+    slug: s.slug,
+    categoryName: s.categoryName,
+    categorySlug: s.categorySlug,
+    subcategory: "",
+    embedText: `${s.en} | ${s.fr}`,
+  }));
+}
+
+/** Warm cache: batch embed all service strings — typically ONE HF call per chunk (not per service). */
+async function ensureCatalogEmbeddings(hfKey: string, records: ServiceRecordForAI[]): Promise<void> {
+  const h = hashCatalog(records);
+  if (catalogCache && catalogCache.hash === h && catalogCache.vectors.length === records.length) {
+    return;
+  }
+
+  const texts = records.map((r) => r.embedText);
+  const CHUNK = 32;
+  const allVecs: number[][] = [];
+
+  for (let i = 0; i < texts.length; i += CHUNK) {
+    const chunk = texts.slice(i, i + CHUNK);
+    const vecs = await hfEmbed(hfKey, chunk);
+    for (const v of vecs) allVecs.push(l2normalize(v));
+  }
+
+  catalogCache = { hash: h, records, vectors: allVecs };
+}
+
+async function ensureProOfferEmbeddings(hfKey: string, records: ServiceRecordForAI[]): Promise<void> {
+  if (records.length === 0) {
+    proOfferCache = null;
+    return;
+  }
+  const h = `pro:${hashCatalog(records)}`;
+  if (proOfferCache && proOfferCache.hash === h && proOfferCache.vectors.length === records.length) {
+    return;
+  }
+  const texts = records.map((r) => r.embedText);
+  const CHUNK = 32;
+  const allVecs: number[][] = [];
+  for (let i = 0; i < texts.length; i += CHUNK) {
+    const chunk = texts.slice(i, i + CHUNK);
+    const vecs = await hfEmbed(hfKey, chunk);
+    for (const v of vecs) allVecs.push(l2normalize(v));
+  }
+  proOfferCache = { hash: h, records, vectors: allVecs };
+}
+
+function topMatches(
+  query: string,
+  queryVec: number[],
+  records: ServiceRecordForAI[],
+  vectors: number[][],
+  topK: number
+): { index: number; score: number; cosine: number }[] {
+  const q = l2normalize(queryVec);
+  const scored = records.map((_, i) => {
+    const cosine = cosineSim(q, vectors[i] ?? []);
+    return {
+      index: i,
+      score: cosine + keywordBoost(query, records[i]!) + aliasBoost(query, records[i]!),
+      cosine,
+    };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, topK);
+}
+
+function jsonResponse(data: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 }
 
 Deno.serve(async (req: Request) => {
@@ -147,160 +356,166 @@ Deno.serve(async (req: Request) => {
   try {
     const body = (await req.json().catch(() => ({}))) as RequestBody;
     const query = typeof body.query === "string" ? body.query.trim() : "";
-    const locale = body.locale === "fr" ? "fr" : "en";
-    const conversationHistory = Array.isArray(body.conversationHistory) ? body.conversationHistory : [];
-    const serviceNames = Array.isArray(body.serviceNames) ? body.serviceNames.filter((s) => typeof s === "string" && s.trim()) : [];
-    const serviceList = serviceNames.length > 0
-      ? serviceNames.join(", ")
-      : SERVICE_NAMES_FALLBACK;
 
     if (query.length < 2) {
-      return new Response(
-        JSON.stringify({
-          suggestions: [],
-          summary: null,
-          followUpQuestions: [],
-          clarifyingMessage: null,
-          bestMatch: null,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const HF_KEY = Deno.env.get("HUGGINGFACE_API_KEY");
-    if (!HF_KEY) {
-      const fallback = fallbackSuggestions(query, serviceNames);
-      return new Response(
-        JSON.stringify({
-          summary: fallback.summary,
-          suggestions: fallback.suggestions,
-          followUpQuestions: [],
-          clarifyingMessage: null,
-          bestMatch: fallback.bestMatch,
-          _fallback: true,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const systemContent = locale === "fr" ? buildSystemFr(serviceList) : buildSystemEn(serviceList);
-    const messages: { role: "user" | "assistant" | "system"; content: string }[] = [
-      { role: "system", content: systemContent },
-    ];
-    for (const m of conversationHistory) {
-      if (m.role === "user" || m.role === "assistant") {
-        messages.push({ role: m.role, content: (m.content || "").toString() });
-      }
-    }
-    messages.push({ role: "user", content: query });
-
-    const hfResp = await fetch(HF_CHAT_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${HF_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: HF_MODEL,
-        messages,
-        max_tokens: 450,
-        temperature: 0.5,
-      }),
-    });
-
-    if (!hfResp.ok) {
-      const text = await hfResp.text();
-      console.error("HuggingFace router error:", hfResp.status, text);
-      const fallback = fallbackSuggestions(query, serviceNames);
-      return new Response(
-        JSON.stringify({
-          summary: fallback.summary,
-          suggestions: fallback.suggestions,
-          followUpQuestions: [],
-          clarifyingMessage: null,
-          bestMatch: fallback.bestMatch,
-          _fallback: true,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const hfJson = (await hfResp.json()) as { choices?: { message?: { content?: string } }[] };
-    let generated = hfJson?.choices?.[0]?.message?.content ?? "";
-    generated = generated.replace(/^```json?\s*|\s*```$/g, "").trim();
-
-    let parsed: ParsedResponse = {};
-    try {
-      parsed = JSON.parse(generated) as ParsedResponse;
-    } catch {
-      const match = generated.match(/\{[\s\S]*\}/);
-      if (match) {
-        try {
-          parsed = JSON.parse(match[0]) as ParsedResponse;
-        } catch {
-          parsed = { summary: query, suggestions: [] };
-        }
-      } else {
-        parsed = { summary: query, suggestions: [] };
-      }
-    }
-
-    let suggestions = Array.isArray(parsed.suggestions) ? parsed.suggestions : [];
-    const followUpQuestions = Array.isArray(parsed.followUpQuestions) ? parsed.followUpQuestions : [];
-    let bestMatch =
-      parsed.bestMatch && (parsed.bestMatch.serviceName || parsed.bestMatch.categoryName)
-        ? {
-            serviceName: String(parsed.bestMatch.serviceName || "").trim() || null,
-            categoryName: String(parsed.bestMatch.categoryName || "").trim() || null,
-          }
-        : null;
-
-    // Link API to search: only return service names that exist in the app (when list provided)
-    if (serviceNames.length > 0) {
-      suggestions = suggestions
-        .map((s) => resolveToCanonical(String(s).trim(), serviceNames))
-        .filter((s): s is string => s != null);
-      const seen = new Set<string>();
-      suggestions = suggestions.filter((s) => {
-        if (seen.has(s)) return false;
-        seen.add(s);
-        return true;
-      });
-      if (bestMatch?.serviceName) {
-        const resolved = resolveToCanonical(bestMatch.serviceName, serviceNames);
-        if (resolved) bestMatch = { ...bestMatch, serviceName: resolved };
-        else bestMatch = suggestions.length ? { serviceName: suggestions[0], categoryName: bestMatch.categoryName } : null;
-      }
-    }
-
-    return new Response(
-      JSON.stringify({
-        summary: parsed.summary || query,
-        suggestions,
-        followUpQuestions,
-        clarifyingMessage:
-          typeof parsed.clarifyingMessage === "string" && parsed.clarifyingMessage.trim()
-            ? parsed.clarifyingMessage.trim()
-            : null,
-        bestMatch,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error) {
-    const errMsg = error instanceof Error ? error.message : "Internal error";
-    const errDetails = error instanceof Error ? error.stack : String(error);
-    console.error("Search suggestions error:", error);
-    return new Response(
-      JSON.stringify({
-        error: errMsg,
-        details: errDetails,
+      return jsonResponse({
         suggestions: [],
         summary: null,
         followUpQuestions: [],
         clarifyingMessage: null,
         bestMatch: null,
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        topThree: [],
+        topFour: [],
+        followUpMatches: [],
+      });
+    }
+
+    const hfKey = Deno.env.get("HUGGINGFACE_API_KEY");
+    if (!hfKey) {
+      return jsonResponse({
+        error: "HUGGINGFACE_API_KEY not configured",
+        suggestions: [],
+        summary: null,
+        followUpQuestions: [],
+        clarifyingMessage: null,
+        bestMatch: null,
+        topThree: [],
+        topFour: [],
+        followUpMatches: [],
+      }, 503);
+    }
+
+    const catalogRecords = recordsFromBody(body.serviceRecords);
+    await ensureCatalogEmbeddings(hfKey, catalogRecords);
+
+    if (!catalogCache || catalogCache.vectors.length !== catalogRecords.length) {
+      throw new Error("Catalog embedding cache failed");
+    }
+
+    // Exactly ONE embedding call per user query (efficient path).
+    const [queryVecRaw] = await hfEmbed(hfKey, query);
+    const queryVec = l2normalize(queryVecRaw);
+
+    const top = topMatches(query, queryVec, catalogRecords, catalogCache.vectors, 12);
+    const bestIdx = top[0]?.index ?? 0;
+    const best = catalogRecords[bestIdx];
+    const bestScore = top[0]?.cosine ?? 0;
+
+    /** Ranked names — legacy chips (hero may ignore in favor of best + 3 follow-ups). */
+    const suggestionNames = top
+      .map((t) => catalogRecords[t.index]?.name)
+      .filter((n): n is string => !!n)
+      .filter((n, i, a) => a.indexOf(n) === i)
+      .slice(0, 6);
+
+    /** Vector + keyword/alias hybrid: 1 best + 3 follow-up distinct services (classification, not chat). */
+    type MatchRow = {
+      serviceName: string;
+      serviceSlug: string;
+      categorySlug: string;
+      categoryName: string;
+      score: number;
+      cosine: number;
+    };
+    const topFour: MatchRow[] = [];
+    const seenSlugsFour = new Set<string>();
+    for (const row of top) {
+      const rec = catalogRecords[row.index];
+      if (!rec || seenSlugsFour.has(rec.slug)) continue;
+      seenSlugsFour.add(rec.slug);
+      topFour.push({
+        serviceName: rec.name,
+        serviceSlug: rec.slug,
+        categorySlug: rec.categorySlug,
+        categoryName: rec.categoryName,
+        score: row.score,
+        cosine: row.cosine,
+      });
+      if (topFour.length >= 4) break;
+    }
+
+    /** Back-compat: first 3 distinct matches. */
+    const topThree = topFour.slice(0, 3);
+
+    const proRecords = sanitizeProRecords(body.proOfferedRecords);
+    let followUpMatches: MatchRow[] = [];
+    const bestNameLower = (best.name ?? "").trim().toLowerCase();
+
+    if (proRecords.length > 0) {
+      await ensureProOfferEmbeddings(hfKey, proRecords);
+      if (proOfferCache && proOfferCache.vectors.length === proRecords.length) {
+        const proTop = topMatches(query, queryVec, proRecords, proOfferCache.vectors, 24);
+        const seen = new Set<string>();
+        for (const row of proTop) {
+          const rec = proRecords[row.index];
+          if (!rec) continue;
+          const labelLower = rec.name.trim().toLowerCase();
+          if (labelLower === bestNameLower) continue;
+          const dedupeKey = `${rec.slug}::${labelLower}`;
+          if (seen.has(dedupeKey)) continue;
+          seen.add(dedupeKey);
+          followUpMatches.push({
+            serviceName: rec.name,
+            serviceSlug: rec.slug,
+            categorySlug: rec.categorySlug,
+            categoryName: rec.categoryName,
+            score: row.score,
+            cosine: row.cosine,
+          });
+          if (followUpMatches.length >= 3) break;
+        }
+      }
+    }
+
+    if (followUpMatches.length < 3) {
+      const catalogFollow = topFour.slice(1, 4);
+      for (const c of catalogFollow) {
+        if (followUpMatches.length >= 3) break;
+        if (c.serviceName.trim().toLowerCase() === bestNameLower) continue;
+        const dup = followUpMatches.some(
+          (f) => f.serviceSlug === c.serviceSlug && f.serviceName.trim().toLowerCase() === c.serviceName.trim().toLowerCase()
+        );
+        if (dup) continue;
+        followUpMatches.push(c);
+      }
+    }
+
+    const bestMatch: BestMatchOut = {
+      serviceName: best.name,
+      categoryName: best.categoryName,
+      serviceSlug: best.slug,
+      categorySlug: best.categorySlug,
+      subcategory: best.subcategory || null,
+    };
+
+    return jsonResponse({
+      summary: null,
+      suggestions: suggestionNames,
+      followUpQuestions: [],
+      clarifyingMessage: null,
+      bestMatch,
+      topThree,
+      topFour,
+      followUpMatches,
+      confidence: bestScore,
+      _embedding: true,
+    });
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("search-suggestions:", error);
+    return jsonResponse(
+      {
+        error: errMsg,
+        suggestions: [],
+        summary: null,
+        followUpQuestions: [],
+        clarifyingMessage: null,
+        bestMatch: null,
+        topThree: [],
+        topFour: [],
+        followUpMatches: [],
+      },
+      500
     );
   }
 });

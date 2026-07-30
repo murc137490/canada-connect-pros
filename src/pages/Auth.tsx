@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import MagicCard from "@/components/MagicCard";
 import { Button } from "@/components/ui/button";
@@ -10,18 +10,25 @@ import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import { useAuth, NAME_TAKEN_MESSAGE, EMAIL_ALREADY_IN_USE_MESSAGE } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { getPublicSiteOrigin } from "@/lib/authSiteUrl";
+import { isAuthEmailDeliveryError } from "@/lib/authEmailDeliveryError";
+import { formatCanadianPhone, phoneDigits } from "@/lib/canadianPhone";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get("mode") === "signup" ? "signup" : "login";
   const redirect = searchParams.get("redirect") || "/";
+  const referralCode = searchParams.get("ref")?.trim() || "";
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [emailLanguage, setEmailLanguage] = useState<"en" | "fr">("en");
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [emailAlreadyExists, setEmailAlreadyExists] = useState(false);
   const [nameTaken, setNameTaken] = useState(false);
   const { signIn, signUp } = useAuth();
@@ -33,6 +40,18 @@ export default function Auth() {
     const modeFromUrl = searchParams.get("mode") === "signup" ? "signup" : "login";
     setMode(modeFromUrl);
   }, [searchParams]);
+
+  const buildAuthPath = useCallback(
+    (nextMode: "login" | "signup") => {
+      const p = new URLSearchParams();
+      p.set("mode", nextMode);
+      p.set("redirect", redirect);
+      const ref = searchParams.get("ref");
+      if (ref) p.set("ref", ref);
+      return `/auth?${p.toString()}`;
+    },
+    [redirect, searchParams]
+  );
 
   const isEmailAlreadyRegistered = (msg: string) => {
     const m = msg.toLowerCase();
@@ -56,11 +75,23 @@ export default function Auth() {
     setLoading(true);
     try {
       if (mode === "signup") {
+        if (phoneDigits(phone).length !== 10) {
+          toast({
+            title: t.auth.toastError,
+            description: t.auth.phoneRequired ?? "Enter a valid 10-digit phone number.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+        const ref = searchParams.get("ref")?.trim();
         await signUp({
           email: email.trim(),
           password,
           fullName: fullName.trim(),
+          phone: phone.trim(),
           emailLanguage,
+          referralCode: ref || undefined,
         });
         toast({ title: t.auth.toastCreated });
       } else {
@@ -74,6 +105,12 @@ export default function Auth() {
         setEmailAlreadyExists(true);
       } else if (mode === "signup" && msg === NAME_TAKEN_MESSAGE) {
         setNameTaken(true);
+      } else if (mode === "signup" && isAuthEmailDeliveryError(msg)) {
+        toast({
+          title: t.auth.emailDeliveryTitle ?? "Confirmation email could not be sent",
+          description: t.auth.emailDeliveryBody ?? msg,
+          variant: "destructive",
+        });
       } else {
         toast({ title: t.auth.toastError, description: msg === EMAIL_ALREADY_IN_USE_MESSAGE ? t.auth.emailAlreadyExists : msg, variant: "destructive" });
       }
@@ -82,8 +119,44 @@ export default function Auth() {
     }
   };
 
-  const setModeLogin = () => { setMode("login"); setEmailAlreadyExists(false); setNameTaken(false); navigate(`/auth?mode=login&redirect=${encodeURIComponent(redirect)}`, { replace: true }); };
-  const setModeSignup = () => { setMode("signup"); setEmailAlreadyExists(false); setNameTaken(false); navigate(`/auth?mode=signup&redirect=${encodeURIComponent(redirect)}`, { replace: true }); };
+  const setModeLogin = () => {
+    setEmailAlreadyExists(false);
+    setNameTaken(false);
+    navigate(buildAuthPath("login"), { replace: true });
+  };
+  const setModeSignup = () => {
+    setEmailAlreadyExists(false);
+    setNameTaken(false);
+    navigate(buildAuthPath("signup"), { replace: true });
+  };
+
+  const handlePasswordResetEmail = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !trimmedEmail.includes("@")) {
+      toast({
+        title: t.auth.toastError,
+        description: t.auth.resetPasswordEmailRequired ?? "Enter your email address first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+        redirectTo: `${getPublicSiteOrigin()}/reset-password`,
+      });
+      if (error) throw error;
+      toast({
+        title: t.auth.resetPasswordSentTitle ?? "Password reset sent",
+        description: t.auth.resetPasswordSentBody ?? "Check your email for the reset link.",
+      });
+    } catch (err: unknown) {
+      toast({ title: t.auth.toastError, description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   return (
     <Layout>
@@ -114,6 +187,20 @@ export default function Auth() {
                 <CardDescription className="text-center">
                   {mode === "login" ? t.auth.loginSubtitle : t.auth.signupSubtitle}
                 </CardDescription>
+                {mode === "signup" ? (
+                  <div className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-center text-sm space-y-2">
+                    {referralCode ? (
+                      <p className="font-medium text-foreground">{t.auth.referralInviteHint}</p>
+                    ) : (
+                      <>
+                        <p className="font-medium text-foreground">{t.auth.signupTrialTeaser}</p>
+                        <Link className="text-xs font-semibold uppercase tracking-[0.12em] text-primary hover:underline" to="/pro-plans/trial">
+                          {t.auth.signupTrialLink}
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                ) : null}
               </CardHeader>
               <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -147,16 +234,47 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="emailLang">{t.auth.emailLanguageLabel}</Label>
-                  <select
-                    id="emailLang"
-                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
-                    value={emailLanguage}
-                    onChange={(e) => setEmailLanguage(e.target.value === "fr" ? "fr" : "en")}
-                  >
-                    <option value="en">{t.auth.emailLanguageEn}</option>
-                    <option value="fr">{t.auth.emailLanguageFr}</option>
-                  </select>
+                  <Label htmlFor="signup-phone" className="text-foreground dark:text-white">{t.auth.phone} *</Label>
+                  <Input
+                    id="signup-phone"
+                    type="tel"
+                    autoComplete="tel"
+                    placeholder="(514) 555-1234"
+                    className="mt-1.5 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-white/60 bg-background dark:bg-card"
+                    value={phone}
+                    onChange={(e) => setPhone(formatCanadianPhone(e.target.value))}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">{t.auth.signupPhoneHint ?? "Professionals can reach you about bookings."}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t.auth.emailLanguageLabel}</Label>
+                  <div className="grid grid-cols-2 gap-2" role="group" aria-label={t.auth.emailLanguageLabel}>
+                    <button
+                      type="button"
+                      aria-pressed={emailLanguage === "en"}
+                      onClick={() => setEmailLanguage("en")}
+                      className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                        emailLanguage === "en"
+                          ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                          : "border-input bg-background text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      English
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={emailLanguage === "fr"}
+                      onClick={() => setEmailLanguage("fr")}
+                      className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                        emailLanguage === "fr"
+                          ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                          : "border-input bg-background text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      Français
+                    </button>
+                  </div>
                   {t.auth.emailLanguageHint && (
                     <p className="text-xs text-muted-foreground">{t.auth.emailLanguageHint}</p>
                   )}
@@ -179,7 +297,19 @@ export default function Auth() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-foreground dark:text-white">{t.auth.password}</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="password" className="text-foreground dark:text-white">{t.auth.password}</Label>
+                {mode === "login" ? (
+                  <button
+                    type="button"
+                    onClick={handlePasswordResetEmail}
+                    disabled={resetLoading}
+                    className="shrink-0 text-xs font-medium text-secondary hover:underline disabled:pointer-events-none disabled:opacity-60"
+                  >
+                    {resetLoading ? (t.auth.sendingResetPassword ?? "Sending...") : (t.auth.forgotPassword ?? "Forgot password?")}
+                  </button>
+                ) : null}
+              </div>
               <div className="relative mt-1.5">
                 <Input
                   id="password"
@@ -211,8 +341,8 @@ export default function Auth() {
                     variant="default"
                     size="sm"
                     onClick={() => {
-                      setMode("login");
                       setEmailAlreadyExists(false);
+                      navigate(buildAuthPath("login"), { replace: true });
                     }}
                   >
                     {t.auth.logIn}

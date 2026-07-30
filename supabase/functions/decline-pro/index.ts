@@ -8,6 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+import { callerIsPlatformModerator } from "../_shared/platformAdmin.ts";
+
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SMTP_HOST = Deno.env.get("SMTP_HOST");
 const SMTP_PORT = Deno.env.get("SMTP_PORT");
@@ -58,8 +60,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const email = (user.email ?? "").toLowerCase();
-    if (email !== "premiereservicescontact@gmail.com") {
+    const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey);
+    if (!(await callerIsPlatformModerator(adminClient, user.id, user.email))) {
       return new Response(JSON.stringify({ error: "Forbidden: admin only" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -76,8 +78,6 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     const { data: proProfile } = await adminClient
       .from("pro_profiles")

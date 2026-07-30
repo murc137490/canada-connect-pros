@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const EVIDENCE_BUCKET = "booking-evidence";
 
@@ -13,6 +14,8 @@ function isImageFile(name: string) {
 }
 
 export default function BookingEvidenceGallery({ bookingId }: { bookingId: string }) {
+  const { t } = useLanguage();
+  const d = t.dashboard;
   const [loading, setLoading] = useState(false);
   const [fileNames, setFileNames] = useState<string[]>([]);
 
@@ -43,13 +46,13 @@ export default function BookingEvidenceGallery({ bookingId }: { bookingId: strin
     return (
       <div className="flex items-center justify-center gap-2 text-sm text-gray-700 dark:text-gray-300">
         <Loader2 size={14} className="animate-spin" />
-        Loading evidence…
+        {d.evidenceGalleryLoading}
       </div>
     );
   }
 
   if (fileNames.length === 0) {
-    return <p className="text-sm text-gray-700 dark:text-gray-300">No proof media uploaded yet.</p>;
+    return <p className="text-sm text-gray-700 dark:text-gray-300">{d.evidenceGalleryEmpty}</p>;
   }
 
   return (
@@ -64,13 +67,13 @@ export default function BookingEvidenceGallery({ bookingId }: { bookingId: strin
               {isImageFile(name) ? (
                 // Images: show thumbnail.
                 // Note: evidence bucket should allow public read for these publicUrl links to work.
-                <img src={url} alt="Booking proof" className="w-full h-28 object-cover" />
+                <img src={url} alt={d.evidenceGalleryProofAlt} className="w-full h-28 object-cover" />
               ) : isVideoFile(name) ? (
                 // Videos: show playable preview.
                 <video src={url} className="w-full h-28 object-cover" controls preload="metadata" />
               ) : (
                 <a href={url} target="_blank" rel="noreferrer" className="block p-2 text-xs text-primary hover:underline">
-                  Open file
+                  {d.evidenceGalleryOpenFile}
                 </a>
               )}
             </div>

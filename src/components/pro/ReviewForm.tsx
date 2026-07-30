@@ -1,20 +1,39 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  contrastDialogContentClass,
+  contrastDialogDescriptionClass,
+  contrastDialogTitleClass,
+} from "@/lib/dialogContrast";
 import { Camera, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { canSubmitProReview } from "@/lib/reviewGuards";
+import { notifyReviewsChanged } from "@/lib/fetchPendingReviewNotices";
 import StarRating from "./StarRating";
 
 interface ReviewFormProps {
   proProfileId: string;
   onSubmitted: () => void;
+  /** Hide the inner "Leave a Review" heading when a parent dialog already shows it. */
+  hideTitle?: boolean;
 }
 
-export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProps) {
+export default function ReviewForm({ proProfileId, onSubmitted, hideTitle = false }: ReviewFormProps) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
@@ -24,6 +43,26 @@ export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProp
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [eligibility, setEligibility] = useState<"loading" | "ok" | "exists" | "locked">("loading");
+
+  useEffect(() => {
+    if (!user?.id || !proProfileId) {
+      setEligibility("loading");
+      return;
+    }
+    let cancelled = false;
+    setEligibility("loading");
+    void (async () => {
+      const guard = await canSubmitProReview(proProfileId, user.id);
+      if (cancelled) return;
+      if (!guard.ok) setEligibility(guard.reason);
+      else setEligibility("ok");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, proProfileId]);
 
   const handlePhotoAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -47,14 +86,40 @@ export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (eligibility !== "ok") {
+      toast({
+        title: t.reviews.alreadyReviewedTitle,
+        description:
+          eligibility === "locked" ? t.reviews.cannotReviewAgain : t.reviews.alreadyReviewedBody,
+        variant: "destructive",
+      });
+      onSubmitted();
+      return;
+    }
     if (rating === 0) {
       toast({ title: t.reviews.pleaseSelectRating, variant: "destructive" });
       return;
     }
+    setConfirmOpen(true);
+  };
 
+  const submitReviewConfirmed = async () => {
+    if (!user || rating === 0) return;
+    setConfirmOpen(false);
     setSubmitting(true);
     try {
-      // Create review
+      const guard = await canSubmitProReview(proProfileId, user.id);
+      if (!guard.ok) {
+        setEligibility(guard.reason);
+        toast({
+          title: t.reviews.alreadyReviewedTitle,
+          description:
+            guard.reason === "locked" ? t.reviews.cannotReviewAgain : t.reviews.alreadyReviewedBody,
+          variant: "destructive",
+        });
+        onSubmitted();
+        return;
+      }
       const { data: review, error: reviewError } = await supabase
         .from("reviews")
         .insert({
@@ -69,7 +134,6 @@ export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProp
 
       if (reviewError) throw reviewError;
 
-      // Upload photos
       for (const photo of photos) {
         const ext = photo.name.split(".").pop();
         const path = `${user.id}/${review.id}/${crypto.randomUUID()}.${ext}`;
@@ -90,6 +154,8 @@ export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProp
       }
 
       toast({ title: t.reviews.reviewSubmitted, description: t.reviews.thankYouFeedback });
+      setEligibility("exists");
+      notifyReviewsChanged();
       onSubmitted();
       setRating(0);
       setTitle("");
@@ -105,9 +171,29 @@ export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProp
 
   if (!user) return null;
 
+  if (eligibility === "loading") {
+    return (
+      <div className="flex justify-center py-6">
+        <Loader2 className="animate-spin text-muted-foreground" size={20} />
+      </div>
+    );
+  }
+
+  if (eligibility !== "ok") {
+    return (
+      <p className="text-xs text-muted-foreground rounded-md border border-border/60 bg-muted/20 px-3 py-2">
+        {eligibility === "locked" ? t.reviews.cannotReviewAgain : t.reviews.alreadyReviewedBody}
+      </p>
+    );
+  }
+
   return (
+    <>
     <form onSubmit={handleSubmit} className="bg-card border rounded-lg p-2.5 space-y-2 text-[0.6rem] sm:text-[0.62rem]">
-      <h3 className="font-heading font-bold text-card-foreground text-[0.72rem] leading-tight">{t.reviews.leaveReview}</h3>
+      {!hideTitle ? (
+        <h3 className="font-heading font-bold text-card-foreground text-[0.72rem] leading-tight">{t.reviews.leaveReview}</h3>
+      ) : null}
+      <p className="text-[0.55rem] text-muted-foreground leading-snug">{t.reviews.definitiveNotice}</p>
 
       <div>
         <label className="text-[0.6rem] text-muted-foreground block mb-0.5">{t.reviews.yourRating}</label>
@@ -131,7 +217,6 @@ export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProp
         className="text-[0.6rem] min-h-[3rem] py-1.5 px-2"
       />
 
-      {/* Photo previews */}
       {photoPreviewUrls.length > 0 && (
         <div className="flex gap-1 flex-wrap">
           {photoPreviewUrls.map((url, i) => (
@@ -167,5 +252,18 @@ export default function ReviewForm({ proProfileId, onSubmitted }: ReviewFormProp
         </Button>
       </div>
     </form>
+    <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialogContent className={contrastDialogContentClass}>
+        <AlertDialogHeader>
+          <AlertDialogTitle className={contrastDialogTitleClass}>{t.reviews.confirmTitle}</AlertDialogTitle>
+          <AlertDialogDescription className={contrastDialogDescriptionClass}>{t.reviews.confirmBody}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+          <AlertDialogAction onClick={() => void submitReviewConfirmed()}>{t.reviews.confirmSubmit}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

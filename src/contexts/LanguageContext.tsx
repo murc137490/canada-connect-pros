@@ -16,13 +16,19 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window === "undefined") return "en";
+    if (typeof window === "undefined") return "fr";
     const stored = localStorage.getItem(STORAGE_KEY) as Locale | null;
-    return stored === "fr" || stored === "en" ? stored : "en";
+    return stored === "fr" || stored === "en" ? stored : "fr";
   });
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, locale);
+  }, [locale]);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = locale === "fr" ? "fr" : "en";
+    }
   }, [locale]);
 
   const setLocale = (next: Locale) => setLocaleState(next);

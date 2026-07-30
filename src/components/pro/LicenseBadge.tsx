@@ -25,7 +25,7 @@ export default function LicenseBadge({ licenseNumber, licenseType, isVerified, c
         <ShieldAlert size={14} className="shrink-0" />
       )}
       <span>
-        {licenseType} #{licenseNumber} — {isVerified ? "Verified" : "Pending"}
+        {licenseType} #{licenseNumber} - {isVerified ? "Verified" : "Pending"}
       </span>
     </div>
   );

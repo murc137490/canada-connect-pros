@@ -11,3 +11,43 @@ verify_jwt = false
 
 [functions.search-suggestions]
 verify_jwt = false
+
+# Rely on in-function auth (Bearer + createClient + auth.getUser). Gateway verify_jwt can 401
+# valid users when invoke/header timing or JWT format differs from PostgREST expectations.
+[functions.pro-plan-checkout]
+verify_jwt = false
+
+[functions.pro-plan-cancel]
+verify_jwt = false
+
+# Same pattern as pro-plan-checkout: Bearer validated inside the function via auth.getUser().
+[functions.trial-checkout]
+verify_jwt = false
+
+[functions.trial-token-admin]
+verify_jwt = false
+
+[functions.ensure-platform-admin]
+verify_jwt = false
+
+# JWT optional: reminder SMS uses x-booking-reminder-secret; confirmation validates session in code.
+[functions.booking-sms-notify]
+verify_jwt = false
+
+# Uses in-function auth or x-email-pipeline-secret so it can be called by app sessions,
+# scheduled reminders, database webhooks, or server-side automations.
+[functions.send-app-email]
+verify_jwt = false
+
+# Uses in-function auth because the Dashboard sends the current session token manually.
+[functions.referral-invite]
+verify_jwt = false
+
+[functions.square-oauth-start]
+verify_jwt = false
+
+[functions.square-oauth-callback]
+verify_jwt = false
+
+[functions.square-oauth-disconnect]
+verify_jwt = false

@@ -1,53 +1,97 @@
+import { useEffect, useRef } from "react";
 import { Search, Users, CheckCircle } from "lucide-react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useLanguage } from "@/contexts/LanguageContext";
-import SplitText from "@/components/SplitText";
+import HomeChapter from "@/components/HomeChapter";
+import BookingPhoneMock from "@/components/BookingPhoneMock";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const stepKeys = ["step1", "step2", "step3"] as const;
+const stepDescKeys = ["step1Desc", "step2Desc", "step3Desc"] as const;
 const stepIcons = [Search, Users, CheckCircle];
 
 export default function HowItWorks() {
   const { t } = useLanguage();
-  return (
-    <section id="how-it-works" className="py-12 md:py-24">
-      <div className="container px-4 md:px-6">
-        <div className="text-center mb-8 md:mb-14">
-          <SplitText
-            text={t.index.howItWorks}
-            className="font-heading text-3xl md:text-5xl font-extrabold text-foreground dark:text-white mb-3 md:mb-4 block"
-            tag="h2"
-            splitType="chars"
-            delay={40}
-            duration={1}
-            from={{ opacity: 0, y: 30 }}
-            to={{ opacity: 1, y: 0 }}
-            threshold={0.1}
-            rootMargin="-80px"
-            textAlign="center"
-          />
-        </div>
+  const trackRef = useRef<HTMLDivElement>(null);
 
-        <div className="grid md:grid-cols-3 gap-8 md:gap-12 max-w-5xl mx-auto">
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const steps = track.querySelectorAll<HTMLElement>(".how-step");
+    if (!steps.length) return;
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        steps,
+        { opacity: 0.35, y: 24 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.55,
+          stagger: 0.12,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: track,
+            start: "top 75%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      steps.forEach((step, i) => {
+        ScrollTrigger.create({
+          trigger: step,
+          start: "top 70%",
+          onEnter: () => {
+            steps.forEach((s, j) => s.classList.toggle("how-step-active", j === i));
+          },
+        });
+      });
+    }, track);
+
+    return () => ctx.revert();
+  }, []);
+
+  return (
+    <HomeChapter
+      id="how-it-works"
+      eyebrow={t.index.chapterBookEyebrow}
+      title={t.index.chapterBookTitle}
+      support={t.index.chapterBookSupport}
+      tone="muted"
+    >
+      <div className="mx-auto grid max-w-5xl items-center gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-14">
+        <div ref={trackRef} className="grid gap-4 md:grid-cols-3 md:gap-5 lg:grid-cols-1 lg:gap-4">
           {stepKeys.map((key, i) => {
             const Icon = stepIcons[i];
             return (
               <div
                 key={key}
-                className="content-panel glass-hover text-center rounded-2xl md:rounded-3xl p-5 md:p-7 space-y-2.5 md:space-y-3.5 shadow-lg transition-transform duration-200 ease-out hover:-translate-y-2 bg-card border border-border text-foreground dark:text-white"
+                className="how-step relative rounded-3xl border border-border/80 bg-card p-5 text-left shadow-sm transition-all duration-300 md:p-6"
               >
-                <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto border border-border">
-                  <Icon size={30} className="text-primary" />
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                    {i + 1}
+                  </span>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10">
+                    <Icon size={20} className="text-primary" />
+                  </div>
                 </div>
-                <div className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                  {i + 1}
-                </div>
-                <h3 className="font-heading font-bold text-base md:text-lg text-foreground dark:text-white leading-snug">
+                <h3 className="font-heading text-base font-bold leading-snug text-foreground md:text-lg">
                   {t.index[key]}
                 </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  {t.index[stepDescKeys[i]]}
+                </p>
               </div>
             );
           })}
         </div>
+
+        <BookingPhoneMock />
       </div>
-    </section>
+    </HomeChapter>
   );
 }

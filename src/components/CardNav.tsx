@@ -29,6 +29,7 @@ interface CardNavProps {
   buttonTextColor?: string;
   ctaLabel?: string;
   ctaHref?: string;
+  onCtaClick?: () => void;
 }
 
 export default function CardNav({
@@ -42,6 +43,7 @@ export default function CardNav({
   buttonTextColor,
   ctaLabel = "Get Started",
   ctaHref = "/join-pros/plans",
+  onCtaClick,
 }: CardNavProps) {
   const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -184,29 +186,38 @@ export default function CardNav({
             onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleMenu()}
             style={{ color: menuColor ?? "hsl(var(--foreground))" }}
           >
-            <div className="hamburger-line" />
-            <div className="hamburger-line" />
+            <span className="hamburger-label">More</span>
+            <span className="hamburger-lines" aria-hidden="true">
+              <span className="hamburger-line" />
+              <span className="hamburger-line" />
+            </span>
           </div>
 
           <div className="card-nav-logo">{logoText}</div>
 
           <LiquidButton
-            asChild
+            type={onCtaClick ? "button" : undefined}
+            asChild={!onCtaClick}
             whiteUntilHover
             className="card-nav-cta-button"
             style={{
               ["--liquid-button-background-color" as string]: buttonBgColor ?? "hsl(var(--primary))",
               ["--liquid-button-color" as string]: buttonTextColor ?? "hsl(var(--primary-foreground))",
             }}
+            onClick={onCtaClick}
           >
-            <Link
-              to={ctaHref}
-              style={{
-                color: "#1f2937",
-              }}
-            >
-              {ctaLabel}
-            </Link>
+            {onCtaClick ? (
+              <span style={{ color: "#1f2937" }}>{ctaLabel}</span>
+            ) : (
+              <Link
+                to={ctaHref}
+                style={{
+                  color: "#1f2937",
+                }}
+              >
+                {ctaLabel}
+              </Link>
+            )}
           </LiquidButton>
         </div>
 

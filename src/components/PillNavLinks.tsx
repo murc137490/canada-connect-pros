@@ -105,7 +105,6 @@ export default function PillNavLinks({ items, className = "", ease = "power3.eas
                 role="menuitem"
                 to={item.href}
                 className={`pill-nav-link${isActive ? " is-active" : ""}`}
-                aria-label={item.label}
                 onMouseEnter={() => handleEnter(i)}
                 onMouseLeave={() => handleLeave(i)}
               >

@@ -88,6 +88,8 @@
   color: hsl(var(--primary-foreground));
   z-index: 3;
   display: inline-block;
+  opacity: 0;
+  transform: translateY(1.5rem);
   will-change: transform, opacity;
 }
 
@@ -122,4 +124,25 @@
 }
 .pill-nav-links.pill-nav-header-light .pill-nav-link .pill-label-hover {
   color: #fff;
+}
+
+@media (min-width: 1024px) {
+  .pill-nav-links {
+    min-width: 37rem;
+  }
+
+  .pill-nav-list {
+    width: 100%;
+  }
+
+  .pill-nav-list > li {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .pill-nav-link {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 12px;
+  }
 }

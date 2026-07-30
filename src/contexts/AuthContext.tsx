@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { getPublicSiteOrigin } from "@/lib/authSiteUrl";
 
 export const NAME_TAKEN_MESSAGE = "This name is already taken.";
 export const EMAIL_ALREADY_IN_USE_MESSAGE = "EMAIL_ALREADY_IN_USE";
@@ -19,7 +19,9 @@ interface AuthContextType {
     email: string;
     password: string;
     fullName: string;
+    phone?: string;
     emailLanguage?: "en" | "fr";
+    referralCode?: string;
   }) => Promise<void>;
   signIn: (emailOrName: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -33,16 +35,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const syncPlatformAdmin = (session: Session | null) => {
+      if (!session?.access_token) return;
+      void supabase.functions
+        .invoke("ensure-platform-admin", { method: "POST" })
+        .catch(() => {
+          /* non-fatal: admin UI still uses env + profiles.is_platform_admin */
+        });
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      syncPlatformAdmin(session);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      syncPlatformAdmin(session);
     });
 
     return () => subscription.unsubscribe();
@@ -52,22 +65,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string;
     password: string;
     fullName: string;
+    phone?: string;
     emailLanguage?: "en" | "fr";
+    referralCode?: string;
   }) => {
-    const { email, password, fullName, emailLanguage = "en" } = params;
+    const { email, password, fullName, phone, emailLanguage = "en", referralCode } = params;
     const trimmedEmail = email.trim();
     const trimmedName = fullName.trim();
+    const trimmedPhone = phone?.trim() || "";
     if (!trimmedEmail) throw new Error("Email is required.");
     if (!trimmedName) throw new Error("Name is required.");
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: trimmedEmail,
       password,
       options: {
         data: {
           full_name: trimmedName,
+          phone: trimmedPhone || undefined,
           email_language: emailLanguage === "fr" ? "fr" : "en",
+          referral_code: referralCode?.trim() || undefined,
         },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: getPublicSiteOrigin(),
       },
     });
     if (error) {
@@ -75,6 +93,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(EMAIL_ALREADY_IN_USE_MESSAGE);
       }
       throw error;
+    }
+    if (data.user?.id && trimmedPhone) {
+      await supabase.from("profiles").update({ phone: trimmedPhone }).eq("user_id", data.user.id);
     }
   };
 

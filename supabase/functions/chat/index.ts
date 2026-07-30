@@ -79,7 +79,7 @@ Key information:
 - We cover Ontario, BC, Alberta, Quebec and expanding to other provinces
 - Satisfaction guarantee on all services
 - Phone support: 1-800-PREMIERE (Mon-Fri, 8am-8pm EST)
-- Email: premiereservicescontact@gmail.com
+- Email: support@premiereservices.ca
 - Response time for email: within 24 hours
 
 Be friendly, helpful, and concise. If you don't know something specific, direct users to contact support via phone or email.`,

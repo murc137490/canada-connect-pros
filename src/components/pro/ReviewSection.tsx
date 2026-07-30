@@ -9,6 +9,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import StarRating from "./StarRating";
 import ReviewForm from "./ReviewForm";
+import StorageDisplayImage from "@/components/StorageDisplayImage";
+import { canSubmitProReview } from "@/lib/reviewGuards";
+import { shouldBlurClientReviewOfProForViewer } from "@/lib/reviewBlind";
+import { REVIEWS_CHANGED_EVENT } from "@/lib/fetchPendingReviewNotices";
+import BlurredReviewContent from "@/components/reviews/BlurredReviewContent";
 
 interface Review {
   id: string;
@@ -41,14 +46,20 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
   const [responseText, setResponseText] = useState("");
   const [submittingResponse, setSubmittingResponse] = useState(false);
   const [hasBookingWithPro, setHasBookingWithPro] = useState<boolean | null>(null);
+  const [reviewBlocked, setReviewBlocked] = useState<"none" | "exists" | "locked">("none");
+  const [proClientReviewsGiven, setProClientReviewsGiven] = useState<{ client_id: string }[]>([]);
 
   const fetchReviews = async () => {
     setLoading(true);
-    const { data: reviewData } = await supabase
-      .from("reviews")
-      .select("*")
-      .eq("pro_profile_id", proProfileId)
-      .order("created_at", { ascending: false });
+    const [{ data: reviewData }, { data: clientReviewsGiven }] = await Promise.all([
+      supabase
+        .from("reviews")
+        .select("*")
+        .eq("pro_profile_id", proProfileId)
+        .order("created_at", { ascending: false }),
+      supabase.from("client_reviews").select("client_id").eq("pro_profile_id", proProfileId),
+    ]);
+    setProClientReviewsGiven(clientReviewsGiven ?? []);
 
     if (!reviewData) { setLoading(false); return; }
 
@@ -90,19 +101,45 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
     fetchReviews();
   }, [proProfileId]);
 
-  useEffect(() => {
-    if (!user || !proProfileId) { setHasBookingWithPro(null); return; }
-    (async () => {
-      const { data } = await supabase
+  const refreshReviewEligibility = async () => {
+    if (!user || !proProfileId) {
+      setHasBookingWithPro(null);
+      setReviewBlocked("none");
+      return;
+    }
+    const [{ data: booking }, guard] = await Promise.all([
+      supabase
         .from("bookings")
         .select("id")
         .eq("pro_profile_id", proProfileId)
         .eq("client_id", user.id)
         .eq("status", "completed")
-        .limit(1);
-      setHasBookingWithPro((data?.length ?? 0) > 0);
-    })();
+        .limit(1),
+      canSubmitProReview(proProfileId, user.id),
+    ]);
+    setHasBookingWithPro((booking?.length ?? 0) > 0);
+    if (!guard.ok) setReviewBlocked(guard.reason);
+    else setReviewBlocked("none");
+  };
+
+  useEffect(() => {
+    void refreshReviewEligibility();
   }, [user, proProfileId]);
+
+  useEffect(() => {
+    const onReviewsChanged = () => {
+      void fetchReviews();
+      void refreshReviewEligibility();
+    };
+    window.addEventListener(REVIEWS_CHANGED_EVENT, onReviewsChanged);
+    return () => window.removeEventListener(REVIEWS_CHANGED_EVENT, onReviewsChanged);
+  }, [user, proProfileId]);
+
+  const handleReviewSubmitted = () => {
+    setReviewBlocked("exists");
+    void fetchReviews();
+    void refreshReviewEligibility();
+  };
 
   const handleRespond = async (reviewId: string) => {
     if (!responseText.trim()) return;
@@ -126,18 +163,26 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
   };
 
   const isProOwner = user?.id === proUserId;
+  const alreadyReviewedInList = Boolean(user && reviews.some((r) => r.reviewer_id === user.id));
+  const formBlocked: "none" | "exists" | "locked" =
+    reviewBlocked !== "none" ? reviewBlocked : alreadyReviewedInList ? "exists" : "none";
 
   const displayReviews = previewLimit != null ? reviews.slice(0, previewLimit) : reviews;
 
   return (
     <div className="space-y-2.5 text-[0.6rem] sm:text-[0.62rem]" id={previewLimit == null ? scrollToId : undefined}>
-      <h2 className="font-heading text-[0.72rem] font-bold text-gray-800 leading-tight">
+      <h2 className="font-heading text-[0.72rem] font-bold text-foreground leading-tight">
         {t.reviews.sectionTitle} ({reviews.length})
       </h2>
 
       {/* Review form only for preview: hide; for full section: show if user has booking */}
-      {previewLimit == null && user && !isProOwner && hasBookingWithPro === true && (
-        <ReviewForm proProfileId={proProfileId} onSubmitted={fetchReviews} />
+      {previewLimit == null && user && !isProOwner && hasBookingWithPro === true && formBlocked === "none" && (
+        <ReviewForm proProfileId={proProfileId} onSubmitted={handleReviewSubmitted} />
+      )}
+      {previewLimit == null && user && !isProOwner && hasBookingWithPro === true && formBlocked !== "none" && (
+        <p className="text-xs text-muted-foreground rounded-md border border-border/60 bg-muted/20 px-3 py-2">
+          {formBlocked === "locked" ? t.reviews.cannotReviewAgain : t.reviews.alreadyReviewedBody}
+        </p>
       )}
 
       {loading ? (
@@ -145,7 +190,7 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
           <Loader2 className="animate-spin text-muted-foreground" size={14} />
         </div>
       ) : reviews.length === 0 ? (
-        <div className="text-center py-3 text-gray-800 leading-snug">
+        <div className="text-center py-3 text-muted-foreground leading-snug">
           {hasBookingWithPro === true ? t.reviews.noReviewsYetFirst : t.reviews.noReviewsYet}
         </div>
       ) : (
@@ -156,6 +201,17 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
               .map((n) => n[0])
               .join("")
               .toUpperCase() || "?";
+            const proClientPairs = proClientReviewsGiven.map((r) => ({
+              pro_profile_id: proProfileId,
+              client_id: r.client_id,
+            }));
+            const blurredForViewer = shouldBlurClientReviewOfProForViewer(
+              user?.id,
+              proUserId,
+              review.reviewer_id,
+              proProfileId,
+              proClientPairs,
+            );
 
             return (
               <div key={review.id} className="bg-card border rounded-lg p-2.5 space-y-1.5">
@@ -180,29 +236,48 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
                   </div>
                 </div>
 
-                {review.title && (
-                  <h4 className="font-semibold text-card-foreground text-[0.65rem] leading-snug">{review.title}</h4>
-                )}
-                {review.content && (
-                  <p className="text-[0.6rem] text-muted-foreground leading-snug">{review.content}</p>
-                )}
-
-                {/* Photos */}
-                {review.photos.length > 0 && (
-                  <div className="flex gap-1 flex-wrap">
-                    {review.photos.map((photo) => (
-                      <img
-                        key={photo.id}
-                        src={photo.url}
-                        alt="Review photo"
-                        className="w-14 h-14 rounded-md object-cover border"
-                      />
-                    ))}
-                  </div>
-                )}
+                {(() => {
+                  const reviewBody = (
+                    <>
+                      {review.title && (
+                        <h4 className="font-semibold text-card-foreground text-[0.65rem] leading-snug">{review.title}</h4>
+                      )}
+                      {review.content && (
+                        <p className="text-[0.6rem] text-muted-foreground leading-snug">{review.content}</p>
+                      )}
+                      {review.photos.length > 0 && (
+                        <div className="flex gap-1 flex-wrap">
+                          {review.photos.map((photo) => (
+                            <StorageDisplayImage
+                              key={photo.id}
+                              bucket="review-photos"
+                              url={photo.url}
+                              alt="Review photo"
+                              className="w-14 h-14 rounded-md object-cover border"
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                  return (
+                    <BlurredReviewContent
+                      blurred={blurredForViewer}
+                      message={
+                        t.reviews.blurredUntilYouReviewClient ??
+                        "Review this client to read their full review."
+                      }
+                      ctaLabel={t.dashboard.reviewClient ?? "Review client"}
+                      ctaHref="/dashboard?tab=reviews"
+                      minHeightClass="min-h-[8rem]"
+                    >
+                      {reviewBody}
+                    </BlurredReviewContent>
+                  );
+                })()}
 
                 {/* Pro response */}
-                {review.response && (
+                {review.response && !blurredForViewer && (
                   <div className="ml-3 bg-muted/50 border rounded-md p-2">
                     <p className="text-[0.55rem] font-semibold text-muted-foreground mb-0.5">
                       {t.reviews.responseFromPro}
@@ -212,7 +287,7 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
                 )}
 
                 {/* Respond button for pro */}
-                {isProOwner && !review.response && (
+                {isProOwner && !review.response && !blurredForViewer && (
                   <>
                     {respondingTo === review.id ? (
                       <div className="ml-3 space-y-1">

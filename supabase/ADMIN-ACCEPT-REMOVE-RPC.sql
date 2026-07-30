@@ -14,6 +14,9 @@ BEGIN
   IF lower(trim(caller_email)) <> 'premiereservicescontact@gmail.com' THEN
     RAISE EXCEPTION 'Forbidden: admin only';
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.pro_subscriptions s WHERE s.user_id = p_user_id) THEN
+    RAISE EXCEPTION 'No subscription on file: applicant must complete Pro Plans checkout before approval.';
+  END IF;
   UPDATE public.pro_profiles
   SET is_verified = true, updated_at = now()
   WHERE user_id = p_user_id;

@@ -74,17 +74,17 @@ export default function BookingProofUploadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-background text-gray-900 dark:text-white">
+      <DialogContent className="bg-background text-foreground">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription className="text-gray-600 dark:text-gray-300">
+          <DialogDescription className="text-muted-foreground">
             Upload 2–3 photos/videos showing the work was completed as the client requested.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-900 dark:text-white">Select files (images/videos)</label>
+            <label className="text-sm font-medium text-foreground">Select files (images/videos)</label>
             <Input
               type="file"
               accept="image/*,video/*"

@@ -1,9 +1,12 @@
 import { Link } from "react-router-dom";
 import { LiquidButton } from "@/components/ui/liquid-button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
 import { Check } from "lucide-react";
 import SpotlightCard from "@/components/SpotlightCard";
 import GradientText from "@/components/GradientText";
+import type { ProPlanId } from "@/lib/proPlanPreview";
+import { PLAN_TIER_BORDER_CLASS } from "@/lib/planTierTheme";
 import "./ProPlansContent.css";
 
 const SPOTLIGHT_STARTER = "rgba(96, 165, 250, 0.2)";   // faint blue
@@ -20,6 +23,10 @@ function TierCard({
   spotlightColor,
   spotlightGradient,
   nameVariant,
+  interactive,
+  isCurrent,
+  currentPlanLabel,
+  onSelect,
 }: {
   name: string;
   price: string;
@@ -28,7 +35,11 @@ function TierCard({
   includedStatement?: string;
   spotlightColor?: string;
   spotlightGradient?: string;
-  nameVariant: "starter" | "growth" | "pro";
+  nameVariant: ProPlanId;
+  interactive?: boolean;
+  isCurrent?: boolean;
+  currentPlanLabel?: string;
+  onSelect?: (tier: ProPlanId) => void;
 }) {
   const nameEl =
     nameVariant === "starter" ? (
@@ -51,18 +62,26 @@ function TierCard({
       </h3>
     );
 
-  return (
-    <SpotlightCard
-      spotlightColor={spotlightColor}
-      spotlightGradient={spotlightGradient}
-      className="h-full min-h-[420px] !bg-card !border-border border rounded-2xl p-0 overflow-hidden"
-    >
-      <div className="relative h-full min-h-[420px] p-6 flex flex-col text-foreground">
-        <span className="absolute top-4 right-4 font-logo text-2xl text-primary opacity-60" aria-hidden>
+  const inner = (
+    <div className="relative h-full min-h-[420px] p-6 flex flex-col text-foreground">
+      <div
+        className={`mb-2 flex shrink-0 min-w-0 items-start gap-3 ${isCurrent ? "justify-between" : "justify-end"}`}
+      >
+        {isCurrent ? (
+          <div className="min-w-0 flex-1 text-left">
+            <span className={`inline-flex max-w-full rounded-md p-[1.5px] align-top ${PLAN_TIER_BORDER_CLASS[nameVariant]}`}>
+              <span className="block max-w-full rounded-[calc(0.375rem-1.5px)] bg-card/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide leading-snug text-balance break-words sm:text-xs current-plan-rainbow-heading">
+                {currentPlanLabel ?? "Current"}
+              </span>
+            </span>
+          </div>
+        ) : null}
+        <span className="font-logo shrink-0 text-2xl leading-none text-primary opacity-60" aria-hidden>
           P
         </span>
-        {nameEl}
-        <p className="text-2xl font-bold text-white mb-4">{price}</p>
+      </div>
+      {nameEl}
+        <p className="text-2xl font-bold text-foreground mb-4">{price}</p>
         {includedStatement ? (
           <p className="text-sm text-muted-foreground mb-3 font-medium">{includedStatement}</p>
         ) : null}
@@ -74,10 +93,29 @@ function TierCard({
             </li>
           ))}
         </ul>
-        <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border shrink-0">
-          {bestFor}
-        </p>
-      </div>
+      <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border shrink-0">
+        {bestFor}
+      </p>
+    </div>
+  );
+
+  return (
+    <SpotlightCard
+      spotlightColor={spotlightColor}
+      spotlightGradient={spotlightGradient}
+      className={`h-full min-h-[420px] !bg-card !border-border border rounded-2xl p-0 overflow-hidden${interactive ? " ring-offset-background" : ""}`}
+    >
+      {interactive && onSelect ? (
+        <button
+          type="button"
+          onClick={() => onSelect(nameVariant)}
+          className="w-full h-full min-h-[420px] p-0 border-0 bg-transparent text-left cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          {inner}
+        </button>
+      ) : (
+        inner
+      )}
     </SpotlightCard>
   );
 }
@@ -86,10 +124,27 @@ type ProPlansContentProps = {
   title?: string;
   subtitle?: string;
   showCompleteProfileCta?: boolean;
+  /** When true, CTA reads “Edit pro profile” and links to profile setup (existing application). */
+  hasProProfile?: boolean;
+  profileCtaHref?: string;
+  /** When set with onSelectPlan, tier cards open checkout / plan change */
+  interactive?: boolean;
+  currentPlanId?: ProPlanId | null;
+  onSelectPlan?: (plan: ProPlanId) => void;
 };
 
-export default function ProPlansContent({ title, subtitle, showCompleteProfileCta = true }: ProPlansContentProps = {}) {
+export default function ProPlansContent({
+  title,
+  subtitle,
+  showCompleteProfileCta = true,
+  hasProProfile = false,
+  profileCtaHref = "/create-pro-account",
+  interactive = false,
+  currentPlanId = null,
+  onSelectPlan,
+}: ProPlansContentProps = {}) {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const plans = t.plans;
   const starterFeatures = plans?.starterFeatures ?? [];
   const growthFeatures = plans?.growthFeatures ?? [];
@@ -98,15 +153,28 @@ export default function ProPlansContent({ title, subtitle, showCompleteProfileCt
   const displayTitle = title ?? plans?.title ?? "Pro Plans";
   const displaySubtitle = subtitle ?? plans?.subtitle ?? "Choose the plan that fits your business. Upgrade or downgrade anytime.";
 
+  const handleTierClick = (tier: ProPlanId) => {
+    if (!interactive || !onSelectPlan) return;
+    if (currentPlanId === tier) {
+      toast({
+        title: plans?.alreadyOnPlan ?? "You're already on this plan.",
+      });
+      return;
+    }
+    onSelectPlan(tier);
+  };
+
   return (
     <div className="w-full relative z-10">
-      <div className="text-center mb-10 md:mb-14">
-        <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-3">
+      <div className="mb-12 text-center md:mb-16">
+        <h2 className="mb-3 font-heading text-3xl font-bold text-foreground md:text-4xl">
           {displayTitle}
         </h2>
-        <p className="text-muted-foreground max-w-xl mx-auto">
-          {displaySubtitle}
-        </p>
+        <div className="mx-auto inline-block max-w-2xl rounded-xl p-[1.5px] current-plan-rainbow-border">
+          <p className="rounded-[calc(0.75rem-1.5px)] bg-card px-3 py-2.5 text-balance text-base font-medium leading-relaxed sm:px-5 sm:py-3 sm:text-lg current-plan-rainbow-heading">
+            {displaySubtitle}
+          </p>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto items-stretch relative z-10">
@@ -118,6 +186,10 @@ export default function ProPlansContent({ title, subtitle, showCompleteProfileCt
             features={starterFeatures}
             spotlightColor={SPOTLIGHT_STARTER}
             nameVariant="starter"
+            interactive={interactive}
+            isCurrent={currentPlanId === "starter"}
+            currentPlanLabel={plans?.currentPlanBadge}
+            onSelect={interactive && onSelectPlan ? handleTierClick : undefined}
           />
         </div>
         <div className="min-h-[420px] flex">
@@ -128,6 +200,10 @@ export default function ProPlansContent({ title, subtitle, showCompleteProfileCt
             features={growthFeatures}
             spotlightColor={SPOTLIGHT_GROWTH}
             nameVariant="growth"
+            interactive={interactive}
+            isCurrent={currentPlanId === "growth"}
+            currentPlanLabel={plans?.currentPlanBadge}
+            onSelect={interactive && onSelectPlan ? handleTierClick : undefined}
           />
         </div>
         <div className="min-h-[420px] flex">
@@ -139,6 +215,10 @@ export default function ProPlansContent({ title, subtitle, showCompleteProfileCt
             includedStatement={plans?.proIncludesGrowth}
             spotlightGradient={SPOTLIGHT_PRO_GRADIENT}
             nameVariant="pro"
+            interactive={interactive}
+            isCurrent={currentPlanId === "pro"}
+            currentPlanLabel={plans?.currentPlanBadge}
+            onSelect={interactive && onSelectPlan ? handleTierClick : undefined}
           />
         </div>
       </div>
@@ -175,7 +255,15 @@ export default function ProPlansContent({ title, subtitle, showCompleteProfileCt
           <div>
             <h4 className="font-semibold text-foreground mb-2">{plans?.proToolsTitle ?? "Pro Tier: Automation & Communication"}</h4>
             <p className="text-sm text-muted-foreground">
-              {plans?.proToolsDesc ?? "Pro adds unlimited leads, SMS appointment reminders and booking confirmations, an AI response assistant for messages, and automated review requests—so you spend less time on admin and more time on the job."}
+              {plans?.proToolsDesc ?? "Pro adds unlimited leads, SMS appointment reminders and booking confirmations, an AI response assistant for messages, and automated review requests - so you spend less time on admin and more time on the job."}
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-foreground mb-2">{plans?.platformFeeTitle ?? "5% platform fee on completed transactions"}</h4>
+            <p className="text-sm text-muted-foreground">
+              {plans?.platformFeeDesc ??
+                "Starter, Growth, and Pro: we retain 5% of every completed transaction processed through Premiere Services - jobs that are marked completed and paid via the platform."}
             </p>
           </div>
         </div>
@@ -184,7 +272,9 @@ export default function ProPlansContent({ title, subtitle, showCompleteProfileCt
       {showCompleteProfileCta && (
         <div className="mt-12 text-center">
           <LiquidButton size="lg" asChild whiteUntilHover>
-            <Link to="/create-pro-account">{t.joinPros.completeProfile}</Link>
+            <Link to={profileCtaHref}>
+              {hasProProfile ? t.joinPros.editProfile : t.joinPros.completeProfile}
+            </Link>
           </LiquidButton>
         </div>
       )}
