@@ -27,7 +27,7 @@ export default function HomeHowItWorks() {
       className="section-pad border-y border-border/70 bg-muted/35 dark:bg-muted/15"
     >
       <div className="container-page">
-        <ScrollReveal>
+        <ScrollReveal once y={6}>
           <h2 className="font-display text-display-md text-foreground whitespace-pre-line max-w-xl">
             {t.index.howTitle}
           </h2>
@@ -48,7 +48,7 @@ export default function HomeHowItWorks() {
 
           <div className="grid gap-0 md:grid-cols-3 md:gap-10">
             {steps.map((step, i) => (
-              <ScrollReveal key={step.n} delay={i * 0.08}>
+              <ScrollReveal key={step.n} delay={i * 0.06} y={6} amount={0.2} margin="0px 0px -30% 0px">
                 <li className="relative flex gap-5 md:block md:gap-0">
                   {i < steps.length - 1 && (
                     <span

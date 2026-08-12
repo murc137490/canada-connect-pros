@@ -18,7 +18,8 @@ export default function HomeProductShowcase() {
     <section className="section-pad bg-primary text-primary-foreground overflow-hidden">
       <div className="container-page">
         <div className="grid items-center gap-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16 xl:gap-20">
-          <ScrollReveal>
+          {/* once + 70% viewport line: avoid blank-blue flash / edge flicker between sections */}
+          <ScrollReveal once y={6} amount={0.25} margin="0px 0px -30% 0px">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
                 {t.index.showcaseEyebrow}
@@ -52,7 +53,7 @@ export default function HomeProductShowcase() {
             </div>
           </ScrollReveal>
 
-          <ScrollReveal delay={0.1}>
+          <ScrollReveal once delay={0.08} y={6} amount={0.25} margin="0px 0px -30% 0px">
             <MarketplacePreview variant="dark" matchState="matched" />
           </ScrollReveal>
         </div>
