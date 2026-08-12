@@ -23,7 +23,8 @@ export function useHomeScrollReveal(deps: unknown[] = []) {
             scrollTrigger: {
               trigger: el,
               start: "top 88%",
-              toggleActions: "play none none none",
+              end: "bottom 12%",
+              toggleActions: "play reverse play reverse",
             },
           }
         );

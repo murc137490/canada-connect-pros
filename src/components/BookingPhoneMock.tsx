@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Star } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -15,7 +14,7 @@ type Props = {
   alwaysLive?: boolean;
 };
 
-/** Wobbling phone mock showing platform strengths as in-app reviews. */
+/** Wobbling phone mock — rotating role-based perks (pros / clients / users). */
 export default function BookingPhoneMock({ className, alwaysLive = false }: Props) {
   const { t } = useLanguage();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -26,20 +25,17 @@ export default function BookingPhoneMock({ className, alwaysLive = false }: Prop
 
   const reviews = [
     {
-      name: t.index.review1Name,
-      rating: 5,
+      role: t.index.review1Name,
       body: t.index.review1Body,
       tag: t.index.review1Tag,
     },
     {
-      name: t.index.review2Name,
-      rating: 5,
+      role: t.index.review2Name,
       body: t.index.review2Body,
       tag: t.index.review2Tag,
     },
     {
-      name: t.index.review3Name,
-      rating: 5,
+      role: t.index.review3Name,
       body: t.index.review3Body,
       tag: t.index.review3Tag,
     },
@@ -175,7 +171,7 @@ export default function BookingPhoneMock({ className, alwaysLive = false }: Prop
             >
               <div className="absolute inset-0">
                 {reviews.map((review, i) => (
-                  <PhoneScreen key={review.name} active={step === i}>
+                  <PhoneScreen key={review.role} active={step === i}>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(217_75%_42%)]">
                       {t.index.reviewPhoneEyebrow}
                     </p>
@@ -183,37 +179,19 @@ export default function BookingPhoneMock({ className, alwaysLive = false }: Prop
                       {t.index.reviewPhoneTitle}
                     </h4>
 
-                    <div className="mt-4 rounded-2xl border border-[#e5e7eb] bg-white p-3.5 shadow-sm">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-[12px] font-bold text-[#141414]">{review.name}</p>
-                        <div className="flex items-center gap-0.5 shrink-0">
-                          {Array.from({ length: review.rating }).map((_, si) => (
-                            <Star
-                              key={si}
-                              size={11}
-                              className="fill-[hsl(35_92%_55%)] text-[hsl(35_92%_55%)]"
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <p className="mt-2 text-[11px] leading-relaxed text-[#374151]">{review.body}</p>
-                      <p className="mt-3 inline-flex rounded-md bg-[hsl(217_75%_45%/0.1)] px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[hsl(222_76%_28%)]">
+                    <div className="mt-5 flex flex-1 flex-col rounded-2xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
+                      <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[hsl(222_76%_28%)]">
+                        {review.role}
+                      </p>
+                      <p className="mt-3 text-[13px] font-medium leading-relaxed text-[#1f2937]">
+                        {review.body}
+                      </p>
+                      <p className="mt-auto pt-4 inline-flex self-start rounded-md bg-[hsl(217_75%_45%/0.1)] px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[hsl(222_76%_28%)]">
                         {review.tag}
                       </p>
                     </div>
 
-                    <ul className="mt-3 space-y-1.5">
-                      {[t.index.reviewBullet1, t.index.reviewBullet2, t.index.reviewBullet3].map((bullet) => (
-                        <li
-                          key={bullet}
-                          className="rounded-lg border border-[#e8eaee] bg-white/80 px-2.5 py-1.5 text-[10px] font-medium leading-snug text-[#1f2937]"
-                        >
-                          {bullet}
-                        </li>
-                      ))}
-                    </ul>
-
-                    <div className="mt-auto flex items-center justify-center gap-1.5 pt-3">
+                    <div className="mt-4 flex items-center justify-center gap-1.5">
                       {reviews.map((_, di) => (
                         <span
                           key={di}

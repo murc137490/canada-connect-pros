@@ -97,7 +97,7 @@ export default function CategoryPage() {
               key={sub.name}
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
+              viewport={{ once: false, margin: "-60px" }}
               transition={{ duration: 0.5, delay: Math.min(subIndex * 0.08, 0.24) }}
             >
               <h2 className="mb-4 font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">

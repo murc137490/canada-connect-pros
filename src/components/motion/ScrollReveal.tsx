@@ -16,11 +16,11 @@ export default function ScrollReveal({
   children,
   delay = 0,
   y = 22,
-  once = true,
+  once = false,
   ...rest
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once, margin: "-8% 0px" });
+  const inView = useInView(ref, { once, margin: "-10% 0px -12% 0px", amount: 0.2 });
   const reduced = usePrefersReducedMotion();
 
   if (reduced) {
@@ -37,7 +37,7 @@ export default function ScrollReveal({
       className={cn(className)}
       initial={{ opacity: 0, y }}
       animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y }}
-      transition={{ duration: MOTION.reveal, delay, ease: MOTION.ease }}
+      transition={{ duration: MOTION.reveal, delay: inView ? delay : 0, ease: MOTION.ease }}
       {...rest}
     >
       {children}

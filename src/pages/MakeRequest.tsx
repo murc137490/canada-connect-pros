@@ -714,16 +714,21 @@ export default function MakeRequest() {
                     )}
                   </div>
 
-                  <div className="overflow-hidden rounded-md border border-border bg-muted/40 aspect-[4/3] sm:aspect-square">
+                  <div className="overflow-hidden rounded-md border border-border bg-muted/40 aspect-[4/3] sm:aspect-square relative">
                     {postalLookup.status === "found" && postalLookup.lat != null && postalLookup.lng != null ? (
-                      <iframe
-                        title={t.makeRequest.step3Label}
-                        src={mapsEmbedUrl(postalLookup.lat, postalLookup.lng, locale)}
-                        className="h-full w-full border-0"
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                        allowFullScreen
-                      />
+                      <div
+                        key={`${postalLookup.lat},${postalLookup.lng}`}
+                        className="request-map-reveal absolute inset-0"
+                      >
+                        <iframe
+                          title={t.makeRequest.step3Label}
+                          src={mapsEmbedUrl(postalLookup.lat, postalLookup.lng, locale)}
+                          className="h-full w-full border-0"
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                          allowFullScreen
+                        />
+                      </div>
                     ) : (
                       <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
                         {postalLookup.status === "loading" ? t.makeRequest.step3Detecting : t.makeRequest.mapWaiting}

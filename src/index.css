@@ -505,6 +505,23 @@
     }
   }
 
+  .request-map-reveal {
+    animation: requestMapReveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes requestMapReveal {
+    0% {
+      opacity: 0;
+      transform: scale(1.06) translateY(10px);
+      filter: blur(4px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      filter: blur(0);
+    }
+  }
+
   .scroll-fade-in {
     opacity: 0;
     transform: translateY(30px);
