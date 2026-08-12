@@ -15,6 +15,8 @@ export interface GeocodeLocation {
   city: string | null;
   province: string | null;
   formattedAddress?: string;
+  /** Normalized postal returned by the geocoder when known (A1A 1A1). */
+  postal?: string | null;
 }
 
 const CLIENT_KEY = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
@@ -100,7 +102,7 @@ async function geocodeViaEdge(address: string): Promise<GeocodeLocation | null> 
       body: JSON.stringify({ address }),
     });
     if (!res.ok) return null;
-    const data = (await res.json()) as GeocodeLocation & { error?: string };
+    const data = (await res.json()) as GeocodeLocation & { error?: string; postal?: string | null };
     if (typeof data.lat !== "number" || typeof data.lng !== "number") return null;
     return {
       lat: data.lat,
@@ -108,6 +110,7 @@ async function geocodeViaEdge(address: string): Promise<GeocodeLocation | null> 
       city: data.city ?? null,
       province: data.province ?? null,
       formattedAddress: data.formattedAddress,
+      postal: data.postal ?? null,
     };
   } catch (err) {
     console.warn("Edge geocode error:", err);
@@ -190,14 +193,22 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
 
 /**
  * Geocode postal/address.
- * Edge resolves full Canadian LDUs via geocoder.ca (then exact Google, then FSA fallback).
+ * Edge resolves full Canadian LDUs via geocoder.ca, then exact Google match.
+ * Full LDUs never fall back to FSA centroids (that pinned every H3Z* on H3Z 1A1).
  */
 export async function geocodePostalToLocation(postalOrAddress: string): Promise<GeocodeLocation | null> {
   const trimmed = postalOrAddress?.trim();
   if (!trimmed) return null;
+  const wanted = isCompleteCanadianPostal(trimmed) ? compactPostal(trimmed) : null;
 
   const viaEdge = await geocodeViaEdge(trimmed);
-  if (viaEdge) return viaEdge;
+  if (viaEdge) {
+    if (wanted && viaEdge.postal) {
+      const got = compactPostal(viaEdge.postal);
+      if (got.length === 6 && got !== wanted) return null;
+    }
+    return viaEdge;
+  }
 
   return geocodeViaGoogleClient(trimmed);
 }

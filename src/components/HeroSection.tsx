@@ -116,15 +116,38 @@ export default function HeroSection() {
     return true;
   }, [normalizedPostal, t.index.checkServiceError]);
 
-  // Auto-lookup when a full Canadian postal is entered
+  // Auto-lookup when a full Canadian postal is entered (always re-resolve on change).
   useEffect(() => {
     if (!isCompleteCanadianPostal(normalizedPostal)) return;
-    if (postalResolved) return;
+    let cancelled = false;
+    const requested = normalizedPostal;
     const tmr = window.setTimeout(() => {
-      void resolvePostal();
-    }, 350);
-    return () => window.clearTimeout(tmr);
-  }, [normalizedPostal, postalResolved, resolvePostal]);
+      void (async () => {
+        setPostalLoading(true);
+        setPostalError(null);
+        const geo = await geocodePostalToLocation(requested);
+        if (cancelled) return;
+        setPostalLoading(false);
+        // Ignore stale responses if the user kept typing.
+        if (requested !== normalizedPostal) return;
+        if (!geo) {
+          setPostalResolved(null);
+          setPostalError(t.index.checkServiceError);
+          return;
+        }
+        setPostalResolved({
+          lat: geo.lat,
+          lng: geo.lng,
+          city: geo.city,
+          province: geo.province,
+        });
+      })();
+    }, 400);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(tmr);
+    };
+  }, [normalizedPostal, t.index.checkServiceError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -461,7 +484,7 @@ export default function HeroSection() {
                 {postalResolved ? (
                   <p className="px-0.5 text-xs text-muted-foreground">
                     {postalResolved.city
-                      ? `${postalResolved.city}${postalResolved.province ? `, ${postalResolved.province}` : ""}`
+                      ? `${postalResolved.city}${postalResolved.province ? `, ${postalResolved.province}` : ""} · ${normalizedPostal}`
                       : normalizedPostal}
                   </p>
                 ) : null}

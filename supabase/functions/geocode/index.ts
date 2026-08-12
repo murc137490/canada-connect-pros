@@ -1,7 +1,7 @@
 /**
- * Server-side geocode proxy.
- * Prefer Google (full postal_code components) when GOOGLE_MAPS_API_KEY is set.
- * Full Canadian LDU via geocoder.ca before Zippopotam FSA (3-char centroid).
+ * Server-side geocode proxy for Canadian postals.
+ * Full LDU: geocoder.ca (retry) → Google exact postal match.
+ * Never Zippopotam for 6-char LDUs (FSA centroid = same pin for every H3Z*).
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
@@ -22,6 +22,8 @@ type GeoOut = {
   city: string | null;
   province: string | null;
   formattedAddress: string | null;
+  postal: string | null;
+  source?: string;
 };
 
 type GoogleResult = {
@@ -30,6 +32,10 @@ type GoogleResult = {
   address_components?: { long_name: string; short_name: string; types: string[] }[];
   types?: string[];
 };
+
+/** Short-lived LDU cache so geocoder.ca rate limits hurt less. */
+const lduCache = new Map<string, { at: number; value: GeoOut }>();
+const CACHE_MS = 1000 * 60 * 60 * 12;
 
 function compactPostal(raw: string): string {
   return raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -58,7 +64,7 @@ function postalFromComponents(
   return null;
 }
 
-function parseGoogleResult(first: GoogleResult): GeoOut | null {
+function parseGoogleResult(first: GoogleResult, postal: string | null): GeoOut | null {
   const loc = first?.geometry?.location;
   if (loc == null || typeof loc.lat !== "number" || typeof loc.lng !== "number") return null;
 
@@ -76,19 +82,9 @@ function parseGoogleResult(first: GoogleResult): GeoOut | null {
     city,
     province,
     formattedAddress: first.formatted_address ?? null,
+    postal,
+    source: "google",
   };
-}
-
-function pickBestGoogleResult(results: GoogleResult[], wantedCompact: string | null): GoogleResult | null {
-  if (!results.length) return null;
-  if (wantedCompact) {
-    const exact = results.find((r) => postalFromComponents(r.address_components) === wantedCompact);
-    if (exact) return exact;
-    // Prefer a postal_code typed result over a broader locality match
-    const postalTyped = results.find((r) => r.types?.includes("postal_code"));
-    if (postalTyped) return postalTyped;
-  }
-  return results[0];
 }
 
 async function geocodeGoogle(address: string): Promise<GeoOut | null> {
@@ -101,7 +97,6 @@ async function geocodeGoogle(address: string): Promise<GeoOut | null> {
   const attempts: URL[] = [];
 
   if (fullCa) {
-    // Most precise for Canada Post LDUs
     const byComponent = new URL("https://maps.googleapis.com/maps/api/geocode/json");
     byComponent.searchParams.set("components", `postal_code:${spaced}|country:CA`);
     byComponent.searchParams.set("key", API_KEY);
@@ -120,78 +115,105 @@ async function geocodeGoogle(address: string): Promise<GeoOut | null> {
     const res = await fetch(url.toString());
     const data = (await res.json()) as { status: string; results?: GoogleResult[] };
     if (data.status !== "OK" || !data.results?.length) continue;
-    const best = pickBestGoogleResult(data.results, wanted);
-    const parsed = best ? parseGoogleResult(best) : null;
-    if (!parsed) continue;
-    // Full Canadian LDUs must match exactly — otherwise Google often returns the FSA centroid
-    // (same pin for every H3Z*), and we'd never reach geocoder.ca.
-    if (wanted) {
-      const got = postalFromComponents(best?.address_components);
-      if (got !== wanted) continue;
-    }
-    return parsed;
+
+    const exact = wanted
+      ? data.results.find((r) => postalFromComponents(r.address_components) === wanted)
+      : data.results[0];
+    if (!exact) continue;
+
+    const got = postalFromComponents(exact.address_components);
+    if (wanted && got !== wanted) continue;
+
+    const parsed = parseGoogleResult(exact, wanted ? normalizeCanadianPostal(wanted) : null);
+    if (parsed) return parsed;
   }
 
   return null;
 }
 
-/** Full 6-char Canadian postal (LDU) — more precise than Zippopotam FSA. */
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Full 6-char Canadian postal (LDU). */
 async function geocodeGeocoderCa(address: string): Promise<GeoOut | null> {
   if (!isFullCaPostal(address)) return null;
   const spaced = normalizeCanadianPostal(address);
   const compact = compactPostal(address);
 
+  const cached = lduCache.get(compact);
+  if (cached && Date.now() - cached.at < CACHE_MS) return { ...cached.value, source: "cache" };
+
   const urls = [
     `https://geocoder.ca/?locate=${encodeURIComponent(spaced)}&geoit=XML&json=1`,
     `https://geocoder.ca/?locate=${encodeURIComponent(compact)}&geoit=XML&json=1`,
-    `https://geocoder.ca/${encodeURIComponent(spaced)}?json=1`,
-    `https://geocoder.ca/${encodeURIComponent(compact)}?json=1`,
   ];
 
-  for (const url of urls) {
-    try {
-      const res = await fetch(url, {
-        headers: { "User-Agent": "PremiereServices/1.0 (geocode)", Accept: "application/json" },
-      });
-      if (!res.ok) continue;
-      const data = (await res.json()) as {
-        latt?: string | number;
-        longt?: string | number;
-        error?: unknown;
-        postal?: string;
-        standard?: { city?: string; prov?: string };
-      };
-      if (data.error || data.latt == null || data.longt == null) continue;
-      const lat = Number(data.latt);
-      const lng = Number(data.longt);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) await sleep(600);
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, {
+          headers: { "User-Agent": "PremiereServices/1.0 (geocode)", Accept: "application/json" },
+        });
+        if (!res.ok) continue;
+        const data = (await res.json()) as {
+          latt?: string | number;
+          longt?: string | number;
+          error?: { code?: string; message?: string } | string;
+          postal?: string;
+          standard?: { city?: string; prov?: string };
+          success?: boolean;
+        };
 
-      const returned = data.postal ? compactPostal(String(data.postal)) : null;
-      if (returned && returned.length === 6 && returned !== compact) continue;
+        const errMsg =
+          typeof data.error === "object" && data.error
+            ? String(data.error.message || data.error.code || "")
+            : typeof data.error === "string"
+              ? data.error
+              : "";
+        if (/throttl|rate limit/i.test(errMsg)) {
+          await sleep(700);
+          continue;
+        }
+        if (data.error || data.latt == null || data.longt == null) continue;
 
-      const city = data.standard?.city ?? null;
-      const province = data.standard?.prov ?? null;
-      return {
-        lat,
-        lng,
-        city,
-        province,
-        formattedAddress: [city, province, spaced, "Canada"].filter(Boolean).join(", "),
-      };
-    } catch {
-      /* try next URL */
+        const lat = Number(data.latt);
+        const lng = Number(data.longt);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+        const returned = data.postal ? compactPostal(String(data.postal)) : null;
+        if (returned && returned.length === 6 && returned !== compact) continue;
+
+        const city = data.standard?.city ?? null;
+        const province = data.standard?.prov ?? null;
+        const out: GeoOut = {
+          lat,
+          lng,
+          city,
+          province,
+          formattedAddress: [city, province, spaced, "Canada"].filter(Boolean).join(", "),
+          postal: spaced,
+          source: "geocoder.ca",
+        };
+        lduCache.set(compact, { at: Date.now(), value: out });
+        return out;
+      } catch {
+        /* try next */
+      }
     }
   }
   return null;
 }
 
-/** Canadian FSA (first 3 chars) via Zippopotam — last resort (same point for all LDUs in an FSA). */
-async function geocodeZippopotam(address: string): Promise<GeoOut | null> {
+/** FSA-only (3 chars). Do not use for full LDUs. */
+async function geocodeZippopotamFsa(address: string): Promise<GeoOut | null> {
   const compact = compactPostal(address);
-  if (!/^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]/.test(compact) || compact.length < 3) return null;
-  const fsa = compact.slice(0, 3);
+  // Only when caller asked for FSA / incomplete postal — never for full LDU
+  if (compact.length !== 3) return null;
+  if (!/^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]$/.test(compact)) return null;
 
-  const res = await fetch(`https://api.zippopotam.us/ca/${encodeURIComponent(fsa)}`);
+  const res = await fetch(`https://api.zippopotam.us/ca/${encodeURIComponent(compact)}`);
   if (!res.ok) return null;
 
   const data = (await res.json()) as {
@@ -212,14 +234,15 @@ async function geocodeZippopotam(address: string): Promise<GeoOut | null> {
 
   const city = place["place name"] ?? null;
   const province = place["state abbreviation"] || place.state || null;
-  const spaced = compact.length >= 6 ? `${compact.slice(0, 3)} ${compact.slice(3, 6)}` : fsa;
 
   return {
     lat,
     lng,
     city,
     province,
-    formattedAddress: [city, province, spaced, "Canada"].filter(Boolean).join(", "),
+    formattedAddress: [city, province, compact, "Canada"].filter(Boolean).join(", "),
+    postal: compact,
+    source: "zippopotam",
   };
 }
 
@@ -244,7 +267,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // For full Canadian postals, prefer geocoder.ca (true LDU) before Google approximations.
     if (isFullCaPostal(address)) {
       const viaGeocoderCa = await geocodeGeocoderCa(address);
       if (viaGeocoderCa) {
@@ -252,6 +274,19 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      const viaGoogle = await geocodeGoogle(address);
+      if (viaGoogle) {
+        return new Response(JSON.stringify(viaGoogle), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Do NOT Zippopotam full LDUs — that returns one FSA pin (looks like H3Z 1A1 for all H3Z*).
+      return new Response(JSON.stringify({ error: "not_found", reason: "ldu_unresolved" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const viaGoogle = await geocodeGoogle(address);
@@ -261,16 +296,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!isFullCaPostal(address)) {
-      const viaGeocoderCa = await geocodeGeocoderCa(address);
-      if (viaGeocoderCa) {
-        return new Response(JSON.stringify(viaGeocoderCa), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    const viaZip = await geocodeZippopotam(address);
+    const viaZip = await geocodeZippopotamFsa(address);
     if (viaZip) {
       return new Response(JSON.stringify(viaZip), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

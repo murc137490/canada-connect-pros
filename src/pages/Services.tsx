@@ -120,12 +120,35 @@ export default function Services() {
   }, [normalizedPostal, t.services.postalInvalid]);
 
   useEffect(() => {
-    if (!isCompleteCanadianPostal(normalizedPostal) || postalResolved) return;
+    if (!isCompleteCanadianPostal(normalizedPostal)) return;
+    let cancelled = false;
+    const requested = normalizedPostal;
     const tmr = window.setTimeout(() => {
-      void resolvePostal();
-    }, 350);
-    return () => window.clearTimeout(tmr);
-  }, [normalizedPostal, postalResolved, resolvePostal]);
+      void (async () => {
+        setPostalLoading(true);
+        setPostalError(null);
+        const geo = await geocodePostalToLocation(requested);
+        if (cancelled) return;
+        setPostalLoading(false);
+        if (requested !== normalizedPostal) return;
+        if (!geo) {
+          setPostalResolved(null);
+          setPostalError(t.services.postalInvalid);
+          return;
+        }
+        setPostalResolved({
+          lat: geo.lat,
+          lng: geo.lng,
+          city: geo.city,
+          province: geo.province,
+        });
+      })();
+    }, 400);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(tmr);
+    };
+  }, [normalizedPostal, t.services.postalInvalid]);
 
   const warnPostalFirst = useCallback(() => {
     toast({
