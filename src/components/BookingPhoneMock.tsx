@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Search, Star, MapPin, Check, ChevronRight } from "lucide-react";
+import { Star } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -7,19 +7,49 @@ import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const STEP_MS = 3200;
+const STEP_MS = 3400;
 
-/** Phone mock: search → pro → price, with scroll-velocity jello bounce. */
-export default function BookingPhoneMock({ className }: { className?: string }) {
+type Props = {
+  className?: string;
+  /** Hero: animate immediately without waiting for scroll. */
+  alwaysLive?: boolean;
+};
+
+/** Wobbling phone mock showing platform strengths as in-app reviews. */
+export default function BookingPhoneMock({ className, alwaysLive = false }: Props) {
   const { t } = useLanguage();
   const rootRef = useRef<HTMLDivElement>(null);
   const appearRef = useRef<HTMLDivElement>(null);
   const jelloRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(0);
-  const [live, setLive] = useState(false);
+  const [live, setLive] = useState(alwaysLive);
 
-  // Appear / disappear with scroll (same ease both ways)
+  const reviews = [
+    {
+      name: t.index.review1Name,
+      rating: 5,
+      body: t.index.review1Body,
+      tag: t.index.review1Tag,
+    },
+    {
+      name: t.index.review2Name,
+      rating: 5,
+      body: t.index.review2Body,
+      tag: t.index.review2Tag,
+    },
+    {
+      name: t.index.review3Name,
+      rating: 5,
+      body: t.index.review3Body,
+      tag: t.index.review3Tag,
+    },
+  ] as const;
+
   useEffect(() => {
+    if (alwaysLive) {
+      setLive(true);
+      return;
+    }
     const root = rootRef.current;
     const appear = appearRef.current;
     if (!root || !appear) return;
@@ -45,9 +75,8 @@ export default function BookingPhoneMock({ className }: { className?: string }) 
     }, root);
 
     return () => ctx.revert();
-  }, []);
+  }, [alwaysLive]);
 
-  // Scroll-velocity jello on inner layer only (Y only, no rotate = no white fringe)
   useEffect(() => {
     const jello = jelloRef.current;
     if (!jello) return;
@@ -110,20 +139,21 @@ export default function BookingPhoneMock({ className }: { className?: string }) 
   useEffect(() => {
     if (!live) return;
     const id = window.setInterval(() => {
-      setStep((s) => (s + 1) % 3);
+      setStep((s) => (s + 1) % reviews.length);
     }, STEP_MS);
     return () => window.clearInterval(id);
-  }, [live]);
+  }, [live, reviews.length]);
 
   return (
     <div ref={rootRef} className={cn("flex justify-center", className)}>
       <div
         ref={appearRef}
-        className="relative w-[220px] sm:w-[240px]"
+        className="relative w-[220px] sm:w-[248px]"
         style={{
           transformOrigin: "center center",
           backfaceVisibility: "hidden",
           WebkitBackfaceVisibility: "hidden",
+          opacity: alwaysLive ? 1 : undefined,
         }}
       >
         <div
@@ -131,7 +161,6 @@ export default function BookingPhoneMock({ className }: { className?: string }) 
           className="will-change-transform"
           style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
         >
-          {/* Solid bezel plate: no CSS border (borders fringe when transformed) */}
           <div
             className="relative overflow-hidden rounded-[2rem] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.45)]"
             style={{
@@ -142,105 +171,61 @@ export default function BookingPhoneMock({ className }: { className?: string }) 
           >
             <div
               className="relative aspect-[9/19] overflow-hidden rounded-[1.5rem]"
-              style={{ background: "#f7f9fc", transform: "translateZ(0)" }}
+              style={{ background: "#f4f6f9", transform: "translateZ(0)" }}
             >
               <div className="absolute inset-0">
-                <PhoneScreen active={step === 0}>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(217_75%_42%)]">
-                    Premiere
-                  </p>
-                  <h4 className="mt-1.5 font-heading text-[15px] font-extrabold leading-tight tracking-tight text-[#141414]">
-                    {t.index.phoneSearchTitle}
-                  </h4>
-                  <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-2.5 py-2.5 shadow-sm">
-                    <Search size={12} className="shrink-0 text-[hsl(217_75%_45%)]" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[11px] font-medium text-[#141414]">{t.index.phoneSearchQuery}</p>
-                      <p className="text-[9px] text-[#6b7280]">{t.index.phoneSearchPostal}</p>
-                    </div>
-                  </div>
-                  <div className="mt-3 space-y-1.5">
-                    {[t.index.phoneSearchHint1, t.index.phoneSearchHint2].map((hint) => (
-                      <div
-                        key={hint}
-                        className="rounded-lg bg-[hsl(217_75%_45%/0.08)] px-2.5 py-1.5 text-[10px] font-medium text-[#1f2937]"
-                      >
-                        {hint}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-auto flex items-center justify-between rounded-xl bg-[hsl(222_76%_24%)] px-3 py-2.5 text-white">
-                    <span className="text-[10px] font-semibold">{t.index.phoneSearchCta}</span>
-                    <ChevronRight size={12} />
-                  </div>
-                </PhoneScreen>
+                {reviews.map((review, i) => (
+                  <PhoneScreen key={review.name} active={step === i}>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(217_75%_42%)]">
+                      {t.index.reviewPhoneEyebrow}
+                    </p>
+                    <h4 className="mt-1.5 font-heading text-[15px] font-extrabold leading-tight tracking-tight text-[#141414]">
+                      {t.index.reviewPhoneTitle}
+                    </h4>
 
-                <PhoneScreen active={step === 1}>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(217_75%_42%)]">
-                    {t.index.phoneProEyebrow}
-                  </p>
-                  <div className="mt-3 flex items-center gap-2.5">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(35_92%_60%/0.25)] text-sm font-bold text-[hsl(222_76%_24%)]">
-                      MJ
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-[13px] font-bold text-[#141414]">{t.index.phoneProName}</p>
-                      <p className="flex items-center gap-1 text-[10px] text-[#6b7280]">
-                        <Star size={10} className="fill-[hsl(35_92%_55%)] text-[hsl(35_92%_55%)]" />
-                        4.9 · {t.index.phoneProJobs}
+                    <div className="mt-4 rounded-2xl border border-[#e5e7eb] bg-white p-3.5 shadow-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-[12px] font-bold text-[#141414]">{review.name}</p>
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          {Array.from({ length: review.rating }).map((_, si) => (
+                            <Star
+                              key={si}
+                              size={11}
+                              className="fill-[hsl(35_92%_55%)] text-[hsl(35_92%_55%)]"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="mt-2 text-[11px] leading-relaxed text-[#374151]">{review.body}</p>
+                      <p className="mt-3 inline-flex rounded-md bg-[hsl(217_75%_45%/0.1)] px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[hsl(222_76%_28%)]">
+                        {review.tag}
                       </p>
                     </div>
-                  </div>
-                  <p className="mt-3 flex items-center gap-1 text-[10px] text-[#6b7280]">
-                    <MapPin size={10} />
-                    {t.index.phoneProArea}
-                  </p>
-                  <div className="mt-3 space-y-1.5">
-                    {[t.index.phoneProTag1, t.index.phoneProTag2].map((tag) => (
-                      <div
-                        key={tag}
-                        className="flex items-center gap-1.5 rounded-lg border border-[#e5e7eb] bg-white px-2 py-1.5 text-[10px] text-[#141414]"
-                      >
-                        <Check size={10} className="text-[hsl(160_50%_35%)]" />
-                        {tag}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-auto rounded-xl bg-[hsl(217_75%_45%)] px-3 py-2.5 text-center text-[10px] font-semibold text-white">
-                    {t.index.phoneProCta}
-                  </div>
-                </PhoneScreen>
 
-                <PhoneScreen active={step === 2}>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(217_75%_42%)]">
-                    {t.index.phonePriceEyebrow}
-                  </p>
-                  <h4 className="mt-1.5 font-heading text-[14px] font-extrabold leading-tight text-[#141414]">
-                    {t.index.phonePriceTitle}
-                  </h4>
-                  <div className="mt-4 rounded-2xl border border-[#e5e7eb] bg-white p-3.5 shadow-sm">
-                    <p className="text-[9px] font-medium uppercase tracking-wide text-[#6b7280]">
-                      {t.index.phonePriceEstimate}
-                    </p>
-                    <p className="mt-0.5 font-heading text-[28px] font-extrabold tracking-tight text-[hsl(222_76%_24%)]">
-                      {t.index.phonePriceAmount}
-                    </p>
-                    <p className="text-[10px] text-[#6b7280]">{t.index.phonePriceNote}</p>
-                  </div>
-                  <div className="mt-3 space-y-1.5">
-                    <div className="flex justify-between text-[10px]">
-                      <span className="text-[#6b7280]">{t.index.phonePriceLine1}</span>
-                      <span className="font-semibold text-[#141414]">$85</span>
+                    <ul className="mt-3 space-y-1.5">
+                      {[t.index.reviewBullet1, t.index.reviewBullet2, t.index.reviewBullet3].map((bullet) => (
+                        <li
+                          key={bullet}
+                          className="rounded-lg border border-[#e8eaee] bg-white/80 px-2.5 py-1.5 text-[10px] font-medium leading-snug text-[#1f2937]"
+                        >
+                          {bullet}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="mt-auto flex items-center justify-center gap-1.5 pt-3">
+                      {reviews.map((_, di) => (
+                        <span
+                          key={di}
+                          className={cn(
+                            "h-1.5 rounded-full transition-all duration-500",
+                            di === step ? "w-5 bg-[hsl(222_76%_24%)]" : "w-1.5 bg-[#d1d5db]"
+                          )}
+                        />
+                      ))}
                     </div>
-                    <div className="flex justify-between text-[10px]">
-                      <span className="text-[#6b7280]">{t.index.phonePriceLine2}</span>
-                      <span className="font-semibold text-[#141414]">$20</span>
-                    </div>
-                  </div>
-                  <div className="mt-auto rounded-xl bg-[hsl(35_92%_55%)] px-3 py-2.5 text-center text-[10px] font-bold text-[hsl(222_47%_11%)]">
-                    {t.index.phonePriceCta}
-                  </div>
-                </PhoneScreen>
+                  </PhoneScreen>
+                ))}
               </div>
             </div>
           </div>

@@ -11,11 +11,8 @@ import { formatCanadianPostalInput, geocodePostalToLocation, isCompleteCanadianP
 import { BROWSE_POSTAL_CHANGED_EVENT, getBrowsePostalLocation, setBrowsePostalLocation } from "@/lib/browsePostalStorage";
 import { cleanSupportQuery } from "@/lib/supportAiQuery";
 import { searchProsByBusinessOrName, type ProBusinessSearchHit } from "@/lib/searchProBusiness";
-import MarketplacePreview from "@/components/home/MarketplacePreview";
-import RiveHeroMarketplace from "@/components/motion/RiveHeroMarketplace";
-import ServiceRequestDemo from "@/components/motion/ServiceRequestDemo";
+import BookingPhoneMock from "@/components/BookingPhoneMock";
 import { Button } from "@/components/ui/button";
-import type { MarketplaceMatchState } from "@/motion/types";
 
 const SEARCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-suggestions`;
 
@@ -82,15 +79,7 @@ export default function HeroSection() {
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [proOfferedRecords, setProOfferedRecords] = useState<ServiceRecordForAI[]>([]);
   const [proNameMatches, setProNameMatches] = useState<ProBusinessSearchHit[]>([]);
-  const [matchState, setMatchState] = useState<MarketplaceMatchState>("idle");
-  const [demoLabel, setDemoLabel] = useState<string | undefined>(undefined);
   const navigate = useNavigate();
-
-  const onDemoStateChange = useCallback((state: MarketplaceMatchState, label?: string) => {
-    setMatchState(state);
-    if (label) setDemoLabel(label);
-    if (state === "idle") setDemoLabel(undefined);
-  }, []);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [textareaFocused, setTextareaFocused] = useState(false);
@@ -355,21 +344,12 @@ export default function HeroSection() {
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-              <div
-                onMouseEnter={() => {
-                  if (matchState === "idle") setMatchState("hover");
-                }}
-                onMouseLeave={() => {
-                  if (matchState === "hover") setMatchState("idle");
-                }}
-              >
-                <Button size="lg" className="group h-11 px-6" asChild>
-                  <Link to="/make-request">
-                    {t.index.ctaPublish}
-                    <ArrowRight className="cta-arrow h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
+              <Button size="lg" className="group h-11 px-6" asChild>
+                <Link to="/make-request">
+                  {t.index.ctaPublish}
+                  <ArrowRight className="cta-arrow h-4 w-4" />
+                </Link>
+              </Button>
               <a
                 href="#hero-search"
                 className="text-[15px] font-semibold text-foreground/80 underline-offset-4 hover:text-foreground hover:underline transition-colors"
@@ -377,8 +357,6 @@ export default function HeroSection() {
                 {t.index.ctaFindPro}
               </a>
             </div>
-
-            <ServiceRequestDemo className="mt-8" onStateChange={onDemoStateChange} />
 
             <form id="hero-search" onSubmit={handleSubmit} className="mt-8 max-w-xl scroll-mt-28">
               <p className="mb-2.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -457,8 +435,6 @@ export default function HeroSection() {
                   <p className="px-0.5 text-xs text-muted-foreground">{t.makeRequest.step3Detecting}</p>
                 ) : postalError ? (
                   <p className="px-0.5 text-xs text-destructive">{postalError}</p>
-                ) : !postalResolved && !postalLoading ? (
-                  <p className="px-0.5 text-xs text-muted-foreground">{t.index.heroPostalHintHelp}</p>
                 ) : null}
 
                 {loading && (
@@ -571,14 +547,8 @@ export default function HeroSection() {
             </form>
           </div>
 
-          <div className="relative mt-2 space-y-4 lg:mt-0">
-            <RiveHeroMarketplace state={matchState} requestLabel={demoLabel} />
-            {(matchState === "searching" ||
-              matchState === "matching" ||
-              matchState === "matched" ||
-              matchState === "success") && (
-              <MarketplacePreview matchState={matchState} requestLabel={demoLabel} />
-            )}
+          <div className="relative mt-6 flex justify-center lg:mt-0 lg:justify-end">
+            <BookingPhoneMock alwaysLive />
           </div>
         </div>
       </div>

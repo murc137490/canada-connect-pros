@@ -5164,7 +5164,6 @@ export default function Dashboard() {
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                       <div>
                         <h3 className="font-heading font-bold text-foreground mb-1">{locale === "fr" ? "Vos demandes de service" : "Your service requests"}</h3>
-                        <p className="text-sm text-muted-foreground">Requests you posted. Quotes from pros appear below.</p>
                       </div>
                       <div className="flex items-center gap-2">
                         {proProfile?.is_verified ? (
@@ -5172,8 +5171,11 @@ export default function Dashboard() {
                             <Link to="/dashboard?tab=bookings">{t.dashboard.currentBookings}</Link>
                           </Button>
                         ) : null}
+                        <Button asChild size="sm" variant="outline">
+                          <Link to="/make-request">{t.makeRequest.draftsTitle}</Link>
+                        </Button>
                         <Button asChild size="sm">
-                          <Link to="/make-request">Make a request</Link>
+                          <Link to="/make-request">{locale === "fr" ? "Faire une demande" : "Make a request"}</Link>
                         </Button>
                       </div>
                     </div>
@@ -5289,7 +5291,9 @@ export default function Dashboard() {
                       })}
                     </ul>
                     {jobRequests.length === 0 && (
-                      <p className="text-sm text-muted-foreground">No requests yet. Post a job to receive quotes from pros.</p>
+                      <p className="text-sm text-muted-foreground">
+                        {locale === "fr" ? "Aucune demande pour l’instant." : "No requests yet."}
+                      </p>
                     )}
                   </div>
                 {/* My bookings (existing pro bookings) */}

@@ -80,7 +80,9 @@ export default function TimingAndDateFields({
 
       <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
         <p className="text-sm font-medium text-foreground">{mk.step6CalendarSection}</p>
-        <p className="text-xs text-muted-foreground">{mk.step6CalendarHint}</p>
+        {mk.step6CalendarHint ? (
+          <p className="text-xs text-muted-foreground">{mk.step6CalendarHint}</p>
+        ) : null}
         {usesAvailabilityModes && (
           <div className="grid gap-2 sm:grid-cols-3">
             {[

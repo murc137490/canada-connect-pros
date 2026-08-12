@@ -16,16 +16,36 @@ import {
   geocodePostalToLocation,
   isCompleteCanadianPostal,
 } from "@/lib/geocode";
+import {
+  buildDraftPayloadFromForm,
+  deleteJobRequestDraft,
+  draftDatesFromPayload,
+  listJobRequestDrafts,
+  MAX_JOB_REQUEST_DRAFTS,
+  saveJobRequestDraft,
+  saveJobRequestDraftReplacingOldest,
+  type JobRequestDraft,
+} from "@/lib/jobRequestDrafts";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronDown, Loader2, Upload, X } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { isContentBlocked } from "@/lib/contentModeration";
 import { jobRequestRulesList } from "@/lib/jobRequestRules";
 
 const REQUEST_PHOTOS_BUCKET = "job-request-photos";
 const MAX_REQUEST_PHOTOS = 5;
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 3;
 
 const CATEGORIES = [
   { value: "Plumbing", labelKey: "categoryPlumbing" as const },
@@ -67,6 +87,7 @@ export default function MakeRequest() {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
+  const [gaugePulse, setGaugePulse] = useState(0);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [description, setDescription] = useState("");
@@ -92,16 +113,16 @@ export default function MakeRequest() {
     lng: number | null;
   }>({ status: "idle", city: null, province: null, label: "", lat: null, lng: null });
   const [photos, setPhotos] = useState<File[]>([]);
+  const [drafts, setDrafts] = useState<JobRequestDraft[]>([]);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [pendingLeaveHref, setPendingLeaveHref] = useState<string | null>(null);
+  const [replaceDraftOpen, setReplaceDraftOpen] = useState(false);
   const allowLeaveRef = useRef(false);
   const shouldWarnOnLeaveRef = useRef(false);
-  const leaveWarn = t.makeRequest.leaveWarn;
 
-  const stepNav = [
-    t.makeRequest.stepNavNeed,
-    t.makeRequest.stepNavLocation,
-    t.makeRequest.stepNavDetails,
-    t.makeRequest.stepNavTiming,
-  ] as const;
+  const stepNav = [t.makeRequest.stepNavNeed, t.makeRequest.stepNavDetails, t.makeRequest.stepNavTiming] as const;
+  const progressPct = (step / TOTAL_STEPS) * 100;
 
   const photoPreviewUrls = useMemo(() => photos.map((file) => URL.createObjectURL(file)), [photos]);
   const hasDraft = useMemo(
@@ -138,6 +159,11 @@ export default function MakeRequest() {
     ]
   );
 
+  const refreshDrafts = () => {
+    if (!user) return;
+    setDrafts(listJobRequestDrafts(user.id));
+  };
+
   useEffect(() => {
     return () => {
       photoPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
@@ -149,7 +175,10 @@ export default function MakeRequest() {
     if (!user) {
       allowLeaveRef.current = true;
       navigate("/auth?mode=login&redirect=/make-request", { replace: true });
+      return;
     }
+    refreshDrafts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, navigate, authLoading]);
 
   useEffect(() => {
@@ -204,11 +233,11 @@ export default function MakeRequest() {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!shouldWarnOnLeaveRef.current) return;
       event.preventDefault();
-      event.returnValue = leaveWarn;
+      event.returnValue = t.makeRequest.leaveWarn;
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [leaveWarn]);
+  }, [t.makeRequest.leaveWarn]);
 
   useEffect(() => {
     const handleDocumentClick = (event: MouseEvent) => {
@@ -223,30 +252,94 @@ export default function MakeRequest() {
       const nextUrl = new URL(target.href, window.location.href);
       if (nextUrl.origin !== window.location.origin) return;
       if (nextUrl.pathname === window.location.pathname && nextUrl.search === window.location.search) return;
-      if (window.confirm(leaveWarn)) {
-        allowLeaveRef.current = true;
-        shouldWarnOnLeaveRef.current = false;
-        return;
-      }
+
       event.preventDefault();
       event.stopPropagation();
+      setPendingLeaveHref(`${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+      setLeaveOpen(true);
     };
 
     document.addEventListener("click", handleDocumentClick, true);
     return () => document.removeEventListener("click", handleDocumentClick, true);
-  }, [leaveWarn]);
+  }, []);
 
   const goToStep = (next: number) => {
     const clamped = Math.min(TOTAL_STEPS, Math.max(1, next));
     setStep(clamped);
+    setGaugePulse((n) => n + 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const formPayload = () =>
+    buildDraftPayloadFromForm({
+      step,
+      description,
+      postalCode,
+      category,
+      budgetMin,
+      budgetMax,
+      timing,
+      preferredDate,
+      preferredTimeWindow,
+      availabilityMode,
+      rangeStartDate,
+      rangeEndDate,
+      startHour,
+      endHour,
+      exactTime,
+    });
+
+  const applyDraft = (draft: JobRequestDraft) => {
+    const dates = draftDatesFromPayload(draft);
+    setActiveDraftId(draft.id);
+    setStep(Math.min(TOTAL_STEPS, Math.max(1, draft.step || 1)));
+    setDescription(draft.description);
+    setPostalCode(draft.postalCode);
+    setCategory(draft.category || "Other");
+    setBudgetMin(draft.budgetMin);
+    setBudgetMax(draft.budgetMax);
+    setTiming(draft.timing);
+    setPreferredDate(dates.preferredDate);
+    setPreferredTimeWindow(draft.preferredTimeWindow);
+    setAvailabilityMode(draft.availabilityMode);
+    setRangeStartDate(dates.rangeStartDate);
+    setRangeEndDate(dates.rangeEndDate);
+    setStartHour(draft.startHour);
+    setEndHour(draft.endHour);
+    setExactTime(draft.exactTime);
+    setPhotos([]);
+    setGaugePulse((n) => n + 1);
+    toast({ title: t.makeRequest.draftLoaded });
+  };
+
+  const persistDraft = (replaceOldest = false): boolean => {
+    if (!user) return false;
+    const payload = formPayload();
+    const untitled = t.makeRequest.draftUntitled;
+    const result = replaceOldest
+      ? saveJobRequestDraftReplacingOldest(user.id, payload, untitled)
+      : saveJobRequestDraft(user.id, payload, { existingId: activeDraftId, untitledLabel: untitled });
+
+    if (result.ok === false) {
+      if (result.reason === "empty") {
+        toast({ title: t.makeRequest.toastError, description: t.makeRequest.step1Label, variant: "destructive" });
+        return false;
+      }
+      setReplaceDraftOpen(true);
+      return false;
+    }
+    setActiveDraftId(result.draft.id);
+    refreshDrafts();
+    toast({ title: t.makeRequest.draftSaved });
+    return true;
+  };
+
   const canProceed = () => {
-    if (step === 1) return description.trim().length >= 10;
-    if (step === 2) return isCompleteCanadianPostal(postalCode) && postalLookup.status === "found";
+    if (step === 1) {
+      return description.trim().length >= 10 && isCompleteCanadianPostal(postalCode) && postalLookup.status === "found";
+    }
+    if (step === 2) return true;
     if (step === 3) return true;
-    if (step === 4) return true;
     return false;
   };
 
@@ -279,7 +372,7 @@ export default function MakeRequest() {
       const normalizedPostal = formatCanadianPostalInput(postalCode);
       if (!isCompleteCanadianPostal(normalizedPostal)) {
         toast({ title: t.makeRequest.toastError, description: t.makeRequest.step3Label, variant: "destructive" });
-        goToStep(2);
+        goToStep(1);
         return;
       }
 
@@ -294,8 +387,8 @@ export default function MakeRequest() {
             }
           : await geocodePostalToLocation(normalizedPostal);
       if (!location) {
-        toast({ title: t.makeRequest.toastLocationError, description: t.makeRequest.step3Hint, variant: "destructive" });
-        goToStep(2);
+        toast({ title: t.makeRequest.toastLocationError, description: t.makeRequest.step3LocationNotFound, variant: "destructive" });
+        goToStep(1);
         return;
       }
 
@@ -422,6 +515,10 @@ export default function MakeRequest() {
         throw error;
       }
       void data;
+      if (activeDraftId) {
+        deleteJobRequestDraft(user.id, activeDraftId);
+        refreshDrafts();
+      }
       toast({ title: t.makeRequest.toastSuccess, description: t.makeRequest.toastSuccessDesc });
       allowLeaveRef.current = true;
       navigate("/dashboard?tab=bookings", { replace: true });
@@ -454,17 +551,76 @@ export default function MakeRequest() {
     <Layout>
       <div className="min-h-screen bg-gradient-page">
         <div className="container max-w-2xl py-10 px-4">
-          <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">{t.makeRequest.title}</h1>
-          <p className="text-muted-foreground mb-6">{t.makeRequest.subtitle}</p>
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-1">{t.makeRequest.title}</h1>
+              <p className="text-muted-foreground">{t.makeRequest.subtitle}</p>
+            </div>
+            <Button type="button" variant="outline" onClick={() => persistDraft(false)}>
+              {t.makeRequest.saveDraft}
+            </Button>
+          </div>
+
+          {drafts.length > 0 && (
+            <div className="mb-6 rounded-lg border border-border bg-card/60 p-3">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                {t.makeRequest.draftsTitle} ({drafts.length}/{MAX_JOB_REQUEST_DRAFTS})
+              </p>
+              <ul className="space-y-1.5">
+                {drafts.map((d) => (
+                  <li key={d.id} className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => applyDraft(d)}
+                      className={cn(
+                        "min-w-0 flex-1 truncate rounded-md px-2.5 py-1.5 text-left text-sm font-medium hover:bg-muted/70",
+                        activeDraftId === d.id && "bg-primary/10 text-primary"
+                      )}
+                    >
+                      {d.title}
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      aria-label={t.makeRequest.draftDeleted}
+                      onClick={() => {
+                        deleteJobRequestDraft(user.id, d.id);
+                        if (activeDraftId === d.id) setActiveDraftId(null);
+                        refreshDrafts();
+                        toast({ title: t.makeRequest.draftDeleted });
+                      }}
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <nav aria-label={t.makeRequest.stepProgress.replace("{n}", String(step))} className="mb-8">
-            <ol className="flex items-center gap-1 sm:gap-2">
+            <div className="mb-4">
+              <div className="mb-2 flex items-end justify-between gap-3">
+                <p className="text-sm font-extrabold tracking-tight text-foreground">
+                  {t.makeRequest.stepProgress.replace("{n}", String(step))}
+                </p>
+                <p className="text-sm font-bold tabular-nums text-primary">{Math.round(progressPct)}%</p>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-muted border border-border/80">
+                <div
+                  key={gaugePulse}
+                  className="request-step-gauge h-full rounded-full bg-primary"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+            <ol className="grid grid-cols-3 gap-2">
               {stepNav.map((label, index) => {
                 const n = index + 1;
                 const active = n === step;
                 const done = n < step;
                 return (
-                  <li key={label} className="flex flex-1 items-center gap-1 sm:gap-2 min-w-0">
+                  <li key={label}>
                     <button
                       type="button"
                       onClick={() => {
@@ -472,41 +628,32 @@ export default function MakeRequest() {
                       }}
                       disabled={n > step}
                       className={cn(
-                        "flex w-full min-w-0 flex-col items-center gap-1 rounded-md px-1 py-2 text-center transition-colors",
-                        active && "bg-primary/10",
-                        done && "cursor-pointer hover:bg-muted/60",
-                        n > step && "opacity-45 cursor-not-allowed"
+                        "flex w-full items-center gap-2.5 rounded-xl border px-3 py-3 text-left transition-all",
+                        active && "border-primary bg-primary text-primary-foreground shadow-md scale-[1.02]",
+                        done && "border-primary/35 bg-primary/10 text-foreground cursor-pointer hover:bg-primary/15",
+                        !active && !done && "border-border bg-background text-muted-foreground opacity-70"
                       )}
                     >
                       <span
                         className={cn(
-                          "flex size-8 items-center justify-center rounded-full text-sm font-semibold tabular-nums border",
-                          active && "border-primary bg-primary text-primary-foreground",
-                          done && "border-primary/40 bg-primary/15 text-primary",
-                          !active && !done && "border-border bg-background text-muted-foreground"
+                          "flex size-9 shrink-0 items-center justify-center rounded-lg text-base font-black tabular-nums",
+                          active && "bg-primary-foreground/15",
+                          done && "bg-primary/20 text-primary",
+                          !active && !done && "bg-muted"
                         )}
                       >
                         {n}
                       </span>
-                      <span
-                        className={cn(
-                          "truncate text-[11px] sm:text-xs font-medium w-full",
-                          active ? "text-foreground" : "text-muted-foreground"
-                        )}
-                      >
+                      <span className={cn("truncate text-sm font-bold", active ? "text-primary-foreground" : "")}>
                         {label}
                       </span>
                     </button>
-                    {n < TOTAL_STEPS ? (
-                      <span className={cn("hidden sm:block h-px w-3 shrink-0", done ? "bg-primary/50" : "bg-border")} aria-hidden />
-                    ) : null}
                   </li>
                 );
               })}
             </ol>
           </nav>
 
-          {/* Remount panel on step change so the form view clears/resets visually */}
           <div key={step} className="animate-in fade-in-0 slide-in-from-right-2 duration-200">
             {step === 1 && (
               <div className="space-y-5">
@@ -518,15 +665,12 @@ export default function MakeRequest() {
                     >
                       {t.makeRequest.rulesToggle}
                       <ChevronDown
-                        className={cn(
-                          "size-4 transition-transform duration-200",
-                          rulesOpen && "rotate-180"
-                        )}
+                        className={cn("size-4 transition-transform duration-200", rulesOpen && "rotate-180")}
                         aria-hidden
                       />
                     </button>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-3 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0">
+                  <CollapsibleContent className="mt-3">
                     <ul className="list-disc pl-5 space-y-1.5 text-sm text-muted-foreground">
                       {jobRequestRulesList(locale).map((rule) => (
                         <li key={rule}>{rule}</li>
@@ -545,13 +689,8 @@ export default function MakeRequest() {
                     className="min-h-[140px] resize-y"
                     maxLength={2000}
                   />
-                  <p className="text-sm text-muted-foreground">{t.makeRequest.step1Tip}</p>
                 </div>
-              </div>
-            )}
 
-            {step === 2 && (
-              <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
                   <div className="space-y-2">
                     <Label htmlFor="postal-code">{t.makeRequest.step3Label}</Label>
@@ -564,44 +703,38 @@ export default function MakeRequest() {
                       inputMode="text"
                       maxLength={7}
                     />
-                    <p className="text-sm text-muted-foreground">{t.makeRequest.step3Hint}</p>
                     {postalLookup.status === "loading" && (
                       <p className="text-sm text-muted-foreground">{t.makeRequest.step3Detecting}</p>
                     )}
                     {postalLookup.status === "found" && (
-                      <p className="text-sm font-medium text-primary">
-                        {t.makeRequest.step3DetectedLocation}: {postalLookup.label}
-                      </p>
+                      <p className="text-sm font-medium text-primary">{postalLookup.label}</p>
                     )}
                     {postalLookup.status === "not-found" && (
                       <p className="text-sm text-destructive">{t.makeRequest.step3LocationNotFound}</p>
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>{t.makeRequest.mapPreviewLabel}</Label>
-                    <div className="overflow-hidden rounded-md border border-border bg-muted/40 aspect-[4/3] sm:aspect-square">
-                      {postalLookup.status === "found" && postalLookup.lat != null && postalLookup.lng != null ? (
-                        <iframe
-                          title={t.makeRequest.mapPreviewLabel}
-                          src={mapsEmbedUrl(postalLookup.lat, postalLookup.lng, locale)}
-                          className="h-full w-full border-0"
-                          loading="lazy"
-                          referrerPolicy="no-referrer-when-downgrade"
-                          allowFullScreen
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
-                          {postalLookup.status === "loading" ? t.makeRequest.step3Detecting : t.makeRequest.mapWaiting}
-                        </div>
-                      )}
-                    </div>
+                  <div className="overflow-hidden rounded-md border border-border bg-muted/40 aspect-[4/3] sm:aspect-square">
+                    {postalLookup.status === "found" && postalLookup.lat != null && postalLookup.lng != null ? (
+                      <iframe
+                        title={t.makeRequest.step3Label}
+                        src={mapsEmbedUrl(postalLookup.lat, postalLookup.lng, locale)}
+                        className="h-full w-full border-0"
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
+                        {postalLookup.status === "loading" ? t.makeRequest.step3Detecting : t.makeRequest.mapWaiting}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             )}
 
-            {step === 3 && (
+            {step === 2 && (
               <div className="space-y-8">
                 <div className="space-y-2">
                   <Label htmlFor="category">{t.makeRequest.step2Label}</Label>
@@ -694,7 +827,7 @@ export default function MakeRequest() {
               </div>
             )}
 
-            {step === 4 && (
+            {step === 3 && (
               <TimingAndDateFields
                 timing={timing}
                 onTimingChange={setTiming}
@@ -720,23 +853,83 @@ export default function MakeRequest() {
             )}
           </div>
 
-          <div className="flex justify-between mt-10">
+          <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
             <Button type="button" variant="outline" onClick={() => goToStep(step - 1)} disabled={step === 1}>
               {t.makeRequest.back}
             </Button>
-            {step < TOTAL_STEPS ? (
-              <Button type="button" onClick={() => goToStep(step + 1)} disabled={!canProceed()}>
-                {t.makeRequest.next}
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="secondary" onClick={() => persistDraft(false)}>
+                {t.makeRequest.saveDraft}
               </Button>
-            ) : (
-              <Button onClick={handleSubmit} disabled={submitting || !canProceed()}>
-                {submitting && <Loader2 size={16} className="animate-spin mr-2" />}
-                {t.makeRequest.submit}
-              </Button>
-            )}
+              {step < TOTAL_STEPS ? (
+                <Button type="button" onClick={() => goToStep(step + 1)} disabled={!canProceed()}>
+                  {t.makeRequest.next}
+                </Button>
+              ) : (
+                <Button onClick={handleSubmit} disabled={submitting || !canProceed()}>
+                  {submitting && <Loader2 size={16} className="animate-spin mr-2" />}
+                  {t.makeRequest.submit}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      <AlertDialog open={leaveOpen} onOpenChange={setLeaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t.makeRequest.title}</AlertDialogTitle>
+            <AlertDialogDescription>{t.makeRequest.leaveWarn}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>{t.makeRequest.leaveStay}</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                if (persistDraft(false)) {
+                  allowLeaveRef.current = true;
+                  shouldWarnOnLeaveRef.current = false;
+                  setLeaveOpen(false);
+                  if (pendingLeaveHref) navigate(pendingLeaveHref);
+                }
+              }}
+            >
+              {t.makeRequest.leaveSaveDraft}
+            </Button>
+            <AlertDialogAction
+              onClick={() => {
+                allowLeaveRef.current = true;
+                shouldWarnOnLeaveRef.current = false;
+                setLeaveOpen(false);
+                if (pendingLeaveHref) navigate(pendingLeaveHref);
+              }}
+            >
+              {t.makeRequest.leaveDiscard}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={replaceDraftOpen} onOpenChange={setReplaceDraftOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t.makeRequest.draftsTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{t.makeRequest.draftsMax}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t.makeRequest.leaveStay}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (persistDraft(true)) setReplaceDraftOpen(false);
+              }}
+            >
+              {t.makeRequest.draftsReplace}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
