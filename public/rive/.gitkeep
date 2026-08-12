@@ -1,0 +1,11 @@
+/**
+ * Drop a Rive file here as `hero-marketplace.riv` to replace the SVG hero animation.
+ *
+ * Expected state machine name: `Marketplace`
+ * Number input: `phase`
+ *   0 idle · 1 hover · 2 request · 3 searching · 4 matching · 5 matched · 6 success
+ *
+ * Until the file exists, Première uses the built-in SVG state-machine animation
+ * with the same states (driven by ServiceRequestDemo + CTA hover).
+ */
+export {};
