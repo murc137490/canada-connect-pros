@@ -13,7 +13,7 @@ import MakeRequestButton from "@/components/MakeRequestButton";
 import ServiceCategoryTile from "@/components/ServiceCategoryTile";
 import CategoryLottie from "@/components/CategoryLottie";
 import { popularServiceVisuals, popularServiceSrcSet } from "@/data/categoryVisuals";
-import { geocodePostalToLocation } from "@/lib/geocode";
+import { formatCanadianPostalInput, geocodePostalToLocation, isCompleteCanadianPostal } from "@/lib/geocode";
 import { getBrowsePostalLocation, setBrowsePostalLocation, BROWSE_POSTAL_CHANGED_EVENT } from "@/lib/browsePostalStorage";
 import { useToast } from "@/hooks/use-toast";
 
@@ -111,6 +111,14 @@ export default function Services() {
     });
     return true;
   }, [normalizedPostal, t.services.postalInvalid]);
+
+  useEffect(() => {
+    if (!isCompleteCanadianPostal(normalizedPostal) || postalResolved) return;
+    const tmr = window.setTimeout(() => {
+      void resolvePostal();
+    }, 350);
+    return () => window.clearTimeout(tmr);
+  }, [normalizedPostal, postalResolved, resolvePostal]);
 
   const warnPostalFirst = useCallback(() => {
     toast({
@@ -223,21 +231,24 @@ export default function Services() {
                     ) : null}
                     <input
                       type="text"
-                      placeholder={t.services.postalPlaceholder}
+                      inputMode="text"
+                      autoComplete="postal-code"
+                      placeholder="A1A 1A1"
                       value={postalCode}
                       onChange={(e) => {
-                        setPostalCode(e.target.value);
+                        const next = formatCanadianPostalInput(e.target.value);
+                        setPostalCode(next);
                         setPostalResolved(null);
                         setPostalError(null);
                       }}
                       onBlur={() => {
                         if (normalizedPostal) void resolvePostal();
                       }}
-                      maxLength={9}
+                      maxLength={7}
                       className={`block w-full min-w-[12.5rem] sm:min-w-[14rem] rounded-lg border px-3 py-2.5 text-center text-sm text-foreground bg-background outline-none focus:ring-2 ${
                         !postalResolved
-                          ? "border-blue-400/70 shadow-[0_0_22px_rgba(96,165,250,0.5)] animate-pulse focus:ring-blue-300/60"
-                          : "border-border focus:ring-secondary/50"
+                          ? "border-accent/55 focus:ring-accent/40"
+                          : "border-border focus:ring-ring"
                       }`}
                     />
                     {postalError ? (

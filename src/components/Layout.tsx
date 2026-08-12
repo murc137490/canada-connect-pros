@@ -178,16 +178,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           scrolled ? "site-header--compact" : ""
         }`}
       >
-        <div className={`container-page flex items-center justify-between gap-4 transition-all duration-300 ${scrolled ? "h-14" : "h-16 md:h-[4.25rem]"}`}>
+        <div className={`container-page flex items-center gap-3 transition-all duration-300 ${scrolled ? "h-12" : "h-14"}`}>
           <Link
             to="/"
-            className="min-w-0 shrink font-heading text-[15px] sm:text-base md:text-lg font-extrabold tracking-tight text-foreground hover:opacity-80 transition-opacity"
+            className="min-w-0 shrink font-heading text-sm sm:text-[15px] font-extrabold tracking-tight text-foreground hover:opacity-80 transition-opacity"
             aria-label="Premiere Services – Home"
           >
-            <span className="block truncate">Première Services</span>
+            <span className="block truncate">Première</span>
           </Link>
 
-          <nav className="hidden lg:flex items-center gap-1 absolute left-1/2 -translate-x-1/2" aria-label="Primary">
+          <nav className="hidden lg:flex items-center gap-0.5 ml-2" aria-label="Primary">
             {navLinks.map((l) => {
               const isActive =
                 location.pathname === l.href ||
@@ -196,7 +196,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Link
                   key={l.href}
                   to={l.href}
-                  className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  className={`rounded-md px-2 py-1.5 text-[13px] font-medium transition-colors ${
                     isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -206,20 +206,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="relative z-20 flex shrink-0 items-center justify-end gap-1.5 md:gap-2">
+          <div className="relative z-20 ml-auto flex shrink-0 items-center justify-end gap-1 md:gap-1.5">
             <button
               type="button"
               onClick={() => setLocale(locale === "en" ? "fr" : "en")}
-              className={`h-8 w-9 shrink-0 rounded-md border px-0 text-center text-[12px] font-semibold leading-none transition-colors md:h-9 md:w-10 ${langBtn}`}
+              className={`h-8 w-8 shrink-0 rounded-md border px-0 text-center text-[11px] font-semibold leading-none transition-colors ${langBtn}`}
               aria-label={locale === "en" ? "Switch to French" : "Passer en anglais"}
             >
               {locale === "en" ? "FR" : "EN"}
             </button>
-            <AnimatedThemeToggler className={`h-8 w-8 shrink-0 rounded-md md:h-9 md:w-9 ${themeBtn}`} />
+            <AnimatedThemeToggler className={`h-8 w-8 shrink-0 rounded-md ${themeBtn}`} />
             {user ? (
               <WhatsNewMenu items={whatsNewItems} variant="desktop" className="hidden sm:flex shrink-0" />
             ) : null}
-            <Button size="sm" className="hidden h-9 px-4 text-sm font-semibold md:inline-flex" asChild>
+            <Button size="sm" className="hidden h-8 px-3 text-[13px] font-semibold md:inline-flex" asChild>
               <Link to="/make-request">{t.nav.publishRequest}</Link>
             </Button>
             {user ? (
@@ -233,18 +233,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 items={[...menuItems]}
               />
             ) : (
-              <Button variant="ghost" size="sm" className="hidden h-9 px-3 text-sm font-semibold md:inline-flex" asChild>
+              <Button variant="ghost" size="sm" className="hidden h-8 px-2.5 text-[13px] font-semibold md:inline-flex" asChild>
                 <Link to="/auth?mode=login">{t.nav.logIn}</Link>
               </Button>
             )}
             <button
               type="button"
-              className="shrink-0 rounded-full p-1.5 text-foreground lg:hidden"
+              className="shrink-0 rounded-md p-1.5 text-foreground lg:hidden"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-expanded={mobileOpen}
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
             >
-              {mobileOpen ? <X size={22} strokeWidth={2} /> : <Menu size={22} strokeWidth={2} />}
+              {mobileOpen ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
             </button>
           </div>
         </div>
@@ -300,7 +300,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         className={`flex-1 min-h-screen w-full max-w-full min-w-0 bg-gradient-page m-0 p-0 ${
           isProProfilePage || isHome
             ? "pt-0"
-            : "pt-[calc(5rem+env(safe-area-inset-top,0px))]"
+            : "pt-[calc(4.25rem+env(safe-area-inset-top,0px))]"
         }`}
       >
         {children}

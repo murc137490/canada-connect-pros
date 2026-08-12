@@ -11,11 +11,9 @@ export default function HomeHowItWorks() {
   return (
     <section id="how-it-works" className="section-pad border-y border-border/70 bg-muted/35 dark:bg-muted/15">
       <div className="container-page">
-        <div className="max-w-xl">
-          <h2 className="font-display text-display-md text-foreground whitespace-pre-line">
-            {t.index.howTitle}
-          </h2>
-        </div>
+        <h2 className="font-display text-display-md text-foreground whitespace-pre-line max-w-xl">
+          {t.index.howTitle}
+        </h2>
 
         <ol className="relative mt-14 md:mt-20">
           {/* Desktop horizontal rail */}

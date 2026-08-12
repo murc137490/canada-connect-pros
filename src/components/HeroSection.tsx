@@ -7,7 +7,7 @@ import type { ServiceRecordForAI } from "@/data/services";
 import { fetchProOfferedServiceRecordsForHero } from "@/lib/heroProOfferedServices";
 import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
-import { geocodePostalToLocation } from "@/lib/geocode";
+import { formatCanadianPostalInput, geocodePostalToLocation, isCompleteCanadianPostal } from "@/lib/geocode";
 import { BROWSE_POSTAL_CHANGED_EVENT, getBrowsePostalLocation, setBrowsePostalLocation } from "@/lib/browsePostalStorage";
 import { cleanSupportQuery } from "@/lib/supportAiQuery";
 import { searchProsByBusinessOrName, type ProBusinessSearchHit } from "@/lib/searchProBusiness";
@@ -109,6 +109,16 @@ export default function HeroSection() {
     });
     return true;
   }, [normalizedPostal, t.index.checkServiceError]);
+
+  // Auto-lookup when a full Canadian postal is entered (Google via edge/client)
+  useEffect(() => {
+    if (!isCompleteCanadianPostal(normalizedPostal) || isPostalLocked) return;
+    if (postalResolved) return;
+    const tmr = window.setTimeout(() => {
+      void resolvePostal();
+    }, 350);
+    return () => window.clearTimeout(tmr);
+  }, [normalizedPostal, isPostalLocked, postalResolved, resolvePostal]);
 
   useEffect(() => {
     const syncFromStorage = () => {
@@ -319,7 +329,7 @@ export default function HeroSection() {
     "inline-flex items-center gap-2 rounded-full border border-border bg-background px-3.5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted";
 
   return (
-    <section className="relative overflow-x-hidden pt-[calc(5.25rem+env(safe-area-inset-top,0px))] pb-14 md:pb-20 lg:pt-[calc(6.75rem+env(safe-area-inset-top,0px))] lg:pb-28">
+    <section className="relative overflow-x-hidden pt-[calc(4.5rem+env(safe-area-inset-top,0px))] pb-12 md:pb-16 lg:pt-[calc(5.5rem+env(safe-area-inset-top,0px))] lg:pb-24">
       <div className="container-page">
         <div className="grid items-start gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-14 xl:gap-20">
           <div className="min-w-0">
@@ -360,10 +370,13 @@ export default function HeroSection() {
                   <input
                     id="hero-postal"
                     type="text"
-                    placeholder={t.index.heroPostalHint}
+                    inputMode="text"
+                    autoComplete="postal-code"
+                    placeholder="A1A 1A1"
                     value={postalCode}
                     onChange={(e) => {
-                      setPostalCode(e.target.value);
+                      const next = formatCanadianPostalInput(e.target.value);
+                      setPostalCode(next);
                       setPostalResolved(null);
                       setPostalError(null);
                     }}
@@ -371,7 +384,7 @@ export default function HeroSection() {
                       if (!isPostalLocked && normalizedPostal) void resolvePostal();
                     }}
                     disabled={isPostalLocked}
-                    maxLength={9}
+                    maxLength={7}
                     className={`w-full sm:w-[8.75rem] shrink-0 border bg-background px-3 py-2.5 text-center text-sm font-semibold tracking-wide text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 ${
                       !postalResolved ? "border-accent/55" : "border-border"
                     }`}

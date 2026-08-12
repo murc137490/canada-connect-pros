@@ -24,14 +24,14 @@ export default function HomeProductShowcase() {
             <h2 className="mt-4 font-display text-display-md tracking-tight text-white whitespace-pre-line">
               {t.index.showcaseTitle}
             </h2>
-            <p className="mt-5 max-w-md text-[17px] text-white/65 leading-relaxed">
+            <p className="mt-4 max-w-sm text-[15px] text-white/65 leading-relaxed">
               {t.index.showcaseSupport}
             </p>
 
-            <ol className="mt-8 space-y-3 border-l border-white/15 pl-5">
+            <ol className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-[13px] text-white/75">
               {journey.map((label, i) => (
-                <li key={label} className="flex items-baseline gap-3 text-[15px] text-white/80">
-                  <span className="font-display text-lg text-white/35 tabular-nums w-5">{i + 1}</span>
+                <li key={label} className="inline-flex items-center gap-1.5">
+                  <span className="font-semibold text-white/40 tabular-nums">{i + 1}.</span>
                   <span>{label}</span>
                 </li>
               ))}
@@ -39,7 +39,7 @@ export default function HomeProductShowcase() {
 
             <Button
               size="lg"
-              className="group mt-10 h-11 gap-2 bg-white text-primary hover:bg-white/92 px-6"
+              className="group mt-8 h-11 gap-2 bg-white text-primary hover:bg-white/92 px-6"
               asChild
             >
               <Link to="/make-request">
