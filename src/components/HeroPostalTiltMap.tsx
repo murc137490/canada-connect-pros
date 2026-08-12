@@ -16,8 +16,6 @@ type GoogleMapInstance = {
   setTilt: (t: number) => void;
   setHeading: (h: number) => void;
   setZoom: (z: number) => void;
-  setMapTypeId: (id: string) => void;
-  addListener: (event: string, handler: () => void) => { remove: () => void };
 };
 
 type GoogleMapsWindow = {
@@ -25,17 +23,13 @@ type GoogleMapsWindow = {
     maps?: {
       Map: new (el: HTMLElement, opts: Record<string, unknown>) => GoogleMapInstance;
       Marker: new (opts: Record<string, unknown>) => {
-        setMap: (m: unknown) => void;
         setPosition: (c: { lat: number; lng: number }) => void;
       };
     };
   };
 };
 
-/**
- * Normal rectangular map box; Google Maps camera uses 45° tilt (not top-down).
- * Hybrid/satellite is required for reliable 45° imagery in most cities.
- */
+/** Flat rectangular map: satellite bird’s-eye (top-down), no camera tilt. */
 export default function HeroPostalTiltMap({ lat, lng, className }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<GoogleMapInstance | null>(null);
@@ -50,16 +44,6 @@ export default function HeroPostalTiltMap({ lat, lng, className }: Props) {
 
     let cancelled = false;
     let resizeObserver: ResizeObserver | undefined;
-    let idleListener: { remove: () => void } | undefined;
-
-    const applyTilt = () => {
-      const map = mapInstanceRef.current;
-      if (!map) return;
-      map.setMapTypeId("hybrid");
-      map.setZoom(18);
-      map.setTilt(45);
-      map.setHeading(35);
-    };
 
     const run = async () => {
       try {
@@ -74,10 +58,10 @@ export default function HeroPostalTiltMap({ lat, lng, className }: Props) {
         if (!mapInstanceRef.current) {
           const map = new g.maps.Map(mapRef.current, {
             center,
-            zoom: 18,
+            zoom: 16,
             mapTypeId: "hybrid",
-            tilt: 45,
-            heading: 35,
+            tilt: 0,
+            heading: 0,
             disableDefaultUI: true,
             zoomControl: false,
             mapTypeControl: false,
@@ -87,33 +71,28 @@ export default function HeroPostalTiltMap({ lat, lng, className }: Props) {
             gestureHandling: "cooperative",
             rotateControl: false,
           });
-          mapInstanceRef.current = map as typeof mapInstanceRef.current;
+          mapInstanceRef.current = map;
           markerRef.current = new g.maps.Marker({
             map,
             position: center,
           });
-          idleListener = map.addListener("idle", () => {
-            applyTilt();
-          });
         } else {
           mapInstanceRef.current.setCenter(center);
+          mapInstanceRef.current.setZoom(16);
+          mapInstanceRef.current.setTilt(0);
+          mapInstanceRef.current.setHeading(0);
           markerRef.current?.setPosition(center);
-          applyTilt();
         }
 
         resizeObserver = new ResizeObserver(() => {
           triggerMapResize(mapInstanceRef.current);
-          applyTilt();
         });
         resizeObserver.observe(mapRef.current);
 
         requestAnimationFrame(() => {
           triggerMapResize(mapInstanceRef.current);
-          applyTilt();
+          mapInstanceRef.current?.setTilt(0);
         });
-        // Tilt often applies only after tiles load
-        window.setTimeout(applyTilt, 400);
-        window.setTimeout(applyTilt, 1200);
         setFailed(false);
       } catch (err) {
         console.warn("Hero postal map failed:", err);
@@ -125,11 +104,10 @@ export default function HeroPostalTiltMap({ lat, lng, className }: Props) {
     return () => {
       cancelled = true;
       resizeObserver?.disconnect();
-      idleListener?.remove();
     };
   }, [lat, lng]);
 
-  const embedFallback = `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}&z=17&output=embed`;
+  const embedFallback = `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}&z=16&t=k&output=embed`;
 
   return (
     <div
