@@ -72,26 +72,29 @@
 
   .dark {
     color-scheme: dark;
-    /* Pure black canvas; brand colors stay on CTAs */
+    /* One consistent black (Wealthsimple-style); brand colors stay on CTAs */
     --background: 0 0% 0%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 6%;
+    --card: 0 0% 0%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 6%;
+    --popover: 0 0% 4%;
     --popover-foreground: 0 0% 98%;
     --primary: 222 76% 36%;
     --primary-foreground: 0 0% 100%;
     --secondary: 217 75% 55%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 70%;
+    --muted: 0 0% 8%;
+    --muted-foreground: 0 0% 68%;
     --accent: 35 92% 60%;
     --accent-foreground: 222 47% 11%;
     --destructive: 0 62% 40%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
+    --border: 0 0% 14%;
+    --input: 0 0% 12%;
     --ring: 35 92% 60%;
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 14%;
   }
 }
 
@@ -142,10 +145,39 @@
     min-height: 100%;
   }
   .dark body,
-  .dark .bg-gradient-page {
+  .dark .bg-gradient-page,
+  .dark #root {
     color: hsl(var(--foreground));
-    background: hsl(var(--background));
+    background: #000;
   }
+
+  /* Wealthsimple-style glass support panel */
+  .support-glass {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 24px 80px -20px rgba(0, 0, 0, 0.35);
+  }
+  .dark .support-glass {
+    background: rgba(22, 22, 22, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 24px 80px -16px rgba(0, 0, 0, 0.75);
+  }
+
+  @keyframes supportDotPulse {
+    0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+    40% { opacity: 1; transform: translateY(-2px); }
+  }
+  .support-typing-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+    animation: supportDotPulse 1.2s ease-in-out infinite;
+  }
+  .support-typing-dot:nth-child(2) { animation-delay: 0.15s; }
+  .support-typing-dot:nth-child(3) { animation-delay: 0.3s; }
 
   @supports (view-transition-name: none) {
     ::view-transition-old(root),

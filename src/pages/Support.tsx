@@ -1,29 +1,21 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { Send, Bot, HelpCircle, BookOpen, Phone, Plus, Loader2 } from "lucide-react";
+import { Send, Bot, HelpCircle, BookOpen, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import GradientText from "@/components/GradientText";
 import TextType from "@/components/TextType";
 import BlurText from "@/components/BlurText";
-import { cleanSupportQuery, inferSupportReplyLanguage } from "@/lib/supportAiQuery";
-
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
-
-const AI_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-hf`;
+import { sendSupportChatMessage, type SupportChatMessage } from "@/lib/supportChatApi";
 
 export default function Support() {
-  const { t, locale } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const prefillPrompt = searchParams.get("prompt");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<SupportChatMessage[]>([]);
   const initialMessage = t.support.aiGreeting;
   useEffect(() => {
     setMessages((prev) =>
@@ -49,80 +41,26 @@ export default function Support() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, loading]);
 
   const sendMessage = async () => {
     const raw = input.trim();
     if (!raw || loading) return;
 
-    const cleaned = cleanSupportQuery(raw);
-    const replyLang = inferSupportReplyLanguage(messages, cleaned);
-
-    const userMsg: ChatMessage = { role: "user", content: raw };
+    const prior = messages;
+    const userMsg: SupportChatMessage = { role: "user", content: raw };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
 
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    const result = await sendSupportChatMessage(raw, prior, {
+      signIn: t.support.signInToUse,
+      noReply: t.support.noReply,
+      errorGeneric: t.support.errorGeneric,
+    });
 
-      if (!session) {
-        setMessages((prev) => [...prev, { role: "assistant", content: t.support.signInToUse }]);
-        setLoading(false);
-        return;
-      }
-
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      if (!anonKey) {
-        setMessages((prev) => [...prev, { role: "assistant", content: "App misconfiguration: VITE_SUPABASE_ANON_KEY is missing." }]);
-        setLoading(false);
-        return;
-      }
-
-      /** Conversational support assistant (HF) — same path for every message; no rigid service list. */
-      const resp = await fetch(AI_CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${anonKey}`,
-          apikey: anonKey,
-        },
-        body: JSON.stringify({
-          message: cleaned,
-          access_token: session.access_token,
-          language: replyLang,
-          intent: "support_help",
-          conversation_history: messages
-            .slice(-16)
-            .filter((m) => m.role === "user" || m.role === "assistant")
-            .map(({ role, content }) => ({ role, content })),
-        }),
-      });
-
-      const data = (await resp.json().catch(() => ({}))) as { message?: string; error?: string; details?: string };
-      const reply = data.message?.trim();
-      const errMsg = data.error;
-      const details = data.details;
-
-      if (!resp.ok) {
-        const displayMsg = details
-          ? `${errMsg || "Error"}: ${details}`
-          : errMsg
-            ? `The assistant couldn't respond: ${errMsg}`
-            : `Request failed (${resp.status}).`;
-        setMessages((prev) => [...prev, { role: "assistant", content: displayMsg }]);
-        return;
-      }
-
-      setMessages((prev) => [...prev, { role: "assistant", content: reply || t.support.noReply }]);
-    } catch (e) {
-      console.error("Support AI error:", e);
-      setMessages((prev) => [...prev, { role: "assistant", content: t.support.errorGeneric }]);
-    } finally {
-      setLoading(false);
-    }
+    setMessages((prev) => [...prev, { role: "assistant", content: result.reply }]);
+    setLoading(false);
   };
 
   return (
@@ -265,35 +203,44 @@ export default function Support() {
                   </div>
                 ))}
                 {loading && (
-                  <div className="flex gap-3">
+                  <div className="flex gap-3" aria-live="polite" aria-label={t.support.aiThinking}>
                     <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
                       <Bot size={16} className="text-secondary" />
                     </div>
-                    <div className="content-panel px-4 py-3 rounded-2xl text-foreground flex items-center gap-2 min-w-[140px]">
-                      <Loader2 size={18} className="animate-spin text-secondary shrink-0" />
-                      <span>{t.support.aiThinking}</span>
+                    <div className="content-panel px-4 py-3 rounded-2xl text-foreground flex items-center gap-1.5 min-w-[64px]">
+                      <span className="support-typing-dot" />
+                      <span className="support-typing-dot" />
+                      <span className="support-typing-dot" />
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="border-t border-white/10 dark:border-gray-700/20 p-4 flex gap-3">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                  placeholder={t.support.askPlaceholder}
-                  className="flex-1 glass-card rounded-2xl px-4 py-3 text-sm outline-none text-foreground placeholder:text-muted-foreground"
-                />
-                <Button
-                  size="sm"
-                  onClick={sendMessage}
-                  disabled={loading || !input.trim()}
-                  className="bg-secondary text-secondary-foreground hover:bg-secondary/90 h-auto px-4"
-                >
-                  <Send size={16} />
-                </Button>
+              <div className="border-t border-white/10 dark:border-gray-700/20 p-4 space-y-2">
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                    placeholder={t.support.askPlaceholder}
+                    className="flex-1 glass-card rounded-2xl px-4 py-3 text-sm outline-none text-foreground placeholder:text-muted-foreground"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={sendMessage}
+                    disabled={loading || !input.trim()}
+                    className="bg-secondary text-secondary-foreground hover:bg-secondary/90 h-auto px-4"
+                  >
+                    <Send size={16} />
+                  </Button>
+                </div>
+                <p className="text-center text-[11px] text-muted-foreground">
+                  {t.support.chatDisclaimer}{" "}
+                  <Link to="/terms" className="underline underline-offset-2 hover:text-foreground">
+                    {t.common.helpDisclaimerLink}
+                  </Link>
+                </p>
               </div>
             </div>
           </div>
