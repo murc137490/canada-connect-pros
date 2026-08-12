@@ -1,6 +1,6 @@
 /**
- * Geocode via Supabase Edge Function (Google Maps Geocoding API server-side),
- * with a direct Google client fallback when VITE_GOOGLE_* is set.
+ * Geocode via Supabase Edge Function (Google / geocoder.ca / Zippopotam),
+ * with a direct Google client fallback when the edge call fails.
  */
 
 export interface GeocodeResult {
@@ -35,15 +35,56 @@ export function isCompleteCanadianPostal(raw: string): boolean {
   return /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$/.test(compact);
 }
 
-function normalizeQuery(address: string): { query: string; isCaPostal: boolean } {
+function compactPostal(raw: string): string {
+  return raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function normalizeQuery(address: string): { query: string; isCaPostal: boolean; compact: string | null } {
   const trimmed = address.trim();
-  const compact = trimmed.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const compact = compactPostal(trimmed);
   const isCaPostal = /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$/.test(compact);
   if (isCaPostal) {
     const spaced = `${compact.slice(0, 3)} ${compact.slice(3)}`;
-    return { query: `${spaced}, Canada`, isCaPostal: true };
+    return { query: spaced, isCaPostal: true, compact };
   }
-  return { query: trimmed, isCaPostal: false };
+  return { query: trimmed, isCaPostal: false, compact: null };
+}
+
+type GoogleResult = {
+  geometry?: { location?: { lat: number; lng: number } };
+  formatted_address?: string;
+  address_components?: { long_name: string; short_name: string; types: string[] }[];
+  types?: string[];
+};
+
+function postalFromComponents(
+  components: { long_name: string; short_name: string; types: string[] }[] | undefined
+): string | null {
+  for (const c of components ?? []) {
+    if (c.types.includes("postal_code")) return compactPostal(c.long_name || c.short_name);
+  }
+  return null;
+}
+
+function parseGoogleResult(first: GoogleResult): GeocodeLocation | null {
+  const loc = first?.geometry?.location;
+  if (loc == null || typeof loc.lat !== "number" || typeof loc.lng !== "number") return null;
+
+  let city: string | null = null;
+  let province: string | null = null;
+  for (const c of first.address_components ?? []) {
+    if (!city && (c.types.includes("locality") || c.types.includes("postal_town"))) city = c.long_name;
+    if (!city && c.types.includes("sublocality")) city = c.long_name;
+    if (c.types.includes("administrative_area_level_1")) province = c.short_name || c.long_name;
+  }
+
+  return {
+    lat: loc.lat,
+    lng: loc.lng,
+    city,
+    province,
+    formattedAddress: first.formatted_address,
+  };
 }
 
 async function geocodeViaEdge(address: string): Promise<GeocodeLocation | null> {
@@ -76,46 +117,48 @@ async function geocodeViaEdge(address: string): Promise<GeocodeLocation | null> 
 
 async function geocodeViaGoogleClient(address: string): Promise<GeocodeLocation | null> {
   if (!CLIENT_KEY) return null;
-  const { query, isCaPostal } = normalizeQuery(address);
+  const { query, isCaPostal, compact } = normalizeQuery(address);
+
+  const urls: string[] = [];
+  if (isCaPostal) {
+    const byComponent = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+    byComponent.searchParams.set("components", `postal_code:${query}|country:CA`);
+    byComponent.searchParams.set("key", CLIENT_KEY);
+    byComponent.searchParams.set("region", "ca");
+    urls.push(byComponent.toString());
+  }
+
+  const byAddress = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+  byAddress.searchParams.set("address", isCaPostal ? `${query}, Canada` : query);
+  byAddress.searchParams.set("key", CLIENT_KEY);
+  byAddress.searchParams.set("region", "ca");
+  if (isCaPostal) byAddress.searchParams.set("components", "country:CA");
+  urls.push(byAddress.toString());
+
   try {
-    const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
-    url.searchParams.set("address", query);
-    url.searchParams.set("key", CLIENT_KEY);
-    url.searchParams.set("region", "ca");
-    if (isCaPostal) url.searchParams.set("components", "country:CA");
+    for (const url of urls) {
+      const res = await fetch(url);
+      const data = (await res.json()) as { status: string; results?: GoogleResult[] };
+      if (data.status !== "OK" || !data.results?.length) continue;
 
-    const res = await fetch(url.toString());
-    const data = (await res.json()) as {
-      status: string;
-      results?: {
-        geometry?: { location?: { lat: number; lng: number } };
-        formatted_address?: string;
-        address_components?: { long_name: string; short_name: string; types: string[] }[];
-      }[];
-    };
-    if (data.status !== "OK" || !data.results?.length) {
-      console.warn("Google geocode status:", data.status);
-      return null;
+      let best = data.results[0];
+      if (compact) {
+        const exact = data.results.find((r) => postalFromComponents(r.address_components) === compact);
+        if (exact) best = exact;
+        else {
+          const postalTyped = data.results.find((r) => r.types?.includes("postal_code"));
+          if (postalTyped) best = postalTyped;
+        }
+      }
+
+      const got = postalFromComponents(best.address_components);
+      // Exact LDU only — approximate FSA hits share one pin for every code in H3Z*
+      if (compact && got !== compact) continue;
+
+      const parsed = parseGoogleResult(best);
+      if (parsed) return parsed;
     }
-    const first = data.results[0];
-    const loc = first?.geometry?.location;
-    if (loc == null || typeof loc.lat !== "number" || typeof loc.lng !== "number") return null;
-
-    let city: string | null = null;
-    let province: string | null = null;
-    for (const c of first.address_components ?? []) {
-      if (!city && (c.types.includes("locality") || c.types.includes("postal_town"))) city = c.long_name;
-      if (!city && c.types.includes("sublocality")) city = c.long_name;
-      if (c.types.includes("administrative_area_level_1")) province = c.short_name || c.long_name;
-    }
-
-    return {
-      lat: loc.lat,
-      lng: loc.lng,
-      city,
-      province,
-      formattedAddress: first.formatted_address,
-    };
+    return null;
   } catch (err) {
     console.warn("Client geocode error:", err);
     return null;
@@ -145,7 +188,10 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
   }
 }
 
-/** Geocode postal/address — edge function (Google) first, then client Google key. */
+/**
+ * Geocode postal/address.
+ * Edge resolves full Canadian LDUs via geocoder.ca (then exact Google, then FSA fallback).
+ */
 export async function geocodePostalToLocation(postalOrAddress: string): Promise<GeocodeLocation | null> {
   const trimmed = postalOrAddress?.trim();
   if (!trimmed) return null;

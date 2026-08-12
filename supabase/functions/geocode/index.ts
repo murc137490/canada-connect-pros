@@ -1,7 +1,7 @@
 /**
  * Server-side geocode proxy.
- * Prefer Google when GOOGLE_MAPS_API_KEY (or GOOGLE_PLACES_API_KEY) is set.
- * Falls back to Zippopotam (Canadian FSA) so postals still resolve without a Google secret.
+ * Prefer Google (full postal_code components) when GOOGLE_MAPS_API_KEY is set.
+ * Full Canadian LDU via geocoder.ca before Zippopotam FSA (3-char centroid).
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
@@ -24,6 +24,13 @@ type GeoOut = {
   formattedAddress: string | null;
 };
 
+type GoogleResult = {
+  geometry?: { location?: { lat: number; lng: number } };
+  formatted_address?: string;
+  address_components?: { long_name: string; short_name: string; types: string[] }[];
+  types?: string[];
+};
+
 function compactPostal(raw: string): string {
   return raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
@@ -36,35 +43,22 @@ function normalizeCanadianPostal(raw: string): string {
   return raw.trim();
 }
 
-function isCaPostal(address: string): boolean {
-  return /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ ]?\d[ABCEGHJ-NPRSTV-Z]\d$/i.test(
-    address.replace(/\s+/g, " ").trim()
-  );
+function isFullCaPostal(address: string): boolean {
+  return /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$/i.test(compactPostal(address));
 }
 
-async function geocodeGoogle(address: string): Promise<GeoOut | null> {
-  if (!API_KEY) return null;
-  const ca = isCaPostal(address);
-  const query = ca && !/canada/i.test(address) ? `${address}, Canada` : address;
+function postalFromComponents(
+  components: { long_name: string; short_name: string; types: string[] }[] | undefined
+): string | null {
+  for (const c of components ?? []) {
+    if (c.types.includes("postal_code")) {
+      return compactPostal(c.long_name || c.short_name);
+    }
+  }
+  return null;
+}
 
-  const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
-  url.searchParams.set("address", query);
-  url.searchParams.set("key", API_KEY);
-  url.searchParams.set("region", "ca");
-  if (ca) url.searchParams.set("components", "country:CA");
-
-  const res = await fetch(url.toString());
-  const data = (await res.json()) as {
-    status: string;
-    results?: {
-      geometry?: { location?: { lat: number; lng: number } };
-      formatted_address?: string;
-      address_components?: { long_name: string; short_name: string; types: string[] }[];
-    }[];
-  };
-
-  if (data.status !== "OK" || !data.results?.length) return null;
-  const first = data.results[0];
+function parseGoogleResult(first: GoogleResult): GeoOut | null {
   const loc = first?.geometry?.location;
   if (loc == null || typeof loc.lat !== "number" || typeof loc.lng !== "number") return null;
 
@@ -85,7 +79,113 @@ async function geocodeGoogle(address: string): Promise<GeoOut | null> {
   };
 }
 
-/** Canadian FSA (first 3 chars) via Zippopotam — reliable without API key. */
+function pickBestGoogleResult(results: GoogleResult[], wantedCompact: string | null): GoogleResult | null {
+  if (!results.length) return null;
+  if (wantedCompact) {
+    const exact = results.find((r) => postalFromComponents(r.address_components) === wantedCompact);
+    if (exact) return exact;
+    // Prefer a postal_code typed result over a broader locality match
+    const postalTyped = results.find((r) => r.types?.includes("postal_code"));
+    if (postalTyped) return postalTyped;
+  }
+  return results[0];
+}
+
+async function geocodeGoogle(address: string): Promise<GeoOut | null> {
+  if (!API_KEY) return null;
+
+  const fullCa = isFullCaPostal(address);
+  const spaced = fullCa ? normalizeCanadianPostal(address) : address.trim();
+  const wanted = fullCa ? compactPostal(address) : null;
+
+  const attempts: URL[] = [];
+
+  if (fullCa) {
+    // Most precise for Canada Post LDUs
+    const byComponent = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+    byComponent.searchParams.set("components", `postal_code:${spaced}|country:CA`);
+    byComponent.searchParams.set("key", API_KEY);
+    byComponent.searchParams.set("region", "ca");
+    attempts.push(byComponent);
+  }
+
+  const byAddress = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+  byAddress.searchParams.set("address", fullCa ? `${spaced}, Canada` : spaced);
+  byAddress.searchParams.set("key", API_KEY);
+  byAddress.searchParams.set("region", "ca");
+  if (fullCa) byAddress.searchParams.set("components", "country:CA");
+  attempts.push(byAddress);
+
+  for (const url of attempts) {
+    const res = await fetch(url.toString());
+    const data = (await res.json()) as { status: string; results?: GoogleResult[] };
+    if (data.status !== "OK" || !data.results?.length) continue;
+    const best = pickBestGoogleResult(data.results, wanted);
+    const parsed = best ? parseGoogleResult(best) : null;
+    if (!parsed) continue;
+    // Full Canadian LDUs must match exactly — otherwise Google often returns the FSA centroid
+    // (same pin for every H3Z*), and we'd never reach geocoder.ca.
+    if (wanted) {
+      const got = postalFromComponents(best?.address_components);
+      if (got !== wanted) continue;
+    }
+    return parsed;
+  }
+
+  return null;
+}
+
+/** Full 6-char Canadian postal (LDU) — more precise than Zippopotam FSA. */
+async function geocodeGeocoderCa(address: string): Promise<GeoOut | null> {
+  if (!isFullCaPostal(address)) return null;
+  const spaced = normalizeCanadianPostal(address);
+  const compact = compactPostal(address);
+
+  const urls = [
+    `https://geocoder.ca/?locate=${encodeURIComponent(spaced)}&geoit=XML&json=1`,
+    `https://geocoder.ca/?locate=${encodeURIComponent(compact)}&geoit=XML&json=1`,
+    `https://geocoder.ca/${encodeURIComponent(spaced)}?json=1`,
+    `https://geocoder.ca/${encodeURIComponent(compact)}?json=1`,
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": "PremiereServices/1.0 (geocode)", Accept: "application/json" },
+      });
+      if (!res.ok) continue;
+      const data = (await res.json()) as {
+        latt?: string | number;
+        longt?: string | number;
+        error?: unknown;
+        postal?: string;
+        standard?: { city?: string; prov?: string };
+      };
+      if (data.error || data.latt == null || data.longt == null) continue;
+      const lat = Number(data.latt);
+      const lng = Number(data.longt);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+      const returned = data.postal ? compactPostal(String(data.postal)) : null;
+      if (returned && returned.length === 6 && returned !== compact) continue;
+
+      const city = data.standard?.city ?? null;
+      const province = data.standard?.prov ?? null;
+      return {
+        lat,
+        lng,
+        city,
+        province,
+        formattedAddress: [city, province, spaced, "Canada"].filter(Boolean).join(", "),
+      };
+    } catch {
+      /* try next URL */
+    }
+  }
+  return null;
+}
+
+/** Canadian FSA (first 3 chars) via Zippopotam — last resort (same point for all LDUs in an FSA). */
 async function geocodeZippopotam(address: string): Promise<GeoOut | null> {
   const compact = compactPostal(address);
   if (!/^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]/.test(compact) || compact.length < 3) return null;
@@ -144,11 +244,30 @@ Deno.serve(async (req) => {
       });
     }
 
+    // For full Canadian postals, prefer geocoder.ca (true LDU) before Google approximations.
+    if (isFullCaPostal(address)) {
+      const viaGeocoderCa = await geocodeGeocoderCa(address);
+      if (viaGeocoderCa) {
+        return new Response(JSON.stringify(viaGeocoderCa), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const viaGoogle = await geocodeGoogle(address);
     if (viaGoogle) {
       return new Response(JSON.stringify(viaGoogle), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    if (!isFullCaPostal(address)) {
+      const viaGeocoderCa = await geocodeGeocoderCa(address);
+      if (viaGeocoderCa) {
+        return new Response(JSON.stringify(viaGeocoderCa), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const viaZip = await geocodeZippopotam(address);

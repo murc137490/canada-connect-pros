@@ -122,6 +122,7 @@ export default function HeroSection() {
   }, [normalizedPostal, isPostalLocked, postalResolved, resolvePostal]);
 
   useEffect(() => {
+    let cancelled = false;
     const syncFromStorage = () => {
       const saved = getBrowsePostalLocation();
       if (!saved) return;
@@ -133,10 +134,25 @@ export default function HeroSection() {
         province: saved.province ?? null,
       });
       setPostalError(null);
+      // Refresh coords so a stale FSA centroid (e.g. all H3Z*) gets replaced by the exact LDU.
+      if (isCompleteCanadianPostal(saved.postal)) {
+        void geocodePostalToLocation(saved.postal).then((geo) => {
+          if (cancelled || !geo) return;
+          setPostalResolved({
+            lat: geo.lat,
+            lng: geo.lng,
+            city: geo.city,
+            province: geo.province,
+          });
+        });
+      }
     };
     syncFromStorage();
     window.addEventListener(BROWSE_POSTAL_CHANGED_EVENT, syncFromStorage);
-    return () => window.removeEventListener(BROWSE_POSTAL_CHANGED_EVENT, syncFromStorage);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(BROWSE_POSTAL_CHANGED_EVENT, syncFromStorage);
+    };
   }, []);
 
   useEffect(() => {
