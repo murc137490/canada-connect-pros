@@ -51,25 +51,23 @@ export default function HomeCategories() {
             const name = getCategoryName(cat, locale);
             const count = cat.subcategories.reduce((n, s) => n + s.services.length, 0);
             return (
-              <ScrollReveal key={cat.slug} delay={Math.min(i, 4) * 0.03} y={6} once>
-                <li className="border-b border-border">
-                  <Link
-                    to={`/services/${cat.slug}`}
-                    className="group grid grid-cols-[1fr_auto] items-center gap-6 py-5 transition-colors duration-200 hover:bg-muted/30 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)_auto] lg:gap-10 lg:px-2"
-                  >
-                    <span className="font-heading text-xl font-bold tracking-tight text-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-primary">
-                      {name}
-                    </span>
-                    <span className="hidden text-sm text-muted-foreground leading-relaxed lg:block">
-                      {cat.description}
-                    </span>
-                    <span className="inline-flex items-center gap-3 text-sm text-muted-foreground">
-                      <span className="tabular-nums">{count}</span>
-                      <ArrowUpRight className="h-4 w-4 text-foreground/40 transition-all duration-200 group-hover:text-primary group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                    </span>
-                  </Link>
-                </li>
-              </ScrollReveal>
+              <li key={cat.slug} className="border-b border-border">
+                <Link
+                  to={`/services/${cat.slug}`}
+                  className="group grid grid-cols-[1fr_auto] items-center gap-6 py-5 transition-colors duration-200 hover:bg-muted/30 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)_auto] lg:gap-10 lg:px-2"
+                >
+                  <span className="font-heading text-xl font-bold tracking-tight text-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-primary">
+                    {name}
+                  </span>
+                  <span className="hidden text-sm text-muted-foreground leading-relaxed lg:block">
+                    {cat.description}
+                  </span>
+                  <span className="inline-flex items-center gap-3 text-sm text-muted-foreground">
+                    <span className="tabular-nums">{count}</span>
+                    <ArrowUpRight className="h-4 w-4 text-foreground/40 transition-all duration-200 group-hover:text-primary group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </span>
+                </Link>
+              </li>
             );
           })}
         </ul>
