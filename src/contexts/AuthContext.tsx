@@ -24,6 +24,8 @@ interface AuthContextType {
     referralCode?: string;
   }) => Promise<void>;
   signIn: (emailOrName: string, password: string) => Promise<void>;
+  /** Opens Google OAuth; creates an account on first sign-in. */
+  signInWithGoogle: (redirectPath?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -115,13 +117,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
+  const signInWithGoogle = async (redirectPath = "/") => {
+    const origin = getPublicSiteOrigin();
+    const safeRedirect = redirectPath.startsWith("/") ? redirectPath : "/";
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${origin}/auth?redirect=${encodeURIComponent(safeRedirect)}`,
+        queryParams: {
+          access_type: "offline",
+          prompt: "select_account",
+        },
+      },
+    });
+    if (error) throw error;
+  };
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, user, loading, signUp, signIn, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
