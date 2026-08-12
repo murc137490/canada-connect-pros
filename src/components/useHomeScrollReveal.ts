@@ -22,9 +22,8 @@ export function useHomeScrollReveal(deps: unknown[] = []) {
             ease: "power2.out",
             scrollTrigger: {
               trigger: el,
-              start: "top 92%",
-              end: "bottom 8%",
-              toggleActions: "play reverse play reverse",
+              start: "top 90%",
+              once: true,
             },
           }
         );

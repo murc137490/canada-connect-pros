@@ -61,10 +61,9 @@ export default function BookingPhoneMock({ className, alwaysLive = false }: Prop
           ease: "power2.out",
           scrollTrigger: {
             trigger: root,
-            start: "top 82%",
-            end: "bottom 18%",
-            toggleActions: "play reverse play reverse",
-            onToggle: (self) => setLive(self.isActive),
+            start: "top 85%",
+            once: true,
+            onEnter: () => setLive(true),
           },
         }
       );
@@ -77,35 +76,55 @@ export default function BookingPhoneMock({ className, alwaysLive = false }: Prop
     const jello = jelloRef.current;
     if (!jello) return;
 
+    // Skip spring loop when user prefers reduced motion
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
     let lastY = window.scrollY;
     let lastT = performance.now();
     let settleTimer: ReturnType<typeof setTimeout> | undefined;
     let raf = 0;
+    let looping = false;
 
     let y = 0;
     let vy = 0;
     let targetY = 0;
-    let running = true;
 
     const stiffness = 0.14;
     const damping = 0.76;
-    const maxY = 32;
+    const maxY = 24;
+
+    const stopLoop = () => {
+      looping = false;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+      y = 0;
+      vy = 0;
+      targetY = 0;
+      jello.style.transform = "";
+    };
 
     const tick = () => {
-      if (!running) return;
       const ay = (targetY - y) * stiffness;
       vy = (vy + ay) * damping;
       y += vy;
 
-      if (Math.abs(targetY) < 0.01 && Math.abs(y) < 0.04 && Math.abs(vy) < 0.04) {
-        y = 0;
-        vy = 0;
+      const settled =
+        Math.abs(targetY) < 0.01 && Math.abs(y) < 0.04 && Math.abs(vy) < 0.04;
+
+      if (settled) {
+        stopLoop();
+        return;
       }
 
-      jello.style.transform = `translate3d(0, ${y}px, 0)`;
+      jello.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0)`;
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+
+    const ensureLoop = () => {
+      if (looping) return;
+      looping = true;
+      raf = requestAnimationFrame(tick);
+    };
 
     const onScroll = () => {
       const now = performance.now();
@@ -114,19 +133,23 @@ export default function BookingPhoneMock({ className, alwaysLive = false }: Prop
       lastY = window.scrollY;
       lastT = now;
 
+      // Ignore tiny scroll jitter
+      if (Math.abs(dy) < 0.5) return;
+
       const vel = dy / dt;
-      targetY = Math.max(-maxY, Math.min(maxY, -vel * 14));
+      targetY = Math.max(-maxY, Math.min(maxY, -vel * 12));
+      ensureLoop();
 
       if (settleTimer) clearTimeout(settleTimer);
       settleTimer = setTimeout(() => {
         targetY = 0;
-      }, 60);
+        ensureLoop();
+      }, 80);
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      running = false;
-      cancelAnimationFrame(raf);
+      stopLoop();
       window.removeEventListener("scroll", onScroll);
       if (settleTimer) clearTimeout(settleTimer);
     };

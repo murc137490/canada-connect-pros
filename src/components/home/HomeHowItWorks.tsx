@@ -1,18 +1,8 @@
-import { useRef } from "react";
-import { motion, useScroll, useTransform } from "motion/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ScrollReveal from "@/components/motion/ScrollReveal";
-import { usePrefersReducedMotion } from "@/motion/usePrefersReducedMotion";
 
 export default function HomeHowItWorks() {
   const { t } = useLanguage();
-  const reduced = usePrefersReducedMotion();
-  const ref = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start 0.75", "end 0.45"],
-  });
-  const lineScale = useTransform(scrollYProgress, [0, 1], [0, 1]);
 
   const steps = [
     { n: "01", title: t.index.step1, desc: t.index.step1Desc },
@@ -21,13 +11,9 @@ export default function HomeHowItWorks() {
   ];
 
   return (
-    <section
-      id="how-it-works"
-      ref={ref}
-      className="section-pad border-y border-border/70 bg-muted/35 dark:bg-muted/15"
-    >
+    <section id="how-it-works" className="section-pad border-y border-border/70 bg-muted/35 dark:bg-muted/15">
       <div className="container-page">
-        <ScrollReveal once y={6}>
+        <ScrollReveal once y={8}>
           <h2 className="font-display text-display-md text-foreground whitespace-pre-line max-w-xl">
             {t.index.howTitle}
           </h2>
@@ -38,17 +24,11 @@ export default function HomeHowItWorks() {
             className="pointer-events-none absolute left-[8%] right-[8%] top-[1.35rem] hidden h-px bg-border md:block"
             aria-hidden
           />
-          {!reduced && (
-            <motion.div
-              className="pointer-events-none absolute left-[8%] top-[1.35rem] hidden h-px origin-left bg-primary/50 md:block"
-              style={{ scaleX: lineScale, width: "84%" }}
-              aria-hidden
-            />
-          )}
+          <div className="pointer-events-none absolute left-[8%] top-[1.35rem] hidden h-px w-[84%] bg-primary/35 md:block" aria-hidden />
 
           <div className="grid gap-0 md:grid-cols-3 md:gap-10">
             {steps.map((step, i) => (
-              <ScrollReveal key={step.n} delay={i * 0.06} y={6} amount={0.2} margin="0px 0px -30% 0px">
+              <ScrollReveal key={step.n} once delay={i * 0.05} y={8}>
                 <li className="relative flex gap-5 md:block md:gap-0">
                   {i < steps.length - 1 && (
                     <span

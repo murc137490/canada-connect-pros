@@ -1,10 +1,7 @@
-import { motion, AnimatePresence } from "motion/react";
 import { MapPin, Star, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import type { MarketplaceMatchState } from "@/motion/types";
-import { MOTION } from "@/motion/types";
-import { usePrefersReducedMotion } from "@/motion/usePrefersReducedMotion";
 
 type Props = {
   className?: string;
@@ -13,6 +10,7 @@ type Props = {
   requestLabel?: string;
 };
 
+/** Static marketplace mock — no layout animations (keeps homepage scroll cheap). */
 export default function MarketplacePreview({
   className,
   variant = "hero",
@@ -20,7 +18,6 @@ export default function MarketplacePreview({
   requestLabel,
 }: Props) {
   const { t } = useLanguage();
-  const reduced = usePrefersReducedMotion();
   const dark = variant === "dark";
   const showCards =
     matchState === "matching" || matchState === "matched" || matchState === "success" || matchState === "idle";
@@ -149,89 +146,72 @@ export default function MarketplacePreview({
           </div>
 
           <div className="mt-5 space-y-2 min-h-[9.5rem]">
-            <AnimatePresence mode="popLayout">
-              {searching && (
-                <motion.div
-                  key="searching"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className={cn(
-                    "flex items-center gap-2 rounded-lg border px-3.5 py-4 text-sm",
-                    dark ? "border-white/10 text-white/70" : "border-border text-muted-foreground"
-                  )}
-                >
-                  <span className="mp-live-dot h-2 w-2 rounded-full bg-accent" />
-                  {t.index.motionSearching}
-                </motion.div>
-              )}
+            {searching && (
+              <div
+                className={cn(
+                  "flex items-center gap-2 rounded-lg border px-3.5 py-4 text-sm",
+                  dark ? "border-white/10 text-white/70" : "border-border text-muted-foreground"
+                )}
+              >
+                <span className="mp-live-dot h-2 w-2 rounded-full bg-accent" />
+                {t.index.motionSearching}
+              </div>
+            )}
 
-              {showCards &&
-                !searching &&
-                quotes.slice(0, visibleCount === 1 ? 1 : 3).map((pro, i) => {
-                  if (matchState === "matching" && i > 0) return null;
-                  const featured = pro.featured && (highlight || matchState === "idle");
-                  return (
-                    <motion.div
-                      key={pro.name}
-                      layout
-                      initial={reduced || matchState === "idle" ? false : { opacity: 0, y: 10 }}
-                      animate={{
-                        opacity: highlight && !pro.featured ? 0.55 : 1,
-                        y: 0,
-                        scale: featured && highlight ? 1.01 : 1,
-                      }}
-                      transition={{
-                        duration: MOTION.base,
-                        delay: reduced || matchState === "idle" ? 0 : i * 0.12,
-                        ease: MOTION.ease,
-                      }}
-                      className={cn(
-                        "border px-3.5 py-3",
-                        dark
-                          ? featured
-                            ? "border-white/20 bg-white/[0.07]"
-                            : "border-white/10 bg-transparent"
-                          : featured
-                            ? "border-primary/25 bg-primary/[0.03]"
-                            : "border-border/80 bg-background"
-                      )}
-                      style={{ borderRadius: "8px" }}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1 text-[12px] font-semibold text-accent">
-                            <Star className="h-3 w-3 fill-current" />
-                            <span>{pro.rating}</span>
-                          </div>
-                          <p className={cn("mt-1 truncate text-sm font-bold", dark ? "text-white" : "text-foreground")}>
-                            {pro.name}
-                          </p>
-                          <p className={cn("mt-0.5 text-xs", dark ? "text-white/50" : "text-muted-foreground")}>
-                            {pro.avail}
-                          </p>
+            {showCards &&
+              !searching &&
+              quotes.slice(0, visibleCount === 1 ? 1 : 3).map((pro, i) => {
+                if (matchState === "matching" && i > 0) return null;
+                const featured = pro.featured && (highlight || matchState === "idle");
+                return (
+                  <div
+                    key={pro.name}
+                    className={cn(
+                      "border px-3.5 py-3",
+                      dark
+                        ? featured
+                          ? "border-white/20 bg-white/[0.07]"
+                          : "border-white/10 bg-transparent"
+                        : featured
+                          ? "border-primary/25 bg-primary/[0.03]"
+                          : "border-border/80 bg-background",
+                      highlight && !pro.featured && "opacity-55"
+                    )}
+                    style={{ borderRadius: "8px" }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1 text-[12px] font-semibold text-accent">
+                          <Star className="h-3 w-3 fill-current" />
+                          <span>{pro.rating}</span>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className={cn("text-sm font-bold tabular-nums", dark ? "text-white" : "text-foreground")}>
-                            {pro.price}
-                          </p>
-                          {featured && (
-                            <span
-                              className={cn(
-                                "mt-2 inline-flex items-center gap-1 text-[11px] font-bold",
-                                dark ? "text-white" : "text-primary"
-                              )}
-                            >
-                              {t.index.mockViewQuote}
-                              <ArrowRight className="h-3 w-3" />
-                            </span>
-                          )}
-                        </div>
+                        <p className={cn("mt-1 truncate text-sm font-bold", dark ? "text-white" : "text-foreground")}>
+                          {pro.name}
+                        </p>
+                        <p className={cn("mt-0.5 text-xs", dark ? "text-white/50" : "text-muted-foreground")}>
+                          {pro.avail}
+                        </p>
                       </div>
-                    </motion.div>
-                  );
-                })}
-            </AnimatePresence>
+                      <div className="text-right shrink-0">
+                        <p className={cn("text-sm font-bold tabular-nums", dark ? "text-white" : "text-foreground")}>
+                          {pro.price}
+                        </p>
+                        {featured && (
+                          <span
+                            className={cn(
+                              "mt-2 inline-flex items-center gap-1 text-[11px] font-bold",
+                              dark ? "text-white" : "text-primary"
+                            )}
+                          >
+                            {t.index.mockViewQuote}
+                            <ArrowRight className="h-3 w-3" />
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>

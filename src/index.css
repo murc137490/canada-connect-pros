@@ -505,6 +505,35 @@
     }
   }
 
+  /* Homepage soft appear — CSS only, one-shot (no scroll scrubbing) */
+  .home-soft-appear {
+    opacity: 0.72;
+    transform: translate3d(0, var(--home-soft-y, 10px), 0);
+    transition:
+      opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--home-soft-delay, 0s);
+    will-change: auto;
+  }
+
+  .home-soft-appear--delay {
+    --home-soft-delay: 0.08s;
+    --home-soft-y: 14px;
+  }
+
+  .home-soft-appear--in {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home-soft-appear {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
   .request-map-reveal {
     animation: requestMapReveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
