@@ -11,35 +11,34 @@ type Props = {
   className?: string;
 };
 
+type GoogleMapInstance = {
+  setCenter: (c: { lat: number; lng: number }) => void;
+  setTilt: (t: number) => void;
+  setHeading: (h: number) => void;
+  setZoom: (z: number) => void;
+  setMapTypeId: (id: string) => void;
+  addListener: (event: string, handler: () => void) => { remove: () => void };
+};
+
 type GoogleMapsWindow = {
   google?: {
     maps?: {
-      Map: new (
-        el: HTMLElement,
-        opts: Record<string, unknown>
-      ) => {
-        setCenter: (c: { lat: number; lng: number }) => void;
-        setTilt: (t: number) => void;
-        setHeading: (h: number) => void;
-        setZoom: (z: number) => void;
+      Map: new (el: HTMLElement, opts: Record<string, unknown>) => GoogleMapInstance;
+      Marker: new (opts: Record<string, unknown>) => {
+        setMap: (m: unknown) => void;
+        setPosition: (c: { lat: number; lng: number }) => void;
       };
-      Marker: new (opts: Record<string, unknown>) => { setMap: (m: unknown) => void; setPosition: (c: { lat: number; lng: number }) => void };
     };
   };
 };
 
 /**
- * Compact postal-area map with Google 45° tilt + CSS perspective
- * so it reads as angled rather than a flat top-down tile.
+ * Normal rectangular map box; Google Maps camera uses 45° tilt (not top-down).
+ * Hybrid/satellite is required for reliable 45° imagery in most cities.
  */
 export default function HeroPostalTiltMap({ lat, lng, className }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<{
-    setCenter: (c: { lat: number; lng: number }) => void;
-    setTilt: (t: number) => void;
-    setHeading: (h: number) => void;
-    setZoom: (z: number) => void;
-  } | null>(null);
+  const mapInstanceRef = useRef<GoogleMapInstance | null>(null);
   const markerRef = useRef<{ setPosition: (c: { lat: number; lng: number }) => void } | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -51,6 +50,16 @@ export default function HeroPostalTiltMap({ lat, lng, className }: Props) {
 
     let cancelled = false;
     let resizeObserver: ResizeObserver | undefined;
+    let idleListener: { remove: () => void } | undefined;
+
+    const applyTilt = () => {
+      const map = mapInstanceRef.current;
+      if (!map) return;
+      map.setMapTypeId("hybrid");
+      map.setZoom(18);
+      map.setTilt(45);
+      map.setHeading(35);
+    };
 
     const run = async () => {
       try {
@@ -65,10 +74,10 @@ export default function HeroPostalTiltMap({ lat, lng, className }: Props) {
         if (!mapInstanceRef.current) {
           const map = new g.maps.Map(mapRef.current, {
             center,
-            zoom: 17,
+            zoom: 18,
             mapTypeId: "hybrid",
             tilt: 45,
-            heading: 28,
+            heading: 35,
             disableDefaultUI: true,
             zoomControl: false,
             mapTypeControl: false,
@@ -76,29 +85,35 @@ export default function HeroPostalTiltMap({ lat, lng, className }: Props) {
             fullscreenControl: false,
             clickableIcons: false,
             gestureHandling: "cooperative",
+            rotateControl: false,
           });
-          mapInstanceRef.current = map;
+          mapInstanceRef.current = map as typeof mapInstanceRef.current;
           markerRef.current = new g.maps.Marker({
             map,
             position: center,
           });
+          idleListener = map.addListener("idle", () => {
+            applyTilt();
+          });
         } else {
           mapInstanceRef.current.setCenter(center);
-          mapInstanceRef.current.setZoom(17);
-          mapInstanceRef.current.setTilt(45);
-          mapInstanceRef.current.setHeading(28);
           markerRef.current?.setPosition(center);
+          applyTilt();
         }
 
         resizeObserver = new ResizeObserver(() => {
           triggerMapResize(mapInstanceRef.current);
+          applyTilt();
         });
         resizeObserver.observe(mapRef.current);
 
         requestAnimationFrame(() => {
           triggerMapResize(mapInstanceRef.current);
-          mapInstanceRef.current?.setTilt(45);
+          applyTilt();
         });
+        // Tilt often applies only after tiles load
+        window.setTimeout(applyTilt, 400);
+        window.setTimeout(applyTilt, 1200);
         setFailed(false);
       } catch (err) {
         console.warn("Hero postal map failed:", err);
@@ -110,29 +125,30 @@ export default function HeroPostalTiltMap({ lat, lng, className }: Props) {
     return () => {
       cancelled = true;
       resizeObserver?.disconnect();
+      idleListener?.remove();
     };
   }, [lat, lng]);
 
-  const embedFallback = `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}&z=16&output=embed`;
+  const embedFallback = `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}&z=17&output=embed`;
 
   return (
-    <div className={cn("hero-postal-map-stage", className)} aria-hidden={false}>
-      <div className="hero-postal-map-tilt">
-        <div className="relative h-[148px] w-full overflow-hidden rounded-xl border border-border/80 bg-muted shadow-[0_18px_36px_-20px_rgba(0,0,0,0.55)] dark:border-white/15 sm:h-[168px]">
-          {failed || !API_KEY ? (
-            <iframe
-              title="Map"
-              src={embedFallback}
-              className="absolute inset-0 h-full w-full border-0"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          ) : (
-            <div ref={mapRef} className="absolute inset-0 h-full w-full" />
-          )}
-          <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-black/10 dark:ring-white/10" />
-        </div>
-      </div>
+    <div
+      className={cn(
+        "relative h-[160px] w-full overflow-hidden rounded-xl border border-border/80 bg-muted sm:h-[180px] dark:border-white/15",
+        className
+      )}
+    >
+      {failed || !API_KEY ? (
+        <iframe
+          title="Map"
+          src={embedFallback}
+          className="absolute inset-0 h-full w-full border-0"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      ) : (
+        <div ref={mapRef} className="absolute inset-0 h-full w-full" />
+      )}
     </div>
   );
 }
