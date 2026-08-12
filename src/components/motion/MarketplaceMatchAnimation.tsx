@@ -115,15 +115,19 @@ export default function MarketplaceMatchAnimation({
         {/* Hub — Première */}
         <motion.g
           animate={
-            searching && !reduced
-              ? { scale: [1, 1.04, 1] }
-              : highlight
-                ? { scale: 1.03 }
-                : { scale: 1 }
+            reduced
+              ? { scale: 1 }
+              : searching
+                ? { scale: [1, 1.04, 1] }
+                : state === "idle" || state === "hover"
+                  ? { scale: [1, 1.02, 1] }
+                  : highlight
+                    ? { scale: 1.03 }
+                    : { scale: 1 }
           }
           transition={
-            searching
-              ? { duration: 1.4, repeat: Infinity, ease: "easeInOut" }
+            searching || state === "idle" || state === "hover"
+              ? { duration: state === "idle" ? 3.2 : 1.4, repeat: Infinity, ease: "easeInOut" }
               : { duration: MOTION.base }
           }
           style={{ transformOrigin: "190px 130px" }}
