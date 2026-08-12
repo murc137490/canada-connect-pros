@@ -384,9 +384,9 @@ export default function HeroSection() {
               <p className="mb-2.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 {t.index.heroSearchLabel}
               </p>
-              <div className="border border-border bg-card p-2.5 sm:p-3" style={{ borderRadius: "10px" }}>
-                <div className="flex flex-col gap-2.5 sm:flex-row sm:items-stretch">
-                  <label className="sr-only" htmlFor="hero-postal">
+              <div className="border border-border bg-card p-3 sm:p-3.5 space-y-2.5" style={{ borderRadius: "10px" }}>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="hero-postal" className="text-[12px] font-medium text-muted-foreground">
                     {t.index.heroPostalHint}
                   </label>
                   <input
@@ -394,7 +394,7 @@ export default function HeroSection() {
                     type="text"
                     inputMode="text"
                     autoComplete="postal-code"
-                    placeholder="A1A 1A1"
+                    placeholder={t.index.heroPostalExample}
                     value={postalCode}
                     onChange={(e) => {
                       const next = formatCanadianPostalInput(e.target.value);
@@ -407,43 +407,58 @@ export default function HeroSection() {
                     }}
                     disabled={isPostalLocked}
                     maxLength={7}
-                    className={`w-full sm:w-[8.75rem] shrink-0 border bg-background px-3 py-2.5 text-center text-sm font-semibold tracking-wide text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 ${
-                      !postalResolved ? "border-accent/55" : "border-border"
+                    className={`w-full sm:max-w-[9.5rem] border bg-background px-3 py-2.5 text-sm font-semibold tracking-wide text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 ${
+                      postalError
+                        ? "border-destructive"
+                        : postalResolved
+                          ? "border-border"
+                          : "border-border"
                     }`}
                     style={{ borderRadius: "7px" }}
                   />
-                  <div className="relative min-w-0 flex-1">
-                    <textarea
-                      ref={textareaRef}
-                      placeholder={normalizedPostal ? t.index.heroProjectPlaceholder : t.index.heroPostalHint}
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onFocus={() => setTextareaFocused(true)}
-                      onBlur={() => setTextareaFocused(false)}
-                      rows={1}
-                      className="w-full min-h-[2.75rem] max-h-32 resize-none overflow-y-auto border border-transparent bg-muted/60 px-3 py-2.5 pr-10 text-sm text-foreground outline-none transition-[height] duration-300 placeholder:text-muted-foreground focus:border-border focus:bg-background disabled:opacity-50 sm:text-[15px]"
-                      style={{ overflowWrap: "break-word", borderRadius: "7px" }}
-                      disabled={!normalizedPostal || !postalResolved}
-                    />
-                    {loading && (
-                      <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
-                        <Sparkles className="animate-pulse text-accent" size={18} />
-                      </div>
-                    )}
-                  </div>
+                </div>
+
+                <div className="relative min-w-0">
+                  <label htmlFor="hero-need" className="sr-only">
+                    {t.index.heroProjectPlaceholder}
+                  </label>
+                  <textarea
+                    id="hero-need"
+                    ref={textareaRef}
+                    placeholder={
+                      postalResolved
+                        ? t.index.heroProjectPlaceholder
+                        : t.index.heroNeedAfterPostal
+                    }
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onFocus={() => setTextareaFocused(true)}
+                    onBlur={() => setTextareaFocused(false)}
+                    rows={1}
+                    className="w-full min-h-[2.75rem] max-h-32 resize-none overflow-y-auto border border-border/70 bg-muted/40 px-3 py-2.5 pr-10 text-sm text-foreground outline-none transition-[height] duration-300 placeholder:text-muted-foreground/70 focus:border-border focus:bg-background disabled:opacity-50 sm:text-[15px]"
+                    style={{ overflowWrap: "break-word", borderRadius: "7px" }}
+                    disabled={!normalizedPostal || !postalResolved}
+                  />
+                  {loading && (
+                    <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
+                      <Sparkles className="animate-pulse text-accent" size={18} />
+                    </div>
+                  )}
                 </div>
 
                 {postalResolved ? (
-                  <p className="mt-2 px-1 text-xs text-muted-foreground">
+                  <p className="px-0.5 text-xs text-muted-foreground">
                     {postalResolved.city
                       ? `${postalResolved.city}${postalResolved.province ? `, ${postalResolved.province}` : ""}`
                       : normalizedPostal}
                   </p>
                 ) : null}
                 {postalLoading ? (
-                  <p className="mt-2 px-1 text-xs text-muted-foreground">{t.makeRequest.step3Detecting}</p>
+                  <p className="px-0.5 text-xs text-muted-foreground">{t.makeRequest.step3Detecting}</p>
                 ) : postalError ? (
-                  <p className="mt-2 px-1 text-xs text-destructive">{postalError}</p>
+                  <p className="px-0.5 text-xs text-destructive">{postalError}</p>
+                ) : !postalResolved && !postalLoading ? (
+                  <p className="px-0.5 text-xs text-muted-foreground">{t.index.heroPostalHintHelp}</p>
                 ) : null}
 
                 {loading && (
