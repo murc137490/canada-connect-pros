@@ -505,6 +505,26 @@
     }
   }
 
+  /* How-it-works scroll fill — driven by --how-progress on the section */
+  .how-progress-fill {
+    transform: scaleX(var(--how-progress, 0));
+    transform-origin: left center;
+  }
+
+  .how-progress-fill-y {
+    transform: scaleY(var(--how-progress, 0));
+    transform-origin: top center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .how-progress-fill {
+      transform: scaleX(1);
+    }
+    .how-progress-fill-y {
+      transform: scaleY(1);
+    }
+  }
+
   /*
    * Soft appear / disappear — CSS class toggle only (IntersectionObserver).
    * Never fully blank (min opacity) so section edges don’t flicker empty.
