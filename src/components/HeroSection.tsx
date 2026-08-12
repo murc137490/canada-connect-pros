@@ -12,6 +12,7 @@ import { BROWSE_POSTAL_CHANGED_EVENT, getBrowsePostalLocation, setBrowsePostalLo
 import { cleanSupportQuery } from "@/lib/supportAiQuery";
 import { searchProsByBusinessOrName, type ProBusinessSearchHit } from "@/lib/searchProBusiness";
 import BookingPhoneMock from "@/components/BookingPhoneMock";
+import HeroPostalTiltMap from "@/components/HeroPostalTiltMap";
 import { Button } from "@/components/ui/button";
 
 const SEARCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-suggestions`;
@@ -435,6 +436,15 @@ export default function HeroSection() {
                   <p className="px-0.5 text-xs text-muted-foreground">{t.makeRequest.step3Detecting}</p>
                 ) : postalError ? (
                   <p className="px-0.5 text-xs text-destructive">{postalError}</p>
+                ) : null}
+
+                {postalResolved ? (
+                  <HeroPostalTiltMap
+                    key={`${postalResolved.lat},${postalResolved.lng}`}
+                    lat={postalResolved.lat}
+                    lng={postalResolved.lng}
+                    className="pt-0.5"
+                  />
                 ) : null}
 
                 {loading && (

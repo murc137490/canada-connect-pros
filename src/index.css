@@ -505,6 +505,26 @@
     }
   }
 
+  .hero-postal-map-stage {
+    perspective: 920px;
+    perspective-origin: 50% 70%;
+    padding: 0.35rem 0.15rem 0.85rem;
+  }
+
+  .hero-postal-map-tilt {
+    transform: rotateX(22deg) rotateZ(-3.5deg) scale(0.98);
+    transform-origin: center bottom;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-postal-map-tilt {
+      transform: none;
+      transition: none;
+    }
+  }
+
   .request-map-reveal {
     animation: requestMapReveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
