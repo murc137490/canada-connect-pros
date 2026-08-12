@@ -158,35 +158,41 @@ export default function BookingPhoneMock({ className, alwaysLive = false }: Prop
           style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
         >
           <div
-            className="relative overflow-hidden rounded-[2rem] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.45)]"
-            style={{
-              background: "#111111",
-              padding: 9,
-              isolation: "isolate",
-            }}
+            className={cn(
+              "relative overflow-hidden rounded-[2rem] p-[9px] isolate",
+              // Chassis + rim: light mode stays near-black; dark mode uses a mid bezel
+              // and a soft white outline so the phone doesn’t disappear on dark pages.
+              "bg-zinc-900 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.45)] ring-1 ring-black/25",
+              "dark:bg-zinc-600 dark:ring-white/35",
+              "dark:shadow-[0_0_0_1px_rgba(255,255,255,0.28),0_0_28px_-6px_rgba(255,255,255,0.18),0_24px_60px_-20px_rgba(0,0,0,0.65)]"
+            )}
           >
             <div
-              className="relative aspect-[9/19] overflow-hidden rounded-[1.5rem]"
-              style={{ background: "#f4f6f9", transform: "translateZ(0)" }}
+              className={cn(
+                "relative aspect-[9/19] overflow-hidden rounded-[1.5rem]",
+                "bg-[#f4f6f9] dark:bg-zinc-900/95",
+                "ring-1 ring-inset ring-black/5 dark:ring-white/15"
+              )}
+              style={{ transform: "translateZ(0)" }}
             >
               <div className="absolute inset-0">
                 {reviews.map((review, i) => (
                   <PhoneScreen key={review.role} active={step === i}>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(217_75%_42%)]">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(217_75%_42%)] dark:text-sky-300/90">
                       {t.index.reviewPhoneEyebrow}
                     </p>
-                    <h4 className="mt-1.5 font-heading text-[15px] font-extrabold leading-tight tracking-tight text-[#141414]">
+                    <h4 className="mt-1.5 font-heading text-[15px] font-extrabold leading-tight tracking-tight text-[#141414] dark:text-zinc-50">
                       {t.index.reviewPhoneTitle}
                     </h4>
 
-                    <div className="mt-5 flex flex-1 flex-col rounded-2xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
-                      <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[hsl(222_76%_28%)]">
+                    <div className="mt-5 flex flex-1 flex-col rounded-2xl border border-[#e5e7eb] bg-white p-4 shadow-sm dark:border-white/12 dark:bg-zinc-800/90 dark:shadow-none">
+                      <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[hsl(222_76%_28%)] dark:text-sky-200">
                         {review.role}
                       </p>
-                      <p className="mt-3 text-[13px] font-medium leading-relaxed text-[#1f2937]">
+                      <p className="mt-3 text-[13px] font-medium leading-relaxed text-[#1f2937] dark:text-zinc-200">
                         {review.body}
                       </p>
-                      <p className="mt-auto pt-4 inline-flex self-start rounded-md bg-[hsl(217_75%_45%/0.1)] px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[hsl(222_76%_28%)]">
+                      <p className="mt-auto pt-4 inline-flex self-start rounded-md bg-[hsl(217_75%_45%/0.1)] px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[hsl(222_76%_28%)] dark:bg-sky-400/15 dark:text-sky-100">
                         {review.tag}
                       </p>
                     </div>
@@ -197,7 +203,9 @@ export default function BookingPhoneMock({ className, alwaysLive = false }: Prop
                           key={di}
                           className={cn(
                             "h-1.5 rounded-full transition-all duration-500",
-                            di === step ? "w-5 bg-[hsl(222_76%_24%)]" : "w-1.5 bg-[#d1d5db]"
+                            di === step
+                              ? "w-5 bg-[hsl(222_76%_24%)] dark:bg-zinc-100"
+                              : "w-1.5 bg-[#d1d5db] dark:bg-zinc-600"
                           )}
                         />
                       ))}
