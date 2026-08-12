@@ -352,7 +352,7 @@ export default function Services() {
                         key={`${s.categorySlug}-${s.slug}`}
                         initial={{ opacity: 0, y: 18 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: false }}
+                        viewport={{ once: true }}
                         transition={{ delay: i * 0.05, duration: 0.45 }}
                       >
                         <Link

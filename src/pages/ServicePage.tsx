@@ -98,7 +98,7 @@ export default function ServicePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false }}
+            viewport={{ once: true }}
             transition={{ duration: 0.5 }}
             className="rounded-3xl border border-border bg-card p-7 shadow-sm md:p-9"
           >
@@ -127,7 +127,7 @@ export default function ServicePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false }}
+            viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.08 }}
             whileHover={{ y: -2 }}
             className="rounded-3xl border border-border bg-card p-7 shadow-sm md:p-9"

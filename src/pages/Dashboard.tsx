@@ -756,6 +756,15 @@ export default function Dashboard() {
     setActiveTab(tab);
   }, [searchParams, isAdmin, isAdminDashboardShell, platformAdminReady, proProfile?.is_verified, setDashboardTab]);
 
+  useEffect(() => {
+    if (searchParams.get("tab") !== "bookings") return;
+    if (window.location.hash !== "#received-quotes") return;
+    const t = window.setTimeout(() => {
+      document.getElementById("received-quotes")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    return () => window.clearTimeout(t);
+  }, [searchParams, jobRequests.length, proProfile?.is_verified]);
+
   /** Wait for pro profile (or a cached verified flag) before painting the client dock. */
   const dashboardDockReady =
     isAdminDashboardShell || !proProfileLoading || cachedProVerified !== null;
@@ -5151,6 +5160,51 @@ export default function Dashboard() {
                     {proBookings.map((b) => renderProBookingRequestCard(b))}
                   </ul>
                 )}
+
+                <div id="received-quotes" className="mt-10 rounded-xl border border-border bg-muted/20 p-5 sm:p-6 scroll-mt-24">
+                  <h4 className="font-heading font-bold text-foreground mb-1">{t.dashboard.quotesReceivedSection}</h4>
+                  <p className="text-sm text-muted-foreground mb-4">{t.dashboard.quotesReceivedHint}</p>
+                  {jobRequests.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {locale === "fr" ? "Aucune demande pour l’instant." : "No requests yet."}
+                    </p>
+                  ) : (
+                    <ul className="space-y-4">
+                      {jobRequests.map((req) => {
+                        const quotes = jobQuotesByRequestId[req.id] ?? [];
+                        return (
+                          <li key={req.id} className="rounded-lg border bg-card p-4">
+                            <div className="flex flex-wrap items-center gap-2 font-medium text-foreground">
+                              <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-500" aria-hidden />
+                              <span className="min-w-0">{req.description}</span>
+                              <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                                {(t.dashboard.quotesReceivedCount ?? "{{count}} quote(s)").replace(
+                                  "{{count}}",
+                                  String(quotes.length)
+                                )}
+                              </span>
+                            </div>
+                            {quotes.length > 0 ? (
+                              <ul className="mt-3 space-y-2">
+                                {quotes.map((q) => (
+                                  <li key={q.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 p-3 text-sm">
+                                    <div>
+                                      <span className="font-medium">{q.business_name || "Pro"}</span>
+                                      {q.price_cents != null && <span className="ml-2">${(q.price_cents / 100).toFixed(0)}</span>}
+                                    </div>
+                                    <span className="text-muted-foreground capitalize">{q.status}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="mt-2 text-sm text-muted-foreground">{t.dashboard.quotesReceivedEmpty}</p>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="space-y-8">
@@ -5160,10 +5214,13 @@ export default function Dashboard() {
                   </div>
                 ) : null}
                 {/* Client: Service requests (Make a Request) and quotes */}
-                <div className="rounded-xl border bg-card p-6 md:p-8">
+                <div id="received-quotes" className="rounded-xl border bg-card p-6 md:p-8 scroll-mt-24">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                       <div>
-                        <h3 className="font-heading font-bold text-foreground mb-1">{locale === "fr" ? "Vos demandes de service" : "Your service requests"}</h3>
+                        <h3 className="font-heading font-bold text-foreground mb-1">
+                          {t.dashboard.quotesReceivedSection}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">{t.dashboard.quotesReceivedHint}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         {proProfile?.is_verified ? (
@@ -5186,12 +5243,19 @@ export default function Dashboard() {
                           <li key={req.id} className="py-4 border-b border-border/50 last:border-0">
                             <div className="flex items-start justify-between gap-4">
                               <div className="min-w-0">
-                                <div className="font-medium text-foreground inline-flex items-center gap-2">
+                                <div className="font-medium text-foreground inline-flex flex-wrap items-center gap-2">
                                   <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-500" aria-hidden />
                                   <span>{req.description}</span>
+                                  <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                                    {(t.dashboard.quotesReceivedCount ?? "{{count}} quote(s)").replace(
+                                      "{{count}}",
+                                      String(quotes.length)
+                                    )}
+                                  </span>
                                 </div>
                                 <div className="text-xs text-muted-foreground mt-1">
-                                  {req.category} ? {req.city && req.province ? `${req.city}, ${req.province}` : "?"} ? {new Date(req.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
+                                  {req.category} · {req.city && req.province ? `${req.city}, ${req.province}` : "—"} ·{" "}
+                                  {new Date(req.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
                                 </div>
                               </div>
                             <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -5237,14 +5301,14 @@ export default function Dashboard() {
                             </div>
                             {quotes.length > 0 && (
                               <div className="mt-3">
-                                <p className="text-sm font-semibold text-foreground mb-2">Quotes received</p>
+                                <p className="text-sm font-semibold text-foreground mb-2">{t.dashboard.quotesReceivedTitle}</p>
                                 <ul className="space-y-2">
                                   {quotes.map((q) => (
                                     <li key={q.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-muted/40">
                                       <div>
                                         <span className="font-medium">{q.business_name || "Pro"}</span>
                                         {q.price_cents != null && <span className="ml-2">${(q.price_cents / 100).toFixed(0)}</span>}
-                                        {q.estimated_time && <span className="text-muted-foreground text-sm ml-2">? {q.estimated_time}</span>}
+                                        {q.estimated_time && <span className="text-muted-foreground text-sm ml-2">· {q.estimated_time}</span>}
                                         {q.message && <p className="text-sm text-muted-foreground mt-1">{q.message}</p>}
                                       </div>
                                       {q.status === "pending" && (
@@ -5285,7 +5349,9 @@ export default function Dashboard() {
                                 </ul>
                               </div>
                             )}
-                            {quotes.length === 0 && <p className="text-sm text-muted-foreground mt-2">No quotes yet. Professionals in your area will be notified.</p>}
+                            {quotes.length === 0 && (
+                              <p className="text-sm text-muted-foreground mt-2">{t.dashboard.quotesReceivedEmpty}</p>
+                            )}
                           </li>
                         );
                       })}
@@ -6428,12 +6494,12 @@ export default function Dashboard() {
                   <div>
                     <Label className="text-white">{t.dashboard.quotePriceLabel}</Label>
                     <Input
-                      type="number"
-                      min={0}
-                      step={1}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       placeholder="e.g. 120"
                       value={quotePrice}
-                      onChange={(e) => setQuotePrice(e.target.value)}
+                      onChange={(e) => setQuotePrice(e.target.value.replace(/[^\d]/g, ""))}
                       className={`${INPUT_NO_NUMBER_SPIN} text-white placeholder:text-white/60`}
                     />
                   </div>

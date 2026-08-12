@@ -20,7 +20,12 @@ export default function ScrollReveal({
   ...rest
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once, margin: "-10% 0px -12% 0px", amount: 0.2 });
+  const inView = useInView(ref, {
+    once,
+    // Wide exit band so mid-height items don't flicker at the threshold
+    margin: once ? "-8% 0px" : "-18% 0px -22% 0px",
+    amount: once ? 0.15 : 0.45,
+  });
   const reduced = usePrefersReducedMotion();
 
   if (reduced) {

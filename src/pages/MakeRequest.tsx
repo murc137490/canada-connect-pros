@@ -521,7 +521,7 @@ export default function MakeRequest() {
       }
       toast({ title: t.makeRequest.toastSuccess, description: t.makeRequest.toastSuccessDesc });
       allowLeaveRef.current = true;
-      navigate("/dashboard?tab=bookings", { replace: true });
+      navigate("/dashboard?tab=bookings#received-quotes", { replace: true });
     } catch (e) {
       toast({ title: t.makeRequest.toastError, description: (e as Error).message, variant: "destructive" });
     } finally {
