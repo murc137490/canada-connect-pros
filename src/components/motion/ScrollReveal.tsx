@@ -15,16 +15,16 @@ export default function ScrollReveal({
   className,
   children,
   delay = 0,
-  y = 22,
+  y = 8,
   once = false,
   ...rest
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, {
     once,
-    // Wide exit band so mid-height items don't flicker at the threshold
-    margin: once ? "-8% 0px" : "-18% 0px -22% 0px",
-    amount: once ? 0.15 : 0.45,
+    // Slight inset only — items appear/disappear with much less scroll travel
+    margin: once ? "-4% 0px" : "-6% 0px -8% 0px",
+    amount: once ? 0.12 : 0.2,
   });
   const reduced = usePrefersReducedMotion();
 

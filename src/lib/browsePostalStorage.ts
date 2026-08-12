@@ -55,7 +55,20 @@ function clearBrowsePostalCookie(): void {
 
 export function setBrowsePostalLocation(payload: Omit<BrowsePostalPayload, "savedAt">): void {
   if (typeof window === "undefined") return;
-  const full: BrowsePostalPayload = { ...payload, savedAt: new Date().toISOString() };
+  const prev = getBrowsePostalLocation();
+  const postal = payload.postal.trim();
+  // Skip no-op writes so listeners don't stomp an in-progress edit.
+  if (
+    prev &&
+    prev.postal === postal &&
+    prev.lat === payload.lat &&
+    prev.lng === payload.lng &&
+    (prev.city ?? null) === (payload.city ?? null) &&
+    (prev.province ?? null) === (payload.province ?? null)
+  ) {
+    return;
+  }
+  const full: BrowsePostalPayload = { ...payload, postal, savedAt: new Date().toISOString() };
   window.localStorage.setItem(BROWSE_POSTAL_STORAGE_KEY, JSON.stringify(full));
   setBrowsePostalCookie(full.postal);
   window.dispatchEvent(new Event(BROWSE_POSTAL_CHANGED_EVENT));

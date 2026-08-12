@@ -51,7 +51,7 @@ export default function HomeCategories() {
             const name = getCategoryName(cat, locale);
             const count = cat.subcategories.reduce((n, s) => n + s.services.length, 0);
             return (
-              <ScrollReveal key={cat.slug} delay={Math.min(i, 4) * 0.04} y={14} once>
+              <ScrollReveal key={cat.slug} delay={Math.min(i, 4) * 0.03} y={6} once>
                 <li className="border-b border-border">
                   <Link
                     to={`/services/${cat.slug}`}

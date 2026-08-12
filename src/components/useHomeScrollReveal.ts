@@ -14,16 +14,16 @@ export function useHomeScrollReveal(deps: unknown[] = []) {
       elements.forEach((el) => {
         gsap.fromTo(
           el,
-          { opacity: 0, y: 36 },
+          { opacity: 0, y: 12 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.85,
+            duration: 0.45,
             ease: "power2.out",
             scrollTrigger: {
               trigger: el,
-              start: "top 88%",
-              end: "bottom 12%",
+              start: "top 92%",
+              end: "bottom 8%",
               toggleActions: "play reverse play reverse",
             },
           }

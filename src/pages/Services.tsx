@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, type MouseEvent } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, type MouseEvent } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { searchProsByBusinessOrName, type ProBusinessSearchHit } from "@/lib/searchProBusiness";
 import { useScrollRestore } from "@/hooks/useScrollRestore";
@@ -14,7 +14,12 @@ import ServiceCategoryTile from "@/components/ServiceCategoryTile";
 import CategoryLottie from "@/components/CategoryLottie";
 import { popularServiceVisuals, popularServiceSrcSet } from "@/data/categoryVisuals";
 import { formatCanadianPostalInput, geocodePostalToLocation, isCompleteCanadianPostal } from "@/lib/geocode";
-import { getBrowsePostalLocation, setBrowsePostalLocation, BROWSE_POSTAL_CHANGED_EVENT } from "@/lib/browsePostalStorage";
+import {
+  getBrowsePostalLocation,
+  setBrowsePostalLocation,
+  clearBrowsePostalLocation,
+  BROWSE_POSTAL_CHANGED_EVENT,
+} from "@/lib/browsePostalStorage";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Services() {
@@ -35,6 +40,7 @@ export default function Services() {
   } | null>(null);
   const [postalLoading, setPostalLoading] = useState(false);
   const [postalError, setPostalError] = useState<string | null>(null);
+  const postalEditedRef = useRef(false);
 
   useScrollRestore("premiere:scroll:/services");
 
@@ -70,6 +76,7 @@ export default function Services() {
 
   useEffect(() => {
     const syncFromStorage = () => {
+      if (postalEditedRef.current) return;
       const saved = getBrowsePostalLocation();
       if (!saved) {
         setPostalCode("");
@@ -236,12 +243,15 @@ export default function Services() {
                       placeholder="A1A 1A1"
                       value={postalCode}
                       onChange={(e) => {
+                        postalEditedRef.current = true;
                         const next = formatCanadianPostalInput(e.target.value);
                         setPostalCode(next);
                         setPostalResolved(null);
                         setPostalError(null);
+                        if (!next.trim()) clearBrowsePostalLocation();
                       }}
                       onBlur={() => {
+                        postalEditedRef.current = false;
                         if (normalizedPostal) void resolvePostal();
                       }}
                       maxLength={7}

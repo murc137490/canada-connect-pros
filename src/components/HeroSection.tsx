@@ -8,7 +8,12 @@ import { fetchProOfferedServiceRecordsForHero } from "@/lib/heroProOfferedServic
 import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
 import { formatCanadianPostalInput, geocodePostalToLocation, isCompleteCanadianPostal } from "@/lib/geocode";
-import { BROWSE_POSTAL_CHANGED_EVENT, getBrowsePostalLocation, setBrowsePostalLocation } from "@/lib/browsePostalStorage";
+import {
+  BROWSE_POSTAL_CHANGED_EVENT,
+  clearBrowsePostalLocation,
+  getBrowsePostalLocation,
+  setBrowsePostalLocation,
+} from "@/lib/browsePostalStorage";
 import { cleanSupportQuery } from "@/lib/supportAiQuery";
 import { searchProsByBusinessOrName, type ProBusinessSearchHit } from "@/lib/searchProBusiness";
 import BookingPhoneMock from "@/components/BookingPhoneMock";
@@ -83,13 +88,13 @@ export default function HeroSection() {
   const navigate = useNavigate();
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const postalEditedRef = useRef(false);
   const [textareaFocused, setTextareaFocused] = useState(false);
 
   const normalizedPostal = useMemo(
     () => postalCode.trim().toUpperCase().replace(/\s+/g, " "),
     [postalCode]
   );
-  const isPostalLocked = query.trim().length > 0;
 
   const resolvePostal = useCallback(async (): Promise<boolean> => {
     if (!normalizedPostal) return false;
@@ -111,21 +116,19 @@ export default function HeroSection() {
     return true;
   }, [normalizedPostal, t.index.checkServiceError]);
 
-  // Auto-lookup when a full Canadian postal is entered (Google via edge/client)
+  // Auto-lookup when a full Canadian postal is entered
   useEffect(() => {
-    if (!isCompleteCanadianPostal(normalizedPostal) || isPostalLocked) return;
+    if (!isCompleteCanadianPostal(normalizedPostal)) return;
     if (postalResolved) return;
     const tmr = window.setTimeout(() => {
       void resolvePostal();
     }, 350);
     return () => window.clearTimeout(tmr);
-  }, [normalizedPostal, isPostalLocked, postalResolved, resolvePostal]);
+  }, [normalizedPostal, postalResolved, resolvePostal]);
 
   useEffect(() => {
     let cancelled = false;
-    const syncFromStorage = () => {
-      const saved = getBrowsePostalLocation();
-      if (!saved) return;
+    const applySaved = (saved: NonNullable<ReturnType<typeof getBrowsePostalLocation>>) => {
       setPostalCode(saved.postal);
       setPostalResolved({
         lat: saved.lat,
@@ -134,10 +137,22 @@ export default function HeroSection() {
         province: saved.province ?? null,
       });
       setPostalError(null);
-      // Refresh coords so a stale FSA centroid (e.g. all H3Z*) gets replaced by the exact LDU.
+    };
+    const syncFromStorage = () => {
+      const saved = getBrowsePostalLocation();
+      if (!saved) {
+        if (postalEditedRef.current) {
+          // User cleared — keep empty field, don't restore.
+          return;
+        }
+        return;
+      }
+      // Never overwrite while the user is editing the postal field.
+      if (postalEditedRef.current) return;
+      applySaved(saved);
       if (isCompleteCanadianPostal(saved.postal)) {
         void geocodePostalToLocation(saved.postal).then((geo) => {
-          if (cancelled || !geo) return;
+          if (cancelled || !geo || postalEditedRef.current) return;
           setPostalResolved({
             lat: geo.lat,
             lng: geo.lng,
@@ -392,15 +407,17 @@ export default function HeroSection() {
                     placeholder={t.index.heroPostalExample}
                     value={postalCode}
                     onChange={(e) => {
+                      postalEditedRef.current = true;
                       const next = formatCanadianPostalInput(e.target.value);
                       setPostalCode(next);
                       setPostalResolved(null);
                       setPostalError(null);
+                      if (!next.trim()) clearBrowsePostalLocation();
                     }}
                     onBlur={() => {
-                      if (!isPostalLocked && normalizedPostal) void resolvePostal();
+                      postalEditedRef.current = false;
+                      if (normalizedPostal) void resolvePostal();
                     }}
-                    disabled={isPostalLocked}
                     maxLength={7}
                     className={`w-full sm:max-w-[9.5rem] border bg-background px-3 py-2.5 text-sm font-semibold tracking-wide text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 ${
                       postalError
