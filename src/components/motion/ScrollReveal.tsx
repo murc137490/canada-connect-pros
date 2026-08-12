@@ -1,68 +1,56 @@
-import { useEffect, useRef } from "react";
+import { useRef, type ReactNode } from "react";
+import { motion, useInView } from "motion/react";
 import { cn } from "@/lib/utils";
-import { useInViewToggle } from "@/hooks/useInViewToggle";
+import { MOTION } from "@/motion/types";
+import { usePrefersReducedMotion } from "@/motion/usePrefersReducedMotion";
 
 type Props = {
   className?: string;
-  children: React.ReactNode;
+  children: ReactNode;
   delay?: number;
   y?: number;
   /** Stay visible after first enter. Default false = fade out when leaving. */
   once?: boolean;
+  /** How much of the element must be visible (0–1). */
   amount?: number;
+  /** Shrink/expand the viewport for enter/leave. */
   margin?: string;
 };
 
 /**
- * Soft appear / disappear via IntersectionObserver + CSS.
- * No Framer scroll scrubbing — cheap for normal devices.
+ * Appear / disappear when scrolling in and out of view.
+ * Uses IntersectionObserver — not per-frame scroll scrubbing.
  */
 export default function ScrollReveal({
   className,
   children,
   delay = 0,
-  y = 10,
+  y = 28,
   once = false,
-  margin = "0px 0px -12% 0px",
+  amount = 0.25,
+  margin = "-18% 0px",
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInViewToggle(ref, {
+  const inView = useInView(ref, {
     once,
-    rootMargin: margin,
-    enterAt: 0.2,
-    leaveAt: 0.06,
+    amount,
+    margin: margin as "-18% 0px",
   });
-  const animating = useRef(false);
+  const reduced = usePrefersReducedMotion();
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    animating.current = true;
-    el.classList.add("home-soft-appear--busy");
-    const done = () => {
-      animating.current = false;
-      el.classList.remove("home-soft-appear--busy");
-    };
-    el.addEventListener("transitionend", done);
-    const t = window.setTimeout(done, 700);
-    return () => {
-      el.removeEventListener("transitionend", done);
-      window.clearTimeout(t);
-    };
-  }, [inView]);
+  if (reduced) {
+    return <div className={className}>{children}</div>;
+  }
 
   return (
-    <div
+    <motion.div
       ref={ref}
-      className={cn("home-soft-appear", inView && "home-soft-appear--in", className)}
-      style={
-        {
-          "--home-soft-y": `${y}px`,
-          "--home-soft-delay": `${delay}s`,
-        } as React.CSSProperties
-      }
+      className={cn(className)}
+      initial={{ opacity: 0, y }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: Math.round(y * 0.55) }}
+      transition={{ duration: MOTION.reveal, delay, ease: MOTION.ease }}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }

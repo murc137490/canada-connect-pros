@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
+import ScrollReveal from "@/components/motion/ScrollReveal";
 
 export default function HomeProCta() {
   const { t } = useLanguage();
@@ -16,7 +17,7 @@ export default function HomeProCta() {
     <section className="section-pad border-t border-border">
       <div className="container-page">
         <div className="grid gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:items-center lg:gap-20">
-          <div>
+          <ScrollReveal y={28}>
             <h2 className="font-display text-display-md text-foreground whitespace-pre-line max-w-[14ch]">
               {t.index.proSectionTitle}
             </h2>
@@ -29,18 +30,20 @@ export default function HomeProCta() {
                 <ArrowRight className="cta-arrow h-4 w-4" />
               </Link>
             </Button>
-          </div>
+          </ScrollReveal>
 
-          <ul className="space-y-0 border-t border-border">
-            {benefits.map((b) => (
-              <li
-                key={b}
-                className="border-b border-border py-4 text-[15px] font-medium text-foreground/90"
-              >
-                {b}
-              </li>
-            ))}
-          </ul>
+          <ScrollReveal y={24} delay={0.06}>
+            <ul className="space-y-0 border-t border-border">
+              {benefits.map((b) => (
+                <li
+                  key={b}
+                  className="border-b border-border py-4 text-[15px] font-medium text-foreground/90"
+                >
+                  {b}
+                </li>
+              ))}
+            </ul>
+          </ScrollReveal>
         </div>
       </div>
     </section>

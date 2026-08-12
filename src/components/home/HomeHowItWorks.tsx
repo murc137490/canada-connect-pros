@@ -89,7 +89,7 @@ export default function HomeHowItWorks() {
       style={{ ["--how-progress" as string]: reduced ? 1 : 0 }}
     >
       <div className="container-page">
-        <ScrollReveal y={10}>
+        <ScrollReveal y={28}>
           <h2 className="font-display text-display-md text-foreground whitespace-pre-line max-w-xl">
             {t.index.howTitle}
           </h2>
@@ -116,37 +116,39 @@ export default function HomeHowItWorks() {
             {steps.map((step, i) => {
               const on = activeStep > i;
               return (
-                <li key={step.n} className="how-step relative flex gap-5 md:block md:gap-0">
-                  <span
-                    className={cn(
-                      "relative z-[1] flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-background text-[11px] font-bold tabular-nums transition-[border-color,color] duration-300 md:mb-6 md:h-auto md:w-auto md:border-0 md:bg-transparent md:text-left",
-                      on ? "border-primary text-primary" : "border-border text-muted-foreground"
-                    )}
-                  >
+                <ScrollReveal key={step.n} y={26} delay={i * 0.06} amount={0.2}>
+                  <li className="how-step relative flex gap-5 md:block md:gap-0">
                     <span
                       className={cn(
-                        "md:font-display md:text-5xl lg:text-6xl md:leading-none transition-colors duration-300",
-                        on ? "md:text-primary/70" : "md:text-primary/20"
+                        "relative z-[1] flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-background text-[11px] font-bold tabular-nums transition-[border-color,color] duration-300 md:mb-6 md:h-auto md:w-auto md:border-0 md:bg-transparent md:text-left",
+                        on ? "border-primary text-primary" : "border-border text-muted-foreground"
                       )}
                     >
-                      {step.n}
+                      <span
+                        className={cn(
+                          "md:font-display md:text-5xl lg:text-6xl md:leading-none transition-colors duration-300",
+                          on ? "md:text-primary/70" : "md:text-primary/20"
+                        )}
+                      >
+                        {step.n}
+                      </span>
                     </span>
-                  </span>
 
-                  <div
-                    className={cn(
-                      "pb-10 md:pb-0 transition-opacity duration-300",
-                      on ? "opacity-100" : "opacity-50"
-                    )}
-                  >
-                    <h3 className="font-heading text-lg md:text-xl font-bold tracking-tight text-foreground">
-                      {step.title}
-                    </h3>
-                    <p className="mt-2 max-w-xs text-[15px] text-muted-foreground leading-relaxed">
-                      {step.desc}
-                    </p>
-                  </div>
-                </li>
+                    <div
+                      className={cn(
+                        "pb-10 md:pb-0 transition-opacity duration-300",
+                        on ? "opacity-100" : "opacity-50"
+                      )}
+                    >
+                      <h3 className="font-heading text-lg md:text-xl font-bold tracking-tight text-foreground">
+                        {step.title}
+                      </h3>
+                      <p className="mt-2 max-w-xs text-[15px] text-muted-foreground leading-relaxed">
+                        {step.desc}
+                      </p>
+                    </div>
+                  </li>
+                </ScrollReveal>
               );
             })}
           </div>
