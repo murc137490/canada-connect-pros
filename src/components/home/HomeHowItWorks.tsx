@@ -13,7 +13,7 @@ export default function HomeHowItWorks() {
   return (
     <section id="how-it-works" className="section-pad border-y border-border/70 bg-muted/35 dark:bg-muted/15">
       <div className="container-page">
-        <ScrollReveal once y={8}>
+        <ScrollReveal y={10}>
           <h2 className="font-display text-display-md text-foreground whitespace-pre-line max-w-xl">
             {t.index.howTitle}
           </h2>
@@ -28,7 +28,7 @@ export default function HomeHowItWorks() {
 
           <div className="grid gap-0 md:grid-cols-3 md:gap-10">
             {steps.map((step, i) => (
-              <ScrollReveal key={step.n} once delay={i * 0.05} y={8}>
+              <ScrollReveal key={step.n} delay={i * 0.06} y={12}>
                 <li className="relative flex gap-5 md:block md:gap-0">
                   {i < steps.length - 1 && (
                     <span

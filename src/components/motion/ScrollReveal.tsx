@@ -1,48 +1,55 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { usePrefersReducedMotion } from "@/motion/usePrefersReducedMotion";
+import { useInViewToggle } from "@/hooks/useInViewToggle";
 
 type Props = {
   className?: string;
   children: React.ReactNode;
   delay?: number;
   y?: number;
-  /** Kept for API compat; always one-shot for performance. */
+  /** Stay visible after first enter. Default false = fade out when leaving. */
   once?: boolean;
   amount?: number;
   margin?: string;
 };
 
 /**
- * Lightweight one-shot CSS appear. No Framer scroll listeners / continuous transforms.
+ * Soft appear / disappear via IntersectionObserver + CSS.
+ * No Framer scroll scrubbing — cheap for normal devices.
  */
 export default function ScrollReveal({
   className,
   children,
   delay = 0,
-  y = 8,
-  margin = "0px 0px -15% 0px",
+  y = 10,
+  once = false,
+  margin = "0px 0px -12% 0px",
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const reduced = usePrefersReducedMotion();
-  const [inView, setInView] = useState(reduced);
+  const inView = useInViewToggle(ref, {
+    once,
+    rootMargin: margin,
+    enterAt: 0.2,
+    leaveAt: 0.06,
+  });
+  const animating = useRef(false);
 
   useEffect(() => {
-    if (reduced) return;
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          setInView(true);
-          io.disconnect();
-        }
-      },
-      { rootMargin: margin, threshold: 0.12 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [reduced, margin]);
+    animating.current = true;
+    el.classList.add("home-soft-appear--busy");
+    const done = () => {
+      animating.current = false;
+      el.classList.remove("home-soft-appear--busy");
+    };
+    el.addEventListener("transitionend", done);
+    const t = window.setTimeout(done, 700);
+    return () => {
+      el.removeEventListener("transitionend", done);
+      window.clearTimeout(t);
+    };
+  }, [inView]);
 
   return (
     <div

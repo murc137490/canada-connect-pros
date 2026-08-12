@@ -12,7 +12,7 @@ export default function HomeCategories() {
   return (
     <section id="categories" className="section-pad">
       <div className="container-page">
-        <ScrollReveal once y={6}>
+        <ScrollReveal y={10}>
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <h2 className="font-display text-display-md text-foreground max-w-[16ch]">
               {t.index.categoriesTitle}
