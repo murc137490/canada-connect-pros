@@ -1,18 +1,18 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Sparkles, ArrowRight } from "lucide-react";
-import heroBg from "@/assets/hero-bg.jpg";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getAllServices, getCategorySummariesForAI, getFlatServiceRecords } from "@/data/services";
 import type { ServiceRecordForAI } from "@/data/services";
 import { fetchProOfferedServiceRecordsForHero } from "@/lib/heroProOfferedServices";
 import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
-import SplitText from "@/components/SplitText";
 import { geocodePostalToLocation } from "@/lib/geocode";
 import { BROWSE_POSTAL_CHANGED_EVENT, getBrowsePostalLocation, setBrowsePostalLocation } from "@/lib/browsePostalStorage";
 import { cleanSupportQuery } from "@/lib/supportAiQuery";
 import { searchProsByBusinessOrName, type ProBusinessSearchHit } from "@/lib/searchProBusiness";
+import MarketplacePreview from "@/components/home/MarketplacePreview";
+import { Button } from "@/components/ui/button";
 
 const SEARCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-suggestions`;
 
@@ -316,125 +316,117 @@ export default function HeroSection() {
     proNameMatches.length > 0;
 
   const resultChipClass =
-    "inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/95 px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/15";
+    "inline-flex items-center gap-2 rounded-full border border-border bg-background px-3.5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted";
 
   return (
-    <section className="relative flex min-h-[100dvh] flex-col justify-center overflow-x-hidden overflow-y-visible pb-12 pt-[calc(3.5rem+env(safe-area-inset-top,0px))] md:min-h-screen md:items-center md:justify-center md:overflow-hidden md:pb-0 md:pt-0">
-      <img
-        src={heroBg}
-        alt={t.index.heroImageAlt}
-        className="absolute inset-0 h-full w-full object-cover scale-[1.02]"
+    <section className="relative overflow-x-hidden pt-[calc(5rem+env(safe-area-inset-top,0px))] pb-16 md:pb-24 lg:pt-[calc(6.5rem+env(safe-area-inset-top,0px))]">
+      <div
+        className="pointer-events-none absolute inset-0 -z-10"
+        aria-hidden
+        style={{
+          background:
+            "radial-gradient(1200px 520px at 12% -10%, hsl(222 72% 22% / 0.07), transparent 55%), radial-gradient(900px 420px at 88% 8%, hsl(28 88% 52% / 0.08), transparent 50%), hsl(var(--background))",
+        }}
       />
-      <div className="absolute inset-0 bg-hero-overlay" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[hsl(222_76%_12%/0.55)] to-transparent" />
 
-      <div className="relative z-10 w-full max-w-full px-3 py-2 md:container md:px-6 md:py-16">
-        <div className="mx-auto max-w-4xl text-center">
-          <p className="mb-4 animate-fade-up font-logo text-lg tracking-tight text-white/95 drop-shadow-sm sm:text-xl md:mb-6 md:text-2xl">
-            {t.index.heroBrand}
-          </p>
-
-          <div className="mb-3 animate-fade-up-delay md:mb-5">
-            <h1 className="hero-project-title mx-auto mb-3 max-w-4xl px-1 font-heading text-4xl font-extrabold leading-[1.08] tracking-tight text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.35),0_2px_24px_rgba(0,0,0,0.25)] sm:text-5xl md:mb-4 md:text-7xl">
-              <SplitText
-                text={t.index.heroProjectTitle}
-                className="inline-block text-white"
-                tag="span"
-                splitType="words"
-                delay={30}
-                duration={1.1}
-                from={{ opacity: 0, y: 40 }}
-                to={{ opacity: 1, y: 0 }}
-                threshold={0.05}
-                textAlign="center"
-                playOnMount
-              />
+      <div className="container-page">
+        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 xl:gap-20">
+          <div className="min-w-0">
+            <p className="font-heading text-sm font-bold tracking-[0.04em] text-primary uppercase">
+              {t.index.heroBrand}
+            </p>
+            <h1 className="hero-project-title mt-4 max-w-[14ch] text-display-xl text-foreground whitespace-pre-line">
+              {t.index.heroProjectTitle}
             </h1>
-            <p className="mx-auto max-w-xl px-2 text-sm leading-relaxed text-white/85 [text-shadow:0_1px_2px_rgba(0,0,0,0.25)] md:text-base">
+            <p className="mt-5 max-w-md text-base md:text-lg text-muted-foreground leading-relaxed">
               {t.index.heroSupport}
             </p>
-          </div>
 
-          <form onSubmit={handleSubmit} className="relative mx-auto mt-6 max-w-2xl animate-fade-up-delay-2 md:mt-8">
-            <div className="relative mx-auto w-full max-w-2xl">
-              <label className="mb-2 block text-center text-[11px] font-medium uppercase tracking-[0.16em] text-white/70">
-                {t.index.heroPostalHint}
-              </label>
-              <div className="mb-3 flex items-center justify-center">
-                <input
-                  type="text"
-                  placeholder="A1A 1A1"
-                  value={postalCode}
-                  onChange={(e) => {
-                    setPostalCode(e.target.value);
-                    setPostalResolved(null);
-                    setPostalError(null);
-                  }}
-                  onBlur={() => {
-                    if (!isPostalLocked && normalizedPostal) void resolvePostal();
-                  }}
-                  disabled={isPostalLocked}
-                  maxLength={9}
-                  aria-label={t.index.heroPostalHint}
-                  className={`block w-[12ch] rounded-xl border px-3 py-2.5 text-center text-sm font-medium text-white caret-white backdrop-blur-md placeholder:text-white/40 focus:outline-none focus:ring-2 disabled:text-white/50 disabled:opacity-70 [text-shadow:0_1px_2px_rgba(0,0,0,0.25)] ${
-                    !postalResolved
-                      ? "animate-pulse border-accent/60 bg-white/15 shadow-[0_0_20px_rgba(234,187,31,0.35)] focus:ring-accent/50"
-                      : "border-white/30 bg-white/12 focus:ring-white/40"
-                  }`}
-                />
-              </div>
-              {postalLoading ? (
-                <p className="mb-3 text-center text-xs text-white/85 [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
-                  {t.makeRequest.step3Detecting}
-                </p>
-              ) : postalError ? (
-                <p className="mb-3 text-center text-xs text-amber-200">{postalError}</p>
-              ) : null}
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Button size="lg" className="group h-12 px-7" asChild>
+                <Link to="/make-request">
+                  {t.index.ctaPublish}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="h-12 px-7" asChild>
+                <a href="#hero-search">{t.index.ctaFindPro}</a>
+              </Button>
+            </div>
 
-              <div className="relative rounded-2xl border border-white/25 bg-white/10 p-3 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.45)] backdrop-blur-md">
-                {postalResolved ? (
-                  <div className="mb-1.5 flex justify-end px-1">
-                    <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/95">
-                      {postalResolved.city
-                        ? `${postalResolved.city}${postalResolved.province ? `, ${postalResolved.province}` : ""}`
-                        : normalizedPostal}
-                    </span>
-                  </div>
-                ) : null}
-                <div className="relative">
-                  <textarea
-                    ref={textareaRef}
-                    placeholder={normalizedPostal ? t.index.heroProjectPlaceholder : t.index.heroPostalHint}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onFocus={() => setTextareaFocused(true)}
-                    onBlur={() => setTextareaFocused(false)}
-                    rows={1}
-                    className="w-full min-h-[2.75rem] max-h-32 resize-none overflow-y-auto bg-transparent px-2 py-2.5 pr-11 text-sm text-white caret-white outline-none transition-[height] duration-300 ease-out placeholder:text-white/55 disabled:text-white/45 disabled:placeholder:text-white/40 sm:pr-12 sm:text-base [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]"
-                    style={{ overflowWrap: "break-word" }}
-                    disabled={!normalizedPostal || !postalResolved}
+            <form id="hero-search" onSubmit={handleSubmit} className="mt-10 max-w-xl scroll-mt-28">
+              <div className="rounded-2xl border border-border/80 bg-card p-3 sm:p-4 shadow-[0_1px_0_hsl(var(--border))]">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <label className="sr-only" htmlFor="hero-postal">
+                    {t.index.heroPostalHint}
+                  </label>
+                  <input
+                    id="hero-postal"
+                    type="text"
+                    placeholder={t.index.heroPostalHint}
+                    value={postalCode}
+                    onChange={(e) => {
+                      setPostalCode(e.target.value);
+                      setPostalResolved(null);
+                      setPostalError(null);
+                    }}
+                    onBlur={() => {
+                      if (!isPostalLocked && normalizedPostal) void resolvePostal();
+                    }}
+                    disabled={isPostalLocked}
+                    maxLength={9}
+                    className={`w-full sm:w-[9.5rem] shrink-0 rounded-xl border bg-background px-3 py-2.5 text-center text-sm font-semibold tracking-wide text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 ${
+                      !postalResolved ? "border-accent/50" : "border-border"
+                    }`}
                   />
-                  {loading && (
-                    <div className="pointer-events-none absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-2">
-                      <Sparkles className="shrink-0 animate-pulse text-accent" size={20} />
-                    </div>
-                  )}
+                  <div className="relative min-w-0 flex-1">
+                    <textarea
+                      ref={textareaRef}
+                      placeholder={normalizedPostal ? t.index.heroProjectPlaceholder : t.index.heroPostalHint}
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      onFocus={() => setTextareaFocused(true)}
+                      onBlur={() => setTextareaFocused(false)}
+                      rows={1}
+                      className="w-full min-h-[2.75rem] max-h-32 resize-none overflow-y-auto rounded-xl border border-transparent bg-muted/50 px-3 py-2.5 pr-10 text-sm text-foreground outline-none transition-[height] duration-300 placeholder:text-muted-foreground focus:border-border focus:bg-background disabled:opacity-50 sm:text-[15px]"
+                      style={{ overflowWrap: "break-word" }}
+                      disabled={!normalizedPostal || !postalResolved}
+                    />
+                    {loading && (
+                      <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
+                        <Sparkles className="animate-pulse text-accent" size={18} />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
+                {postalResolved ? (
+                  <p className="mt-2 px-1 text-xs text-muted-foreground">
+                    {postalResolved.city
+                      ? `${postalResolved.city}${postalResolved.province ? `, ${postalResolved.province}` : ""}`
+                      : normalizedPostal}
+                  </p>
+                ) : null}
+                {postalLoading ? (
+                  <p className="mt-2 px-1 text-xs text-muted-foreground">{t.makeRequest.step3Detecting}</p>
+                ) : postalError ? (
+                  <p className="mt-2 px-1 text-xs text-destructive">{postalError}</p>
+                ) : null}
+
                 {loading && (
-                  <div className="mt-3 space-y-2 border-t border-white/20 pt-3">
-                    <p className="px-1 text-xs font-medium text-white/85">{t.index.heroAiThinking}</p>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/20">
+                  <div className="mt-3 space-y-2 border-t border-border/70 pt-3">
+                    <p className="text-xs font-medium text-muted-foreground">{t.index.heroAiThinking}</p>
+                    <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
                       <div className="ai-thinking-gauge h-full w-full rounded-full" />
                     </div>
                   </div>
                 )}
 
                 {error && !loading && (
-                  <div className="mt-3 space-y-1 border-t border-white/20 px-1 pt-3">
-                    <p className="text-sm text-amber-200">{t.index.heroAiError}</p>
+                  <div className="mt-3 border-t border-border/70 pt-3">
+                    <p className="text-sm text-destructive">{t.index.heroAiError}</p>
                     {errorDetails && (
-                      <p className="break-words text-xs text-white/70" title={errorDetails}>
+                      <p className="mt-1 break-words text-xs text-muted-foreground" title={errorDetails}>
                         {errorDetails.length > 120 ? `${errorDetails.slice(0, 120)}…` : errorDetails}
                       </p>
                     )}
@@ -442,9 +434,9 @@ export default function HeroSection() {
                 )}
 
                 {hasResults && !loading && (
-                  <div className="mt-3 space-y-3 border-t border-white/20 pt-3 text-left">
+                  <div className="mt-3 space-y-3 border-t border-border/70 pt-3 text-left">
                     {clarifyingMessage && (
-                      <p className="px-1 text-sm text-white/90">{clarifyingMessage}</p>
+                      <p className="text-sm text-muted-foreground">{clarifyingMessage}</p>
                     )}
                     {bestMatch?.serviceName &&
                       (() => {
@@ -460,8 +452,8 @@ export default function HeroSection() {
                           ? getServiceName(resolved.serviceSlug, locale, bestMatch.serviceName)
                           : bestMatch.serviceName;
                         return (
-                          <div className="px-1">
-                            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/70">
+                          <div>
+                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                               {t.index.heroBestMatch}
                             </p>
                             <div className="flex flex-wrap items-center gap-2">
@@ -477,17 +469,16 @@ export default function HeroSection() {
                                 {categoryLabel ? `${categoryLabel} → ${serviceLabel}` : serviceLabel}
                                 <ArrowRight size={14} />
                               </button>
-                              <span className="text-xs text-white/70">({t.index.heroViewPros})</span>
                             </div>
                           </div>
                         );
                       })()}
                     {proNameMatches.length > 0 && (
                       <>
-                        <p className="px-1 text-xs font-medium uppercase tracking-wide text-white/70">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                           {t.index.heroProMatches}
                         </p>
-                        <div className="flex flex-wrap gap-2 px-1">
+                        <div className="flex flex-wrap gap-2">
                           {proNameMatches.map((pro) => (
                             <button
                               key={pro.proProfileId}
@@ -506,10 +497,10 @@ export default function HeroSection() {
                     )}
                     {followUpMatches.length > 0 && (
                       <>
-                        <p className="px-1 text-xs font-medium uppercase tracking-wide text-white/70">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                           {t.index.heroFollowUpServices}
                         </p>
-                        <div className="flex flex-wrap gap-2 px-1">
+                        <div className="flex flex-wrap gap-2">
                           {followUpMatches.map((m, idx) => {
                             const followLabel = getServiceName(m.serviceSlug, locale, m.serviceName);
                             return (
@@ -529,8 +520,13 @@ export default function HeroSection() {
                   </div>
                 )}
               </div>
-            </div>
-          </form>
+            </form>
+          </div>
+
+          <div className="relative hidden md:block">
+            <div className="absolute -inset-6 -z-10 rounded-[2rem] bg-gradient-to-br from-primary/[0.04] via-transparent to-accent/[0.08]" aria-hidden />
+            <MarketplacePreview className="animate-fade-up" />
+          </div>
         </div>
       </div>
     </section>

@@ -8,7 +8,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import AnimatedThemeToggler from "@/components/AnimatedThemeToggler";
 import CookieConsent from "@/components/CookieConsent";
 import HelpFab from "@/components/HelpFab";
-import PillNavLinks from "@/components/PillNavLinks";
 import UserMenuDropdown from "@/components/UserMenuDropdown";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { getAllServices } from "@/data/services";
@@ -19,11 +18,11 @@ import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import WhatsNewMenu from "@/components/WhatsNewMenu";
 import { useWhatsNew } from "@/contexts/WhatsNewContext";
 
-const HERO_SCROLL_THRESHOLD = 320;
+const SCROLL_COMPACT = 24;
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolledPastHero, setScrolledPastHero] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -117,15 +116,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const isHome = location.pathname === "/";
   useEffect(() => {
-    if (!isHome) {
-      setScrolledPastHero(false);
-      return;
-    }
-    const onScroll = () => setScrolledPastHero(window.scrollY > HERO_SCROLL_THRESHOLD);
-    onScroll(); // initial
+    const onScroll = () => setScrolled(window.scrollY > SCROLL_COMPACT);
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [isHome]);
+  }, []);
 
   const { isPlatformAdmin } = usePlatformAdmin();
   const { items: whatsNewItems } = useWhatsNew();
@@ -133,33 +128,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const showJoinPros =
     !isPlatformAdmin && shouldShowJoinPros(user?.id, activeVerifiedPro, activeVerifiedProReady);
   const navLinks = [
-    { label: t.nav.howItWorks, href: "/#how-it-works" },
     { label: t.nav.services, href: "/services" },
+    { label: t.nav.howItWorks, href: "/#how-it-works" },
     ...(showJoinPros ? [{ label: t.nav.joinPros, href: "/join-pros" }] : []),
-    { label: t.nav.support, href: "/support" },
   ];
 
   const fullName = (user?.user_metadata?.full_name as string)?.trim();
   const dashboardLabel = fullName ? fullName.split(/\s+/)[0] || t.nav.dashboardShort : t.nav.dashboardShort;
   const isProProfilePage = /^\/pro\/[^/]+$/.test(location.pathname);
-  // Use light header (white text) only at top of home; after scroll use theme-aware colors so text is visible on white
-  const headerLight = isHome && !scrolledPastHero;
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
   };
 
-  const langBtn = headerLight
-    ? "border-white/30 bg-white/15 text-white shadow-sm backdrop-blur-sm hover:bg-white/25 active:bg-white/30 focus-visible:bg-white/25"
-    : "border-border/70 bg-background/85 text-foreground shadow-sm backdrop-blur-sm hover:bg-muted/70 active:bg-muted focus-visible:bg-muted/70 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15 dark:active:bg-white/20 dark:focus-visible:bg-white/15";
-  const themeBtn = headerLight
-    ? "border-white/30 bg-white/15 text-white shadow-sm backdrop-blur-sm hover:bg-white/25 active:bg-white/30 focus-visible:bg-white/25 [&_svg]:text-white"
-    : "border-border/70 bg-background/85 text-foreground shadow-sm backdrop-blur-sm hover:bg-muted/70 active:bg-muted focus-visible:bg-muted/70 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15 dark:active:bg-white/20 dark:focus-visible:bg-white/15 [&_svg]:dark:text-white";
-  const menuIcon = headerLight ? "text-white" : "text-foreground";
-  const accountTrigger = headerLight
-    ? "!border !border-white/30 !bg-white/15 !text-white !shadow-sm backdrop-blur-sm hover:!bg-white/25 active:!bg-white/30 focus-visible:!bg-white/25 hover:!opacity-100 max-md:!min-w-0 max-md:!px-2"
-    : "!border !border-border/70 !bg-background/85 !text-foreground !shadow-sm backdrop-blur-sm hover:!bg-muted/70 active:!bg-muted focus-visible:!bg-muted/70 hover:!opacity-100 dark:!border-white/15 dark:!bg-white/10 dark:!text-white dark:hover:!bg-white/15 dark:active:!bg-white/20 dark:focus-visible:!bg-white/15 max-md:!min-w-0 max-md:!px-2";
+  const langBtn =
+    "border-border/70 bg-background/85 text-foreground hover:bg-muted/70 active:bg-muted focus-visible:bg-muted/70 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15";
+  const themeBtn =
+    "border-border/70 bg-background/85 text-foreground hover:bg-muted/70 active:bg-muted focus-visible:bg-muted/70 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15 [&_svg]:dark:text-white";
+  const accountTrigger =
+    "!border !border-border/70 !bg-background/85 !text-foreground hover:!bg-muted/70 active:!bg-muted focus-visible:!bg-muted/70 hover:!opacity-100 dark:!border-white/15 dark:!bg-white/10 dark:!text-white dark:hover:!bg-white/15 max-md:!min-w-0 max-md:!px-2";
 
   const menuItems = isPlatformAdmin
     ? [
@@ -184,126 +172,122 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen w-full max-w-full min-w-0 flex flex-col m-0 p-0">
-      {/* Nav — hidden on pro public profile; on home, no bar so nav floats on hero image */}
       {!isProProfilePage && (
-      <header className={`fixed top-0 left-0 right-0 z-50 group pt-[env(safe-area-inset-top,0px)] transition-all duration-300 ${headerLight ? "border-0 border-transparent bg-transparent hover:bg-transparent hover:border-transparent shadow-none hover:shadow-none backdrop-blur-0 hover:backdrop-blur-0" : "border-b border-transparent hover:border-transparent bg-transparent hover:bg-transparent dark:hover:bg-transparent backdrop-blur-0 hover:backdrop-blur-0 shadow-none hover:shadow-none"}`}>
-        {/* Single row: logo left (full-bleed on small screens), controls + nav on the right; desktop gets centered pill links */}
-        <div className="relative flex min-h-[3rem] w-full items-center xl:min-h-[4rem] pl-[max(0.25rem,env(safe-area-inset-left,0px))] pr-[max(0.25rem,env(safe-area-inset-right,0px))] xl:pl-[env(safe-area-inset-left,0px)] xl:pr-[env(safe-area-inset-right,0px)]">
-          <div className="relative flex w-full items-center justify-between gap-2 px-2 py-1.5 md:container md:mx-auto md:h-16 md:px-0 md:py-0">
-            <Link
-              to="/"
-              className={`min-w-0 shrink font-logo tracking-tight transition-opacity hover:opacity-90 md:shrink-0 ${
-                headerLight ? "text-white drop-shadow-sm md:drop-shadow-none" : "text-primary"
-              } mr-auto max-w-[min(100%,calc(100%-10rem))] text-left text-[15px] leading-tight sm:text-[16px] md:text-[20px] xl:text-[22px] 2xl:max-w-none`}
-              aria-label="Premiere Services – Home"
-            >
-              <span className="block truncate text-left md:whitespace-normal 2xl:truncate">Premiere Services</span>
-            </Link>
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top,0px)] transition-all duration-300 site-header ${
+          scrolled ? "site-header--compact" : ""
+        }`}
+      >
+        <div className={`container-page flex items-center justify-between gap-4 transition-all duration-300 ${scrolled ? "h-14" : "h-16 md:h-[4.25rem]"}`}>
+          <Link
+            to="/"
+            className="min-w-0 shrink font-heading text-[15px] sm:text-base md:text-lg font-extrabold tracking-tight text-foreground hover:opacity-80 transition-opacity"
+            aria-label="Premiere Services – Home"
+          >
+            <span className="block truncate">Première Services</span>
+          </Link>
 
-            <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 hidden -translate-x-1/2 -translate-y-1/2 2xl:block">
-              <div className="pointer-events-auto">
-                <PillNavLinks items={navLinks} className={headerLight ? "pill-nav-header-light" : ""} />
-              </div>
-            </div>
+          <nav className="hidden lg:flex items-center gap-1 absolute left-1/2 -translate-x-1/2" aria-label="Primary">
+            {navLinks.map((l) => {
+              const isActive =
+                location.pathname === l.href ||
+                (l.href === "/#how-it-works" && location.pathname === "/" && location.hash === "#how-it-works");
+              return (
+                <Link
+                  key={l.href}
+                  to={l.href}
+                  className={`rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
+                    isActive ? "text-foreground bg-muted" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              );
+            })}
+          </nav>
 
-            <div
-              className={`relative z-20 flex shrink-0 flex-nowrap items-center justify-end gap-1 md:gap-1.5 2xl:ml-auto ${headerLight ? "text-white" : "text-foreground dark:text-white"}`}
+          <div className="relative z-20 flex shrink-0 items-center justify-end gap-1.5 md:gap-2">
+            <button
+              type="button"
+              onClick={() => setLocale(locale === "en" ? "fr" : "en")}
+              className={`h-8 w-9 shrink-0 rounded-full border px-0 text-center text-[12px] font-semibold leading-none transition-colors md:h-9 md:w-10 ${langBtn}`}
+              aria-label={locale === "en" ? "Switch to French" : "Passer en anglais"}
             >
-              <button
-                type="button"
-                onClick={() => setLocale(locale === "en" ? "fr" : "en")}
-                className={`h-8 w-9 shrink-0 rounded-md border px-0 py-1 text-center text-[12px] font-semibold leading-none transition-colors md:h-9 md:w-11 md:py-1.5 md:text-[15px] md:font-medium ${langBtn}`}
-                aria-label={locale === "en" ? "Switch to French" : "Passer en anglais"}
-              >
-                {locale === "en" ? "FR" : "EN"}
-              </button>
-              <AnimatedThemeToggler className={`h-8 w-8 shrink-0 rounded-md md:h-9 md:w-9 ${themeBtn}`} />
-              {user ? (
-                <WhatsNewMenu items={whatsNewItems} variant="desktop" className="hidden sm:flex shrink-0" />
-              ) : null}
-              {user ? (
-                <UserMenuDropdown
-                  triggerLabel={dashboardLabel}
-                  onLogout={handleSignOut}
-                  accentColor="#007A56"
-                  triggerClassName={accountTrigger}
-                  panelClassName="user-menu-panel--dashboard"
-                  notificationCount={isPlatformAdmin ? 0 : notificationCount}
-                  items={[...menuItems]}
-                />
-              ) : (
-                <div className="hidden items-center gap-2 md:flex">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`h-9 min-w-[5.85rem] shrink-0 px-2.5 text-[15px] font-medium ${headerLight ? "text-white hover:bg-white/10 hover:text-white" : "dark:text-white dark:hover:bg-white/10 dark:hover:text-white"}`}
-                    asChild
-                  >
-                    <Link to="/auth?mode=login">{t.nav.logIn}</Link>
-                  </Button>
-                  <Button
-                    size="sm"
-                    className={`h-9 min-w-[5.85rem] shrink-0 px-2.5 text-[15px] font-medium ${headerLight ? "border border-white/40 bg-white/20 text-white hover:bg-white/30" : "bg-secondary text-secondary-foreground hover:bg-secondary/90"}`}
-                    asChild
-                  >
-                    <Link to="/auth?mode=signup">{t.nav.signUp}</Link>
-                  </Button>
-                </div>
-              )}
-              <button
-                type="button"
-                className={`shrink-0 rounded-md p-1.5 2xl:hidden ${menuIcon}`}
-                onClick={() => setMobileOpen(!mobileOpen)}
-                aria-expanded={mobileOpen}
-                aria-label={mobileOpen ? "Close menu" : "Open menu"}
-              >
-                {mobileOpen ? <X size={22} strokeWidth={2} /> : <Menu size={22} strokeWidth={2} />}
-              </button>
-            </div>
+              {locale === "en" ? "FR" : "EN"}
+            </button>
+            <AnimatedThemeToggler className={`h-8 w-8 shrink-0 rounded-full md:h-9 md:w-9 ${themeBtn}`} />
+            {user ? (
+              <WhatsNewMenu items={whatsNewItems} variant="desktop" className="hidden sm:flex shrink-0" />
+            ) : null}
+            <Button size="sm" className="hidden h-9 px-4 text-sm font-semibold md:inline-flex" asChild>
+              <Link to="/make-request">{t.nav.publishRequest}</Link>
+            </Button>
+            {user ? (
+              <UserMenuDropdown
+                triggerLabel={dashboardLabel}
+                onLogout={handleSignOut}
+                accentColor="hsl(222 72% 22%)"
+                triggerClassName={accountTrigger}
+                panelClassName="user-menu-panel--dashboard"
+                notificationCount={isPlatformAdmin ? 0 : notificationCount}
+                items={[...menuItems]}
+              />
+            ) : (
+              <Button variant="ghost" size="sm" className="hidden h-9 px-3 text-sm font-semibold md:inline-flex" asChild>
+                <Link to="/auth?mode=login">{t.nav.logIn}</Link>
+              </Button>
+            )}
+            <button
+              type="button"
+              className="shrink-0 rounded-full p-1.5 text-foreground lg:hidden"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-expanded={mobileOpen}
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            >
+              {mobileOpen ? <X size={22} strokeWidth={2} /> : <Menu size={22} strokeWidth={2} />}
+            </button>
           </div>
         </div>
 
-        {/* Mobile menu — site links; account lives in header dropdown */}
         {mobileOpen && (
-          <div className="2xl:hidden border-t border-border/50 bg-background pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] shadow-lg">
-            <nav className="flex w-full max-w-full flex-col items-center gap-0.5 px-3 pt-3">
-              {navLinks.map((l) => {
-                const isActive = location.pathname === l.href || (l.href === "/#how-it-works" && location.pathname === "/");
-                return (
-                  <Link
-                    key={l.href}
-                    to={l.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={`w-full max-w-sm translate-x-0.5 rounded-lg px-3 py-3.5 text-center text-[18px] font-medium transition-colors ${
-                      isActive ? "font-semibold bg-muted/70 text-foreground" : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {l.label}
-                  </Link>
-                );
-              })}
+          <div className="lg:hidden border-t border-border/50 bg-background pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]">
+            <nav className="flex w-full flex-col gap-0.5 px-4 pt-3">
+              {navLinks.map((l) => (
+                <Link
+                  key={l.href}
+                  to={l.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-xl px-3 py-3.5 text-[16px] font-medium text-foreground hover:bg-muted/60"
+                >
+                  {l.label}
+                </Link>
+              ))}
+              <Link
+                to="/support"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-xl px-3 py-3.5 text-[16px] font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+              >
+                {t.nav.support}
+              </Link>
               {user ? (
-                <div className="mt-3 flex w-full max-w-sm flex-col items-center px-1">
+                <div className="mt-2 px-1">
                   <WhatsNewMenu items={whatsNewItems} variant="mobileMenu" className="w-full" />
                 </div>
               ) : null}
-              <div className="mt-3 flex w-full max-w-sm translate-x-0.5 flex-col items-center gap-2 px-1">
+              <div className="mt-3 flex flex-col gap-2 px-1">
                 {user ? (
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => { handleSignOut(); setMobileOpen(false); }}>
+                    <LogOut size={14} /> {t.nav.logOut}
+                  </Button>
+                ) : (
                   <>
-                    <span className="w-full text-center text-sm text-muted-foreground truncate" title={user?.email ?? undefined}>{dashboardLabel}</span>
-                    <Button variant="outline" size="sm" className="gap-1" onClick={() => { handleSignOut(); setMobileOpen(false); }}>
-                      <LogOut size={14} /> {t.nav.logOut}
+                    <Button size="sm" className="w-full" asChild>
+                      <Link to="/make-request" onClick={() => setMobileOpen(false)}>{t.nav.publishRequest}</Link>
+                    </Button>
+                    <Button variant="outline" size="sm" className="w-full" asChild>
+                      <Link to="/auth?mode=login" onClick={() => setMobileOpen(false)}>{t.nav.logIn}</Link>
                     </Button>
                   </>
-                ) : (
-                  <div className="flex w-full justify-center gap-2">
-                    <Button variant="outline" size="sm" className="flex-1" asChild>
-                      <Link to="/auth?mode=login">{t.nav.logIn}</Link>
-                    </Button>
-                    <Button size="sm" className="flex-1 bg-secondary text-secondary-foreground" asChild>
-                      <Link to="/auth?mode=signup">{t.nav.signUp}</Link>
-                    </Button>
-                  </div>
                 )}
               </div>
             </nav>
@@ -316,54 +300,62 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         className={`flex-1 min-h-screen w-full max-w-full min-w-0 bg-gradient-page m-0 p-0 ${
           isProProfilePage || isHome
             ? "pt-0"
-            : "pt-[calc(5rem+env(safe-area-inset-top,0px))] 2xl:pt-[calc(3.5rem+env(safe-area-inset-top,0px))]"
+            : "pt-[calc(5rem+env(safe-area-inset-top,0px))]"
         }`}
       >
         {children}
       </main>
 
-      {/* Footer */}
-      <footer className="footer-gradient text-white border-t border-white/10">
-        <div className="container py-10 md:py-14 px-4 md:px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
-            <div className="space-y-4">
-              <div className="font-heading font-semibold text-lg tracking-tight">
-                {t.common.premiereServices}
+      <footer className="footer-gradient text-white">
+        <div className="container-page py-14 md:py-16">
+          <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)] md:gap-12">
+            <div className="space-y-4 max-w-sm">
+              <div className="font-heading text-xl font-extrabold tracking-tight">
+                Première Services
               </div>
-              <p className="text-sm opacity-80 leading-relaxed max-w-xs">
+              <p className="text-sm text-white/65 leading-relaxed">
                 {t.footer.tagline}
               </p>
             </div>
             <div className="space-y-3">
-              <h4 className="font-heading font-semibold">{t.footer.popular}</h4>
-              <ul className="space-y-2 text-sm opacity-70">
+              <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">{t.footer.servicesCol}</h4>
+              <ul className="space-y-2 text-sm text-white/70">
                 {popularFooterLinks.map((item) => (
                   <li key={item.to}>
-                    <Link to={item.to} className="hover:opacity-100 block py-0.5 underline-offset-2 hover:underline">
+                    <Link to={item.to} className="hover:text-white transition-colors">
                       {item.label}
                     </Link>
                   </li>
                 ))}
+                <li>
+                  <Link to="/services" className="hover:text-white transition-colors">{t.nav.services}</Link>
+                </li>
               </ul>
             </div>
             <div className="space-y-3">
-              <h4 className="font-heading font-semibold">{t.footer.company}</h4>
-              <ul className="space-y-2 text-sm opacity-70">
-                <li><Link to="/support" className="hover:opacity-100 block py-0.5">{t.nav.support}</Link></li>
-                {showJoinPros && <li><Link to="/join-pros" className="hover:opacity-100 block py-0.5">{t.nav.joinPros}</Link></li>}
-                <li><Link to="/terms" className="hover:opacity-100 block py-0.5">{t.footer.termsOfService}</Link></li>
+              <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">{t.footer.prosCol}</h4>
+              <ul className="space-y-2 text-sm text-white/70">
+                {showJoinPros && (
+                  <li><Link to="/join-pros" className="hover:text-white transition-colors">{t.nav.joinPros}</Link></li>
+                )}
+                <li><Link to="/support" className="hover:text-white transition-colors">{t.nav.support}</Link></li>
+                <li><Link to="/make-request" className="hover:text-white transition-colors">{t.nav.publishRequest}</Link></li>
               </ul>
             </div>
             <div className="space-y-3">
-              <h4 className="font-heading font-semibold">{t.footer.serving}</h4>
-              <div className="flex items-center gap-2 text-sm opacity-70">
-                <MapPin size={14} className="shrink-0" />
-                <span className="leading-relaxed">{t.footer.servingCities ?? "Quebec · Expanding"}</span>
-              </div>
+              <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">{t.footer.legalCol}</h4>
+              <ul className="space-y-2 text-sm text-white/70">
+                <li><Link to="/terms" className="hover:text-white transition-colors">{t.footer.termsOfService}</Link></li>
+                <li className="flex items-center gap-2 pt-1 text-white/55">
+                  <MapPin size={14} className="shrink-0" />
+                  <span>{t.footer.servingCities ?? "Quebec · Expanding"}</span>
+                </li>
+              </ul>
             </div>
           </div>
-          <div className="border-t border-white/20 mt-8 pt-6 text-center text-xs opacity-80">
-            © {new Date().getFullYear()} {t.common.premiereServices}. {t.footer.rights}
+          <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
+            <span>© {new Date().getFullYear()} Première Services. {t.footer.rights}</span>
+            <Link to="/terms" className="hover:text-white/70 transition-colors">{t.footer.termsOfService}</Link>
           </div>
         </div>
       </footer>

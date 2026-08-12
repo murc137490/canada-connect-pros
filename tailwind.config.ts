@@ -18,10 +18,11 @@ export default {
     },
     extend: {
       fontFamily: {
-        heading: ['"DM Sans"', 'system-ui', '-apple-system', 'sans-serif'],
-        body: ['"DM Sans"', 'system-ui', '-apple-system', 'sans-serif'],
-        brand: ['"Playfair Display"', 'Georgia', 'serif'],
-        logo: ['"Righteous"', 'system-ui', 'sans-serif'],
+        heading: ['"Manrope"', 'system-ui', '-apple-system', 'sans-serif'],
+        body: ['"Manrope"', 'system-ui', '-apple-system', 'sans-serif'],
+        brand: ['"Instrument Serif"', 'Georgia', 'serif'],
+        display: ['"Instrument Serif"', 'Georgia', 'serif'],
+        logo: ['"Manrope"', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
