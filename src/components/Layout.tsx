@@ -196,8 +196,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Link
                   key={l.href}
                   to={l.href}
-                  className={`rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
-                    isActive ? "text-foreground bg-muted" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {l.label}
@@ -210,12 +210,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => setLocale(locale === "en" ? "fr" : "en")}
-              className={`h-8 w-9 shrink-0 rounded-full border px-0 text-center text-[12px] font-semibold leading-none transition-colors md:h-9 md:w-10 ${langBtn}`}
+              className={`h-8 w-9 shrink-0 rounded-md border px-0 text-center text-[12px] font-semibold leading-none transition-colors md:h-9 md:w-10 ${langBtn}`}
               aria-label={locale === "en" ? "Switch to French" : "Passer en anglais"}
             >
               {locale === "en" ? "FR" : "EN"}
             </button>
-            <AnimatedThemeToggler className={`h-8 w-8 shrink-0 rounded-full md:h-9 md:w-9 ${themeBtn}`} />
+            <AnimatedThemeToggler className={`h-8 w-8 shrink-0 rounded-md md:h-9 md:w-9 ${themeBtn}`} />
             {user ? (
               <WhatsNewMenu items={whatsNewItems} variant="desktop" className="hidden sm:flex shrink-0" />
             ) : null}

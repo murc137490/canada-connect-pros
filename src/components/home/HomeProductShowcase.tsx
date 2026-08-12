@@ -6,30 +6,52 @@ import MarketplacePreview from "@/components/home/MarketplacePreview";
 
 export default function HomeProductShowcase() {
   const { t } = useLanguage();
+  const journey = [
+    t.index.journey1,
+    t.index.journey2,
+    t.index.journey3,
+    t.index.journey4,
+  ];
 
   return (
-    <section className="section-pad bg-primary text-primary-foreground">
+    <section className="section-pad bg-primary text-primary-foreground overflow-hidden">
       <div className="container-page">
-        <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.05fr] lg:gap-16">
+        <div className="grid items-center gap-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16 xl:gap-20">
           <div>
-            <h2 className="font-display text-display-md tracking-tight text-white whitespace-pre-line">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
+              {t.index.showcaseEyebrow}
+            </p>
+            <h2 className="mt-4 font-display text-display-md tracking-tight text-white whitespace-pre-line">
               {t.index.showcaseTitle}
             </h2>
-            <p className="mt-4 max-w-md text-base md:text-lg text-white/70 leading-relaxed">
+            <p className="mt-5 max-w-md text-[17px] text-white/65 leading-relaxed">
               {t.index.showcaseSupport}
             </p>
+
+            <ol className="mt-8 space-y-3 border-l border-white/15 pl-5">
+              {journey.map((label, i) => (
+                <li key={label} className="flex items-baseline gap-3 text-[15px] text-white/80">
+                  <span className="font-display text-lg text-white/35 tabular-nums w-5">{i + 1}</span>
+                  <span>{label}</span>
+                </li>
+              ))}
+            </ol>
+
             <Button
               size="lg"
-              className="mt-8 h-12 gap-2 rounded-full bg-white text-primary hover:bg-white/90 px-7 group"
+              className="group mt-10 h-11 gap-2 bg-white text-primary hover:bg-white/92 px-6"
               asChild
             >
               <Link to="/make-request">
                 {t.index.ctaPublish}
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                <ArrowRight className="cta-arrow h-4 w-4" />
               </Link>
             </Button>
           </div>
-          <MarketplacePreview variant="dark" className="lg:justify-self-end" />
+
+          <div className="relative">
+            <MarketplacePreview variant="dark" className="lg:ml-auto" />
+          </div>
         </div>
       </div>
     </section>

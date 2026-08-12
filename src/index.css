@@ -6,37 +6,36 @@
 
 @layer base {
   :root {
-    /* Première Services — cool paper, graphite, navy, restrained maple accent */
-    --background: 210 20% 98%;
-    --foreground: 222 28% 10%;
+    /* Première — warm stone paper, ink, navy signature, maple used sparingly */
+    --background: 36 22% 97%;
+    --foreground: 222 32% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 28% 10%;
+    --card-foreground: 222 32% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 28% 10%;
+    --popover-foreground: 222 32% 9%;
 
-    /* Primary: deep navy · Secondary: steel blue · Accent: maple (sparingly) */
-    --primary: 222 72% 22%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 222 68% 20%;
+    --primary-foreground: 40 30% 98%;
 
-    --secondary: 215 40% 36%;
+    --secondary: 215 28% 32%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 16% 94%;
-    --muted-foreground: 220 10% 42%;
+    --muted: 36 14% 93%;
+    --muted-foreground: 220 9% 40%;
 
-    --accent: 28 88% 52%;
-    --accent-foreground: 222 40% 12%;
+    --accent: 24 90% 48%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 18% 88%;
-    --input: 214 18% 88%;
-    --ring: 222 72% 22%;
+    --border: 30 12% 86%;
+    --input: 30 12% 86%;
+    --ring: 222 68% 20%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     --sidebar-background: 222 76% 18%;
     --sidebar-foreground: 0 0% 98%;
@@ -210,33 +209,63 @@
 
 @layer components {
   .container-page {
-    @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-[1120px] px-5 sm:px-6 lg:px-8;
   }
   .section-pad {
-    @apply py-16 md:py-24 lg:py-28;
+    @apply py-20 md:py-28 lg:py-32;
   }
   .text-display-xl {
     font-family: 'Instrument Serif', Georgia, serif;
-    font-size: clamp(2.75rem, 7vw, 5.25rem);
+    font-size: clamp(2.85rem, 8vw, 5.5rem);
     font-weight: 400;
-    line-height: 1.05;
-    letter-spacing: -0.02em;
+    line-height: 0.98;
+    letter-spacing: -0.03em;
   }
   .text-display-md {
     font-family: 'Instrument Serif', Georgia, serif;
-    font-size: clamp(2rem, 4.5vw, 3.25rem);
+    font-size: clamp(2.15rem, 4.8vw, 3.5rem);
     font-weight: 400;
-    line-height: 1.12;
-    letter-spacing: -0.02em;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
   }
   .font-display {
     font-family: 'Instrument Serif', Georgia, serif;
   }
   .site-header {
-    @apply border-b border-border/60 bg-background/80 backdrop-blur-xl;
+    @apply border-b border-transparent bg-background/75 backdrop-blur-md;
   }
   .site-header--compact {
-    @apply shadow-[0_1px_0_hsl(var(--border)/0.6)];
+    @apply border-border/50 bg-background/90;
+  }
+  .cta-arrow {
+    @apply transition-transform duration-200 ease-out;
+  }
+  .group:hover .cta-arrow {
+    transform: translateX(3px);
+  }
+
+  /* Living marketplace preview */
+  @keyframes mpEnter {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes mpPulse {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 1; }
+  }
+  .mp-enter {
+    animation: mpEnter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .mp-enter-2 { animation-delay: 0.12s; }
+  .mp-enter-3 { animation-delay: 0.28s; }
+  .mp-enter-4 { animation-delay: 0.42s; }
+  .mp-live-dot {
+    animation: mpPulse 1.8s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mp-enter, .mp-enter-2, .mp-enter-3, .mp-enter-4, .mp-live-dot {
+      animation: none !important;
+    }
   }
 }
 

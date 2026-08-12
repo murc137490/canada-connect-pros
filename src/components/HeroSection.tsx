@@ -319,44 +319,41 @@ export default function HeroSection() {
     "inline-flex items-center gap-2 rounded-full border border-border bg-background px-3.5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted";
 
   return (
-    <section className="relative overflow-x-hidden pt-[calc(5rem+env(safe-area-inset-top,0px))] pb-16 md:pb-24 lg:pt-[calc(6.5rem+env(safe-area-inset-top,0px))]">
-      <div
-        className="pointer-events-none absolute inset-0 -z-10"
-        aria-hidden
-        style={{
-          background:
-            "radial-gradient(1200px 520px at 12% -10%, hsl(222 72% 22% / 0.07), transparent 55%), radial-gradient(900px 420px at 88% 8%, hsl(28 88% 52% / 0.08), transparent 50%), hsl(var(--background))",
-        }}
-      />
-
+    <section className="relative overflow-x-hidden pt-[calc(5.25rem+env(safe-area-inset-top,0px))] pb-14 md:pb-20 lg:pt-[calc(6.75rem+env(safe-area-inset-top,0px))] lg:pb-28">
       <div className="container-page">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 xl:gap-20">
+        <div className="grid items-start gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-14 xl:gap-20">
           <div className="min-w-0">
-            <p className="font-heading text-sm font-bold tracking-[0.04em] text-primary uppercase">
+            <p className="font-heading text-[13px] font-extrabold tracking-[-0.01em] text-foreground">
               {t.index.heroBrand}
             </p>
-            <h1 className="hero-project-title mt-4 max-w-[14ch] text-display-xl text-foreground whitespace-pre-line">
+            <h1 className="hero-project-title mt-5 max-w-[11ch] text-display-xl text-foreground whitespace-pre-line">
               {t.index.heroProjectTitle}
             </h1>
-            <p className="mt-5 max-w-md text-base md:text-lg text-muted-foreground leading-relaxed">
+            <p className="mt-6 max-w-[28rem] text-[17px] md:text-lg text-muted-foreground leading-relaxed">
               {t.index.heroSupport}
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button size="lg" className="group h-12 px-7" asChild>
+            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <Button size="lg" className="group h-11 px-6" asChild>
                 <Link to="/make-request">
                   {t.index.ctaPublish}
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="cta-arrow h-4 w-4" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="h-12 px-7" asChild>
-                <a href="#hero-search">{t.index.ctaFindPro}</a>
-              </Button>
+              <a
+                href="#hero-search"
+                className="text-[15px] font-semibold text-foreground/80 underline-offset-4 hover:text-foreground hover:underline transition-colors"
+              >
+                {t.index.ctaFindPro}
+              </a>
             </div>
 
             <form id="hero-search" onSubmit={handleSubmit} className="mt-10 max-w-xl scroll-mt-28">
-              <div className="rounded-2xl border border-border/80 bg-card p-3 sm:p-4 shadow-[0_1px_0_hsl(var(--border))]">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <p className="mb-2.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                {t.index.heroSearchLabel}
+              </p>
+              <div className="border border-border bg-card p-2.5 sm:p-3" style={{ borderRadius: "10px" }}>
+                <div className="flex flex-col gap-2.5 sm:flex-row sm:items-stretch">
                   <label className="sr-only" htmlFor="hero-postal">
                     {t.index.heroPostalHint}
                   </label>
@@ -375,9 +372,10 @@ export default function HeroSection() {
                     }}
                     disabled={isPostalLocked}
                     maxLength={9}
-                    className={`w-full sm:w-[9.5rem] shrink-0 rounded-xl border bg-background px-3 py-2.5 text-center text-sm font-semibold tracking-wide text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 ${
-                      !postalResolved ? "border-accent/50" : "border-border"
+                    className={`w-full sm:w-[8.75rem] shrink-0 border bg-background px-3 py-2.5 text-center text-sm font-semibold tracking-wide text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 ${
+                      !postalResolved ? "border-accent/55" : "border-border"
                     }`}
+                    style={{ borderRadius: "7px" }}
                   />
                   <div className="relative min-w-0 flex-1">
                     <textarea
@@ -388,8 +386,8 @@ export default function HeroSection() {
                       onFocus={() => setTextareaFocused(true)}
                       onBlur={() => setTextareaFocused(false)}
                       rows={1}
-                      className="w-full min-h-[2.75rem] max-h-32 resize-none overflow-y-auto rounded-xl border border-transparent bg-muted/50 px-3 py-2.5 pr-10 text-sm text-foreground outline-none transition-[height] duration-300 placeholder:text-muted-foreground focus:border-border focus:bg-background disabled:opacity-50 sm:text-[15px]"
-                      style={{ overflowWrap: "break-word" }}
+                      className="w-full min-h-[2.75rem] max-h-32 resize-none overflow-y-auto border border-transparent bg-muted/60 px-3 py-2.5 pr-10 text-sm text-foreground outline-none transition-[height] duration-300 placeholder:text-muted-foreground focus:border-border focus:bg-background disabled:opacity-50 sm:text-[15px]"
+                      style={{ overflowWrap: "break-word", borderRadius: "7px" }}
                       disabled={!normalizedPostal || !postalResolved}
                     />
                     {loading && (
@@ -523,9 +521,8 @@ export default function HeroSection() {
             </form>
           </div>
 
-          <div className="relative hidden md:block">
-            <div className="absolute -inset-6 -z-10 rounded-[2rem] bg-gradient-to-br from-primary/[0.04] via-transparent to-accent/[0.08]" aria-hidden />
-            <MarketplacePreview className="animate-fade-up" />
+          <div className="relative mt-2 lg:mt-0">
+            <MarketplacePreview />
           </div>
         </div>
       </div>

@@ -9,35 +9,47 @@ export default function HomeHowItWorks() {
   ];
 
   return (
-    <section id="how-it-works" className="section-pad bg-muted/40 dark:bg-muted/20">
+    <section id="how-it-works" className="section-pad border-y border-border/70 bg-muted/35 dark:bg-muted/15">
       <div className="container-page">
-        <div className="max-w-2xl">
-          <h2 className="font-display text-display-md text-foreground tracking-tight whitespace-pre-line">
+        <div className="max-w-xl">
+          <h2 className="font-display text-display-md text-foreground whitespace-pre-line">
             {t.index.howTitle}
           </h2>
-          <p className="mt-3 text-base md:text-lg text-muted-foreground leading-relaxed">
-            {t.index.howSupport}
-          </p>
         </div>
 
-        <ol className="mt-12 md:mt-16 relative grid gap-10 md:grid-cols-3 md:gap-8">
+        <ol className="relative mt-14 md:mt-20">
+          {/* Desktop horizontal rail */}
           <div
-            className="pointer-events-none absolute left-[16%] right-[16%] top-7 hidden h-px bg-border md:block"
+            className="pointer-events-none absolute left-[8%] right-[8%] top-[1.35rem] hidden h-px bg-border md:block"
             aria-hidden
           />
-          {steps.map((step) => (
-            <li key={step.n} className="relative">
-              <p className="font-display text-5xl md:text-6xl text-primary/20 tabular-nums leading-none">
-                {step.n}
-              </p>
-              <h3 className="mt-4 font-heading text-xl font-semibold tracking-tight text-foreground">
-                {step.title}
-              </h3>
-              <p className="mt-2 text-sm md:text-base text-muted-foreground leading-relaxed max-w-sm">
-                {step.desc}
-              </p>
-            </li>
-          ))}
+
+          <div className="grid gap-0 md:grid-cols-3 md:gap-10">
+            {steps.map((step, i) => (
+              <li key={step.n} className="relative flex gap-5 md:block md:gap-0">
+                {/* Mobile vertical connector */}
+                {i < steps.length - 1 && (
+                  <span
+                    className="absolute left-[0.85rem] top-10 bottom-0 w-px bg-border md:hidden"
+                    aria-hidden
+                  />
+                )}
+                <span className="relative z-[1] flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-background text-[11px] font-bold tabular-nums text-foreground md:mb-6 md:h-auto md:w-auto md:border-0 md:bg-transparent md:text-left">
+                  <span className="md:font-display md:text-5xl lg:text-6xl md:text-primary/25 md:leading-none">
+                    {step.n}
+                  </span>
+                </span>
+                <div className="pb-10 md:pb-0">
+                  <h3 className="font-heading text-lg md:text-xl font-bold tracking-tight text-foreground">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 max-w-xs text-[15px] text-muted-foreground leading-relaxed">
+                    {step.desc}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </div>
         </ol>
       </div>
     </section>
