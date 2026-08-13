@@ -145,6 +145,26 @@
   }
 
   /* Wealthsimple-style glass support panel */
+  /* Soft site-wide fade when EN ↔ FR swaps */
+  .locale-surface {
+    transition:
+      opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: auto;
+  }
+  .locale-surface--out {
+    opacity: 0.22;
+    transform: translateY(3px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .locale-surface,
+    .locale-surface--out {
+      transition: none;
+      opacity: 1;
+      transform: none;
+    }
+  }
+
   .support-glass {
     background: rgba(255, 255, 255, 0.72);
     backdrop-filter: blur(28px) saturate(160%);

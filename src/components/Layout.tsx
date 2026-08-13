@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { supabase } from "@/integrations/supabase/client";
 import { Menu, X, MapPin, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { FOOTER_POPULAR_SERVICE_FALLBACK } from "@/lib/footerPopularServices";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import WhatsNewMenu from "@/components/WhatsNewMenu";
 import { useWhatsNew } from "@/contexts/WhatsNewContext";
+import { MOTION } from "@/motion/types";
 
 const SCROLL_COMPACT = 24;
 
@@ -210,10 +212,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => setLocale(locale === "en" ? "fr" : "en")}
-              className={`h-8 w-8 shrink-0 rounded-md border px-0 text-center text-[11px] font-semibold leading-none transition-colors ${langBtn}`}
+              className={`relative h-8 w-8 shrink-0 overflow-hidden rounded-md border px-0 text-center text-[11px] font-semibold leading-none transition-colors ${langBtn}`}
               aria-label={locale === "en" ? "Switch to French" : "Passer en anglais"}
             >
-              {locale === "en" ? "FR" : "EN"}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={locale === "en" ? "FR" : "EN"}
+                  className="absolute inset-0 flex items-center justify-center"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18, ease: MOTION.ease }}
+                >
+                  {locale === "en" ? "FR" : "EN"}
+                </motion.span>
+              </AnimatePresence>
             </button>
             <AnimatedThemeToggler className={`h-8 w-8 shrink-0 rounded-md ${themeBtn}`} />
             {user ? (

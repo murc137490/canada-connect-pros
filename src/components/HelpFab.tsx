@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, HelpCircle, SquarePen, X, ArrowUp } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { sendSupportChatMessage, type SupportChatMessage } from "@/lib/supportChatApi";
+import { MOTION } from "@/motion/types";
+import { usePrefersReducedMotion } from "@/motion/usePrefersReducedMotion";
 
 const HISTORY_KEY = "premiere-support-chat-history";
 const ACTIVE_KEY = "premiere-support-chat-active";
@@ -76,6 +79,7 @@ function TypingDots({ className }: { className?: string }) {
 export default function HelpFab() {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const reduced = usePrefersReducedMotion();
   const panelId = useId();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -95,7 +99,6 @@ export default function HelpFab() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Keep greeting in sync when language changes on a fresh thread
   useEffect(() => {
     setMessages((prev) => {
       const hasUser = prev.some((m) => m.role === "user");
@@ -114,7 +117,7 @@ export default function HelpFab() {
 
   useEffect(() => {
     if (open) {
-      const tmr = window.setTimeout(() => inputRef.current?.focus(), 180);
+      const tmr = window.setTimeout(() => inputRef.current?.focus(), 280);
       return () => window.clearTimeout(tmr);
     }
   }, [open]);
@@ -187,186 +190,231 @@ export default function HelpFab() {
     setLoading(false);
   };
 
-  return (
-    <>
-      {/* Always-available help control */}
-      {!open && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label={t.common.helpFabLabel}
-          aria-expanded={false}
-          aria-controls={panelId}
-          className={cn(
-            "fixed z-[60] flex h-14 w-14 items-center justify-center rounded-full",
-            "bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-[max(1.25rem,env(safe-area-inset-right))]",
-            "bg-primary text-primary-foreground shadow-lg shadow-black/30",
-            "border border-white/10 transition-transform hover:scale-105 active:scale-95",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          )}
-        >
-          <HelpCircle className="h-6 w-6" aria-hidden />
-        </button>
-      )}
+  const fabPos =
+    "fixed z-[60] bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-[max(1.25rem,env(safe-area-inset-right))]";
+  const panelPos =
+    "fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))]";
 
-      {open && (
-        <div
-          className={cn(
-            "fixed z-[60] flex flex-col overflow-hidden support-glass",
-            "bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))]",
-            "w-[min(100vw-1.5rem,380px)] h-[min(72vh,560px)] rounded-[28px]"
-          )}
-          id={panelId}
-          role="dialog"
-          aria-label={t.support.title}
-        >
-          {/* Header */}
-          <div className="relative flex items-center justify-between gap-2 px-4 pt-3.5 pb-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => setHistoryOpen((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-[15px] font-semibold text-foreground hover:bg-foreground/5 transition-colors"
-              aria-expanded={historyOpen}
-              aria-label={t.common.helpChatHistory}
-            >
-              {t.support.title}
-              <ChevronDown
-                className={cn("h-4 w-4 opacity-70 transition-transform", historyOpen && "rotate-180")}
-                aria-hidden
-              />
-            </button>
-            <div className="flex items-center gap-1.5">
+  const panelTransition = reduced
+    ? { duration: 0 }
+    : { duration: 0.34, ease: MOTION.ease };
+  const fabTransition = reduced
+    ? { duration: 0 }
+    : { duration: 0.28, ease: MOTION.ease };
+
+  return (
+    <div className="contents">
+      <AnimatePresence mode="popLayout" initial={false}>
+        {!open && (
+          <motion.button
+            key="help-fab"
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label={t.common.helpFabLabel}
+            aria-expanded={false}
+            aria-controls={panelId}
+            className={cn(
+              fabPos,
+              "flex h-14 w-14 items-center justify-center rounded-full",
+              "bg-primary text-primary-foreground shadow-lg shadow-black/30",
+              "border border-white/10",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            )}
+            initial={reduced ? false : { opacity: 0, scale: 0.72, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={reduced ? undefined : { opacity: 0, scale: 0.75, y: 10 }}
+            transition={fabTransition}
+            whileHover={reduced ? undefined : { scale: 1.06 }}
+            whileTap={reduced ? undefined : { scale: 0.94 }}
+          >
+            <HelpCircle className="h-6 w-6" aria-hidden />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence
+        onExitComplete={() => {
+          /* keep history closed after panel leaves */
+        }}
+      >
+        {open && (
+          <motion.div
+            key="help-panel"
+            id={panelId}
+            role="dialog"
+            aria-label={t.support.title}
+            className={cn(
+              panelPos,
+              "flex flex-col overflow-hidden support-glass",
+              "w-[min(100vw-1.5rem,380px)] h-[min(72vh,560px)] rounded-[28px] origin-bottom-right"
+            )}
+            initial={reduced ? false : { opacity: 0, scale: 0.88, y: 28 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={reduced ? undefined : { opacity: 0, scale: 0.9, y: 20 }}
+            transition={panelTransition}
+          >
+            <div className="relative flex items-center justify-between gap-2 px-4 pt-3.5 pb-2 shrink-0">
               <button
                 type="button"
-                onClick={startNewChat}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-foreground/10 bg-foreground/[0.04] text-foreground hover:bg-foreground/10 transition-colors"
-                aria-label={t.common.helpNewChat}
-                title={t.common.helpNewChat}
+                onClick={() => setHistoryOpen((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-[15px] font-semibold text-foreground hover:bg-foreground/5 transition-colors"
+                aria-expanded={historyOpen}
+                aria-label={t.common.helpChatHistory}
               >
-                <SquarePen className="h-4 w-4" aria-hidden />
+                {t.support.title}
+                <ChevronDown
+                  className={cn("h-4 w-4 opacity-70 transition-transform duration-200", historyOpen && "rotate-180")}
+                  aria-hidden
+                />
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  setHistoryOpen(false);
-                }}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-foreground/10 bg-foreground/[0.04] text-foreground hover:bg-foreground/10 transition-colors"
-                aria-label={t.common.helpCloseChat}
-                title={t.common.helpCloseChat}
-              >
-                <X className="h-4 w-4" aria-hidden />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={startNewChat}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-foreground/10 bg-foreground/[0.04] text-foreground hover:bg-foreground/10 transition-colors"
+                  aria-label={t.common.helpNewChat}
+                  title={t.common.helpNewChat}
+                >
+                  <SquarePen className="h-4 w-4" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHistoryOpen(false);
+                    setOpen(false);
+                  }}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-foreground/10 bg-foreground/[0.04] text-foreground hover:bg-foreground/10 transition-colors"
+                  aria-label={t.common.helpCloseChat}
+                  title={t.common.helpCloseChat}
+                >
+                  <X className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+
+              <AnimatePresence>
+                {historyOpen && (
+                  <motion.div
+                    key="help-history"
+                    initial={reduced ? false : { opacity: 0, y: -8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={reduced ? undefined : { opacity: 0, y: -6, scale: 0.98 }}
+                    transition={{ duration: reduced ? 0 : 0.2, ease: MOTION.ease }}
+                    className="absolute left-3 right-3 top-14 z-10 rounded-2xl border border-foreground/10 bg-background/95 backdrop-blur-xl shadow-xl overflow-hidden origin-top"
+                  >
+                    <p className="px-3 pt-2.5 pb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {t.common.helpChatHistory}
+                    </p>
+                    <div className="max-h-48 overflow-y-auto py-1">
+                      {history.length === 0 ? (
+                        <p className="px-3 py-3 text-sm text-muted-foreground">{t.common.helpNoHistory}</p>
+                      ) : (
+                        history.map((thread) => (
+                          <button
+                            key={thread.id}
+                            type="button"
+                            onClick={() => loadThread(thread)}
+                            className={cn(
+                              "w-full text-left px-3 py-2.5 text-sm hover:bg-foreground/5 transition-colors",
+                              thread.id === activeId && "bg-foreground/[0.06]"
+                            )}
+                          >
+                            <span className="block truncate font-medium text-foreground">{thread.title}</span>
+                            <span className="block text-[11px] text-muted-foreground mt-0.5">
+                              {new Date(thread.updatedAt).toLocaleString()}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
-            {historyOpen && (
-              <div className="absolute left-3 right-3 top-14 z-10 rounded-2xl border border-foreground/10 bg-background/95 backdrop-blur-xl shadow-xl overflow-hidden">
-                <p className="px-3 pt-2.5 pb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {t.common.helpChatHistory}
+            <div
+              ref={scrollRef}
+              className="flex-1 overflow-y-auto px-4 py-2 space-y-3 min-h-0"
+              onClick={() => historyOpen && setHistoryOpen(false)}
+            >
+              {!user && (
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t.support.signInToUse}{" "}
+                  <Link
+                    to="/auth"
+                    className="underline underline-offset-2 hover:text-foreground"
+                    onClick={() => setOpen(false)}
+                  >
+                    {t.nav.logIn}
+                  </Link>
                 </p>
-                <div className="max-h-48 overflow-y-auto py-1">
-                  {history.length === 0 ? (
-                    <p className="px-3 py-3 text-sm text-muted-foreground">{t.common.helpNoHistory}</p>
-                  ) : (
-                    history.map((thread) => (
-                      <button
-                        key={thread.id}
-                        type="button"
-                        onClick={() => loadThread(thread)}
-                        className={cn(
-                          "w-full text-left px-3 py-2.5 text-sm hover:bg-foreground/5 transition-colors",
-                          thread.id === activeId && "bg-foreground/[0.06]"
-                        )}
-                      >
-                        <span className="block truncate font-medium text-foreground">{thread.title}</span>
-                        <span className="block text-[11px] text-muted-foreground mt-0.5">
-                          {new Date(thread.updatedAt).toLocaleString()}
-                        </span>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Messages */}
-          <div
-            ref={scrollRef}
-            className="flex-1 overflow-y-auto px-4 py-2 space-y-3 min-h-0"
-            onClick={() => historyOpen && setHistoryOpen(false)}
-          >
-            {!user && (
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {t.support.signInToUse}{" "}
-                <Link to="/auth" className="underline underline-offset-2 hover:text-foreground" onClick={() => setOpen(false)}>
-                  {t.nav.logIn}
-                </Link>
-              </p>
-            )}
-            {messages.map((msg, i) =>
-              msg.role === "user" ? (
-                <div key={i} className="flex justify-end">
-                  <div className="max-w-[85%] rounded-2xl bg-foreground/[0.12] dark:bg-white/10 px-3.5 py-2.5 text-[14px] leading-relaxed text-foreground whitespace-pre-wrap">
+              )}
+              {messages.map((msg, i) =>
+                msg.role === "user" ? (
+                  <div key={i} className="flex justify-end">
+                    <div className="max-w-[85%] rounded-2xl bg-foreground/[0.12] dark:bg-white/10 px-3.5 py-2.5 text-[14px] leading-relaxed text-foreground whitespace-pre-wrap">
+                      {msg.content}
+                    </div>
+                  </div>
+                ) : (
+                  <div key={i} className="max-w-[95%] text-[14px] leading-relaxed text-foreground whitespace-pre-wrap">
                     {msg.content}
                   </div>
+                )
+              )}
+              {loading && (
+                <div className="pt-1" aria-live="polite" aria-label={t.support.aiThinking}>
+                  <TypingDots />
                 </div>
-              ) : (
-                <div key={i} className="max-w-[95%] text-[14px] leading-relaxed text-foreground whitespace-pre-wrap">
-                  {msg.content}
-                </div>
-              )
-            )}
-            {loading && (
-              <div className="pt-1" aria-live="polite" aria-label={t.support.aiThinking}>
-                <TypingDots />
-              </div>
-            )}
-          </div>
-
-          {/* Input + disclaimer */}
-          <div className="shrink-0 px-3 pb-3 pt-1 space-y-2">
-            <div className="flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.04] dark:bg-black/35 pl-4 pr-1.5 py-1.5">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void sendMessage();
-                  }
-                }}
-                placeholder={t.common.helpAskAnything}
-                disabled={loading}
-                className="flex-1 min-w-0 bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-60"
-              />
-              <button
-                type="button"
-                onClick={() => void sendMessage()}
-                disabled={loading || !input.trim()}
-                aria-label={t.common.helpAskAnything}
-                className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors",
-                  input.trim() && !loading
-                    ? "bg-foreground text-background hover:opacity-90"
-                    : "bg-foreground/15 text-foreground/40 cursor-not-allowed"
-                )}
-              >
-                <ArrowUp className="h-4 w-4" aria-hidden />
-              </button>
+              )}
             </div>
-            <p className="px-1 text-center text-[11px] leading-snug text-muted-foreground">
-              {t.common.helpDisclaimer}{" "}
-              <Link to="/terms" className="underline underline-offset-2 hover:text-foreground" onClick={() => setOpen(false)}>
-                {t.common.helpDisclaimerLink}
-              </Link>
-              .
-            </p>
-          </div>
-        </div>
-      )}
-    </>
+
+            <div className="shrink-0 px-3 pb-3 pt-1 space-y-2">
+              <div className="flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.04] dark:bg-black/35 pl-4 pr-1.5 py-1.5">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void sendMessage();
+                    }
+                  }}
+                  placeholder={t.common.helpAskAnything}
+                  disabled={loading}
+                  className="flex-1 min-w-0 bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-60"
+                />
+                <button
+                  type="button"
+                  onClick={() => void sendMessage()}
+                  disabled={loading || !input.trim()}
+                  aria-label={t.common.helpAskAnything}
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors",
+                    input.trim() && !loading
+                      ? "bg-foreground text-background hover:opacity-90"
+                      : "bg-foreground/15 text-foreground/40 cursor-not-allowed"
+                  )}
+                >
+                  <ArrowUp className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+              <p className="px-1 text-center text-[11px] leading-snug text-muted-foreground">
+                {t.common.helpDisclaimer}{" "}
+                <Link
+                  to="/terms"
+                  className="underline underline-offset-2 hover:text-foreground"
+                  onClick={() => setOpen(false)}
+                >
+                  {t.common.helpDisclaimerLink}
+                </Link>
+                .
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
