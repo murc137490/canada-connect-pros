@@ -19,7 +19,7 @@ export default function HomeProductShowcase() {
   return (
     <section className="section-pad bg-primary text-primary-foreground overflow-hidden">
       <div className="container-page">
-        <div className="grid items-center gap-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16 xl:gap-20">
+        <div className="grid items-center gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14 xl:gap-16">
           <ScrollReveal y={32} amount={0.3} margin="-20% 0px">
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
               {t.index.showcaseEyebrow}
@@ -52,7 +52,7 @@ export default function HomeProductShowcase() {
             </Button>
           </ScrollReveal>
 
-          <ScrollReveal y={36} delay={0.08} amount={0.3} margin="-20% 0px">
+          <ScrollReveal y={36} delay={0.08} amount={0.3} margin="-20% 0px" className="w-full min-w-0">
             <MarketplacePreview variant="dark" matchState="matched" />
           </ScrollReveal>
         </div>
