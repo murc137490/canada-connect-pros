@@ -77,7 +77,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   return (
     <LanguageContext.Provider value={{ locale, setLocale, t, localeTransitioning: transitioning }}>
       <div
-        className={cn("locale-surface", transitioning && "locale-surface--out")}
+        className={cn(
+          "locale-surface min-h-screen w-full max-w-none",
+          transitioning && "locale-surface--out"
+        )}
         data-locale={locale}
       >
         {children}

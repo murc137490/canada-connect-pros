@@ -173,7 +173,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       ];
 
   return (
-    <div className="min-h-screen w-full max-w-full min-w-0 flex flex-col m-0 p-0">
+    <div className="flex min-h-screen w-full min-w-0 max-w-none flex-col m-0 p-0">
       {!isProProfilePage && (
       <header
         className={`fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top,0px)] transition-all duration-300 site-header ${

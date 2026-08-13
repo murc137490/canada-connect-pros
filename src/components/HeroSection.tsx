@@ -391,7 +391,7 @@ export default function HeroSection() {
             <p className="font-heading text-[13px] font-extrabold tracking-[-0.01em] text-foreground">
               {t.index.heroBrand}
             </p>
-            <h1 className="hero-project-title mt-5 max-w-[11ch] text-display-xl text-foreground whitespace-pre-line">
+            <h1 className="hero-project-title mt-5 max-w-[14ch] sm:max-w-[16ch] text-display-xl text-foreground whitespace-pre-line">
               {t.index.heroProjectTitle}
             </h1>
             <p className="mt-6 max-w-[28rem] text-[17px] md:text-lg text-muted-foreground leading-relaxed">
