@@ -7,11 +7,10 @@ import { serviceCategories, getAllServices } from "@/data/services";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
-import { Search, ChevronRight, Loader2 } from "lucide-react";
+import { Search, ChevronRight, Loader2, LayoutGrid } from "lucide-react";
 import { motion } from "motion/react";
 import MakeRequestButton from "@/components/MakeRequestButton";
 import ServiceCategoryTile from "@/components/ServiceCategoryTile";
-import CategoryLottie from "@/components/CategoryLottie";
 import { popularServiceVisuals, popularServiceSrcSet } from "@/data/categoryVisuals";
 import { formatCanadianPostalInput, geocodePostalToLocation, isCompleteCanadianPostal } from "@/lib/geocode";
 import {
@@ -224,8 +223,11 @@ export default function Services() {
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
               <div className="min-w-0 flex-1">
                 <div className="mb-4 flex items-start gap-4">
-                  <div className="hidden h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-border bg-card sm:flex sm:items-center sm:justify-center">
-                    <CategoryLottie src="/lottie/search.json" play className="h-14 w-14" />
+                  <div
+                    className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/[0.06] text-primary sm:flex"
+                    aria-hidden
+                  >
+                    <LayoutGrid className="h-7 w-7" strokeWidth={1.75} />
                   </div>
                   <div>
                     <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
