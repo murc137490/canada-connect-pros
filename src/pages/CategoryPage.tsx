@@ -118,9 +118,6 @@ export default function CategoryPage() {
                         <span className="block font-medium text-card-foreground">
                           {getServiceName(svc.slug, locale, svc.name)}
                         </span>
-                        <span className="mt-0.5 block text-xs text-muted-foreground">
-                          {t.services.viewProsForService}
-                        </span>
                       </div>
                       <span
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors group-hover:bg-secondary group-hover:text-secondary-foreground"
