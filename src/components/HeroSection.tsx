@@ -7,7 +7,13 @@ import type { ServiceRecordForAI } from "@/data/services";
 import { fetchProOfferedServiceRecordsForHero } from "@/lib/heroProOfferedServices";
 import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
-import { formatCanadianPostalInput, geocodePostalToLocation, isCompleteCanadianPostal } from "@/lib/geocode";
+import {
+  canadianPostalsEqual,
+  formatCanadianPostalInput,
+  geocodePostalToLocation,
+  isCompleteCanadianPostal,
+  seedGeocodeCache,
+} from "@/lib/geocode";
 import {
   BROWSE_POSTAL_CHANGED_EVENT,
   clearBrowsePostalLocation,
@@ -89,6 +95,8 @@ export default function HeroSection() {
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const postalEditedRef = useRef(false);
+  const postalResolvedRef = useRef(postalResolved);
+  postalResolvedRef.current = postalResolved;
   const [textareaFocused, setTextareaFocused] = useState(false);
 
   const normalizedPostal = useMemo(
@@ -103,6 +111,17 @@ export default function HeroSection() {
     const geo = await geocodePostalToLocation(normalizedPostal);
     setPostalLoading(false);
     if (!geo) {
+      const saved = getBrowsePostalLocation();
+      if (saved && canadianPostalsEqual(saved.postal, normalizedPostal)) {
+        setPostalResolved({
+          lat: saved.lat,
+          lng: saved.lng,
+          city: saved.city ?? null,
+          province: saved.province ?? null,
+        });
+        setPostalError(null);
+        return true;
+      }
       setPostalResolved(null);
       setPostalError(t.index.checkServiceError);
       return false;
@@ -131,6 +150,22 @@ export default function HeroSection() {
         // Ignore stale responses if the user kept typing.
         if (requested !== normalizedPostal) return;
         if (!geo) {
+          // Refresh / rate-limit: keep saved or already-resolved coords for this postal.
+          const saved = getBrowsePostalLocation();
+          if (saved && canadianPostalsEqual(saved.postal, requested)) {
+            setPostalResolved({
+              lat: saved.lat,
+              lng: saved.lng,
+              city: saved.city ?? null,
+              province: saved.province ?? null,
+            });
+            setPostalError(null);
+            return;
+          }
+          if (postalResolvedRef.current) {
+            setPostalError(null);
+            return;
+          }
           setPostalResolved(null);
           setPostalError(t.index.checkServiceError);
           return;
@@ -152,6 +187,7 @@ export default function HeroSection() {
   useEffect(() => {
     let cancelled = false;
     const applySaved = (saved: NonNullable<ReturnType<typeof getBrowsePostalLocation>>) => {
+      seedGeocodeCache(saved.postal, saved);
       setPostalCode(saved.postal);
       setPostalResolved({
         lat: saved.lat,
@@ -202,6 +238,7 @@ export default function HeroSection() {
       city: postalResolved.city,
       province: postalResolved.province,
     });
+    seedGeocodeCache(normalizedPostal, postalResolved);
   }, [postalResolved, normalizedPostal]);
 
   /** Full catalog for HF + slug routing (stable for the session). */

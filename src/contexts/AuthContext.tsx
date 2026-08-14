@@ -31,6 +31,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function signalAppReady() {
+  try {
+    window.dispatchEvent(new Event("premiere-app-ready"));
+    (window as Window & { __premiereMarkAppReady?: () => void }).__premiereMarkAppReady?.();
+  } catch {
+    // ignore
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -50,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      signalAppReady();
       syncPlatformAdmin(session);
     });
 
@@ -57,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      signalAppReady();
       syncPlatformAdmin(session);
     });
 

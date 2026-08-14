@@ -12,7 +12,13 @@ import { motion } from "motion/react";
 import MakeRequestButton from "@/components/MakeRequestButton";
 import ServiceCategoryTile from "@/components/ServiceCategoryTile";
 import { popularServiceVisuals, popularServiceSrcSet } from "@/data/categoryVisuals";
-import { formatCanadianPostalInput, geocodePostalToLocation, isCompleteCanadianPostal } from "@/lib/geocode";
+import {
+  canadianPostalsEqual,
+  formatCanadianPostalInput,
+  geocodePostalToLocation,
+  isCompleteCanadianPostal,
+  seedGeocodeCache,
+} from "@/lib/geocode";
 import {
   getBrowsePostalLocation,
   setBrowsePostalLocation,
@@ -40,6 +46,8 @@ export default function Services() {
   const [postalLoading, setPostalLoading] = useState(false);
   const [postalError, setPostalError] = useState<string | null>(null);
   const postalEditedRef = useRef(false);
+  const postalResolvedRef = useRef(postalResolved);
+  postalResolvedRef.current = postalResolved;
 
   useScrollRestore("premiere:scroll:/services");
 
@@ -53,6 +61,7 @@ export default function Services() {
   useEffect(() => {
     const saved = getBrowsePostalLocation();
     if (!saved) return;
+    seedGeocodeCache(saved.postal, saved);
     setPostalCode(saved.postal);
     setPostalResolved({
       lat: saved.lat,
@@ -71,6 +80,7 @@ export default function Services() {
       city: postalResolved.city,
       province: postalResolved.province,
     });
+    seedGeocodeCache(normalizedPostal, postalResolved);
   }, [postalResolved, normalizedPostal]);
 
   useEffect(() => {
@@ -82,6 +92,7 @@ export default function Services() {
         setPostalResolved(null);
         return;
       }
+      seedGeocodeCache(saved.postal, saved);
       setPostalCode(saved.postal);
       setPostalResolved({
         lat: saved.lat,
@@ -105,6 +116,17 @@ export default function Services() {
     const geo = await geocodePostalToLocation(normalizedPostal);
     setPostalLoading(false);
     if (!geo) {
+      const saved = getBrowsePostalLocation();
+      if (saved && canadianPostalsEqual(saved.postal, normalizedPostal)) {
+        setPostalResolved({
+          lat: saved.lat,
+          lng: saved.lng,
+          city: saved.city ?? null,
+          province: saved.province ?? null,
+        });
+        setPostalError(null);
+        return true;
+      }
       setPostalResolved(null);
       setPostalError(t.services.postalInvalid);
       return false;
@@ -131,6 +153,21 @@ export default function Services() {
         setPostalLoading(false);
         if (requested !== normalizedPostal) return;
         if (!geo) {
+          const saved = getBrowsePostalLocation();
+          if (saved && canadianPostalsEqual(saved.postal, requested)) {
+            setPostalResolved({
+              lat: saved.lat,
+              lng: saved.lng,
+              city: saved.city ?? null,
+              province: saved.province ?? null,
+            });
+            setPostalError(null);
+            return;
+          }
+          if (postalResolvedRef.current) {
+            setPostalError(null);
+            return;
+          }
           setPostalResolved(null);
           setPostalError(t.services.postalInvalid);
           return;

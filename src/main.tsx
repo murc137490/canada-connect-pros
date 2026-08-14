@@ -17,6 +17,7 @@ async function bootstrap() {
       import("./index.css"),
     ]);
     createRoot(rootEl).render(<App />);
+    // Boot splash dismisses when auth finishes (or at 11s max) — see AuthContext + index.html.
   } catch (err) {
     console.error("App failed to load:", err);
     showError(
@@ -29,6 +30,11 @@ async function bootstrap() {
         '<button onclick="location.reload()" style="margin-top:16px;padding:8px 16px;background:#007A56;color:white;border:none;border-radius:6px;cursor:pointer;">Refresh</button>' +
         "</div>"
     );
+    try {
+      window.dispatchEvent(new Event("premiere-app-ready"));
+    } catch {
+      /* ignore */
+    }
   }
 }
 bootstrap();

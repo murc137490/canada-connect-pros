@@ -1,6 +1,8 @@
 /**
  * Geocode via Supabase Edge Function (Google / geocoder.ca / Zippopotam),
  * with a direct Google client fallback when the edge call fails.
+ * Successful lookups are cached in memory + sessionStorage so refresh / retries
+ * do not flash "couldn't find that postal" on transient network failures.
  */
 
 export interface GeocodeResult {
@@ -24,6 +26,76 @@ const CLIENT_KEY = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+const GEO_SESSION_KEY = "premiere:geocodeCache:v1";
+const memoryGeoCache = new Map<string, GeocodeLocation>();
+/** In-flight dedupe so rapid remounts / Strict Mode don't hammer the edge function. */
+const inflightGeo = new Map<string, Promise<GeocodeLocation | null>>();
+
+function sleep(ms: number) {
+  return new Promise<void>((r) => window.setTimeout(r, ms));
+}
+
+function readSessionGeoCache(compact: string): GeocodeLocation | null {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(GEO_SESSION_KEY);
+    if (!raw) return null;
+    const map = JSON.parse(raw) as Record<string, GeocodeLocation>;
+    const hit = map[compact];
+    if (!hit || typeof hit.lat !== "number" || typeof hit.lng !== "number") return null;
+    if (!Number.isFinite(hit.lat) || !Number.isFinite(hit.lng)) return null;
+    return hit;
+  } catch {
+    return null;
+  }
+}
+
+function writeGeoCache(compact: string, loc: GeocodeLocation): void {
+  memoryGeoCache.set(compact, loc);
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    const raw = sessionStorage.getItem(GEO_SESSION_KEY);
+    const map = (raw ? JSON.parse(raw) : {}) as Record<string, GeocodeLocation>;
+    map[compact] = {
+      lat: loc.lat,
+      lng: loc.lng,
+      city: loc.city ?? null,
+      province: loc.province ?? null,
+      formattedAddress: loc.formattedAddress,
+      postal: loc.postal ?? null,
+    };
+    const keys = Object.keys(map);
+    if (keys.length > 40) {
+      for (const k of keys.slice(0, keys.length - 40)) delete map[k];
+    }
+    sessionStorage.setItem(GEO_SESSION_KEY, JSON.stringify(map));
+  } catch {
+    // quota / private mode — memory cache still helps
+  }
+}
+
+/** Seed cache from a previously saved browse location (avoids re-hit on refresh). */
+export function seedGeocodeCache(
+  postal: string,
+  loc: { lat: number; lng: number; city?: string | null; province?: string | null; formattedAddress?: string }
+): void {
+  if (!isCompleteCanadianPostal(postal)) return;
+  const compact = compactPostal(postal);
+  writeGeoCache(compact, {
+    lat: loc.lat,
+    lng: loc.lng,
+    city: loc.city ?? null,
+    province: loc.province ?? null,
+    formattedAddress: loc.formattedAddress,
+    postal: formatCanadianPostalInput(postal),
+  });
+}
+
+function cachedGeo(compact: string | null): GeocodeLocation | null {
+  if (!compact) return null;
+  return memoryGeoCache.get(compact) ?? readSessionGeoCache(compact);
+}
 
 /** Format Canadian postal as A1A 1A1 while typing. */
 export function formatCanadianPostalInput(raw: string): string {
@@ -89,7 +161,7 @@ function parseGoogleResult(first: GoogleResult): GeocodeLocation | null {
   };
 }
 
-async function geocodeViaEdge(address: string): Promise<GeocodeLocation | null> {
+async function geocodeViaEdgeOnce(address: string): Promise<GeocodeLocation | null> {
   if (!SUPABASE_URL || !SUPABASE_ANON) return null;
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/geocode`, {
@@ -118,6 +190,27 @@ async function geocodeViaEdge(address: string): Promise<GeocodeLocation | null> 
   }
 }
 
+/** Edge with short backoff — retry network/5xx; one delayed retry on 404 (provider throttle). */
+async function geocodeViaEdge(address: string): Promise<GeocodeLocation | null> {
+  const first = await geocodeViaEdgeOnce(address);
+  if (first) return first;
+  await sleep(700);
+  const second = await geocodeViaEdgeOnce(address);
+  if (second) return second;
+  await sleep(1200);
+  return geocodeViaEdgeOnce(address);
+}
+
+/** Accept exact LDU or formatted_address containing it — never a different 6-char postal. */
+function googleMatchesLdu(result: GoogleResult, wanted: string): boolean {
+  const got = postalFromComponents(result.address_components);
+  if (got === wanted) return true;
+  if (got && got.length === 6 && got !== wanted) return false;
+  const formatted = (result.formatted_address || "").toUpperCase();
+  const spaced = `${wanted.slice(0, 3)} ${wanted.slice(3)}`;
+  return formatted.includes(spaced) || formatted.replace(/\s+/g, "").includes(wanted);
+}
+
 async function geocodeViaGoogleClient(address: string): Promise<GeocodeLocation | null> {
   if (!CLIENT_KEY) return null;
   const { query, isCaPostal, compact } = normalizeQuery(address);
@@ -144,22 +237,18 @@ async function geocodeViaGoogleClient(address: string): Promise<GeocodeLocation 
       const data = (await res.json()) as { status: string; results?: GoogleResult[] };
       if (data.status !== "OK" || !data.results?.length) continue;
 
-      let best = data.results[0];
-      if (compact) {
-        const exact = data.results.find((r) => postalFromComponents(r.address_components) === compact);
-        if (exact) best = exact;
-        else {
-          const postalTyped = data.results.find((r) => r.types?.includes("postal_code"));
-          if (postalTyped) best = postalTyped;
-        }
-      }
-
-      const got = postalFromComponents(best.address_components);
-      // Exact LDU only — approximate FSA hits share one pin for every code in H3Z*
-      if (compact && got !== compact) continue;
+      const best = compact
+        ? data.results.find((r) => googleMatchesLdu(r, compact))
+        : data.results[0];
+      if (!best) continue;
 
       const parsed = parseGoogleResult(best);
-      if (parsed) return parsed;
+      if (parsed) {
+        return {
+          ...parsed,
+          postal: compact ? `${compact.slice(0, 3)} ${compact.slice(3)}` : parsed.postal,
+        };
+      }
     }
     return null;
   } catch (err) {
@@ -200,17 +289,47 @@ export async function geocodePostalToLocation(postalOrAddress: string): Promise<
   const trimmed = postalOrAddress?.trim();
   if (!trimmed) return null;
   const wanted = isCompleteCanadianPostal(trimmed) ? compactPostal(trimmed) : null;
+  const cacheKey = wanted ?? trimmed.toUpperCase();
 
-  const viaEdge = await geocodeViaEdge(trimmed);
-  if (viaEdge) {
-    if (wanted && viaEdge.postal) {
-      const got = compactPostal(viaEdge.postal);
-      if (got.length === 6 && got !== wanted) return null;
+  const fromCache = cachedGeo(cacheKey);
+  if (fromCache) return fromCache;
+
+  const existing = inflightGeo.get(cacheKey);
+  if (existing) return existing;
+
+  const work = (async (): Promise<GeocodeLocation | null> => {
+    const viaEdge = await geocodeViaEdge(trimmed);
+    if (viaEdge) {
+      if (wanted && viaEdge.postal) {
+        const got = compactPostal(viaEdge.postal);
+        if (got.length === 6 && got !== wanted) return null;
+      }
+      writeGeoCache(cacheKey, viaEdge);
+      if (wanted) writeGeoCache(wanted, viaEdge);
+      return viaEdge;
     }
-    return viaEdge;
-  }
 
-  return geocodeViaGoogleClient(trimmed);
+    const viaClient = await geocodeViaGoogleClient(trimmed);
+    if (viaClient) {
+      writeGeoCache(cacheKey, viaClient);
+      if (wanted) writeGeoCache(wanted, viaClient);
+    }
+    return viaClient;
+  })();
+
+  inflightGeo.set(cacheKey, work);
+  try {
+    return await work;
+  } finally {
+    inflightGeo.delete(cacheKey);
+  }
+}
+
+/** True when both strings are the same Canadian LDU (ignores spaces/case). */
+export function canadianPostalsEqual(a: string, b: string): boolean {
+  const ca = compactPostal(a);
+  const cb = compactPostal(b);
+  return ca.length === 6 && ca === cb;
 }
 
 /** Extract a Canadian postal code from free text (e.g. pro profile address). */

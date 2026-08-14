@@ -10,17 +10,171 @@
     <title>Première Services — Find the right professional near you</title>
     <meta name="description" content="Describe your need and receive quotes from trusted local service professionals across Quebec and Canada." />
     <meta name="author" content="Première Services" />
-
     <meta property="og:title" content="Première Services — Find the right professional" />
     <meta property="og:description" content="A modern marketplace for local service professionals. Post a request, compare quotes, book with confidence." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/boot/long-shadow.css" />
+    <script>
+      try {
+        var theme = localStorage.getItem("premiere-theme");
+        var dark =
+          theme === "dark" ||
+          (theme !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute("data-boot-theme", dark ? "dark" : "light");
+      } catch (e) {
+        document.documentElement.setAttribute("data-boot-theme", "light");
+      }
+    </script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      #premiere-boot {
+        --boot-bg: #f7f4ef;
+        --boot-fg: #ffffff;
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: grid;
+        place-items: center;
+        width: 100%;
+        height: 100dvh;
+        background: var(--boot-bg);
+        overflow: hidden;
+        transition: opacity 0.45s ease, visibility 0.45s ease;
+      }
+
+      html[data-boot-theme="dark"] #premiere-boot {
+        /* Exact match: .dark --background 222 20% 4% */
+        --boot-bg: hsl(222 20% 4%);
+        --boot-fg: #ffffff;
+      }
+
+      #premiere-boot.is-done {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      #premiere-boot .site__main {
+        width: min(94vw, 44rem);
+        display: grid;
+        place-items: center;
+        justify-items: center;
+      }
+
+      #premiere-boot .site__main > div {
+        padding: clamp(2rem, 6vw, 4rem) clamp(1.5rem, 5vw, 3.5rem);
+        overflow: visible;
+        margin: 0 auto;
+        width: max-content;
+        max-width: 100%;
+        font-weight: 400;
+        line-height: 0.92;
+        letter-spacing: -0.02em;
+        text-align: center;
+        font-size: clamp(2.75rem, 9.5vw, 5.25rem);
+        color: var(--boot-fg);
+        font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
+        font-kerning: normal;
+        /* Solid white fill = clean glyph edges; shadows stay stepped behind */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: geometricPrecision;
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        will-change: text-shadow;
+        animation-duration: 1s;
+        animation-iteration-count: infinite;
+        animation-timing-function: linear;
+        animation-name: animateShadowLight;
+      }
+
+      html[data-boot-theme="dark"] #premiere-boot .site__main > div {
+        animation-name: animateShadowDark;
+      }
+
+      #premiere-boot h1 {
+        font: inherit;
+        color: inherit;
+        margin: 0;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 380px) {
+        #premiere-boot h1 {
+          white-space: normal;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #premiere-boot .site__main > div {
+          animation: none;
+          will-change: auto;
+          color: #15284a;
+          text-shadow: none;
+        }
+        html[data-boot-theme="dark"] #premiere-boot .site__main > div {
+          color: #ffffff;
+        }
+      }
+    </style>
   </head>
 
-  <body style="min-height:100vh;margin:0;padding:0;background:#f8f5f0;color:#12161f;font-family:system-ui,sans-serif;">
-    <div id="root" style="min-height:100vh;margin:0;padding:0;width:100%;">
-      <p style="margin:0;padding:2rem;font-size:1rem;color:#1a2744;letter-spacing:-0.02em;">Première Services</p>
+  <body style="min-height:100vh;margin:0;padding:0;">
+    <script>
+      (function () {
+        var dark = document.documentElement.getAttribute("data-boot-theme") === "dark";
+        document.body.style.background = dark ? "hsl(222 20% 4%)" : "#f7f4ef";
+      })();
+    </script>
+
+    <div id="premiere-boot" role="status" aria-label="Première Services">
+      <main class="site__main">
+        <div>
+          <h1>
+            Première <br />
+            Services <br />
+          </h1>
+        </div>
+      </main>
     </div>
+
+    <div id="root" style="min-height:100vh;margin:0;padding:0;width:100%;"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (function () {
+        var boot = document.getElementById("premiere-boot");
+        if (!boot) return;
+
+        var finished = false;
+        var MAX_MS = 11000;
+        var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        function finish() {
+          if (finished) return;
+          finished = true;
+          boot.classList.add("is-done");
+          window.setTimeout(function () {
+            if (boot.parentNode) boot.parentNode.removeChild(boot);
+          }, 450);
+        }
+
+        window.addEventListener("premiere-app-ready", finish);
+        window.__premiereMarkAppReady = finish;
+        window.setTimeout(finish, reduceMotion ? 300 : MAX_MS);
+      })();
+    </script>
   </body>
 </html>
