@@ -1048,11 +1048,11 @@ export const translations = {
       accountBookingIdVerificationTitle: "Booking ID verification",
       accountBookingIdVerificationFrontOnly:
         "Upload the front of your ID only (recto) - not the back. Used only so your pro can verify identity for bookings.",
-      accountBookingIdVerificationWarning:
-        "This image is stored securely on your account after your first paid booking. It is not shown on your public profile. Assigned professionals may view it only for identity verification. Future bookings will not ask for it again unless you replace it here.",
       accountBookingIdVerificationViewPdf: "Open PDF",
       accountBookingIdVerificationSaved: "Your ID verification is saved for future bookings.",
       accountBookingIdVerificationSavedTitle: "Saved",
+      accountBookingIdVerificationUpdate: "Update",
+      accountBookingIdVerificationSave: "Save verification",
       mainServiceCategory: "Main service category",
       mainCategoryHint: "The services you list are for this one category. You can change it anytime.",
       selectMainCategory: "Select a category",
@@ -2790,12 +2790,12 @@ export const translations = {
       accountBookingIdVerificationTitle: "Vérification d’identité (réservations)",
       accountBookingIdVerificationFrontOnly:
         "Téléversez le recto de votre pièce d'identité seulement - pas le verso. Utilisé uniquement pour que le pro puisse vérifier votre identité.",
-      accountBookingIdVerificationWarning:
-        "Cette image est conservée de façon sécurisée sur votre compte après votre première réservation payée. Elle n’apparaît pas sur votre profil public. Les professionnels assignés peuvent la consulter uniquement pour vérifier votre identité. Les prochaines réservations ne vous la redemanderont pas, sauf si vous la remplacez ici.",
       accountBookingIdVerificationViewPdf: "Ouvrir le PDF",
       accountBookingIdVerificationSaved:
         "Votre pièce d'identité est enregistrée pour les prochaines réservations.",
       accountBookingIdVerificationSavedTitle: "Enregistré",
+      accountBookingIdVerificationUpdate: "Mettre à jour",
+      accountBookingIdVerificationSave: "Enregistrer la vérification",
       mainServiceCategory: "Catégorie de service principale",
       mainCategoryHint: "Les services listés relèvent de cette seule catégorie. Vous pouvez la modifier à tout moment.",
       selectMainCategory: "Choisir une catégorie",

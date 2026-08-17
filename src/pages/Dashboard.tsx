@@ -442,6 +442,7 @@ export default function Dashboard() {
   const [bookingIdVerificationPreviewUrl, setBookingIdVerificationPreviewUrl] = useState<string | null>(null);
   const [accountIdVerificationFile, setAccountIdVerificationFile] = useState<File | null>(null);
   const [accountIdVerificationSaving, setAccountIdVerificationSaving] = useState(false);
+  const [bookingIdVerificationOpen, setBookingIdVerificationOpen] = useState(false);
   const [proProfile, setProProfile] = useState<{
     id: string;
     business_name: string;
@@ -4885,95 +4886,100 @@ export default function Dashboard() {
               </Button>
             </form>
             <div className="rounded-xl border bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-4">
-              <h3 className="font-heading font-semibold text-foreground">
-                {t.dashboard.accountBookingIdVerificationTitle}
-              </h3>
-              <p className="text-sm text-muted-foreground">{t.dashboard.accountBookingIdVerificationFrontOnly}</p>
-              {profile?.booking_id_verification_photo_path?.trim() ? (
-                <>
-                  <Alert className="border-amber-500/50 bg-amber-500/10 text-foreground">
-                    <ShieldAlert className="h-4 w-4 text-amber-700 dark:text-amber-500" />
-                    <AlertDescription className="text-muted-foreground">
-                      {t.dashboard.accountBookingIdVerificationWarning}
-                    </AlertDescription>
-                  </Alert>
-                  {bookingIdVerificationPreviewUrl ? (
-                    profile.booking_id_verification_photo_path.toLowerCase().endsWith(".pdf") ? (
-                      <a
-                        href={bookingIdVerificationPreviewUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex text-sm font-medium text-primary underline"
-                      >
-                        {t.dashboard.accountBookingIdVerificationViewPdf}
-                      </a>
-                    ) : (
-                      <img
-                        src={bookingIdVerificationPreviewUrl}
-                        alt=""
-                        className="rounded-lg border border-border max-h-64 w-full object-contain bg-muted/30"
-                      />
-                    )
-                  ) : (
-                    <p className="text-xs text-muted-foreground">{t.dashboard.accountIdPreviewUnavailable}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">{t.terms.bookingPhotoWithIdReplaceLabel}</p>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">{t.terms.bookingPhotoWithIdHint}</p>
-              )}
-              <Input
-                type="file"
-                accept="image/*,.pdf"
-                onChange={(e) => setAccountIdVerificationFile(e.target.files?.[0] ?? null)}
-                className="cursor-pointer"
-              />
-              <Button
+              <button
                 type="button"
-                disabled={!accountIdVerificationFile || accountIdVerificationSaving || !user?.id}
-                className="gap-2"
-                onClick={() => {
-                  if (!user?.id || !accountIdVerificationFile) return;
-                  void (async () => {
-                    setAccountIdVerificationSaving(true);
-                    try {
-                      const path = await persistClientBookingIdVerificationOnProfile(
-                        user.id,
-                        accountIdVerificationFile,
-                        profile?.booking_id_verification_photo_path,
-                      );
-                      setProfile((p) => (p ? { ...p, booking_id_verification_photo_path: path } : p));
-                      setAccountIdVerificationFile(null);
-                      toast({
-                        title: t.dashboard.accountBookingIdVerificationSavedTitle,
-                        description: t.dashboard.accountBookingIdVerificationSaved,
-                      });
-                    } catch (err) {
-                      const msg = errorMessage(err);
-                      toast({
-                        title: t.auth.toastError,
-                        description: msg.includes("MISSING_PROFILE_COLUMN")
-                          ? locale === "fr"
-                            ? "Colonne manquante en base de donn?es. Ex?cutez la migration client_booking_id_verification dans Supabase."
-                            : "Database column missing. Run migration 20260516120000_client_booking_id_verification.sql in Supabase."
-                          : msg,
-                        variant: "destructive",
-                      });
-                    } finally {
-                      setAccountIdVerificationSaving(false);
-                    }
-                  })();
-                }}
+                onClick={() => setBookingIdVerificationOpen((open) => !open)}
+                className="flex w-full items-center gap-3 text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-expanded={bookingIdVerificationOpen}
+                aria-controls="account-booking-id-verification"
               >
-                {accountIdVerificationSaving ? <Loader2 size={16} className="animate-spin" /> : null}
-                {profile?.booking_id_verification_photo_path?.trim()
-                  ? locale === "fr"
-                    ? "Mettre ? jour"
-                    : "Update"
-                  : locale === "fr"
-                    ? "Enregistrer la v?rification"
-                    : "Save verification"}
-              </Button>
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 ring-1 ring-amber-500/40">
+                  <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden />
+                </span>
+                <h3 className="font-heading font-semibold text-foreground">
+                  {t.dashboard.accountBookingIdVerificationTitle}
+                </h3>
+              </button>
+              {bookingIdVerificationOpen ? (
+                <div id="account-booking-id-verification" className="space-y-4">
+                  <p className="text-sm text-muted-foreground">{t.dashboard.accountBookingIdVerificationFrontOnly}</p>
+                  {profile?.booking_id_verification_photo_path?.trim() ? (
+                    <>
+                      {bookingIdVerificationPreviewUrl ? (
+                        profile.booking_id_verification_photo_path.toLowerCase().endsWith(".pdf") ? (
+                          <a
+                            href={bookingIdVerificationPreviewUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex text-sm font-medium text-primary underline"
+                          >
+                            {t.dashboard.accountBookingIdVerificationViewPdf}
+                          </a>
+                        ) : (
+                          <img
+                            src={bookingIdVerificationPreviewUrl}
+                            alt=""
+                            className="rounded-lg border border-border max-h-64 w-full object-contain bg-muted/30"
+                          />
+                        )
+                      ) : (
+                        <p className="text-xs text-muted-foreground">{t.dashboard.accountIdPreviewUnavailable}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">{t.terms.bookingPhotoWithIdReplaceLabel}</p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">{t.terms.bookingPhotoWithIdHint}</p>
+                  )}
+                  <Input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => setAccountIdVerificationFile(e.target.files?.[0] ?? null)}
+                    className="cursor-pointer"
+                  />
+                  <Button
+                    type="button"
+                    disabled={!accountIdVerificationFile || accountIdVerificationSaving || !user?.id}
+                    className="gap-2"
+                    onClick={() => {
+                      if (!user?.id || !accountIdVerificationFile) return;
+                      void (async () => {
+                        setAccountIdVerificationSaving(true);
+                        try {
+                          const path = await persistClientBookingIdVerificationOnProfile(
+                            user.id,
+                            accountIdVerificationFile,
+                            profile?.booking_id_verification_photo_path,
+                          );
+                          setProfile((p) => (p ? { ...p, booking_id_verification_photo_path: path } : p));
+                          setAccountIdVerificationFile(null);
+                          toast({
+                            title: t.dashboard.accountBookingIdVerificationSavedTitle,
+                            description: t.dashboard.accountBookingIdVerificationSaved,
+                          });
+                        } catch (err) {
+                          const msg = errorMessage(err);
+                          toast({
+                            title: t.auth.toastError,
+                            description: msg.includes("MISSING_PROFILE_COLUMN")
+                              ? locale === "fr"
+                                ? "Colonne manquante en base de données. Exécutez la migration client_booking_id_verification dans Supabase."
+                                : "Database column missing. Run migration 20260516120000_client_booking_id_verification.sql in Supabase."
+                              : msg,
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setAccountIdVerificationSaving(false);
+                        }
+                      })();
+                    }}
+                  >
+                    {accountIdVerificationSaving ? <Loader2 size={16} className="animate-spin" /> : null}
+                    {profile?.booking_id_verification_photo_path?.trim()
+                      ? t.dashboard.accountBookingIdVerificationUpdate
+                      : t.dashboard.accountBookingIdVerificationSave}
+                  </Button>
+                </div>
+              ) : null}
             </div>
             {proProfile?.is_verified && isPaidSubscriptionPlanId(proSubscriptionPlanId) && (
               <div className={`max-w-lg w-full mx-auto rounded-xl p-[2px] ${PLAN_TIER_BORDER_CLASS[currentPlanTheme]}`}>
