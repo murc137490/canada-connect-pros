@@ -1,0 +1,53 @@
+# Keep Supabase Free project from pausing after ~7 days of inactivity.
+# Needs GitHub repo secrets:
+#   SUPABASE_URL       — e.g. https://xxxx.supabase.co
+#   SUPABASE_ANON_KEY  — anon/public key (same as VITE_SUPABASE_ANON_KEY)
+#
+# Docs: https://supabase.com/docs/guides/platform/free-project-pausing
+# Setup: docs/SUPABASE_KEEPALIVE.md
+
+name: Supabase keep-alive
+
+on:
+  schedule:
+    # Every 3 days at 12:00 UTC
+    - cron: "0 12 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping Supabase (select + update)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
+            echo "Missing SUPABASE_URL or SUPABASE_ANON_KEY secrets."
+            exit 1
+          fi
+          BASE="${SUPABASE_URL%/}"
+          NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          echo "Select keepalive row…"
+          curl -fsS \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Accept: application/json" \
+            "${BASE}/rest/v1/platform_keepalive?id=eq.1&select=id,last_ping_at,ping_count"
+
+          echo
+          echo "Touch last_ping_at…"
+          curl -fsS -X PATCH \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"last_ping_at\":\"${NOW}\"}" \
+            "${BASE}/rest/v1/platform_keepalive?id=eq.1"
+
+          echo
+          echo "Keep-alive OK at ${NOW}"
