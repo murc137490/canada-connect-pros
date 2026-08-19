@@ -1760,7 +1760,7 @@ export const translations = {
       logIn: "Connexion",
       logOut: "Déconnexion",
       signUp: "S'inscrire",
-      publishRequest: "Publier",
+      publishRequest: "Publiez un job",
     },
     common: {
       premiereServices: "PremiereServices",
@@ -1845,7 +1845,7 @@ export const translations = {
       heroProjectTitle: "Trouvez un pro.\nVite.",
       heroProjectPlaceholder: "ex. Le robinet de la cuisine fuit",
       heroSearchLabel: "Chercher près de chez vous",
-      ctaPublish: "Publier un job",
+      ctaPublish: "Publiez un job",
       ctaFindPro: "Voir les pros",
       ctaBecomePro: "Devenir pro",
       categoriesTitle: "Besoin d'un coup de main?",
