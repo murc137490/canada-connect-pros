@@ -42,9 +42,8 @@
       #premiere-boot {
         --boot-bg: #f7f4ef;
         --boot-fg: #ffffff;
-        /* Long-shadow extent in keyframes (~100px). Used for optical centering. */
-        --boot-shadow-x: clamp(1.75rem, 8vw, 6.25rem);
-        --boot-shadow-y: clamp(1.75rem, 8vw, 6.25rem);
+        /* Must match long-shadow.css max offset (−100px, +100px). */
+        --boot-shadow: 100px;
         position: fixed;
         inset: 0;
         z-index: 99999;
@@ -52,11 +51,12 @@
         align-items: center;
         justify-content: center;
         width: 100%;
-        max-width: 100vw;
+        max-width: 100%;
         height: 100%;
         min-height: 100vh;
         min-height: 100dvh;
         min-height: 100svh;
+        margin: 0;
         padding: env(safe-area-inset-top, 0)
           env(safe-area-inset-right, 0)
           env(safe-area-inset-bottom, 0)
@@ -67,7 +67,6 @@
       }
 
       html[data-boot-theme="dark"] #premiere-boot {
-        /* Exact match: .dark --background 222 20% 4% */
         --boot-bg: hsl(222 20% 4%);
         --boot-fg: #ffffff;
       }
@@ -78,32 +77,30 @@
         pointer-events: none;
       }
 
+      /*
+        text-shadow does not expand layout. Pad left + bottom by the shadow extent so the
+        flex-centered box is the visual logo (glyphs + long shadow). That puts the logo
+        center on the screen center.
+      */
       #premiere-boot .site__main {
-        /* text-shadow does not affect layout; shift so glyph+shadow mass sits true-center.
-           Shadow runs left (−x) and down (+y) → white type otherwise looks right / slightly high. */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: min(94vw, 44rem);
-        max-width: 100%;
+        box-sizing: content-box;
+        width: max-content;
+        max-width: none;
         margin: 0;
-        transform: translate(
-          calc(var(--boot-shadow-x) * -0.42),
-          calc(var(--boot-shadow-y) * 0.28)
-        );
+        padding: 0 0 var(--boot-shadow) var(--boot-shadow);
+        display: block;
+        transform-origin: center center;
       }
 
-      #premiere-boot .site__main > div {
-        padding: clamp(1.25rem, 4vw, 4rem) clamp(1rem, 4vw, 3.5rem);
-        overflow: visible;
+      #premiere-boot .boot-logo {
         margin: 0;
+        padding: 0;
         width: max-content;
-        max-width: min(100%, 94vw);
         font-weight: 400;
         line-height: 0.92;
         letter-spacing: -0.02em;
         text-align: center;
-        font-size: clamp(2.35rem, 8.5vw, 5.25rem);
+        font-size: clamp(2.5rem, 8vw, 5.25rem);
         color: var(--boot-fg);
         font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
         font-kerning: normal;
@@ -119,7 +116,7 @@
         animation-name: animateShadowLight;
       }
 
-      html[data-boot-theme="dark"] #premiere-boot .site__main > div {
+      html[data-boot-theme="dark"] #premiere-boot .boot-logo {
         animation-name: animateShadowDark;
       }
 
@@ -127,43 +124,48 @@
         font: inherit;
         color: inherit;
         margin: 0;
+        padding: 0;
         text-align: center;
         white-space: nowrap;
       }
 
-      /* Phones / narrow: allow wrap so the block stays centered in the viewport */
-      @media (max-width: 480px) {
-        #premiere-boot {
-          --boot-shadow-x: clamp(1.25rem, 10vw, 3.5rem);
-          --boot-shadow-y: clamp(1.25rem, 10vw, 3.5rem);
+      @media (max-width: 640px) {
+        #premiere-boot .site__main {
+          /* Keep visual center; shrink so glyphs + 100px shadow fit phones */
+          transform: scale(0.72);
+        }
+        #premiere-boot .boot-logo {
+          font-size: clamp(2.25rem, 12vw, 3.5rem);
         }
         #premiere-boot h1 {
           white-space: normal;
         }
-        #premiere-boot .site__main > div {
-          font-size: clamp(2.15rem, 11.5vw, 3.25rem);
-          max-width: 88vw;
+      }
+
+      @media (max-width: 380px) {
+        #premiere-boot .site__main {
+          transform: scale(0.62);
         }
       }
 
-      /* Tall / portrait monitors: keep optical center, avoid oversized type eating the frame */
-      @media (orientation: portrait) and (min-height: 900px) {
-        #premiere-boot .site__main > div {
-          font-size: clamp(2.75rem, 7.5vh, 5rem);
+      @media (orientation: portrait) and (min-height: 900px) and (min-width: 641px) {
+        #premiere-boot .boot-logo {
+          font-size: clamp(2.75rem, 7vh, 5rem);
         }
       }
 
       @media (prefers-reduced-motion: reduce) {
         #premiere-boot .site__main {
+          padding: 0;
           transform: none;
         }
-        #premiere-boot .site__main > div {
+        #premiere-boot .boot-logo {
           animation: none;
           will-change: auto;
           color: #15284a;
           text-shadow: none;
         }
-        html[data-boot-theme="dark"] #premiere-boot .site__main > div {
+        html[data-boot-theme="dark"] #premiere-boot .boot-logo {
           color: #ffffff;
         }
       }
@@ -180,7 +182,7 @@
 
     <div id="premiere-boot" role="status" aria-label="Première Services">
       <main class="site__main">
-        <div>
+        <div class="boot-logo">
           <h1>
             Première<br />
             Services
