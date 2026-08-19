@@ -131,11 +131,11 @@
 
       @media (max-width: 640px) {
         #premiere-boot .site__main {
-          /* Keep visual center; shrink so glyphs + 100px shadow fit phones */
-          transform: scale(0.72);
+          /* Keep visual center; larger on phone while shadow still fits */
+          transform: scale(0.95);
         }
         #premiere-boot .boot-logo {
-          font-size: clamp(2.25rem, 12vw, 3.5rem);
+          font-size: clamp(2.85rem, 14vw, 4.25rem);
         }
         #premiere-boot h1 {
           white-space: normal;
@@ -144,7 +144,10 @@
 
       @media (max-width: 380px) {
         #premiere-boot .site__main {
-          transform: scale(0.62);
+          transform: scale(0.88);
+        }
+        #premiere-boot .boot-logo {
+          font-size: clamp(2.6rem, 15vw, 3.75rem);
         }
       }
 
