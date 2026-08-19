@@ -293,7 +293,7 @@ export const TERMS_PROVIDER_AGREEMENT = [
 export const TERMS_FULL_SECTIONS_FR = [
   {
     title: "CONDITIONS D'UTILISATION",
-    body: `Dernière mise à jour : ${LAST_UPDATED_FR}\n\nAide en cas de problème de réservation (pas une garantie de satisfaction illimitée)\n\nSi un service réservé via Première Services n’est pas réalisé substantiellement conformément à la réservation, Première Services peut aider à examiner le problème via la procédure de réclamation. Les issues sont au cas par cas et non automatiques. Déposer une réclamation ne garantit pas un remboursement. LEGAL_REVIEW_REQUIRED.`,
+    body: `Dernière mise à jour : ${LAST_UPDATED_FR}\n\nAide en cas de problème de réservation (pas une garantie de satisfaction illimitée)\n\nSi un service réservé via Première Services n’est pas réalisé substantiellement conformément à la réservation, Première Services peut aider à examiner le problème via la procédure de réclamation. Les résultats sont au cas par cas et non automatiques. Déposer une réclamation ne garantit pas un remboursement. LEGAL_REVIEW_REQUIRED.`,
   },
   {
     title: "1. INTRODUCTION",

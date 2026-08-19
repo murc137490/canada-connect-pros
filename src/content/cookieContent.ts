@@ -52,7 +52,7 @@ Contact : ${PRIVACY_CONTACT.email} · Soutien : ${SUPPORT_EMAIL}
     body: `• Nécessaires — sécurité, authentification et fonctions de base.
 • Préférences — langue, thème et choix similaires.
 • Analytique — mesure d’utilisation (désactivée jusqu’à consentement).
-• Marketing — publicité/remarketing optionnelle (désactivée par défaut; non déployée activement par défaut).`,
+• Marketing — publicité/remarketing facultative (désactivée par défaut; non déployée activement par défaut).`,
   },
   {
     title: "3. Vos choix",

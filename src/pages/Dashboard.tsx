@@ -2962,7 +2962,7 @@ export default function Dashboard() {
   const handleSendReferralInvite = async () => {
     const email = referralEmail.trim();
     if (!email || !email.includes("@")) {
-      toast({ title: t.auth.toastError ?? "Error", description: "Enter your friend's email address.", variant: "destructive" });
+      toast({ title: t.auth.toastError ?? "Error", description: t.dashboard.friendEmailRequired ?? "Enter your friend's email address.", variant: "destructive" });
       return;
     }
     setReferralLoading(true);
@@ -3531,7 +3531,7 @@ export default function Dashboard() {
         updated_at: new Date().toISOString(),
       });
       if (error) throw error;
-      toast({ title: "Quote sent", description: "The customer will see your quote and can accept or decline." });
+      toast({ title: t.dashboard.quoteSentTitle ?? "Quote sent", description: t.dashboard.quoteSentDesc ?? "The customer will see your quote and can accept or decline." });
       setSelectedJobForQuote(null);
       setQuotePrice("");
       setQuoteEstimatedTime("");
@@ -3541,7 +3541,7 @@ export default function Dashboard() {
       setQuoteTimeTo("");
       setQuoteMessage("");
     } catch (e) {
-      toast({ title: "Failed to send quote", description: (e as Error).message, variant: "destructive" });
+      toast({ title: t.dashboard.quoteSendFailedTitle ?? "Failed to send quote", description: (e as Error).message, variant: "destructive" });
     } finally {
       setSendingQuote(false);
     }
@@ -5611,8 +5611,8 @@ export default function Dashboard() {
                                           <Button size="sm" onClick={() => {
                                             if (!q.price_cents || q.price_cents <= 0) {
                                               toast({
-                                                title: "Payment required",
-                                                description: "This quote cannot be accepted until a payable amount is provided.",
+                                                title: t.dashboard.quotePaymentRequiredTitle ?? "Payment required",
+                                                description: t.dashboard.quoteAcceptNeedsPrice ?? "This quote cannot be accepted until a payable amount is provided.",
                                                 variant: "destructive",
                                               });
                                               return;
@@ -5620,25 +5620,25 @@ export default function Dashboard() {
                                             setQuotePaymentError(null);
                                             setQuotePaymentTarget({ requestId: req.id, quote: q });
                                           }} disabled={!!acceptQuoteId}>
-                                            {acceptQuoteId === q.id ? <Loader2 size={14} className="animate-spin" /> : null} Accept
+                                            {acceptQuoteId === q.id ? <Loader2 size={14} className="animate-spin" /> : null} {t.dashboard.quoteAccept ?? "Accept"}
                                           </Button>
                                           <Button size="sm" variant="outline" onClick={async () => {
                                             setDeclineQuoteId(q.id);
                                             const { error } = await supabase.from("job_quotes").update({ status: "declined", updated_at: new Date().toISOString() }).eq("id", q.id);
-                                            if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-                                            else toast({ title: "Quote declined" });
+                                            if (error) toast({ title: t.auth.toastError ?? "Error", description: error.message, variant: "destructive" });
+                                            else toast({ title: t.dashboard.quoteDeclinedTitle ?? "Quote declined" });
                                             setJobQuotesByRequestId((prev) => ({
                                               ...prev,
                                               [req.id]: (prev[req.id] ?? []).map((x) => x.id === q.id ? { ...x, status: "declined" } : x),
                                             }));
                                             setDeclineQuoteId(null);
                                           }} disabled={!!declineQuoteId}>
-                                            {declineQuoteId === q.id ? <Loader2 size={14} className="animate-spin" /> : null} Decline
+                                            {declineQuoteId === q.id ? <Loader2 size={14} className="animate-spin" /> : null} {t.dashboard.quoteDecline ?? "Decline"}
                                           </Button>
                                         </div>
                                       )}
-                                      {q.status === "accepted" && <span className="text-sm text-green-600 dark:text-green-400">Accepted</span>}
-                                      {q.status === "declined" && <span className="text-sm text-muted-foreground">Declined</span>}
+                                      {q.status === "accepted" && <span className="text-sm text-green-600 dark:text-green-400">{t.dashboard.quoteAcceptedStatus ?? "Accepted"}</span>}
+                                      {q.status === "declined" && <span className="text-sm text-muted-foreground">{t.dashboard.quoteDeclinedStatus ?? "Declined"}</span>}
                                     </li>
                                   ))}
                                 </ul>
@@ -6560,10 +6560,10 @@ export default function Dashboard() {
                     </p>
                   )}
                   {job.budget_range && (
-                    <p className="text-muted-foreground text-xs">Budget: {formatJobRequestBudget(job.budget_range)}</p>
+                    <p className="text-muted-foreground text-xs">{t.dashboard.budgetLabel ?? "Budget:"} {formatJobRequestBudget(job.budget_range)}</p>
                   )}
                   <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => setSelectedJobForQuote(job)} disabled={isLocked}>
-                    View more & send quote
+                    {t.dashboard.viewMoreSendQuote ?? "View more & send quote"}
                   </Button>
                   </div>
                   {isLocked && (
@@ -6580,7 +6580,7 @@ export default function Dashboard() {
           )}
           {hasMoreJobs && (
             <Button variant="ghost" size="sm" className="w-full mt-3" onClick={() => setShowMoreJobs((v) => !v)}>
-              {showMoreJobs ? "Show less" : "View more available jobs"}
+              {showMoreJobs ? (t.dashboard.showLessJobs ?? "Show less") : (t.dashboard.viewMoreAvailableJobs ?? "View more available jobs")}
             </Button>
           )}
         </aside>

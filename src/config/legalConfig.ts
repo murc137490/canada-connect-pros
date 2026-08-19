@@ -53,7 +53,7 @@ export const SERVICE_RESOLUTION_HELP = {
     short:
       "Si un service réservé via Première Services n’est pas réalisé substantiellement conformément à la réservation convenue, Première Services peut vous aider à examiner le problème selon notre procédure de réclamation.",
     body:
-      "Issues possibles (au cas par cas, non automatiques) : correction/reprise par le professionnel d’origine; un autre professionnel lorsque c’est approprié et disponible; un remboursement partiel si une partie du service était matériellement déficiente; ou un remboursement complet dans les cas graves où le service n’a pas été réalisé ou a matériellement échoué. Déposer une réclamation ne garantit pas un remboursement. Première Services ne promet pas de dommages consécutifs illimités ni de payer tous les dommages causés par des professionnels.",
+      "Résultats possibles (au cas par cas, non automatiques) : correction/reprise par le professionnel d’origine; un autre professionnel lorsque c’est approprié et disponible; un remboursement partiel si une partie du service était matériellement déficiente; ou un remboursement complet dans les cas graves où le service n’a pas été réalisé ou a matériellement échoué. Déposer une réclamation ne garantit pas un remboursement. Première Services ne promet pas de dommages consécutifs illimités ni de payer tous les dommages causés par des professionnels.",
   },
 } as const;
 

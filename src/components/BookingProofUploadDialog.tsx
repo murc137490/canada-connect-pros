@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const EVIDENCE_BUCKET = "booking-evidence";
 
@@ -23,10 +24,51 @@ export default function BookingProofUploadDialog({
   bookingId: string | null;
 }) {
   const { toast } = useToast();
+  const { locale } = useLanguage();
+  const fr = locale === "fr";
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  const title = useMemo(() => (bookingId ? `Upload proof for booking #${bookingId}` : "Upload proof"), [bookingId]);
+  const copy = useMemo(
+    () =>
+      fr
+        ? {
+            titleWithId: (id: string) => `Téléverser une preuve pour la réservation n° ${id}`,
+            title: "Téléverser une preuve",
+            description: "Téléversez 2 ou 3 photos/vidéos montrant que le travail a été réalisé comme demandé.",
+            selectFiles: "Choisir des fichiers (images/vidéos)",
+            limitTitle: "Limite atteinte",
+            limitDesc: (n: number) => `Vous pouvez téléverser jusqu’à ${n} fichiers.`,
+            noFiles: "Aucun fichier sélectionné",
+            uploadedTitle: "Preuve téléversée",
+            uploadedDesc: "Vos preuves ont été ajoutées à cette réservation.",
+            uploadFailed: "Échec du téléversement",
+            removeFile: "Retirer le fichier",
+            clear: "Effacer",
+            upload: "Téléverser la preuve",
+          }
+        : {
+            titleWithId: (id: string) => `Upload proof for booking #${id}`,
+            title: "Upload proof",
+            description: "Upload 2–3 photos/videos showing the work was completed as the client requested.",
+            selectFiles: "Select files (images/videos)",
+            limitTitle: "Limit reached",
+            limitDesc: (n: number) => `You can upload up to ${n} items.`,
+            noFiles: "No files selected",
+            uploadedTitle: "Proof uploaded",
+            uploadedDesc: "Your evidence has been added for this booking.",
+            uploadFailed: "Upload failed",
+            removeFile: "Remove file",
+            clear: "Clear",
+            upload: "Upload proof",
+          },
+    [fr],
+  );
+
+  const title = useMemo(
+    () => (bookingId ? copy.titleWithId(bookingId) : copy.title),
+    [bookingId, copy],
+  );
 
   const maxItems = 3;
 
@@ -34,7 +76,7 @@ export default function BookingProofUploadDialog({
     const next = Array.from(picked ?? []);
     const remaining = Math.max(0, maxItems - files.length);
     if (next.length > remaining) {
-      toast({ title: "Limit reached", description: `You can upload up to ${maxItems} items.`, variant: "destructive" });
+      toast({ title: copy.limitTitle, description: copy.limitDesc(maxItems), variant: "destructive" });
     }
     setFiles((prev) => [...prev, ...next.slice(0, remaining)]);
   };
@@ -46,7 +88,7 @@ export default function BookingProofUploadDialog({
   const handleUpload = async () => {
     if (!bookingId) return;
     if (files.length === 0) {
-      toast({ title: "No files selected", variant: "destructive" });
+      toast({ title: copy.noFiles, variant: "destructive" });
       return;
     }
 
@@ -54,7 +96,6 @@ export default function BookingProofUploadDialog({
     try {
       for (const f of files) {
         const ext = getFileExt(f.name);
-        // Use `${bookingId}/...` so the client can list by prefix.
         const path = `${bookingId}/${crypto.randomUUID()}.${ext}`;
         const { error } = await supabase.storage.from(EVIDENCE_BUCKET).upload(path, f, {
           cacheControl: "3600",
@@ -62,11 +103,11 @@ export default function BookingProofUploadDialog({
         });
         if (error) throw error;
       }
-      toast({ title: "Proof uploaded", description: "Your evidence has been added for this booking." });
+      toast({ title: copy.uploadedTitle, description: copy.uploadedDesc });
       setFiles([]);
       onOpenChange(false);
     } catch (e) {
-      toast({ title: "Upload failed", description: (e as Error).message, variant: "destructive" });
+      toast({ title: copy.uploadFailed, description: (e as Error).message, variant: "destructive" });
     } finally {
       setUploading(false);
     }
@@ -77,14 +118,12 @@ export default function BookingProofUploadDialog({
       <DialogContent className="bg-background text-foreground">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            Upload 2–3 photos/videos showing the work was completed as the client requested.
-          </DialogDescription>
+          <DialogDescription className="text-muted-foreground">{copy.description}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Select files (images/videos)</label>
+            <label className="text-sm font-medium text-foreground">{copy.selectFiles}</label>
             <Input
               type="file"
               accept="image/*,video/*"
@@ -110,7 +149,7 @@ export default function BookingProofUploadDialog({
                       type="button"
                       className="absolute top-1 right-1 bg-background/90 border rounded-full p-1 text-muted-foreground hover:text-foreground"
                       onClick={() => removeAt(i)}
-                      aria-label="Remove file"
+                      aria-label={copy.removeFile}
                       disabled={uploading}
                     >
                       ×
@@ -123,10 +162,10 @@ export default function BookingProofUploadDialog({
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setFiles([])} disabled={uploading || files.length === 0}>
-              Clear
+              {copy.clear}
             </Button>
             <Button type="button" onClick={handleUpload} disabled={uploading || !bookingId}>
-              {uploading ? <Loader2 size={16} className="animate-spin" /> : "Upload proof"}
+              {uploading ? <Loader2 size={16} className="animate-spin" /> : copy.upload}
             </Button>
           </div>
         </div>
@@ -134,4 +173,3 @@ export default function BookingProofUploadDialog({
     </Dialog>
   );
 }
-

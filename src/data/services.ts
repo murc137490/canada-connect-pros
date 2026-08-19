@@ -15,7 +15,7 @@ export const BILINGUAL_SERVICES: { en: string; fr: string }[] = [
   { en: "Lighting Installation", fr: "Installation d'éclairage" },
   { en: "EV Charger Installation", fr: "Installation de borne de recharge" },
 
-  { en: "HVAC Services", fr: "Services CVC" },
+  { en: "HVAC Services", fr: "Services CVAC" },
   { en: "Furnace Repair", fr: "Réparation de fournaise" },
   { en: "AC Repair", fr: "Réparation de climatisation" },
 
@@ -56,7 +56,7 @@ export const BILINGUAL_SERVICES: { en: string; fr: string }[] = [
   { en: "Web Development", fr: "Développement web" },
   { en: "SEO Services", fr: "Services SEO" },
   { en: "Marketing Services", fr: "Services marketing" },
-  { en: "IT Support", fr: "Support informatique" },
+  { en: "IT Support", fr: "Soutien informatique" },
 
   { en: "Wedding Photographer", fr: "Photographe de mariage" },
   { en: "Event Photographer", fr: "Photographe d'événement" },
@@ -79,7 +79,7 @@ export const BILINGUAL_SERVICES: { en: string; fr: string }[] = [
 
   { en: "Personal Trainer", fr: "Entraîneur personnel" },
   { en: "Massage Therapy", fr: "Massothérapie" },
-  { en: "Therapist / Counselling", fr: "Thérapie / counselling" },
+  { en: "Therapist / Counselling", fr: "Thérapie / counseling" },
   { en: "Nutritionist", fr: "Nutritionniste" },
 
   { en: "Local Moving", fr: "Déménagement local" },

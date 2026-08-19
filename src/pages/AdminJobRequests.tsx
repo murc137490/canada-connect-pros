@@ -221,7 +221,7 @@ export default function AdminJobRequests() {
                     )}
 
                     {row.budget_range ? (
-                      <p className="text-xs text-muted-foreground">Budget: {row.budget_range}</p>
+                      <p className="text-xs text-muted-foreground">{t.dashboard.budgetLabel ?? "Budget:"} {row.budget_range}</p>
                     ) : null}
 
                     {blocked ? (
