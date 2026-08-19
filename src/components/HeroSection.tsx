@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { Sparkles, ArrowRight, LocateFixed, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getAllServices, getCategorySummariesForAI, getFlatServiceRecords } from "@/data/services";
 import type { ServiceRecordForAI } from "@/data/services";
@@ -9,6 +9,7 @@ import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
 import {
   canadianPostalsEqual,
+  detectBrowserLocationPostal,
   formatCanadianPostalInput,
   geocodePostalToLocation,
   isCompleteCanadianPostal,
@@ -97,6 +98,8 @@ export default function HeroSection() {
   const postalEditedRef = useRef(false);
   const postalResolvedRef = useRef(postalResolved);
   postalResolvedRef.current = postalResolved;
+  const locationDetectOnceRef = useRef(false);
+  const [locating, setLocating] = useState(false);
   const [textareaFocused, setTextareaFocused] = useState(false);
 
   const normalizedPostal = useMemo(
@@ -134,6 +137,54 @@ export default function HeroSection() {
     });
     return true;
   }, [normalizedPostal, t.index.checkServiceError]);
+
+  const applyDetectedLocation = useCallback(
+    async (opts?: { fromEmptyFocus?: boolean }) => {
+      if (locating || postalLoading) return;
+      if (opts?.fromEmptyFocus && (postalCode.trim() || locationDetectOnceRef.current)) return;
+      if (opts?.fromEmptyFocus) locationDetectOnceRef.current = true;
+
+      setLocating(true);
+      setPostalError(null);
+      const result = await detectBrowserLocationPostal();
+      setLocating(false);
+
+      if (!result.ok) {
+        const msg =
+          result.reason === "denied"
+            ? t.index.heroPostalLocationDenied
+            : result.reason === "no_postal"
+              ? t.index.heroPostalLocationNoPostal
+              : t.index.heroPostalLocationUnavailable;
+        setPostalError(msg);
+        return;
+      }
+
+      const postal = result.location.postal!;
+      postalEditedRef.current = true;
+      setPostalCode(postal);
+      setPostalResolved({
+        lat: result.location.lat,
+        lng: result.location.lng,
+        city: result.location.city,
+        province: result.location.province,
+      });
+      setPostalError(null);
+      seedGeocodeCache(postal, result.location);
+      // Allow blur/auto-resolve to settle after we set edited flag briefly
+      requestAnimationFrame(() => {
+        postalEditedRef.current = false;
+      });
+    },
+    [
+      locating,
+      postalLoading,
+      postalCode,
+      t.index.heroPostalLocationDenied,
+      t.index.heroPostalLocationNoPostal,
+      t.index.heroPostalLocationUnavailable,
+    ],
+  );
 
   // Auto-lookup when a full Canadian postal is entered (always re-resolve on change).
   useEffect(() => {
@@ -459,35 +510,52 @@ export default function HeroSection() {
                   <label htmlFor="hero-postal" className="text-[12px] font-medium text-muted-foreground">
                     {t.index.heroPostalHint}
                   </label>
-                  <input
-                    id="hero-postal"
-                    type="text"
-                    inputMode="text"
-                    autoComplete="postal-code"
-                    placeholder={t.index.heroPostalExample}
-                    value={postalCode}
-                    onChange={(e) => {
-                      postalEditedRef.current = true;
-                      const next = formatCanadianPostalInput(e.target.value);
-                      setPostalCode(next);
-                      setPostalResolved(null);
-                      setPostalError(null);
-                      if (!next.trim()) clearBrowsePostalLocation();
-                    }}
-                    onBlur={() => {
-                      postalEditedRef.current = false;
-                      if (normalizedPostal) void resolvePostal();
-                    }}
-                    maxLength={7}
-                    className={`w-full sm:max-w-[9.5rem] border bg-background px-3 py-2.5 text-sm font-semibold tracking-wide text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 ${
-                      postalError
-                        ? "border-destructive"
-                        : postalResolved
-                          ? "border-border"
-                          : "border-border"
-                    }`}
-                    style={{ borderRadius: "7px" }}
-                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="hero-postal"
+                      type="text"
+                      inputMode="text"
+                      autoComplete="postal-code"
+                      placeholder={t.index.heroPostalExample}
+                      value={postalCode}
+                      onChange={(e) => {
+                        postalEditedRef.current = true;
+                        const next = formatCanadianPostalInput(e.target.value);
+                        setPostalCode(next);
+                        setPostalResolved(null);
+                        setPostalError(null);
+                        if (!next.trim()) clearBrowsePostalLocation();
+                      }}
+                      onFocus={() => {
+                        if (!postalCode.trim()) void applyDetectedLocation({ fromEmptyFocus: true });
+                      }}
+                      onBlur={() => {
+                        postalEditedRef.current = false;
+                        if (normalizedPostal) void resolvePostal();
+                      }}
+                      maxLength={7}
+                      className={`w-full sm:max-w-[9.5rem] border bg-background px-3 py-2.5 text-sm font-semibold tracking-wide text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 ${
+                        postalError
+                          ? "border-destructive"
+                          : postalResolved
+                            ? "border-border"
+                            : "border-border"
+                      }`}
+                      style={{ borderRadius: "7px" }}
+                      disabled={locating}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void applyDetectedLocation()}
+                      disabled={locating || postalLoading}
+                      title={t.index.heroPostalUseLocation}
+                      aria-label={t.index.heroPostalUseLocation}
+                      className="inline-flex h-[2.75rem] w-[2.75rem] shrink-0 items-center justify-center border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                      style={{ borderRadius: "7px" }}
+                    >
+                      {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="relative min-w-0">
@@ -525,7 +593,7 @@ export default function HeroSection() {
                       : normalizedPostal}
                   </p>
                 ) : null}
-                {postalLoading ? (
+                {postalLoading || locating ? (
                   <p className="px-0.5 text-xs text-muted-foreground">{t.makeRequest.step3Detecting}</p>
                 ) : postalError ? (
                   <p className="px-0.5 text-xs text-destructive">{postalError}</p>

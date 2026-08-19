@@ -264,20 +264,112 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult | n
 }
 
 export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  const loc = await reverseGeocodeToLocation(lat, lng);
+  return loc?.formattedAddress ?? null;
+}
+
+/** Reverse-geocode GPS coords to city/province + Canadian postal when available. */
+export async function reverseGeocodeToLocation(lat: number, lng: number): Promise<GeocodeLocation | null> {
   if (!CLIENT_KEY) return null;
   try {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${CLIENT_KEY}`;
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${CLIENT_KEY}&result_type=street_address|premise|postal_code|locality`;
     const res = await fetch(url);
     const data = (await res.json()) as {
       status: string;
-      results?: { formatted_address?: string }[];
+      results?: GoogleResult[];
     };
-    if (data.status !== "OK" || !data.results?.length) return null;
-    return data.results[0]?.formatted_address ?? null;
+    if (data.status !== "OK" || !data.results?.length) {
+      // Broader fallback without result_type filter
+      const url2 = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${CLIENT_KEY}`;
+      const res2 = await fetch(url2);
+      const data2 = (await res2.json()) as { status: string; results?: GoogleResult[] };
+      if (data2.status !== "OK" || !data2.results?.length) return null;
+      return pickReverseResult(data2.results, lat, lng);
+    }
+    return pickReverseResult(data.results, lat, lng);
   } catch (err) {
     console.warn("Reverse geocode error:", err);
     return null;
   }
+}
+
+function pickReverseResult(results: GoogleResult[], lat: number, lng: number): GeocodeLocation | null {
+  const withPostal =
+    results.find((r) => {
+      const p = postalFromComponents(r.address_components);
+      return !!p && p.length === 6;
+    }) ?? results[0];
+  if (!withPostal) return null;
+  const parsed = parseGoogleResult(withPostal);
+  if (!parsed) {
+    return {
+      lat,
+      lng,
+      city: null,
+      province: null,
+      formattedAddress: withPostal.formatted_address,
+      postal: extractCanadianPostal(withPostal.formatted_address),
+    };
+  }
+  const postal =
+    postalFromComponents(withPostal.address_components) ??
+    extractCanadianPostal(withPostal.formatted_address) ??
+    parsed.postal ??
+    null;
+  const spaced =
+    postal && compactPostal(postal).length === 6
+      ? `${compactPostal(postal).slice(0, 3)} ${compactPostal(postal).slice(3)}`
+      : postal;
+  return {
+    ...parsed,
+    lat,
+    lng,
+    postal: spaced,
+  };
+}
+
+export type DetectBrowserLocationResult =
+  | { ok: true; location: GeocodeLocation }
+  | { ok: false; reason: "unsupported" | "denied" | "unavailable" | "no_postal" };
+
+/** Browser GPS → reverse geocode. Requires user permission. */
+export function detectBrowserLocationPostal(): Promise<DetectBrowserLocationResult> {
+  return new Promise((resolve) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      resolve({ ok: false, reason: "unsupported" });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const loc = await reverseGeocodeToLocation(lat, lng);
+        if (!loc) {
+          resolve({ ok: false, reason: "unavailable" });
+          return;
+        }
+        const spaced = loc.postal ? formatCanadianPostalInput(loc.postal) : "";
+        if (!spaced || !isCompleteCanadianPostal(spaced)) {
+          resolve({ ok: false, reason: "no_postal" });
+          return;
+        }
+        resolve({
+          ok: true,
+          location: {
+            ...loc,
+            lat,
+            lng,
+            postal: spaced,
+          },
+        });
+      },
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) resolve({ ok: false, reason: "denied" });
+        else resolve({ ok: false, reason: "unavailable" });
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60_000 },
+    );
+  });
 }
 
 /**
