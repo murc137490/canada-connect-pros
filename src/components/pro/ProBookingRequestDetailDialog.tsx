@@ -19,6 +19,8 @@ type Props = {
   clientPhone?: string | null;
   canSeePhone?: boolean;
   statusLabel?: string;
+  /** Pros see status only — never the government ID image. */
+  clientIdentityVerified?: boolean;
 };
 
 export default function ProBookingRequestDetailDialog({
@@ -30,6 +32,7 @@ export default function ProBookingRequestDetailDialog({
   clientPhone,
   canSeePhone = false,
   statusLabel,
+  clientIdentityVerified = false,
 }: Props) {
   const { t, locale } = useLanguage();
   if (!booking) return null;
@@ -74,6 +77,20 @@ export default function ProBookingRequestDetailDialog({
           <div>
             <dt className="text-muted-foreground">{t.dashboard.proBookingClientName ?? "Client"}</dt>
             <dd className="font-medium text-foreground">{clientName?.trim() || "-"}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">
+              {locale === "fr" ? "Vérification d’identité" : "Identity verification"}
+            </dt>
+            <dd className="font-medium text-foreground">
+              {clientIdentityVerified
+                ? locale === "fr"
+                  ? "Identité vérifiée ✓"
+                  : "Identity verified ✓"
+                : locale === "fr"
+                  ? "Non vérifiée / en attente"
+                  : "Not verified / pending"}
+            </dd>
           </div>
           <div>
             <dt className="text-muted-foreground">{t.dashboard.phone ?? "Phone"}</dt>

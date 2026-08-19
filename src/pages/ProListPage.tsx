@@ -14,6 +14,7 @@ import ProCard, { type ProCardData } from "@/components/pro/ProCard";
 import StarBorder from "@/components/StarBorder";
 import GradientText from "@/components/GradientText";
 import { useToast } from "@/hooks/use-toast";
+import { filterAdvertiseableProIds } from "@/lib/filterAdvertiseablePros";
 
 export default function ProListPage() {
   const { categorySlug, serviceSlug } = useParams<{ categorySlug: string; serviceSlug: string }>();
@@ -60,8 +61,12 @@ export default function ProListPage() {
 
       if (!proData) { setPros([]); setLoading(false); return; }
 
+      // Only advertise pros with an active paid plan (Starter / Growth / Pro).
+      const advertiseable = await filterAdvertiseableProIds(proData.map((p) => p.id));
+      const listedPros = proData.filter((p) => advertiseable.has(p.id));
+
       const enriched: ProCardData[] = [];
-      for (const pro of proData) {
+      for (const pro of listedPros) {
         const [profileRes, ratingRes, licenseRes, photosRes] = await Promise.all([
           supabase.from("profiles").select("full_name").eq("user_id", pro.user_id).single(),
           supabase.rpc("get_pro_avg_rating", { p_pro_profile_id: pro.id }),

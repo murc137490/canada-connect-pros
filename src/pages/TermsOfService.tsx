@@ -9,14 +9,16 @@ import {
   LAST_UPDATED_FR,
   COMPANY_NAME,
 } from "@/content/termsContent";
+import { SERVICE_RESOLUTION_HELP } from "@/config/legalConfig";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowLeft, RefreshCw, Shield, UserCheck } from "lucide-react";
+import { ArrowLeft, Shield } from "lucide-react";
 
 export default function TermsOfService() {
   const { t, locale } = useLanguage();
   const fullSections = locale === "fr" ? TERMS_FULL_SECTIONS_FR : TERMS_FULL_SECTIONS;
   const providerAgreement = locale === "fr" ? TERMS_PROVIDER_AGREEMENT_FR : TERMS_PROVIDER_AGREEMENT;
   const lastUpdated = locale === "fr" ? LAST_UPDATED_FR : LAST_UPDATED;
+  const help = locale === "fr" ? SERVICE_RESOLUTION_HELP.fr : SERVICE_RESOLUTION_HELP.en;
 
   return (
     <Layout>
@@ -36,34 +38,24 @@ export default function TermsOfService() {
             {t.terms.lastUpdated}: {lastUpdated}
           </p>
 
-          {/* Booking Guarantee at the top */}
-          <div className="rounded-xl border bg-card p-6 md:p-8 mb-10 space-y-6">
-            <h2 className="font-heading text-xl font-semibold text-foreground">
-              {t.guarantee.title}
-            </h2>
-            <ul className="space-y-4 list-none p-0 m-0">
-              <li className="flex gap-3">
-                <RefreshCw size={20} className="text-primary shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-medium text-foreground">{t.guarantee.rebooking}</span>
-                  <p className="text-sm text-muted-foreground mt-0.5">{t.guarantee.rebookingDesc}</p>
-                </div>
-              </li>
-              <li className="flex gap-3">
-                <Shield size={20} className="text-primary shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-medium text-foreground">{t.guarantee.quality}</span>
-                  <p className="text-sm text-muted-foreground mt-0.5">{t.guarantee.qualityDesc}</p>
-                </div>
-              </li>
-              <li className="flex gap-3">
-                <UserCheck size={20} className="text-primary shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-medium text-foreground">{t.guarantee.replacement}</span>
-                  <p className="text-sm text-muted-foreground mt-0.5">{t.guarantee.replacementDesc}</p>
-                </div>
-              </li>
-            </ul>
+          <div className="rounded-xl border bg-card p-6 md:p-8 mb-10 space-y-4">
+            <div className="flex gap-3 items-start">
+              <Shield size={20} className="text-primary shrink-0 mt-0.5" />
+              <div>
+                <h2 className="font-heading text-xl font-semibold text-foreground">{help.title}</h2>
+                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{help.short}</p>
+                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{help.body}</p>
+                <p className="text-xs text-muted-foreground mt-3">
+                  {locale === "fr"
+                    ? "Libellé final soumis à révision juridique. Voir aussi "
+                    : "Final wording subject to legal review. See also "}
+                  <Link to="/privacy" className="underline">
+                    {locale === "fr" ? "Confidentialité" : "Privacy"}
+                  </Link>
+                  .
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="prose prose-slate dark:prose-invert max-w-none space-y-10">

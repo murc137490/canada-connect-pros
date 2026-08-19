@@ -359,6 +359,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">{t.footer.legalCol}</h4>
               <ul className="space-y-2 text-sm text-white/70">
                 <li><Link to="/terms" className="hover:text-white transition-colors">{t.footer.termsOfService}</Link></li>
+                <li>
+                  <Link to="/privacy" className="hover:text-white transition-colors">
+                    {locale === "fr" ? "Confidentialité" : (t.footer.privacyPolicy ?? "Privacy")}
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/cookies" className="hover:text-white transition-colors">
+                    {locale === "fr" ? "Témoins" : (t.footer.cookiePolicy ?? "Cookies")}
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/support" className="hover:text-white transition-colors">
+                    {t.nav.support ?? "Contact"}
+                  </Link>
+                </li>
                 <li className="flex items-center gap-2 pt-1 text-white/55">
                   <MapPin size={14} className="shrink-0" />
                   <span>{t.footer.servingCities ?? "Quebec · Expanding"}</span>
@@ -368,7 +383,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
             <span>© {new Date().getFullYear()} Première Services. {t.footer.rights}</span>
-            <Link to="/terms" className="hover:text-white/70 transition-colors">{t.footer.termsOfService}</Link>
+            <div className="flex flex-wrap gap-3">
+              <Link to="/terms" className="hover:text-white/70 transition-colors">{t.footer.termsOfService}</Link>
+              <Link to="/privacy" className="hover:text-white/70 transition-colors">
+                {locale === "fr" ? "Confidentialité" : "Privacy"}
+              </Link>
+              <Link to="/cookies" className="hover:text-white/70 transition-colors">
+                {locale === "fr" ? "Témoins" : "Cookies"}
+              </Link>
+            </div>
           </div>
         </div>
       </footer>

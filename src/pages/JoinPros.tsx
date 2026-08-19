@@ -25,7 +25,7 @@ import { useHomeScrollReveal } from "@/components/useHomeScrollReveal";
 export default function JoinPros() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [proProfileId, setProProfileId] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<ProPlanId | null>(null);
   const [missingProfileOpen, setMissingProfileOpen] = useState(false);
@@ -90,6 +90,23 @@ export default function JoinPros() {
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-primary-foreground/75 md:mt-5 md:text-lg">
               {t.joinPros.subtitle}
+            </p>
+            <p className="mx-auto mt-4 max-w-2xl rounded-lg border border-white/25 bg-black/20 px-4 py-3 text-sm leading-relaxed text-primary-foreground/90 md:text-base">
+              {locale === "fr" ? (
+                <>
+                  Vous pouvez créer un profil pro et explorer le tableau de bord.{" "}
+                  <strong className="font-semibold text-white">
+                    Les services ne sont pas annoncés dans la recherche client et ne peuvent pas être réservés tant que vous n’avez pas un forfait payant actif (Essentiel, Croissance ou Performance).
+                  </strong>
+                </>
+              ) : (
+                <>
+                  You can create a pro profile and explore how the dashboard works.{" "}
+                  <strong className="font-semibold text-white">
+                    Services are not advertised in client search and cannot be booked until you have an active paid plan (Starter, Growth, or Pro).
+                  </strong>
+                </>
+              )}
             </p>
             {!user && (
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

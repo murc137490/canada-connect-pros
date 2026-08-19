@@ -32,7 +32,7 @@ export default function Auth() {
   const [emailAlreadyExists, setEmailAlreadyExists] = useState(false);
   const [nameTaken, setNameTaken] = useState(false);
   const { signIn, signUp, signInWithGoogle, user, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -468,6 +468,35 @@ export default function Auth() {
                     {mode === "login" ? t.auth.signUpLink : t.auth.logInLink}
                   </button>
                 </p>
+                {mode === "signup" ? (
+                  <p className="text-xs text-muted-foreground text-center">
+                    {locale === "fr" ? (
+                      <>
+                        En créant un compte, vous acceptez nos{" "}
+                        <Link to="/terms" className="underline">
+                          Conditions
+                        </Link>{" "}
+                        et notre{" "}
+                        <Link to="/privacy" className="underline">
+                          Politique de confidentialité
+                        </Link>
+                        .
+                      </>
+                    ) : (
+                      <>
+                        By creating an account you agree to our{" "}
+                        <Link to="/terms" className="underline">
+                          Terms
+                        </Link>{" "}
+                        and{" "}
+                        <Link to="/privacy" className="underline">
+                          Privacy Policy
+                        </Link>
+                        .
+                      </>
+                    )}
+                  </p>
+                ) : null}
               </CardFooter>
             </Card>
           </MagicCard>

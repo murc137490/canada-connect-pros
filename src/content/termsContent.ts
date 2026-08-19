@@ -31,10 +31,46 @@ Service providers are independent contractors. The platform is not liable for pr
 You may not: arrange off-platform payments with providers introduced through the platform; submit false reviews; engage in harassment or fraudulent activity.
 
 5A. IDENTITY VERIFICATION (BOOKINGS)
-You may be asked to upload a government-issued ID image for booking verification. That image is stored securely and may be shown to the Service Provider assigned to your booking **only to verify your identity** for that booking. Providers must not use ID images for any other purpose or share them with third parties.
+You may be asked to upload a government-issued ID image for booking verification. That image is stored securely for Platform verification. The Service Provider assigned to your booking generally sees that your identity has been verified (“Identity verified”), not the ID image itself. Providers must not request copies of your ID outside Platform processes.
+
+5B. CANCELLATION POLICY (SHOWN BEFORE YOU CONTINUE)
+Each professional sets a cancellation policy for their bookings (or per service). The policy for THIS booking is displayed clearly above these Terms (free cancellation; OR a fee if you cancel less than 24 hours before the service — fixed amount or percentage; OR no cancellation / full charge). By continuing, you acknowledge that specific policy. Whether a fee is enforceable is subject to applicable law [LEGAL_REVIEW_REQUIRED]. Platform-wide Terms still apply for disputes and support.
 
 6. ACCEPTANCE
-By continuing, you confirm that you have read and accepted these Terms as they apply to your booking.
+By continuing, you confirm that you have read and accepted these Terms as they apply to your booking, including the cancellation policy shown for this professional.
+`.trim();
+
+/** French booking summary — keep obligations aligned with EN (LR-012). */
+export const TERMS_SUMMARY_BOOKING_FR = `
+CONDITIONS APPLICABLES À LA RÉSERVATION D’UN SERVICE
+
+Dernière mise à jour : ${LAST_UPDATED_FR}
+
+En demandant une réservation, vous acceptez ce qui suit :
+
+1. RÔLE DE LA PLATEFORME
+La Plateforme est une place de marché mettant en relation des clients et des fournisseurs de services indépendants. La Plateforme n’exécute pas les services et n’est pas responsable de la conduite, de la qualité ou de la légalité des services fournis par les professionnels.
+
+2. PAIEMENTS
+Les paiements pour les services organisés via la plateforme doivent être traités via la plateforme (p. ex. Square). La plateforme peut percevoir des frais de service.
+
+3. VOS RESPONSABILITÉS
+Vous devez : fournir des renseignements exacts; maintenir un environnement sécuritaire; communiquer honnêtement sur les besoins.
+
+4. SÉCURITÉ ET RESPONSABILITÉ
+Les fournisseurs sont des entrepreneurs indépendants. La plateforme n’est pas responsable des dommages, blessures ou différends résultant des services.
+
+5. RÈGLES DE LA PLATEFORME
+Vous ne devez pas : organiser des paiements hors plateforme avec des fournisseurs présentés via la plateforme; soumettre de faux avis; harceler ou frauder.
+
+5A. VÉRIFICATION D’IDENTITÉ (RÉSERVATIONS)
+On peut vous demander de téléverser une image de pièce d’identité. Elle est conservée de façon sécurisée pour la vérification par la Plateforme. Le professionnel voit en principe que votre identité a été vérifiée (« Identité vérifiée »), et non l’image elle-même.
+
+5B. POLITIQUE D’ANNULATION (AFFICHÉE AVANT DE CONTINUER)
+Chaque professionnel définit une politique d’annulation. Celle de CETTE réservation est affichée clairement au-dessus (gratuite; OU frais si annulation moins de 24 h — montant fixe ou pourcentage; OU aucune annulation / frais complets). En continuant, vous reconnaissez cette politique. [LEGAL_REVIEW_REQUIRED — opposabilité.]
+
+6. ACCEPTATION
+En continuant, vous confirmez avoir lu et accepté ces Conditions, y compris la politique d’annulation affichée.
 `.trim();
 
 /** Terms shown when a professional registers (pro-only). */
@@ -72,8 +108,8 @@ You agree not to: solicit or accept off-platform payment for work that was **sol
 7. SAFETY REQUIREMENTS
 You must: follow safety standards; disclose risks where relevant; refuse unsafe work conditions.
 
-7A. CLIENT ID IMAGES
-When a Client uploads an ID for booking verification, you may view that image **only for identity verification** in connection with that Client’s booking. You must not copy, retain for unrelated use, or share ID images outside what is needed to confirm the person at the service.
+7A. CLIENT IDENTITY STATUS
+When a Client completes booking identity verification, you generally see a status such as “Identity verified,” not the government ID image. Do not request that clients send ID images outside Platform processes. LEGAL_REVIEW_REQUIRED if a future process requires image display.
 
 8. YOUR LIABILITY
 You are responsible for: service quality; damages caused during your services; compliance with laws and regulations.
@@ -82,10 +118,20 @@ You are responsible for: service quality; damages caused during your services; c
 By continuing, you confirm that you have read and accepted these Professional Service Provider Terms.
 `.trim();
 
+export const TERMS_SUMMARY_PRO_FR = `
+FOURNISSEUR DE SERVICES PROFESSIONNELS – CONDITIONS
+
+Dernière mise à jour : ${LAST_UPDATED_FR}
+
+En vous inscrivant comme fournisseur, vous acceptez notamment : statut d’entrepreneur indépendant; autorisation légale d’exercer et permis lorsque requis; normes professionnelles; responsabilité d’assurance appropriée lorsque requise; frais de plateforme (p. ex. 5 % sur transactions complétées payées via la plateforme selon le forfait); non-contournement pour les nouveaux clients issus de la plateforme; règles de sécurité.
+
+En continuant, vous confirmez avoir lu et accepté ces conditions professionnelles.
+`.trim();
+
 export const TERMS_FULL_SECTIONS = [
   {
     title: "TERMS OF SERVICE",
-    body: `Last updated: ${LAST_UPDATED}\n\nBooking Support\n\nRebooking assistance\nIf an issue occurs, we may help facilitate rebooking with another professional.\n\nResolution support\nWe aim to assist in resolving issues, but services are performed by independent professionals.\n\nReplacement professional\nWhere appropriate, we may help connect you with another provider.`,
+    body: `Last updated: ${LAST_UPDATED}\n\nBooking issue help (not an unlimited satisfaction guarantee)\n\nIf a service booked through Première Services is not performed substantially according to the agreed booking, Première Services may help review the issue through the claims process. Possible outcomes are case-by-case and not automatic (correction, replacement where available, partial or full refund in serious cases). Submitting a claim does not guarantee a refund. Final legal wording: LEGAL_REVIEW_REQUIRED.`,
   },
   {
     title: "1. INTRODUCTION",
@@ -117,11 +163,11 @@ export const TERMS_FULL_SECTIONS = [
   },
   {
     title: "7A. BOOKING IDENTITY VERIFICATION",
-    body: `Clients may be asked to upload a government-issued ID image for booking verification. That image is stored securely and may be shown to the Service Provider assigned to the booking **only for the purpose of verifying identity** in connection with that booking. Service Providers must not use ID images for any other purpose, copy them for unrelated use, or share them with third parties. The Platform does not guarantee that an ID is valid or current; verification is limited to facilitating trust for scheduled services.`,
+    body: `Clients may be asked to upload a government-issued ID image for booking verification. That image is stored securely for Platform verification processes. Service Providers assigned to a booking generally see a verification status (“Identity verified”) rather than the ID image. The Platform does not use facial recognition or biometric matching. Retention of ID images is configurable and subject to LEGAL_REVIEW_REQUIRED. The Platform does not guarantee that an ID is valid or current.`,
   },
   {
     title: "8. PAYMENTS",
-    body: `Payments may be processed through third-party providers. The Platform may collect payments on behalf of Service Providers, deduct service fees or commissions, and hold funds until services are completed. Service Providers agree not to request or accept off-platform payments for services initiated through the Platform, subject to the “pre-existing clients” exception in Section 8A.`,
+    body: `Payments are typically processed through Square (including Square Connect when a Service Provider has connected their Square account). The Platform does not operate a traditional escrow account merely by using Square. Customer-facing invoices may show a five percent (5%) Première Services platform fee on the service subtotal, plus applicable taxes. Internal application-fee settings on Square Connect are an implementation detail and are not a published “Square list price.” Refunds are handled case-by-case and are not automatic. LEGAL_REVIEW_REQUIRED for legal characterization of the payment flow.`,
   },
   {
     title: "8A. PRE-EXISTING CLIENTS, NEW PLATFORM CLIENTS, AND FEES (SERVICE PROVIDERS)",
@@ -247,7 +293,7 @@ export const TERMS_PROVIDER_AGREEMENT = [
 export const TERMS_FULL_SECTIONS_FR = [
   {
     title: "CONDITIONS D'UTILISATION",
-    body: `Dernière mise à jour : ${LAST_UPDATED_FR}\n\nSoutien aux réservations\n\nAide à la nouvelle réservation\nEn cas de problème, nous pouvons aider à faciliter une nouvelle réservation avec un autre professionnel.\n\nSoutien à la résolution\nNous visons à aider à résoudre les problèmes, mais les services sont exécutés par des professionnels indépendants.\n\nProfessionnel de remplacement\nLorsque cela est approprié, nous pouvons aider à vous mettre en relation avec un autre fournisseur.`,
+    body: `Dernière mise à jour : ${LAST_UPDATED_FR}\n\nAide en cas de problème de réservation (pas une garantie de satisfaction illimitée)\n\nSi un service réservé via Première Services n’est pas réalisé substantiellement conformément à la réservation, Première Services peut aider à examiner le problème via la procédure de réclamation. Les issues sont au cas par cas et non automatiques. Déposer une réclamation ne garantit pas un remboursement. LEGAL_REVIEW_REQUIRED.`,
   },
   {
     title: "1. INTRODUCTION",
@@ -279,11 +325,11 @@ export const TERMS_FULL_SECTIONS_FR = [
   },
   {
     title: "7A. VÉRIFICATION D'IDENTITÉ (RÉSERVATIONS)",
-    body: `Les Clients peuvent être invités à téléverser une image d'une pièce d'identité officielle pour la vérification d'une réservation. Cette image est conservée de façon sécurisée et peut être montrée au Fournisseur de services assigné à la réservation **uniquement aux fins de vérifier l'identité** dans le cadre de cette réservation. Les Fournisseurs de services ne doivent pas utiliser ces images à d'autres fins, les copier pour un usage non lié, ni les communiquer à des tiers. La Plateforme ne garantit pas qu'une pièce d'identité est valide ou à jour; la vérification vise seulement à faciliter la confiance pour les services planifiés.`,
+    body: `Les Clients peuvent être invités à téléverser une image d'une pièce d'identité officielle. Cette image est conservée de façon sécurisée pour les processus de vérification de la Plateforme. Les Fournisseurs de services voient en principe un statut (« Identité vérifiée ») plutôt que l’image. La Plateforme n’utilise pas la reconnaissance faciale ni l’appariement biométrique. La rétention est configurable (LEGAL_REVIEW_REQUIRED). La Plateforme ne garantit pas qu’une pièce d’identité est valide ou à jour.`,
   },
   {
     title: "8. PAIEMENTS",
-    body: `Les paiements peuvent être traités par des fournisseurs tiers. La Plateforme peut percevoir des paiements au nom des Fournisseurs de services, déduire des frais de service ou commissions, et retenir les fonds jusqu'à l'achèvement des services. Les Fournisseurs de services acceptent de ne pas demander ni accepter de paiements hors plateforme pour des services initiés par l'intermédiaire de la Plateforme, sous réserve de l'exception relative aux « clients préexistants » prévue à l'article 8A.`,
+    body: `Les paiements sont généralement traités via Square (y compris Square Connect lorsque le fournisseur a lié son compte). La Plateforme n’exploite pas un compte de séquestre (escrow) du seul fait d’utiliser Square. Les factures peuvent afficher des frais de plateforme de cinq pour cent (5 %) sur le sous-total du service, plus taxes applicables. Les remboursements sont traités au cas par cas et ne sont pas automatiques. LEGAL_REVIEW_REQUIRED pour la qualification juridique du flux de paiement.`,
   },
   {
     title: "8A. CLIENTS PRÉEXISTANTS, NOUVEAUX CLIENTS DE LA PLATEFORME ET FRAIS (FOURNISSEURS DE SERVICES)",

@@ -39,7 +39,10 @@ export async function persistClientBookingIdVerificationOnProfile(
   const path = await uploadClientBookingIdVerificationPhoto(userId, file);
   const { error } = await supabase
     .from("profiles")
-    .update({ booking_id_verification_photo_path: path })
+    .update({
+      booking_id_verification_photo_path: path,
+      booking_id_verification_status: "verified",
+    } as never)
     .eq("user_id", userId);
   if (error) {
     await removeClientBookingIdVerificationPhoto(path).catch(() => undefined);

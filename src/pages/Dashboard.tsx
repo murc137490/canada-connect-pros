@@ -443,6 +443,9 @@ export default function Dashboard() {
   const [accountIdVerificationFile, setAccountIdVerificationFile] = useState<File | null>(null);
   const [accountIdVerificationSaving, setAccountIdVerificationSaving] = useState(false);
   const [bookingIdVerificationOpen, setBookingIdVerificationOpen] = useState(false);
+  const [bookingCancelPolicy, setBookingCancelPolicy] = useState<"free" | "late_fee" | "no_cancel">("late_fee");
+  const [bookingCancelFeePercent, setBookingCancelFeePercent] = useState<25 | 50 | 75>(50);
+  const [bookingCancelPolicySaving, setBookingCancelPolicySaving] = useState(false);
   const [proProfile, setProProfile] = useState<{
     id: string;
     business_name: string;
@@ -488,7 +491,7 @@ export default function Dashboard() {
     pro_unread?: boolean | null;
   }[]>([]);
   const [clientProfiles, setClientProfiles] = useState<
-    Record<string, { full_name: string | null; phone: string | null; booking_id_verification_photo_path?: string | null }>
+    Record<string, { full_name: string | null; phone: string | null; booking_id_verification_status?: string | null; booking_id_verification_photo_path?: string | null }>
   >({});
   const [clientIdVerificationUrls, setClientIdVerificationUrls] = useState<Record<string, string>>({});
   /** Start true so the dock waits for the first pro-profile fetch (avoids icon flash). */
@@ -675,6 +678,10 @@ export default function Dashboard() {
     workspace_address?: string | null;
     workspace_latitude?: number | null;
     workspace_longitude?: number | null;
+    cancel_policy?: string | null;
+    cancel_fee_type?: string | null;
+    cancel_fee_percent?: number | null;
+    cancel_fee_cents?: number | null;
   };
   const [proServices, setProServices] = useState<ProServiceRow[]>([]);
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
@@ -693,6 +700,12 @@ export default function Dashboard() {
   const [serviceFormWorkspaceAddress, setServiceFormWorkspaceAddress] = useState("");
   const [serviceFormWorkspaceLat, setServiceFormWorkspaceLat] = useState<number | null>(null);
   const [serviceFormWorkspaceLng, setServiceFormWorkspaceLng] = useState<number | null>(null);
+  /** free = no fee; late_fee = fee if <24h; no_cancel = full charge */
+  const [serviceFormCancelPolicy, setServiceFormCancelPolicy] = useState<"free" | "late_fee" | "no_cancel">("late_fee");
+  const [serviceFormCancelFeeType, setServiceFormCancelFeeType] = useState<"percent" | "fixed">("fixed");
+  const [serviceFormCancelFeePercent, setServiceFormCancelFeePercent] = useState<25 | 50 | 75>(50);
+  /** Dollars (not cents) for the fixed late-cancel fee input. */
+  const [serviceFormCancelFeeDollars, setServiceFormCancelFeeDollars] = useState("");
   const [savingService, setSavingService] = useState(false);
   const [savedPros, setSavedPros] = useState<{ id: string; business_name: string; photoUrl: string | null }[]>([]);
   const [savedProsLoading, setSavedProsLoading] = useState(false);
@@ -1788,6 +1801,10 @@ export default function Dashboard() {
     setServiceFormWorkspaceAddress("");
     setServiceFormWorkspaceLat(null);
     setServiceFormWorkspaceLng(null);
+    setServiceFormCancelPolicy("late_fee");
+    setServiceFormCancelFeeType("fixed");
+    setServiceFormCancelFeePercent(50);
+    setServiceFormCancelFeeDollars("");
     setServiceDialogOpen(true);
   };
 
@@ -1813,12 +1830,19 @@ export default function Dashboard() {
     setServiceFormWorkspaceAddress(row.workspace_address?.trim() ?? "");
     setServiceFormWorkspaceLat(row.workspace_latitude ?? null);
     setServiceFormWorkspaceLng(row.workspace_longitude ?? null);
+    const cp = (row.cancel_policy ?? "late_fee").toLowerCase();
+    setServiceFormCancelPolicy(cp === "free" || cp === "no_cancel" || cp === "late_fee" ? cp : "late_fee");
+    setServiceFormCancelFeeType((row.cancel_fee_type ?? "").toLowerCase() === "percent" ? "percent" : "fixed");
+    const cfp = row.cancel_fee_percent;
+    setServiceFormCancelFeePercent(cfp === 25 || cfp === 50 || cfp === 75 ? cfp : 50);
+    const cents = typeof row.cancel_fee_cents === "number" && Number.isFinite(row.cancel_fee_cents) ? row.cancel_fee_cents : 0;
+    setServiceFormCancelFeeDollars(cents > 0 ? String(Math.round(cents / 100)) : "");
     setServiceDialogOpen(true);
   };
 
   const loadProServicesForDashboard = useCallback(async (proId: string) => {
     const full =
-      "category_slug, service_slug, description, display_name, custom_price_min, custom_price_max, duration_minutes, auto_reply_message, renewal_interval_months, location_mode, workspace_address, workspace_latitude, workspace_longitude";
+      "category_slug, service_slug, description, display_name, custom_price_min, custom_price_max, duration_minutes, auto_reply_message, renewal_interval_months, location_mode, workspace_address, workspace_latitude, workspace_longitude, cancel_policy, cancel_fee_type, cancel_fee_percent, cancel_fee_cents";
     const { data: d0, error: e0 } = await supabase.from("pro_services").select(full).eq("pro_profile_id", proId);
     if (!e0 && d0) {
       setProServices(d0 as ProServiceRow[]);
@@ -1932,6 +1956,41 @@ export default function Dashboard() {
               workspace_latitude: null,
               workspace_longitude: null,
             };
+      let cancelFeeCents = 0;
+      if (serviceFormCancelPolicy === "late_fee" && serviceFormCancelFeeType === "fixed") {
+        const dollars = parseInt(serviceFormCancelFeeDollars.trim() || "0", 10);
+        if (Number.isNaN(dollars) || dollars < 1) {
+          toast({
+            title: t.auth?.toastError ?? "Error",
+            description:
+              locale === "fr"
+                ? "Indiquez un montant de frais d’annulation (ex. 20 $)."
+                : "Enter a cancellation fee amount (e.g. 20).",
+            variant: "destructive",
+          });
+          setSavingService(false);
+          return;
+        }
+        cancelFeeCents = dollars * 100;
+        if (price != null && !Number.isNaN(price) && cancelFeeCents > price * 100) {
+          toast({
+            title: t.auth?.toastError ?? "Error",
+            description:
+              locale === "fr"
+                ? "Les frais d’annulation ne peuvent pas dépasser le prix du service."
+                : "Cancellation fee cannot exceed the service price.",
+            variant: "destructive",
+          });
+          setSavingService(false);
+          return;
+        }
+      }
+      const cancelPayload = {
+        cancel_policy: serviceFormCancelPolicy,
+        cancel_fee_type: serviceFormCancelPolicy === "late_fee" ? serviceFormCancelFeeType : "percent",
+        cancel_fee_percent: serviceFormCancelFeePercent,
+        cancel_fee_cents: serviceFormCancelPolicy === "late_fee" && serviceFormCancelFeeType === "fixed" ? cancelFeeCents : 0,
+      };
       if (serviceDialogEditing) {
         const baseUpdate: Record<string, unknown> = {
           description: about,
@@ -1939,6 +1998,7 @@ export default function Dashboard() {
           custom_price_max: price,
           display_name: displayName,
           duration_minutes: durationMins,
+          ...cancelPayload,
         };
         if (growth) {
           baseUpdate.auto_reply_message = autoReply;
@@ -1964,6 +2024,7 @@ export default function Dashboard() {
           custom_price_min: price,
           custom_price_max: price,
           duration_minutes: durationMins,
+          ...cancelPayload,
         };
         if (growth) {
           baseInsert.auto_reply_message = autoReply;
@@ -2385,7 +2446,7 @@ export default function Dashboard() {
       const { data: proData, error: proError } = await supabase
         .from("pro_profiles")
         .select(
-          "id, business_name, availability, is_verified, price_min, price_max, subscription_tier, page_template, page_primary_color, page_secondary_color, page_accent_color, page_background_color, page_header_text, unavailable_dates, available_date_overrides, primary_category_slug, referral_invite_panel_enabled, square_location_id, service_at_workspace_only, offers_workspace, offers_travel, business_address, latitude, longitude, service_radius_km"
+          "id, business_name, availability, is_verified, price_min, price_max, subscription_tier, page_template, page_primary_color, page_secondary_color, page_accent_color, page_background_color, page_header_text, unavailable_dates, available_date_overrides, primary_category_slug, referral_invite_panel_enabled, square_location_id, service_at_workspace_only, offers_workspace, offers_travel, business_address, latitude, longitude, service_radius_km, booking_cancel_policy, booking_cancel_fee_percent"
         )
         .eq("user_id", user.id)
         .single();
@@ -2436,6 +2497,14 @@ export default function Dashboard() {
             ? pro.square_location_id.trim()
             : null,
       });
+      {
+        const rawPolicy = String((pro as { booking_cancel_policy?: string }).booking_cancel_policy ?? "late_fee");
+        setBookingCancelPolicy(
+          rawPolicy === "free" || rawPolicy === "no_cancel" || rawPolicy === "late_fee" ? rawPolicy : "late_fee",
+        );
+        const rawFee = Number((pro as { booking_cancel_fee_percent?: number }).booking_cancel_fee_percent ?? 50);
+        setBookingCancelFeePercent(rawFee === 25 || rawFee === 50 || rawFee === 75 ? rawFee : 50);
+      }
       setCachedProVerified(pro.is_verified === true);
       writeDashboardProVerifiedCache(user.id, pro.is_verified === true);
       setProWeeklySchedule(parseAvailabilityToWeekly(pro.availability));
@@ -2519,38 +2588,43 @@ export default function Dashboard() {
       const clientIds = [...new Set(list.map((b) => b.client_id).filter(Boolean))];
       if (clientIds.length > 0) {
         const [profilesRes, reviewsRes] = await Promise.all([
-          supabase.from("profiles").select("user_id, full_name, phone, booking_id_verification_photo_path").in("user_id", clientIds),
+          supabase
+            .from("profiles")
+            .select("user_id, full_name, phone, booking_id_verification_status, booking_id_verification_photo_path")
+            .in("user_id", clientIds),
           supabase.from("client_reviews").select("client_id").eq("pro_profile_id", pro.id),
         ]);
         const map: Record<
           string,
-          { full_name: string | null; phone: string | null; booking_id_verification_photo_path?: string | null }
+          {
+            full_name: string | null;
+            phone: string | null;
+            booking_id_verification_status?: string | null;
+            booking_id_verification_photo_path?: string | null;
+          }
         > = {};
         (profilesRes.data || []).forEach(
           (p: {
             user_id: string;
             full_name: string | null;
             phone: string | null;
+            booking_id_verification_status?: string | null;
             booking_id_verification_photo_path?: string | null;
           }) => {
             map[p.user_id] = {
               full_name: p.full_name ?? null,
               phone: p.phone ?? null,
-              booking_id_verification_photo_path: p.booking_id_verification_photo_path ?? null,
+              booking_id_verification_status:
+                p.booking_id_verification_status ??
+                (p.booking_id_verification_photo_path ? "verified" : "none"),
+              // Do not expose path to pro UI — status only (LR-007).
+              booking_id_verification_photo_path: null,
             };
           },
         );
         setClientProfiles(map);
-        const idUrls: Record<string, string> = {};
-        await Promise.all(
-          Object.entries(map).map(async ([uid, prof]) => {
-            const path = prof.booking_id_verification_photo_path?.trim();
-            if (!path) return;
-            const url = await resolveStorageDisplayUrl(CLIENT_BOOKING_ID_VERIFICATION_BUCKET, path);
-            if (url) idUrls[uid] = url;
-          }),
-        );
-        setClientIdVerificationUrls(idUrls);
+        // Pros must not receive ID image URLs.
+        setClientIdVerificationUrls({});
         setReviewedClientIds(new Set(reviewsRes.error ? [] : (reviewsRes.data || []).map((r: { client_id: string }) => r.client_id)));
       } else {
         setClientProfiles({});
@@ -4371,7 +4445,7 @@ export default function Dashboard() {
           )}
 
           <Dialog open={serviceDialogOpen} onOpenChange={setServiceDialogOpen}>
-            <DialogContent className="max-w-md bg-neutral-900 border-neutral-700 text-white [&_label]:text-white [&_input]:bg-neutral-800 [&_input]:border-neutral-600 [&_textarea]:bg-neutral-800 [&_textarea]:border-neutral-600 [&_select]:bg-neutral-800 [&_select]:border-neutral-600 [&_select]:text-white">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-neutral-900 border-neutral-700 text-white [&_label]:text-white [&_input]:bg-neutral-800 [&_input]:border-neutral-600 [&_textarea]:bg-neutral-800 [&_textarea]:border-neutral-600 [&_select]:bg-neutral-800 [&_select]:border-neutral-600 [&_select]:text-white">
               <DialogHeader>
                 <DialogTitle>{serviceDialogEditing ? (t.dashboard.editService ?? "Edit service") : (t.dashboard.addService ?? "Add service")}</DialogTitle>
               </DialogHeader>
@@ -4441,6 +4515,77 @@ export default function Dashboard() {
                     }}
                     className={`mt-1 text-white placeholder:text-white/60 ${INPUT_NO_NUMBER_SPIN}`}
                   />
+                </div>
+                <div className="space-y-3 rounded-md border border-neutral-600 bg-neutral-800/50 p-3">
+                  <div>
+                    <Label>{locale === "fr" ? "Frais d’annulation ?" : "Cancellation fee?"}</Label>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      {locale === "fr"
+                        ? "Si oui, le client voit cette règle avant de réserver. Ex. massage 60 $ + frais 20 $ si annulation moins de 24 h → remboursement d’environ 40 $ (si déjà payé via Square)."
+                        : "If yes, clients see this before booking. E.g. $60 massage + $20 fee if cancel under 24h → about $40 refunded (if already paid via Square)."}
+                    </p>
+                    <select
+                      value={serviceFormCancelPolicy}
+                      onChange={(e) => setServiceFormCancelPolicy(e.target.value as "free" | "late_fee" | "no_cancel")}
+                      className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-white mt-1"
+                    >
+                      <option value="free">{locale === "fr" ? "Non — annulation gratuite" : "No — free cancellation"}</option>
+                      <option value="late_fee">
+                        {locale === "fr" ? "Oui — frais si annulation moins de 24 h" : "Yes — fee if cancel less than 24h before"}
+                      </option>
+                      <option value="no_cancel">
+                        {locale === "fr" ? "Aucune annulation (frais complets)" : "No cancellation (full charge)"}
+                      </option>
+                    </select>
+                  </div>
+                  {serviceFormCancelPolicy === "late_fee" ? (
+                    <>
+                      <div>
+                        <Label>{locale === "fr" ? "Type de frais" : "Fee type"}</Label>
+                        <select
+                          value={serviceFormCancelFeeType}
+                          onChange={(e) => setServiceFormCancelFeeType(e.target.value as "percent" | "fixed")}
+                          className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-white mt-1"
+                        >
+                          <option value="fixed">{locale === "fr" ? "Montant fixe ($)" : "Fixed amount ($)"}</option>
+                          <option value="percent">{locale === "fr" ? "Pourcentage du prix" : "Percent of price"}</option>
+                        </select>
+                      </div>
+                      {serviceFormCancelFeeType === "fixed" ? (
+                        <div>
+                          <Label>{locale === "fr" ? "Montant des frais ($)" : "Fee amount ($)"}</Label>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="20"
+                            value={serviceFormCancelFeeDollars}
+                            onChange={(e) => setServiceFormCancelFeeDollars(e.target.value.replace(/[^0-9]/g, ""))}
+                            className={`mt-1 text-white placeholder:text-white/60 ${INPUT_NO_NUMBER_SPIN}`}
+                          />
+                          {serviceFormPriceMin.trim() && serviceFormCancelFeeDollars.trim() ? (
+                            <p className="text-xs text-neutral-400 mt-1">
+                              {locale === "fr"
+                                ? `Si le client a payé ${serviceFormPriceMin} $ et annule moins de 24 h : conservez ${serviceFormCancelFeeDollars} $, remboursez environ ${Math.max(0, parseInt(serviceFormPriceMin, 10) - parseInt(serviceFormCancelFeeDollars || "0", 10))} $.`
+                                : `If client paid $${serviceFormPriceMin} and cancels under 24h: keep $${serviceFormCancelFeeDollars}, refund about $${Math.max(0, parseInt(serviceFormPriceMin, 10) - parseInt(serviceFormCancelFeeDollars || "0", 10))}.`}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div>
+                          <Label>{locale === "fr" ? "Pourcentage" : "Percent"}</Label>
+                          <select
+                            value={serviceFormCancelFeePercent}
+                            onChange={(e) => setServiceFormCancelFeePercent(Number(e.target.value) as 25 | 50 | 75)}
+                            className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-white mt-1"
+                          >
+                            <option value={25}>25%</option>
+                            <option value={50}>50%</option>
+                            <option value={75}>75%</option>
+                          </select>
+                        </div>
+                      )}
+                    </>
+                  ) : null}
                 </div>
                 <div>
                   <Label>{t.dashboard.durationMinutes ?? "Duration (minutes)"}</Label>
@@ -4885,6 +5030,150 @@ export default function Dashboard() {
                 {t.dashboard.saveAccount}
               </Button>
             </form>
+            <div className="rounded-xl border border-destructive/30 bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-3">
+              <h3 className="font-heading font-semibold text-foreground">
+                {locale === "fr" ? "Demande de suppression de compte" : "Account deletion request"}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {locale === "fr"
+                  ? "Soumettez une demande. Certains dossiers (facturation, audit, sécurité) peuvent être conservés lorsque requis. LEGAL_REVIEW_REQUIRED pour les délais de rétention."
+                  : "Submit a request. Some records (billing, audit, security) may be retained where required. LEGAL_REVIEW_REQUIRED for retention periods."}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-destructive/50 text-destructive"
+                onClick={() => {
+                  void (async () => {
+                    if (!user?.id) return;
+                    const { error } = await supabase.from("account_deletion_requests" as "profiles").insert({
+                      user_id: user.id,
+                      status: "pending",
+                      reason: "user_dashboard_request",
+                      retain_financial: true,
+                      retain_audit: true,
+                    } as never);
+                    if (error) {
+                      toast({
+                        title: t.auth.toastError,
+                        description: error.message,
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    toast({
+                      title: locale === "fr" ? "Demande envoyée" : "Request submitted",
+                      description:
+                        locale === "fr"
+                          ? "Nous traiterons votre demande. Vous pouvez aussi écrire à support@premiereservices.ca."
+                          : "We will process your request. You can also email support@premiereservices.ca.",
+                    });
+                  })();
+                }}
+              >
+                {locale === "fr" ? "Demander la suppression" : "Request deletion"}
+              </Button>
+            </div>
+            {proProfile ? (
+              <div className="rounded-xl border bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-4">
+                <h3 className="font-heading font-semibold text-foreground">
+                  {locale === "fr" ? "Politique d’annulation (clients)" : "Cancellation policy (clients)"}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {locale === "fr"
+                    ? "Par défaut pour vos réservations. Vous pouvez aussi fixer des frais par service dans Mes services (Ajouter / Modifier un service)."
+                    : "Default for your bookings. You can also set a fee per service in My Services (Add / Edit service)."}
+                </p>
+                <div className="space-y-2">
+                  <Label>{locale === "fr" ? "Option" : "Option"}</Label>
+                  <select
+                    value={bookingCancelPolicy}
+                    onChange={(e) => setBookingCancelPolicy(e.target.value as "free" | "late_fee" | "no_cancel")}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="free">
+                      {locale === "fr" ? "1 — Annulation gratuite" : "1 — Free cancellation"}
+                    </option>
+                    <option value="late_fee">
+                      {locale === "fr"
+                        ? "2 — Frais si annulation moins de 24 h avant"
+                        : "2 — Fee if cancelled less than 24 hours before"}
+                    </option>
+                    <option value="no_cancel">
+                      {locale === "fr"
+                        ? "3 — Aucune annulation (frais complets)"
+                        : "3 — No cancellation (full charge)"}
+                    </option>
+                  </select>
+                </div>
+                {bookingCancelPolicy === "late_fee" ? (
+                  <div className="space-y-2">
+                    <Label>{locale === "fr" ? "Pourcentage de frais (< 24 h)" : "Fee percent (< 24h)"}</Label>
+                    <select
+                      value={bookingCancelFeePercent}
+                      onChange={(e) => setBookingCancelFeePercent(Number(e.target.value) as 25 | 50 | 75)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value={25}>25%</option>
+                      <option value={50}>50%</option>
+                      <option value={75}>75%</option>
+                    </select>
+                  </div>
+                ) : null}
+                <p className="text-xs text-muted-foreground rounded-md border border-border/60 bg-muted/30 p-3">
+                  {locale === "fr"
+                    ? bookingCancelPolicy === "free"
+                      ? "Aperçu client : annulation gratuite."
+                      : bookingCancelPolicy === "no_cancel"
+                        ? "Aperçu client : une fois confirmée, la réservation ne peut pas être annulée sans être facturée à 100 %."
+                        : `Aperçu client : annulation à moins de 24 h = frais de ${bookingCancelFeePercent} % du prix du service.`
+                    : bookingCancelPolicy === "free"
+                      ? "Client preview: free cancellation."
+                      : bookingCancelPolicy === "no_cancel"
+                        ? "Client preview: once confirmed, the booking cannot be cancelled without a full (100%) charge."
+                        : `Client preview: cancel less than 24h before = ${bookingCancelFeePercent}% of the service price.`}
+                </p>
+                <Button
+                  type="button"
+                  disabled={bookingCancelPolicySaving || !proProfile.id}
+                  className="gap-2"
+                  onClick={() => {
+                    void (async () => {
+                      setBookingCancelPolicySaving(true);
+                      try {
+                        const { error } = await supabase
+                          .from("pro_profiles")
+                          .update({
+                            booking_cancel_policy: bookingCancelPolicy,
+                            booking_cancel_fee_percent: bookingCancelFeePercent,
+                            updated_at: new Date().toISOString(),
+                          })
+                          .eq("id", proProfile.id);
+                        if (error) throw error;
+                        toast({
+                          title: locale === "fr" ? "Enregistré" : "Saved",
+                          description:
+                            locale === "fr"
+                              ? "Votre politique d’annulation est visible aux clients à la réservation."
+                              : "Your cancellation policy will show to clients when they book.",
+                        });
+                      } catch (err) {
+                        toast({
+                          title: t.auth.toastError,
+                          description: errorMessage(err),
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setBookingCancelPolicySaving(false);
+                      }
+                    })();
+                  }}
+                >
+                  {bookingCancelPolicySaving ? <Loader2 size={16} className="animate-spin" /> : null}
+                  {locale === "fr" ? "Enregistrer la politique" : "Save policy"}
+                </Button>
+              </div>
+            ) : null}
             <div className="rounded-xl border bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-4">
               <button
                 type="button"
@@ -6685,6 +6974,11 @@ export default function Dashboard() {
         serviceLocationMode={proProfile ? profileDefaultMode(proProfile) : "travel"}
         clientName={proBookingDetail ? clientProfiles[proBookingDetail.client_id]?.full_name : null}
         clientPhone={proBookingDetail ? clientProfiles[proBookingDetail.client_id]?.phone : null}
+        clientIdentityVerified={
+          proBookingDetail
+            ? (clientProfiles[proBookingDetail.client_id]?.booking_id_verification_status ?? "") === "verified"
+            : false
+        }
         canSeePhone={proBookingDetail ? proMaySeeClientContactInDetail(proBookingDetail) : false}
         statusLabel={proBookingDetail ? proBookingStatusLabel(proBookingDetail.status) : undefined}
       />

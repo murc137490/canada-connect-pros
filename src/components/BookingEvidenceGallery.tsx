@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { resolveStorageDisplayUrl } from "@/lib/resolveStorageUrl";
+import { RETENTION_CONFIG } from "@/config/legalConfig";
 
 const EVIDENCE_BUCKET = "booking-evidence";
 
@@ -17,7 +19,7 @@ export default function BookingEvidenceGallery({ bookingId }: { bookingId: strin
   const { t } = useLanguage();
   const d = t.dashboard;
   const [loading, setLoading] = useState(false);
-  const [fileNames, setFileNames] = useState<string[]>([]);
+  const [items, setItems] = useState<{ name: string; url: string }[]>([]);
 
   const prefix = useMemo(() => bookingId, [bookingId]);
 
@@ -26,13 +28,21 @@ export default function BookingEvidenceGallery({ bookingId }: { bookingId: strin
     (async () => {
       try {
         setLoading(true);
-        // We store evidence under `${bookingId}/...` so we can list by prefix.
         const { data } = await supabase.storage.from(EVIDENCE_BUCKET).list(prefix);
-        const names = (data ?? []).map((d) => d.name).filter(Boolean);
-        if (!cancelled) setFileNames(names.slice(0, 5));
-      } catch (e) {
-        // Evidence is optional; don't block the claim flow if listing fails.
-        if (!cancelled) setFileNames([]);
+        const names = (data ?? []).map((x) => x.name).filter(Boolean).slice(0, 5);
+        const resolved = await Promise.all(
+          names.map(async (name) => {
+            const url = await resolveStorageDisplayUrl(
+              EVIDENCE_BUCKET,
+              `${prefix}/${name}`,
+              RETENTION_CONFIG.signedUrlTtlSeconds,
+            );
+            return url ? { name, url } : null;
+          }),
+        );
+        if (!cancelled) setItems(resolved.filter(Boolean) as { name: string; url: string }[]);
+      } catch {
+        if (!cancelled) setItems([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -51,36 +61,27 @@ export default function BookingEvidenceGallery({ bookingId }: { bookingId: strin
     );
   }
 
-  if (fileNames.length === 0) {
+  if (items.length === 0) {
     return <p className="text-sm text-gray-700 dark:text-gray-300">{d.evidenceGalleryEmpty}</p>;
   }
 
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
-        {fileNames.map((name) => {
-          const fullPath = `${prefix}/${name}`;
-          const urlData = supabase.storage.from(EVIDENCE_BUCKET).getPublicUrl(fullPath);
-          const url = urlData.data.publicUrl;
-          return (
-            <div key={name} className="rounded-md overflow-hidden border bg-background">
-              {isImageFile(name) ? (
-                // Images: show thumbnail.
-                // Note: evidence bucket should allow public read for these publicUrl links to work.
-                <img src={url} alt={d.evidenceGalleryProofAlt} className="w-full h-28 object-cover" />
-              ) : isVideoFile(name) ? (
-                // Videos: show playable preview.
-                <video src={url} className="w-full h-28 object-cover" controls preload="metadata" />
-              ) : (
-                <a href={url} target="_blank" rel="noreferrer" className="block p-2 text-xs text-primary hover:underline">
-                  {d.evidenceGalleryOpenFile}
-                </a>
-              )}
-            </div>
-          );
-        })}
+        {items.map(({ name, url }) => (
+          <div key={name} className="rounded-md overflow-hidden border bg-background">
+            {isImageFile(name) ? (
+              <img src={url} alt={d.evidenceGalleryProofAlt} className="w-full h-28 object-cover" />
+            ) : isVideoFile(name) ? (
+              <video src={url} className="w-full h-28 object-cover" controls preload="metadata" />
+            ) : (
+              <a href={url} target="_blank" rel="noreferrer" className="block p-2 text-xs text-primary hover:underline">
+                {d.evidenceGalleryOpenFile}
+              </a>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
-

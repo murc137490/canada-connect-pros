@@ -50,7 +50,15 @@ import {
   hasFeaturedPublicProfileLook,
   hasBookingAssistantAI,
   hasGrowthServiceExtras,
+  isPaidSubscriptionPlanId,
 } from "@/lib/proTierFeatures";
+import {
+  formatResolvedCancelPolicyText,
+  normalizeBookingCancelFeePercent,
+  normalizeBookingCancelPolicy,
+  resolveServiceCancelPolicy,
+  type ResolvedCancelPolicy,
+} from "@/lib/bookingCancelPolicy";
 import BookingServiceAssistantPanel from "@/components/BookingServiceAssistantPanel";
 import { labelProService, catalogEnNameForProService } from "@/lib/proServiceLabel";
 import { formatDurationLabel } from "@/lib/durationMinutes";
@@ -123,6 +131,8 @@ interface ProData {
   gst_registration_number?: string | null;
   qst_registration_number?: string | null;
   square_location_id?: string | null;
+  booking_cancel_policy?: string | null;
+  booking_cancel_fee_percent?: number | null;
 }
 
 export default function ProProfilePage() {
@@ -171,6 +181,10 @@ export default function ProProfilePage() {
       workspace_address?: string | null;
       workspace_latitude?: number | null;
       workspace_longitude?: number | null;
+      cancel_policy?: string | null;
+      cancel_fee_type?: string | null;
+      cancel_fee_percent?: number | null;
+      cancel_fee_cents?: number | null;
     }[]
   >([]);
   const [browsePostalTick, setBrowsePostalTick] = useState(0);
@@ -187,6 +201,7 @@ export default function ProProfilePage() {
   const [loading, setLoading] = useState(true);
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [bookingTermsAccepted, setBookingTermsAccepted] = useState(false);
+  const [bookingCancelPolicyAccepted, setBookingCancelPolicyAccepted] = useState(false);
   const [bookingStep, setBookingStep] = useState<1 | 2 | 3 | 4>(1);
   const [bookingPhotoWithIdFile, setBookingPhotoWithIdFile] = useState<File | null>(null);
   /** Storage path on profiles when user already completed verification on a past booking. */
@@ -710,12 +725,16 @@ export default function ProProfilePage() {
         duration_minutes?: number | null;
         auto_reply_message?: string | null;
         renewal_interval_months?: number | null;
+        cancel_policy?: string | null;
+        cancel_fee_type?: string | null;
+        cancel_fee_percent?: number | null;
+        cancel_fee_cents?: number | null;
       }[] = [];
       const sFull = await supabase
         .from("pro_services")
-        .select("service_slug, category_slug, description, display_name, custom_price_min, custom_price_max, duration_minutes, auto_reply_message, renewal_interval_months, location_mode, workspace_address, workspace_latitude, workspace_longitude")
+        .select("service_slug, category_slug, description, display_name, custom_price_min, custom_price_max, duration_minutes, auto_reply_message, renewal_interval_months, location_mode, workspace_address, workspace_latitude, workspace_longitude, cancel_policy, cancel_fee_type, cancel_fee_percent, cancel_fee_cents")
         .eq("pro_profile_id", proId);
-      if (sFull.error && /auto_reply_message|renewal_interval_months|schema cache/i.test(`${sFull.error.message || ""}`)) {
+      if (sFull.error && /auto_reply_message|renewal_interval_months|cancel_policy|cancel_fee|schema cache/i.test(`${sFull.error.message || ""}`)) {
         const fb = await supabase
           .from("pro_services")
           .select("service_slug, category_slug, description, display_name, custom_price_min, custom_price_max, duration_minutes")
@@ -888,6 +907,7 @@ export default function ProProfilePage() {
   const firstService = services[0];
   const category = firstService ? serviceCategories.find((c) => c.slug === firstService.category_slug) : null;
   const proFeatureTier = effectiveProTier(pro.subscription_tier, proBillingPlanId);
+  const canAdvertiseAndBook = isPaidSubscriptionPlanId(proFeatureTier);
   const featuredLook = hasFeaturedPublicProfileLook(proFeatureTier);
   const pagePrimary = featuredLook ? pro.page_primary_color || "#1e3a5f" : "hsl(var(--primary))";
   const pageSecondary = featuredLook ? pro.page_secondary_color || "#0d9488" : "hsl(var(--secondary))";
@@ -1366,6 +1386,12 @@ export default function ProProfilePage() {
                       ? "Les comptes administrateur ne peuvent pas réserver de services. Utilisez le tableau de bord Admin pour gérer les comptes."
                       : "Admin accounts cannot book services. Use the Admin dashboard to manage accounts."}
                   </p>
+                ) : !canAdvertiseAndBook ? (
+                  <p className="mb-3 rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-sm text-muted-foreground">
+                    {locale === "fr"
+                      ? "Ce professionnel n’est pas encore disponible à la réservation (forfait payant requis). Les profils sans forfait actif n’apparaissent pas dans la recherche."
+                      : "This professional is not available for booking yet (an active paid plan is required). Profiles without a paid plan do not appear in search."}
+                  </p>
                 ) : featuredLook ? (
                 <StarBorder as="div" color="rgba(0,0,0,0.08)" speed="4s" thickness={2} className="w-full mb-3" innerClassName="!bg-transparent !border-0 !p-0">
                   <Button
@@ -1512,6 +1538,7 @@ export default function ProProfilePage() {
                 setSelectedBookingService(prev => prev ?? services[0] ?? null);
               } else {
                 setBookingTermsAccepted(false);
+                setBookingCancelPolicyAccepted(false);
                 setBookingStep(1);
                 setBookingPhotoWithIdFile(null);
                 setSelectedBookingDate(null);
@@ -1787,6 +1814,56 @@ export default function ProProfilePage() {
                     ) : null}
                     <p className="text-sm text-white/80 mt-4">{t.terms.bookingProAcceptPending ?? "The professional must accept your request before the booking is confirmed."}</p>
                     <p className="text-xs text-white/65 mt-1">{t.terms.bookingConfirmMessage}</p>
+                    {(() => {
+                      const priceCents = Math.round(
+                        Number(
+                          selectedBookingService?.custom_price_min ??
+                            selectedBookingService?.custom_price_max ??
+                            pro?.price_min ??
+                            0,
+                        ) * 100,
+                      );
+                      const fromService = selectedBookingService
+                        ? resolveServiceCancelPolicy(selectedBookingService)
+                        : null;
+                      const resolved: ResolvedCancelPolicy = fromService ?? {
+                        policy: normalizeBookingCancelPolicy(pro?.booking_cancel_policy),
+                        feeType: "percent",
+                        feePercent: normalizeBookingCancelFeePercent(pro?.booking_cancel_fee_percent),
+                        feeCents: 0,
+                      };
+                      const copy = formatResolvedCancelPolicyText(
+                        resolved,
+                        locale === "fr" ? "fr" : "en",
+                        priceCents > 0 ? priceCents : null,
+                      );
+                      return (
+                        <div
+                          className="mt-4 rounded-lg border-2 border-amber-500/70 bg-amber-500/15 p-4 space-y-3"
+                          role="region"
+                          aria-label={copy.title}
+                        >
+                          <p className="text-sm font-bold text-amber-950 dark:text-amber-100 uppercase tracking-wide">
+                            {locale === "fr" ? "Politique d’annulation (obligatoire)" : "Cancellation policy (required)"}
+                          </p>
+                          <p className="text-base font-semibold text-foreground">{copy.title}</p>
+                          <p className="text-sm text-foreground/90 leading-relaxed">{copy.body}</p>
+                          <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="mt-1 h-4 w-4 accent-amber-600"
+                              checked={bookingCancelPolicyAccepted}
+                              onChange={(e) => setBookingCancelPolicyAccepted(e.target.checked)}
+                            />
+                            <span>
+                              {locale === "fr"
+                                ? "J’ai lu et j’accepte cette politique d’annulation pour cette réservation."
+                                : "I have read and accept this cancellation policy for this booking."}
+                            </span>
+                          </label>
+                        </div>
+                      );
+                    })()}
                     <TermsAcceptance
                       variant="booking"
                       accepted={bookingTermsAccepted}
@@ -1794,6 +1871,17 @@ export default function ProProfilePage() {
                       inDialog
                       submitLabel={t.terms.continueToVerification ?? "Continue"}
                       onSubmit={() => {
+                        if (!bookingCancelPolicyAccepted) {
+                          toast({
+                            title: t.auth.toastError,
+                            description:
+                              locale === "fr"
+                                ? "Veuillez cocher que vous acceptez la politique d’annulation."
+                                : "Please confirm you accept the cancellation policy.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
                         if (travelToClientBlocked) {
                           toast({
                             title: t.auth.toastError,
@@ -2119,6 +2207,14 @@ export default function ProProfilePage() {
                             clientMemberNumber: memberIds.client,
                             proMemberNumber: memberIds.pro,
                           });
+                          const cancelResolved = svc
+                            ? resolveServiceCancelPolicy(svc)
+                            : {
+                                policy: normalizeBookingCancelPolicy(pro.booking_cancel_policy),
+                                feeType: "percent" as const,
+                                feePercent: normalizeBookingCancelFeePercent(pro.booking_cancel_fee_percent),
+                                feeCents: 0,
+                              };
                           const payload: Record<string, unknown> = {
                             pro_profile_id: pro.id,
                             client_id: user.id,
@@ -2127,6 +2223,12 @@ export default function ProProfilePage() {
                             client_unread: false,
                             pro_unread: true,
                             invoice_snapshot: invoice,
+                            cancel_policy_snapshot: cancelResolved.policy,
+                            cancel_fee_percent_snapshot: cancelResolved.feePercent,
+                            cancel_fee_type_snapshot: cancelResolved.feeType,
+                            cancel_fee_cents_snapshot:
+                              cancelResolved.feeType === "fixed" ? cancelResolved.feeCents : null,
+                            cancel_policy_acknowledged_at: new Date().toISOString(),
                           };
                           if (selectedBookingDate) payload.preferred_date = selectedBookingDate;
                           if (selectedBookingTime) payload.preferred_time = selectedBookingTime;
@@ -2169,6 +2271,20 @@ export default function ProProfilePage() {
                               } else {
                                 message = errorText(error);
                               }
+                            }
+                            if (error && /cancel_policy|cancel_fee_percent|cancel_fee_type|cancel_fee_cents|cancel_policy_acknowledged/i.test(errorText(error))) {
+                              const {
+                                cancel_policy_snapshot: _a,
+                                cancel_fee_percent_snapshot: _b,
+                                cancel_fee_type_snapshot: _d,
+                                cancel_fee_cents_snapshot: _e,
+                                cancel_policy_acknowledged_at: _c,
+                                ...withoutCancel
+                              } = payload;
+                              const retry = await insertBooking(withoutCancel);
+                              data = retry.data;
+                              error = retry.error;
+                              if (error) message = errorText(error);
                             }
                             if (error) {
                               const missingScheduleColumn =

@@ -29,6 +29,8 @@ import AdminJobRequests from "./pages/AdminJobRequests";
 import AdminTrialTokens from "./pages/AdminTrialTokens";
 import MakeRequest from "./pages/MakeRequest";
 import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import CookiePolicy from "./pages/CookiePolicy";
 import PhonePreview from "./pages/PhonePreview";
 import ResetPassword from "./pages/ResetPassword";
 import ProOnboardingStart from "./pages/ProOnboardingStart";
@@ -36,6 +38,7 @@ import ProOnboardingTier from "./pages/ProOnboardingTier";
 import AuthHashErrorToast from "@/components/AuthHashErrorToast";
 import MonitorAdminGuard from "@/components/MonitorAdminGuard";
 import AdminAcceptPros from "./pages/AdminAcceptPros";
+import PrivateNoIndex from "@/components/PrivateNoIndex";
 
 const queryClient = new QueryClient();
 
@@ -81,18 +84,23 @@ const App = () => (
               <Route path="/create-pro-account" element={<MonitorAdminGuard><CreateProAccount /></MonitorAdminGuard>} />
               <Route path="/pro-onboarding/start" element={<MonitorAdminGuard><ProOnboardingStart /></MonitorAdminGuard>} />
               <Route path="/pro-onboarding/tier" element={<MonitorAdminGuard><ProOnboardingTier /></MonitorAdminGuard>} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/admin/accept-pros" element={<AdminAcceptPros />} />
-              <Route path="/admin/issue-reports" element={<AdminIssueReports />} />
-              <Route path="/admin/job-requests" element={<AdminJobRequests />} />
-              <Route path="/admin/trial-tokens" element={<AdminTrialTokens />} />
+              <Route path="/dashboard" element={<><PrivateNoIndex /><Dashboard /></>} />
+              <Route path="/admin/accept-pros" element={<><PrivateNoIndex /><AdminAcceptPros /></>} />
+              <Route path="/admin/issue-reports" element={<><PrivateNoIndex /><AdminIssueReports /></>} />
+              <Route path="/admin/job-requests" element={<><PrivateNoIndex /><AdminJobRequests /></>} />
+              <Route path="/admin/trial-tokens" element={<><PrivateNoIndex /><AdminTrialTokens /></>} />
               <Route path="/make-request" element={<MonitorAdminGuard><MakeRequest /></MonitorAdminGuard>} />
               <Route path="/admin" element={<Navigate to="/dashboard?tab=admin" replace />} />
               <Route path="/support" element={<Support />} />
               <Route path="/terms" element={<TermsOfService />} />
-              <Route path="/phone-preview" element={<PhonePreview />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/auth" element={<Auth />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/privacy-policy" element={<Navigate to="/privacy" replace />} />
+              <Route path="/politique-de-confidentialite" element={<Navigate to="/privacy" replace />} />
+              <Route path="/cookies" element={<CookiePolicy />} />
+              <Route path="/cookie-policy" element={<Navigate to="/cookies" replace />} />
+              <Route path="/phone-preview" element={<><PrivateNoIndex /><PhonePreview /></>} />
+              <Route path="/reset-password" element={<><PrivateNoIndex /><ResetPassword /></>} />
+              <Route path="/auth" element={<><PrivateNoIndex /><Auth /></>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </WhatsNewProvider>

@@ -116,8 +116,8 @@ export default function BookingClaimDialog({
         }
         throw new Error(`${CLAIM_UPLOAD_PREFIX}${error.message}`);
       }
-      const { data } = supabase.storage.from(EVIDENCE_BUCKET).getPublicUrl(path);
-      urls.push(data.publicUrl);
+      // Store storage path (private bucket); display via signed URLs.
+      urls.push(path);
     }
     return urls;
   };
@@ -164,22 +164,35 @@ export default function BookingClaimDialog({
         attachment_urls = await uploadClaimImages();
       }
 
-      const payload = {
+      const payload: Record<string, unknown> = {
         booking_id: bookingId,
         client_id: user.id,
         pro_profile_id: proProfileId,
         claim_type: claimType,
         dispute_category: disputeCategory,
+        issue_category: disputeCategory,
         message: message.trim(),
         attachment_urls,
         status: "pending" as const,
+        workflow_status: "OPEN",
+        policy_version: "claims-framework-2026-08-draft",
       };
 
-      const { data: saved, error: insertError } = await supabase
+      let { data: saved, error: insertError } = await supabase
         .from("booking_claim_requests")
-        .insert(payload)
+        .insert(payload as never)
         .select("id, issue_number")
         .single();
+      if (insertError && /issue_category|workflow_status|policy_version|schema cache/i.test(insertError.message ?? "")) {
+        const { issue_category: _i, workflow_status: _w, policy_version: _p, ...legacy } = payload;
+        const retry = await supabase
+          .from("booking_claim_requests")
+          .insert(legacy as never)
+          .select("id, issue_number")
+          .single();
+        saved = retry.data;
+        insertError = retry.error;
+      }
       if (insertError || !saved) {
         throw new Error(CLAIM_SAVE);
       }

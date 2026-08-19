@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { filterAdvertiseableProIds } from "@/lib/filterAdvertiseablePros";
 
 export type ProBusinessSearchHit = {
   proProfileId: string;
@@ -107,5 +108,6 @@ export async function searchProsByBusinessOrName(query: string, limit = 8): Prom
     await pushHit(proRow, fullName);
   }
 
-  return hits.slice(0, limit);
+  const allowed = await filterAdvertiseableProIds(hits.map((h) => h.proProfileId));
+  return hits.filter((h) => allowed.has(h.proProfileId)).slice(0, limit);
 }
