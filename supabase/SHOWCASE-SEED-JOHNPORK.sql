@@ -1,11 +1,11 @@
 -- ============================================================
--- SHOWCASE SEED — client browse + johnpork23238@gmail.com as Pro
+-- SHOWCASE SEED — all plumbing examples + johnpork23238@gmail.com as Pro
 -- Run in Supabase SQL Editor (safe to re-run; upserts showcase data).
 -- ============================================================
 -- Uses EXISTING auth users (no password creation):
---   johnpork23238@gmail.com          → full PRO showcase (your login)
---   premiereservicescontact@gmail.com → GROWTH showcase (client browse)
---   bobjohnsongod@gmail.com          → STARTER showcase (client browse)
+--   johnpork23238@gmail.com          → full PRO showcase (plumbing suite)
+--   premiereservicescontact@gmail.com → GROWTH showcase (drain cleaning)
+--   bobjohnsongod@gmail.com          → STARTER showcase (plumbing)
 --
 -- After running:
 --   CLIENT view: open site, postal H2Y 1C6 / H3Z 2K4, browse Services → see 3 pros
@@ -76,9 +76,9 @@ BEGIN
     referral_invite_panel_enabled
   ) VALUES (
     v_john_uid,
-    'Pork Pro Services (Showcase)',
-    'Pork Pro Services Inc.',
-    'Compte démo PRO : SMS, assistant réservation, services riches, frais d’annulation, workspace + déplacement.',
+    'Pork Plomberie Pro (Showcase)',
+    'Pork Plomberie Inc.',
+    'Compte démo PRO — plomberie seulement : fuites, drains, chauffe-eau, dépannage. SMS, frais d’annulation, workspace + déplacement.',
     'Montréal, QC',
     45.5017, -73.5673, 30,
     '514-555-2300', 'https://www.premiereservices.ca',
@@ -88,7 +88,7 @@ BEGIN
     true, true, false,
     '123 Rue Saint-Jacques, Montréal, QC H2Y 1L6',
     '123456789RT0001', '1234567890TQ0001',
-    'Showcase Pro — toutes les fonctions',
+    'Showcase Pro — plomberie',
     '#163a6b', '#0f2744', '#3b82f6',
     'classic', 'late_fee', 50,
     true
@@ -141,35 +141,35 @@ BEGIN
   ) VALUES
   (
     v_john_pro, 'home-improvement', 'plumbing-services', 'Plomberie express',
-    95, 95, 90, 'Fuites, robinets, drains. Démo PRO.',
+    95, 95, 90, 'Fuites, robinets, toilettes — plomberie générale. Démo PRO.',
     'Merci pour votre demande — je confirme sous 2 h.', 12, 'both',
     '123 Rue Saint-Jacques, Montréal, QC H2Y 1L6', 45.503, -73.558,
     'late_fee', 'fixed', 50, 2000
   ),
   (
-    v_john_pro, 'home-improvement', 'electrical-services', 'Électricité de base',
-    120, 120, 120, 'Prises, luminaires, dépannage.',
-    'Message auto Growth/Pro — reçu.', NULL, 'travel',
+    v_john_pro, 'home-improvement', 'drain-cleaning', 'Débouchage de drains',
+    120, 120, 90, 'Drains cuisine/salle de bain, caméra optionnelle.',
+    'Message auto — reçu. Je confirme le créneau sous peu.', NULL, 'travel',
     NULL, NULL, NULL,
     'late_fee', 'percent', 25, 0
   ),
   (
-    v_john_pro, 'home-improvement', 'hvac-services', 'CVC / thermopompe',
-    150, 150, 180, 'Entretien chauffage/climatisation.',
+    v_john_pro, 'home-improvement', 'water-heater-services', 'Chauffe-eau',
+    150, 150, 180, 'Installation, entretien et remplacement de chauffe-eau.',
     NULL, 6, 'workspace',
     '123 Rue Saint-Jacques, Montréal, QC H2Y 1L6', 45.503, -73.558,
     'free', 'percent', 50, 0
   ),
   (
-    v_john_pro, 'home-improvement', 'handyman-services', 'Homme à tout faire',
-    75, 75, 60, 'Montage, petites réparations.',
+    v_john_pro, 'home-improvement', 'bathroom-remodel', 'Plomberie salle de bain',
+    175, 175, 120, 'Robinets, toilette, douche — rénovation plomberie salle de bain.',
     NULL, NULL, 'travel',
     NULL, NULL, NULL,
     'no_cancel', 'percent', 50, 0
   );
 
   INSERT INTO public.pro_licenses (pro_profile_id, license_number, license_type, holder_name, is_verified)
-  SELECT v_john_pro, 'RBQ-SHOW-001', 'RBQ', 'Pork Pro Services Inc.', true
+  SELECT v_john_pro, 'RBQ-SHOW-001', 'RBQ', 'Pork Plomberie Inc.', true
   WHERE NOT EXISTS (
     SELECT 1 FROM public.pro_licenses WHERE pro_profile_id = v_john_pro AND license_number = 'RBQ-SHOW-001'
   );
@@ -183,19 +183,19 @@ BEGIN
       booking_cancel_policy, booking_cancel_fee_percent, page_header_text
     ) VALUES (
       v_growth_uid,
-      'Camille Croissance Cleaning',
-      'Compte démo GROWTH : auto-reply, renouvellement, bundles possibles.',
+      'Camille Croissance Plomberie',
+      'Compte démo GROWTH — plomberie : auto-reply, renouvellement, bundles possibles.',
       'Westmount, QC', 45.485, -73.597, 20,
-      '514-555-2700', 6, true, 'growth', 'cleaning',
+      '514-555-2700', 6, true, 'growth', 'home-improvement',
       60, 140, true, false,
-      'late_fee', 25, 'Growth showcase'
+      'late_fee', 25, 'Growth showcase — plomberie'
     )
     ON CONFLICT (user_id) DO UPDATE SET
       business_name = EXCLUDED.business_name,
       bio = EXCLUDED.bio,
       is_verified = true,
       subscription_tier = 'growth',
-      primary_category_slug = 'cleaning',
+      primary_category_slug = 'home-improvement',
       latitude = EXCLUDED.latitude,
       longitude = EXCLUDED.longitude,
       booking_cancel_policy = 'late_fee',
@@ -218,8 +218,8 @@ BEGIN
       auto_reply_message, renewal_interval_months, location_mode,
       cancel_policy, cancel_fee_type, cancel_fee_percent, cancel_fee_cents
     ) VALUES (
-      v_growth_pro, 'cleaning', 'house-cleaning', 'Ménage résidentiel',
-      110, 110, 120, 'Ménage complet — démo Growth.',
+      v_growth_pro, 'home-improvement', 'drain-cleaning', 'Débouchage résidentiel',
+      110, 110, 90, 'Débouchage drains — démo Growth.',
       'Merci! Je vous envoie un créneau sous peu.', 1, 'travel',
       'late_fee', 'percent', 50, 0
     );
@@ -234,19 +234,19 @@ BEGIN
       booking_cancel_policy, booking_cancel_fee_percent, page_header_text
     ) VALUES (
       v_starter_uid,
-      'Alex Starter Moving Help',
-      'Compte démo STARTER : profil simple, un service, annulation gratuite.',
+      'Alex Starter Plomberie',
+      'Compte démo STARTER — plomberie simple, un service, annulation gratuite.',
       'Plateau, QC', 45.52, -73.58, 15,
-      '514-555-2000', 3, true, 'starter', 'moving',
+      '514-555-2000', 3, true, 'starter', 'home-improvement',
       50, 90, true, false,
-      'free', 50, 'Starter showcase'
+      'free', 50, 'Starter showcase — plomberie'
     )
     ON CONFLICT (user_id) DO UPDATE SET
       business_name = EXCLUDED.business_name,
       bio = EXCLUDED.bio,
       is_verified = true,
       subscription_tier = 'starter',
-      primary_category_slug = 'moving',
+      primary_category_slug = 'home-improvement',
       latitude = EXCLUDED.latitude,
       longitude = EXCLUDED.longitude,
       booking_cancel_policy = 'free',
@@ -267,8 +267,8 @@ BEGIN
       custom_price_min, custom_price_max, duration_minutes, description,
       location_mode, cancel_policy, cancel_fee_type, cancel_fee_percent, cancel_fee_cents
     ) VALUES (
-      v_starter_pro, 'moving', 'furniture-assembly', 'Assemblage de meubles',
-      65, 65, 90, 'Ikea / assemblage — démo Starter.',
+      v_starter_pro, 'home-improvement', 'plumbing-services', 'Petites réparations plomberie',
+      65, 65, 60, 'Robinets / joints — démo Starter.',
       'travel', 'free', 'percent', 50, 0
     );
   END IF;
@@ -292,12 +292,12 @@ BEGIN
     ),
     (
       v_john_pro, v_client_uid, 'accepted',
-      (current_date + 5), '14:00', 60, 'home-improvement', 'handyman-services',
+      (current_date + 5), '14:00', 60, 'home-improvement', 'drain-cleaning',
       'SHOW-ACC-001', 'no_cancel', 50, 'percent', NULL
     ),
     (
       v_john_pro, v_client_uid, 'completed',
-      (current_date - 8), '11:00', 90, 'home-improvement', 'plumbing-services',
+      (current_date - 8), '11:00', 90, 'home-improvement', 'water-heater-services',
       'SHOW-DONE-001', 'late_fee', 50, 'fixed', 2000
     );
   END IF;
