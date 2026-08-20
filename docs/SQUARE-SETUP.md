@@ -27,17 +27,31 @@ Use **Square** for booking payments. Configure the following.
 
 ---
 
-## 2. Frontend (.env)
+## 2. Frontend (.env) — optional if secrets are on Supabase
 
-Add to your `.env` (or `.env.local`):
+The card form needs an **Application ID** + **Location ID**. Prefer setting these as Edge Function secrets (shared with payment):
+
+| Secret | Purpose |
+|--------|---------|
+| `SQUARE_APPLICATION_ID` or `SQUARE_OAUTH_APPLICATION_ID` | Public app id for Web Payments SDK |
+| `SQUARE_LOCATION_ID` | Platform location (or use pro Connect location) |
+| `SQUARE_ACCESS_TOKEN` | Server charge only (never returned to browser) |
+
+Deploy `square-web-config` so the site can load app/location IDs without baking them into the Vite build:
+
+```bash
+supabase functions deploy square-web-config
+```
+
+Optional local/override in `.env`:
 
 ```env
-# Square Web Payments (booking checkout)
-VITE_SQUARE_APPLICATION_ID=sandbox-sq0idb-8aRXGjs1vZ34fNhtrDHiEQ
+# Square Web Payments (booking checkout) — optional if square-web-config secrets are set
+VITE_SQUARE_APPLICATION_ID=sandbox-sq0idb-...
 VITE_SQUARE_LOCATION_ID=your_location_id_here
 ```
 
-- **Sandbox:** use the sandbox Application ID (as in the example) and your **sandbox** Location ID.
+- **Sandbox:** use the sandbox Application ID and your **sandbox** Location ID.
 - **Production:** replace with your **production** Application ID and **production** Location ID.
 
 ---

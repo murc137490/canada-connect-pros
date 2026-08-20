@@ -82,8 +82,12 @@ export default function BookingRequestConfirm({
           {durationLabel ? <p className="text-muted-foreground text-xs">{durationLabel}</p> : null}
           <p className="text-muted-foreground text-xs">{dateLabel}</p>
           <p className="text-xs pt-1">
-            {t.terms.bookingEstimatedTotal ?? "Estimated total"}: <span className="font-semibold">${totalDollars.toFixed(2)} CAD</span>
-            <span className="text-muted-foreground"> ({t.terms.bookingChargedAfterAccept ?? "charged after acceptance"})</span>
+            {t.terms.bookingEstimatedTotal ?? "Estimated total"}:{" "}
+            <span className="font-semibold">${totalDollars} CAD</span>
+            <span className="text-muted-foreground">
+              {" "}
+              ({t.terms.bookingChargedAfterAccept ?? "charged after acceptance"})
+            </span>
           </p>
         </div>
 

@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef, type MutableRefObject } from "react";
+import { useCallback, useEffect, useState, useRef, type MutableRefObject } from "react";
 import { useApplePaySquareMissingHint } from "@/hooks/useApplePaySquareMissingHint";
 import {
   ApplePay,
@@ -10,9 +10,8 @@ import {
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { resolveSquareWebConfig } from "@/lib/squareWebConfig";
 
-const SQUARE_APP_ID = import.meta.env.VITE_SQUARE_APPLICATION_ID as string | undefined;
-const SQUARE_LOCATION_ID = import.meta.env.VITE_SQUARE_LOCATION_ID as string | undefined;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 /** Square card field styles: high contrast on white so placeholders (e.g. card number) are easy to read */
@@ -46,7 +45,7 @@ export interface SquareBookingPaymentProps {
   amountCents: number;
   /** Service subtotal in cents; with Square Connect the Edge function sends app_fee_money = 2.1% of this (platform share). */
   baseAmountCents: number;
-  /** Seller location when pro uses OAuth Connect; otherwise env default. */
+  /** Seller location when pro uses OAuth Connect; otherwise platform location from env/edge. */
   squareLocationId?: string | null;
   currency?: string;
   proProfileId: string;
@@ -76,6 +75,9 @@ export default function SquareBookingPayment({
   const terms = t.terms;
   const plans = t.plans;
   const [loading, setLoading] = useState(false);
+  const [configLoading, setConfigLoading] = useState(true);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [locationIdForSdk, setLocationIdForSdk] = useState<string | null>(null);
   const idempotencyKeyRef: MutableRefObject<string> = useRef(
     (() => {
       try {
@@ -86,15 +88,33 @@ export default function SquareBookingPayment({
     })()
   );
   const applePayAnchorRef = useRef<HTMLDivElement>(null);
-  const locationReady = !!(typeof squareLocationId === "string" && squareLocationId.trim()) || !!SQUARE_LOCATION_ID;
-  const squareSdkReady = !!(SQUARE_APP_ID && locationReady);
+
+  useEffect(() => {
+    let cancelled = false;
+    setConfigLoading(true);
+    void (async () => {
+      const cfg = await resolveSquareWebConfig({ preferredLocationId: squareLocationId });
+      if (cancelled) return;
+      if (cfg) {
+        setApplicationId(cfg.applicationId);
+        setLocationIdForSdk(cfg.locationId);
+      } else {
+        setApplicationId(null);
+        setLocationIdForSdk(null);
+      }
+      setConfigLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [squareLocationId]);
+
+  const squareSdkReady = !!(applicationId && locationIdForSdk);
   const showApplePayBeta = useApplePaySquareMissingHint(applePayAnchorRef, squareSdkReady);
   const applePayBetaText = (terms.applePayBetaTestingNote ?? "").trim();
 
   const amountStr = (amountCents / 100).toFixed(2);
   const currencyCode = currency.toUpperCase().slice(0, 3);
-  const locationIdForSdk =
-    typeof squareLocationId === "string" && squareLocationId.trim() ? squareLocationId.trim() : SQUARE_LOCATION_ID;
 
   const createPaymentRequest = useCallback(
     () => ({
@@ -125,7 +145,11 @@ export default function SquareBookingPayment({
       ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/square-create-payment`
       : "";
     if (!paymentUrl) {
-      onError("Payment not configured. Set VITE_SUPABASE_URL in .env");
+      onError(
+        audience === "ops"
+          ? "Payment not configured. Set VITE_SUPABASE_URL in .env"
+          : (terms.checkoutPaymentUnavailable ?? "Card payment is temporarily unavailable."),
+      );
       return;
     }
     const {
@@ -133,7 +157,11 @@ export default function SquareBookingPayment({
     } = await supabase.auth.getSession();
     const authToken = session?.access_token ?? ANON_KEY;
     if (!authToken) {
-      onError("Payment not configured. Set VITE_SUPABASE_ANON_KEY in .env or sign in to continue.");
+      onError(
+        audience === "ops"
+          ? "Payment not configured. Set VITE_SUPABASE_ANON_KEY in .env or sign in to continue."
+          : (terms.checkoutPaymentUnavailable ?? "Card payment is temporarily unavailable."),
+      );
       return;
     }
     setLoading(true);
@@ -188,14 +216,25 @@ export default function SquareBookingPayment({
     }
   };
 
-  if (!SQUARE_APP_ID || !locationIdForSdk) {
+  if (configLoading) {
+    return (
+      <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <Loader2 size={18} className="animate-spin" />
+        <span>{terms.checkoutPaymentLoading ?? (audience === "ops" ? "Loading payment…" : "Loading card payment…")}</span>
+      </div>
+    );
+  }
+
+  if (!applicationId || !locationIdForSdk) {
     return (
       <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground space-y-3">
         {audience === "ops" ? (
           <p>
-            Square is not configured. Add <code className="bg-muted px-1 rounded">VITE_SQUARE_APPLICATION_ID</code> and a
-            location: either <code className="bg-muted px-1 rounded">VITE_SQUARE_LOCATION_ID</code> or connect the
-            pro&apos;s Square account in the dashboard. See{" "}
+            Square is not configured. Set Edge Function secrets{" "}
+            <code className="bg-muted px-1 rounded">SQUARE_APPLICATION_ID</code> and{" "}
+            <code className="bg-muted px-1 rounded">SQUARE_LOCATION_ID</code> (or Vite{" "}
+            <code className="bg-muted px-1 rounded">VITE_SQUARE_*</code>), then deploy{" "}
+            <code className="bg-muted px-1 rounded">square-web-config</code>. See{" "}
             <code className="bg-muted px-1 rounded">docs/SQUARE-SETUP.md</code>.
           </p>
         ) : (
@@ -227,7 +266,7 @@ export default function SquareBookingPayment({
         </div>
       )}
       <PaymentForm
-        applicationId={SQUARE_APP_ID}
+        applicationId={applicationId}
         locationId={locationIdForSdk}
         createPaymentRequest={createPaymentRequest}
         cardTokenizeResponseReceived={async (token) => {

@@ -329,6 +329,8 @@ type JobQuote = {
   business_name?: string;
   price_cents: number | null;
   estimated_time: string | null;
+  /** ISO date (yyyy-MM-dd) the pro proposes for the visit. */
+  proposed_service_date?: string | null;
   message: string | null;
   status: string;
   created_at: string;
@@ -2272,11 +2274,19 @@ export default function Dashboard() {
         return;
       }
       const reqIds = reqs.map((r) => r.id);
-      const { data: quotes } = await supabase
+      let quoteRes = await supabase
         .from("job_quotes")
-        .select("id, job_request_id, pro_profile_id, price_cents, estimated_time, message, status, created_at")
+        .select("id, job_request_id, pro_profile_id, price_cents, estimated_time, proposed_service_date, message, status, created_at")
         .in("job_request_id", reqIds)
         .order("created_at", { ascending: false });
+      if (quoteRes.error?.message?.includes("proposed_service_date")) {
+        quoteRes = await supabase
+          .from("job_quotes")
+          .select("id, job_request_id, pro_profile_id, price_cents, estimated_time, message, status, created_at")
+          .in("job_request_id", reqIds)
+          .order("created_at", { ascending: false });
+      }
+      const quotes = quoteRes.data;
       const quoteList = (quotes || []) as (JobQuote & { pro_profile_id: string })[];
       const proIds = [...new Set(quoteList.map((q) => q.pro_profile_id))];
       const { data: pros } = await supabase.from("pro_profiles").select("id, business_name").in("id", proIds);
@@ -3527,15 +3537,26 @@ export default function Dashboard() {
     setSendingQuote(true);
     try {
       const estimatedTime = buildQuoteEstimatedTime();
-      const { error } = await supabase.from("job_quotes").insert({
+      let insertPayload: Record<string, unknown> = {
         job_request_id: selectedJobForQuote.id,
         pro_profile_id: proProfile.id,
         price_cents: Math.round(priceNum * 100),
         estimated_time: estimatedTime || null,
+        proposed_service_date: quoteEstimatedDate
+          ? format(quoteEstimatedDate, "yyyy-MM-dd")
+          : selectedJobForQuote.preferred_date
+            ? String(selectedJobForQuote.preferred_date).slice(0, 10)
+            : null,
         message: quoteMessage.trim() || null,
         status: "pending",
         updated_at: new Date().toISOString(),
-      });
+      };
+      let { error } = await supabase.from("job_quotes").insert(insertPayload);
+      if (error?.message?.includes("proposed_service_date")) {
+        const { proposed_service_date: _drop, ...withoutDate } = insertPayload;
+        insertPayload = withoutDate;
+        ({ error } = await supabase.from("job_quotes").insert(insertPayload));
+      }
       if (error) throw error;
       toast({ title: t.dashboard.quoteSentTitle ?? "Quote sent", description: t.dashboard.quoteSentDesc ?? "The customer will see your quote and can accept or decline." });
       setSelectedJobForQuote(null);
@@ -5643,11 +5664,28 @@ export default function Dashboard() {
                               <div className="mt-3">
                                 <p className="text-sm font-semibold text-foreground mb-2">{t.dashboard.quotesReceivedTitle}</p>
                                 <ul className="space-y-2">
-                                  {quotes.map((q) => (
+                                  {quotes.map((q) => {
+                                    const serviceDateRaw =
+                                      (typeof q.proposed_service_date === "string" && q.proposed_service_date.trim()
+                                        ? q.proposed_service_date.trim().slice(0, 10)
+                                        : null) ||
+                                      (typeof req.preferred_date === "string" && req.preferred_date.trim()
+                                        ? req.preferred_date.trim().slice(0, 10)
+                                        : null);
+                                    const serviceDateLabel = serviceDateRaw
+                                      ? new Date(`${serviceDateRaw}T12:00:00`).toLocaleDateString(
+                                          locale === "fr" ? "fr-CA" : "en-CA",
+                                          { dateStyle: "medium" },
+                                        )
+                                      : null;
+                                    return (
                                     <li key={q.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-muted/40">
                                       <div>
                                         <span className="font-medium">{q.business_name || "Pro"}</span>
                                         {q.price_cents != null && <span className="ml-2">${(q.price_cents / 100).toFixed(0)}</span>}
+                                        {serviceDateLabel ? (
+                                          <span className="text-muted-foreground text-sm ml-2">· {serviceDateLabel}</span>
+                                        ) : null}
                                         {q.estimated_time && <span className="text-muted-foreground text-sm ml-2">· {q.estimated_time}</span>}
                                         {q.message && <p className="text-sm text-muted-foreground mt-1">{q.message}</p>}
                                       </div>
@@ -5685,7 +5723,8 @@ export default function Dashboard() {
                                       {q.status === "accepted" && <span className="text-sm text-green-600 dark:text-green-400">{t.dashboard.quoteAcceptedStatus ?? "Accepted"}</span>}
                                       {q.status === "declined" && <span className="text-sm text-muted-foreground">{t.dashboard.quoteDeclinedStatus ?? "Declined"}</span>}
                                     </li>
-                                  ))}
+                                    );
+                                  })}
                                 </ul>
                               </div>
                             )}

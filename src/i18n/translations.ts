@@ -647,6 +647,7 @@ export const translations = {
       checkoutPaymentUnavailable:
         "Card payment is temporarily unavailable. Please try again later or contact support@premiereservices.ca.",
       checkoutPaymentNetworkError: "Payment could not be completed. Check your connection and try again.",
+      checkoutPaymentLoading: "Loading card payment…",
       checkoutPaymentNetworksLine: "Visa, Mastercard, Amex, Discover · Apple Pay · Google Pay",
       checkoutDividerCard: "Or card",
       applePayWalletRolloutNote: "",
@@ -2429,6 +2430,7 @@ export const translations = {
       checkoutPaymentUnavailable:
         "Le paiement par carte est temporairement indisponible. Réessayez plus tard ou contactez support@premiereservices.ca.",
       checkoutPaymentNetworkError: "Le paiement n’a pas pu être effectué. Vérifiez votre connexion et réessayez.",
+      checkoutPaymentLoading: "Chargement du paiement par carte…",
       checkoutPaymentNetworksLine: "Visa, Mastercard, Amex, Discover · Apple Pay · Google Pay",
       checkoutDividerCard: "Ou carte",
       applePayWalletRolloutNote: "",

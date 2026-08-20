@@ -551,9 +551,9 @@ BEGIN
   ) RETURNING id INTO v_job_id;
 
   INSERT INTO public.job_quotes (
-    job_request_id, pro_profile_id, price_cents, estimated_time, message, status
+    job_request_id, pro_profile_id, price_cents, estimated_time, proposed_service_date, message, status
   ) VALUES (
-    v_job_id, v_pro_id, 12500, '90 minutes',
+    v_job_id, v_pro_id, 12500, '90 minutes', (current_date + 6),
     'Je peux passer mardi matin — pièces incluses pour joint + siphon.',
     'pending'
   );
