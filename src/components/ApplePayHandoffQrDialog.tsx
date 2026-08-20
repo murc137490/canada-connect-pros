@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Smartphone } from "lucide-react";
 import {
   applePayHandoffUrl,
@@ -34,16 +34,25 @@ export default function ApplePayHandoffQrDialog({
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const wasOpen = useRef(false);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      wasOpen.current = false;
+      return;
+    }
+    if (wasOpen.current) return;
+    wasOpen.current = true;
+
     let cancelled = false;
     setCreating(true);
     setError(null);
     setUrl(null);
     void (async () => {
       try {
-        const row = await createApplePayHandoff(draft);
+        const row = await createApplePayHandoff(draftRef.current);
         if (cancelled) return;
         setUrl(applePayHandoffUrl(row.id));
       } catch (e) {
@@ -55,7 +64,7 @@ export default function ApplePayHandoffQrDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, draft.clientId, draft.proProfileId, draft.amountCents, draft.phone, errorLabel]);
+  }, [open, errorLabel]);
 
   useEffect(() => {
     if (!open || !url) return;
