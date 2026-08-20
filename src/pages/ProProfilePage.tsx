@@ -2119,6 +2119,17 @@ export default function ProProfilePage() {
                         squareLocationId={pro.square_location_id}
                         proProfileId={pro.id}
                         clientId={user.id}
+                        handoffExtras={{
+                          preferredDate: selectedBookingDate,
+                          preferredTime: selectedBookingTime,
+                          serviceCategorySlug: selectedBookingService?.category_slug ?? null,
+                          serviceSlug: selectedBookingService?.service_slug ?? null,
+                          serviceDurationMinutes: selectedBookingService?.duration_minutes ?? null,
+                          serviceLocationChoice: resolveBookingLocationChoice(
+                            effectiveServiceLocationMode(pro, selectedBookingService),
+                            bookingLocationChoice,
+                          ),
+                        }}
                         onSubmit={async (confirmedPhone, paymentMeta) => {
                           const phoneNorm = phoneDigits(confirmedPhone);
                           if (phoneNorm.length === 10) {

@@ -661,6 +661,22 @@ export const translations = {
         "Apple Pay works in Safari on iPhone/Mac with Wallet. On Windows and Android, use Google Pay or card.",
       applePayUnavailableOnDevice:
         "Apple Pay is available in Safari on iPhone and Mac. Use Google Pay or card here.",
+      applePayHandoffButtonLabel: "Apple Pay",
+      applePayHandoffHint:
+        "On Windows or Android, tap Apple Pay to show a QR code, then finish in Safari on your iPhone.",
+      applePayHandoffQrTitle: "Pay with Apple Pay on iPhone",
+      applePayHandoffQrBody:
+        "Scan this code with your iPhone Camera, open in Safari, sign in with the same account, then tap Apple Pay.",
+      applePayHandoffWaiting: "Waiting for payment on your iPhone…",
+      applePayHandoffCreateError: "Could not create Apple Pay link. Try again.",
+      applePayHandoffNotFound: "This Apple Pay link was not found.",
+      applePayHandoffWrongAccount: "Sign in with the same account you used on your computer.",
+      applePayHandoffExpired: "This Apple Pay link has expired. Start again on your computer.",
+      applePayHandoffSignInTitle: "Sign in to pay with Apple Pay",
+      applePayHandoffSignInBody:
+        "Use the same Première account as on your computer, then Apple Pay will be available in Safari.",
+      applePayHandoffPayTitle: "Pay with Apple Pay",
+      applePayHandoffDoneHint: "You can return to your computer — payment is complete.",
     },
     createPro: {
       title: "Create Your Pro Account",
@@ -2452,6 +2468,22 @@ export const translations = {
         "Apple Pay fonctionne dans Safari sur iPhone/Mac avec Wallet. Sur Windows et Android, utilisez Google Pay ou la carte.",
       applePayUnavailableOnDevice:
         "Apple Pay est disponible dans Safari sur iPhone et Mac. Utilisez Google Pay ou la carte ici.",
+      applePayHandoffButtonLabel: "Apple Pay",
+      applePayHandoffHint:
+        "Sur Windows ou Android, touchez Apple Pay pour afficher un code QR, puis terminez dans Safari sur votre iPhone.",
+      applePayHandoffQrTitle: "Payer avec Apple Pay sur iPhone",
+      applePayHandoffQrBody:
+        "Scannez ce code avec l’appareil photo de l’iPhone, ouvrez dans Safari, connectez-vous avec le même compte, puis touchez Apple Pay.",
+      applePayHandoffWaiting: "En attente du paiement sur votre iPhone…",
+      applePayHandoffCreateError: "Impossible de créer le lien Apple Pay. Réessayez.",
+      applePayHandoffNotFound: "Ce lien Apple Pay est introuvable.",
+      applePayHandoffWrongAccount: "Connectez-vous avec le même compte que sur votre ordinateur.",
+      applePayHandoffExpired: "Ce lien Apple Pay a expiré. Recommencez sur votre ordinateur.",
+      applePayHandoffSignInTitle: "Connectez-vous pour payer avec Apple Pay",
+      applePayHandoffSignInBody:
+        "Utilisez le même compte Première que sur votre ordinateur ; Apple Pay sera disponible dans Safari.",
+      applePayHandoffPayTitle: "Payer avec Apple Pay",
+      applePayHandoffDoneHint: "Vous pouvez revenir à votre ordinateur — le paiement est terminé.",
     },
     createPro: {
       title: "Créer votre compte Pro",

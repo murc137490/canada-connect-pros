@@ -63,6 +63,8 @@ export interface SquareBookingPaymentProps {
    * Capture/void later via square-finalize-payment when the pro accepts/declines.
    */
   authorizeOnly?: boolean;
+  /** Opens QR handoff so Windows/Android users can finish with Apple Pay on iPhone. */
+  onApplePayHandoffRequest?: () => void;
 }
 
 export default function SquareBookingPayment({
@@ -76,6 +78,7 @@ export default function SquareBookingPayment({
   onError,
   audience = "client",
   authorizeOnly = false,
+  onApplePayHandoffRequest,
 }: SquareBookingPaymentProps) {
   const { t } = useLanguage();
   const terms = t.terms;
@@ -296,6 +299,8 @@ export default function SquareBookingPayment({
                 terms.applePayUnavailableOnDevice ??
                 "Apple Pay is available in Safari on iPhone and Mac. Use Google Pay or card here."
               }
+              onRequestIphoneHandoff={onApplePayHandoffRequest}
+              handoffButtonLabel={terms.applePayHandoffButtonLabel ?? "Apple Pay"}
             >
               <div ref={applePayAnchorRef} className="min-h-[48px] min-w-0">
                 <ApplePay id="rswps-apple-pay-container" />
@@ -306,8 +311,11 @@ export default function SquareBookingPayment({
             </div>
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            {terms.applePayBetaTestingNote ??
-              "Apple Pay works in Safari on iPhone/Mac with Wallet. On Windows and Android, use Google Pay or card."}
+            {onApplePayHandoffRequest
+              ? (terms.applePayHandoffHint ??
+                  "On Windows/Android, tap Apple Pay to scan a QR and finish on iPhone Safari.")
+              : (terms.applePayBetaTestingNote ??
+                  "Apple Pay works in Safari on iPhone/Mac with Wallet. On Windows and Android, use Google Pay or card.")}
           </p>
           {showApplePayBeta && applePayBetaText ? (
             <p className="text-xs leading-relaxed text-amber-900 dark:text-amber-100 rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-1.5">

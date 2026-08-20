@@ -6,19 +6,26 @@ export function isApplePayBrowserCapable(): boolean {
 }
 
 type ApplePayWalletSlotProps = {
-  /** Live Square Apple Pay control (only mounts when the browser can run Apple Pay). */
   children: ReactNode;
-  /** Shown on Windows / Android / Chrome where Apple Pay cannot run. */
   unavailableLabel: string;
+  /** When set, the non-Apple placeholder becomes a button that starts iPhone QR handoff. */
+  onRequestIphoneHandoff?: () => void;
+  handoffButtonLabel?: string;
   className?: string;
 };
 
 /**
  * Apple Pay on the web only works in Safari on Apple devices with Wallet.
- * On Windows/Android we still show a matching black button so the layout
- * stays next to Google Pay, but it cannot complete a payment there.
+ * On Windows/Android we show a black Apple Pay button that can open a QR
+ * handoff so the user finishes on iPhone Safari.
  */
-export function ApplePayWalletSlot({ children, unavailableLabel, className }: ApplePayWalletSlotProps) {
+export function ApplePayWalletSlot({
+  children,
+  unavailableLabel,
+  onRequestIphoneHandoff,
+  handoffButtonLabel,
+  className,
+}: ApplePayWalletSlotProps) {
   const [capable, setCapable] = useState(false);
 
   useEffect(() => {
@@ -29,6 +36,17 @@ export function ApplePayWalletSlot({ children, unavailableLabel, className }: Ap
     <div className={className}>
       {capable ? (
         children
+      ) : onRequestIphoneHandoff ? (
+        <button
+          type="button"
+          onClick={onRequestIphoneHandoff}
+          title={unavailableLabel}
+          aria-label={handoffButtonLabel || unavailableLabel}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-black px-3 text-[15px] font-medium text-white transition hover:bg-neutral-900"
+        >
+          <ApplePayMark />
+          <span className="tracking-tight">{handoffButtonLabel || "Apple Pay"}</span>
+        </button>
       ) : (
         <button
           type="button"

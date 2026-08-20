@@ -9,6 +9,17 @@ import { computeBookingInvoiceFromBaseCents } from "@/lib/bookingInvoiceAmounts"
 import SquareBookingPayment, {
   type SquareBookingPaymentSuccessMeta,
 } from "@/components/SquareBookingPayment";
+import ApplePayHandoffQrDialog from "@/components/ApplePayHandoffQrDialog";
+import type { ApplePayHandoffDraft } from "@/lib/applePayHandoff";
+
+export type BookingApplePayHandoffExtras = {
+  preferredDate?: string | null;
+  preferredTime?: string | null;
+  serviceCategorySlug?: string | null;
+  serviceSlug?: string | null;
+  serviceDurationMinutes?: number | null;
+  serviceLocationChoice?: string | null;
+};
 
 type Props = {
   serviceName: string;
@@ -19,6 +30,7 @@ type Props = {
   squareLocationId?: string | null;
   proProfileId: string;
   clientId: string;
+  handoffExtras?: BookingApplePayHandoffExtras;
   /** Create the pending booking after the card hold succeeds. */
   onSubmit: (
     confirmedPhone: string,
@@ -37,6 +49,7 @@ export default function BookingRequestConfirm({
   squareLocationId,
   proProfileId,
   clientId,
+  handoffExtras,
   onSubmit,
   onError,
   onDone,
@@ -46,6 +59,7 @@ export default function BookingRequestConfirm({
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [step, setStep] = useState<"details" | "pay">("details");
+  const [showAppleQr, setShowAppleQr] = useState(false);
 
   useEffect(() => {
     if (profilePhone?.trim()) {
@@ -62,6 +76,38 @@ export default function BookingRequestConfirm({
       ? invoice.totalDollars
       : Number(invoice.totalCents / 100).toFixed(2);
   const digits = phoneDigits(phone);
+
+  const handoffDraft: ApplePayHandoffDraft = useMemo(
+    () => ({
+      proProfileId,
+      clientId,
+      phone,
+      squareLocationId,
+      amountCents: invoice.totalCents,
+      baseAmountCents: Math.max(500, Number(baseAmountCents) || 500),
+      serviceName,
+      durationLabel,
+      dateLabel,
+      preferredDate: handoffExtras?.preferredDate ?? null,
+      preferredTime: handoffExtras?.preferredTime ?? null,
+      serviceCategorySlug: handoffExtras?.serviceCategorySlug ?? null,
+      serviceSlug: handoffExtras?.serviceSlug ?? null,
+      serviceDurationMinutes: handoffExtras?.serviceDurationMinutes ?? null,
+      serviceLocationChoice: handoffExtras?.serviceLocationChoice ?? null,
+    }),
+    [
+      proProfileId,
+      clientId,
+      phone,
+      squareLocationId,
+      invoice.totalCents,
+      baseAmountCents,
+      serviceName,
+      durationLabel,
+      dateLabel,
+      handoffExtras,
+    ],
+  );
 
   const handleContinueToPay = () => {
     if (digits.length !== 10) {
@@ -170,6 +216,7 @@ export default function BookingRequestConfirm({
                 clientId={clientId}
                 audience="client"
                 authorizeOnly
+                onApplePayHandoffRequest={() => setShowAppleQr(true)}
                 onSuccess={(meta) => {
                   void handlePaymentSuccess(meta);
                 }}
@@ -182,6 +229,24 @@ export default function BookingRequestConfirm({
           </div>
         )}
       </div>
+
+      <ApplePayHandoffQrDialog
+        open={showAppleQr}
+        draft={handoffDraft}
+        onClose={() => setShowAppleQr(false)}
+        onPaid={() => {
+          setShowAppleQr(false);
+          setDone(true);
+        }}
+        title={t.terms.applePayHandoffQrTitle ?? "Pay with Apple Pay on iPhone"}
+        body={
+          t.terms.applePayHandoffQrBody ??
+          "Scan this code with your iPhone Camera, open in Safari, sign in with the same account, then tap Apple Pay."
+        }
+        waitingLabel={t.terms.applePayHandoffWaiting ?? "Waiting for payment on your iPhone…"}
+        closeLabel={t.common.close ?? "Close"}
+        errorLabel={t.terms.applePayHandoffCreateError ?? "Could not create Apple Pay link. Try again."}
+      />
     </div>
   );
 }
