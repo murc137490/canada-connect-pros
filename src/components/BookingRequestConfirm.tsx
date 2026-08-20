@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Phone } from "lucide-react";
+import { Loader2, Phone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,13 +31,13 @@ type Props = {
   proProfileId: string;
   clientId: string;
   handoffExtras?: BookingApplePayHandoffExtras;
-  /** Create the pending booking after the card hold succeeds. */
   onSubmit: (
     confirmedPhone: string,
     payment: SquareBookingPaymentSuccessMeta,
   ) => Promise<void>;
   onError: (message: string) => void;
   onDone: () => void;
+  onClose?: () => void;
 };
 
 export default function BookingRequestConfirm({
@@ -53,6 +53,7 @@ export default function BookingRequestConfirm({
   onSubmit,
   onError,
   onDone,
+  onClose,
 }: Props) {
   const { t, locale } = useLanguage();
   const [phone, setPhone] = useState("");
@@ -131,7 +132,17 @@ export default function BookingRequestConfirm({
 
   if (done) {
     return (
-      <div className="w-full max-w-lg mx-auto rounded-2xl border border-border bg-card p-6 text-center space-y-4">
+      <div className="relative w-full max-w-lg mx-auto rounded-xl border border-border bg-card p-6 text-center space-y-4 shadow-lg">
+        {onClose ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-3 top-3 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label={t.common.close ?? "Close"}
+          >
+            <X className="h-4 w-4" strokeWidth={2.25} />
+          </button>
+        ) : null}
         <p className="text-lg font-semibold text-foreground">{t.terms.bookingRequestSent}</p>
         <p className="text-sm text-muted-foreground">
           {t.terms.bookingRequestSentHoldHint ??
@@ -147,18 +158,30 @@ export default function BookingRequestConfirm({
   }
 
   return (
-    <div className="w-full max-w-lg mx-auto rounded-2xl border border-border bg-card text-foreground overflow-hidden">
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white px-5 py-4">
-        <h2 className="text-lg font-semibold">{t.terms.bookingConfirmRequestTitle ?? "Confirm booking request"}</h2>
-        <p className="text-xs text-white/80 mt-1">
+    <div className="relative w-full max-w-lg mx-auto rounded-xl border border-border bg-card text-foreground overflow-hidden shadow-lg">
+      <div className="relative bg-neutral-950 px-5 py-4 pr-12">
+        <h2 className="text-lg font-semibold text-white">
+          {t.terms.bookingConfirmRequestTitle ?? "Confirm booking request"}
+        </h2>
+        <p className="text-xs text-white/75 mt-1">
           {t.terms.bookingPayHoldHint ??
             (locale === "fr"
               ? "Paiement pré-autorisé maintenant — débité seulement si le pro accepte."
               : "Card hold now — charged only if the pro accepts.")}
         </p>
+        {onClose ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-3 top-3 rounded-md p-1.5 text-white/80 hover:bg-white/10 hover:text-white"
+            aria-label={t.common.close ?? "Close"}
+          >
+            <X className="h-4 w-4" strokeWidth={2.25} />
+          </button>
+        ) : null}
       </div>
       <div className="p-5 space-y-4">
-        <div className="rounded-lg border border-border/60 bg-muted/30 p-3 text-sm space-y-1">
+        <div className="rounded-md border border-border bg-muted/40 p-3 text-sm space-y-1">
           <p className="font-medium">{serviceName}</p>
           {durationLabel ? <p className="text-muted-foreground text-xs">{durationLabel}</p> : null}
           <p className="text-muted-foreground text-xs">{dateLabel}</p>

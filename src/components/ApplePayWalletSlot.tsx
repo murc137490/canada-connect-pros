@@ -42,7 +42,7 @@ export function ApplePayWalletSlot({
           onClick={onRequestIphoneHandoff}
           title={unavailableLabel}
           aria-label={handoffButtonLabel || unavailableLabel}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-black px-3 text-[15px] font-medium text-white transition hover:bg-neutral-900"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-[4px] bg-black px-3 text-[15px] font-medium text-white transition hover:bg-neutral-900 ring-1 ring-black/30"
         >
           <ApplePayMark />
           <span className="tracking-tight">{handoffButtonLabel || "Apple Pay"}</span>

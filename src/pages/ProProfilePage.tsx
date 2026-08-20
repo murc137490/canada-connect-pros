@@ -1556,7 +1556,7 @@ export default function ProProfilePage() {
               <DialogContent
                 className={
                   bookingStep === 4
-                    ? "max-w-lg max-h-[90vh] overflow-y-auto flex flex-col bg-transparent border-0 shadow-none p-2 sm:p-4"
+                    ? "max-w-lg max-h-[90vh] overflow-y-auto flex flex-col bg-transparent border-0 shadow-none p-2 sm:p-4 [&>button]:hidden"
                     : "max-w-lg max-h-[90vh] overflow-y-auto flex flex-col bg-gray-900 text-white [&_.text-foreground]:text-white [&_.text-muted-foreground]:text-white/90"
                 }
               >
@@ -2462,6 +2462,7 @@ export default function ProProfilePage() {
                           setSelectedBookingService(null);
                           setBookingClientRenewAnnually(false);
                         }}
+                        onClose={() => setBookingDialogOpen(false)}
                       />
                       </>
                     ) : (
