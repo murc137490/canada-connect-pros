@@ -16,3 +16,15 @@ export function getPublicSiteOrigin(): string {
   if (typeof window !== "undefined") return window.location.origin;
   return "";
 }
+
+/**
+ * Origin for OAuth redirects. Prefer the live browser origin so Google/Supabase
+ * return to the same host the user started on (www vs apex, localhost vs prod).
+ * Falls back to VITE_SITE_URL when window is unavailable.
+ */
+export function getOAuthRedirectOrigin(): string {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+  return getPublicSiteOrigin();
+}

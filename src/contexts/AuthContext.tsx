@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { getPublicSiteOrigin } from "@/lib/authSiteUrl";
+import { getPublicSiteOrigin, getOAuthRedirectOrigin } from "@/lib/authSiteUrl";
+import { stashOAuthRedirect } from "@/lib/oauthRedirect";
 
 export const NAME_TAKEN_MESSAGE = "This name is already taken.";
 export const EMAIL_ALREADY_IN_USE_MESSAGE = "EMAIL_ALREADY_IN_USE";
@@ -129,19 +130,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async (redirectPath = "/") => {
-    const origin = getPublicSiteOrigin();
+    const origin = getOAuthRedirectOrigin();
     const safeRedirect = redirectPath.startsWith("/") ? redirectPath : "/";
-    const { error } = await supabase.auth.signInWithOAuth({
+    stashOAuthRedirect(safeRedirect);
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${origin}/auth?redirect=${encodeURIComponent(safeRedirect)}`,
+        // Dedicated callback route exchanges PKCE code; keep allow-list:
+        // https://www.premiereservices.ca/auth/callback** and http://localhost:*/auth/callback**
+        redirectTo: `${origin}/auth/callback`,
         queryParams: {
-          access_type: "offline",
           prompt: "select_account",
         },
       },
     });
     if (error) throw error;
+    // Browser should navigate; if not (popup blocked / skipBrowserRedirect), use URL
+    if (data?.url && typeof window !== "undefined") {
+      window.location.assign(data.url);
+    }
   };
 
   const signOut = async () => {

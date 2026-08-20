@@ -19,6 +19,7 @@ import ProPlanCancel from "./pages/ProPlanCancel";
 import ProPlansFreeTrial from "./pages/ProPlansFreeTrial";
 import Support from "./pages/Support";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import ProProfilePage from "./pages/ProProfilePage";
 import ProListPage from "./pages/ProListPage";
@@ -101,6 +102,7 @@ const App = () => (
               <Route path="/phone-preview" element={<><PrivateNoIndex /><PhonePreview /></>} />
               <Route path="/reset-password" element={<><PrivateNoIndex /><ResetPassword /></>} />
               <Route path="/auth" element={<><PrivateNoIndex /><Auth /></>} />
+              <Route path="/auth/callback" element={<><PrivateNoIndex /><AuthCallback /></>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </WhatsNewProvider>
