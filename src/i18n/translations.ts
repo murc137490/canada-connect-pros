@@ -648,8 +648,14 @@ export const translations = {
         "Card payment is temporarily unavailable. Please try again later or contact support@premiereservices.ca.",
       checkoutPaymentNetworkError: "Payment could not be completed. Check your connection and try again.",
       checkoutPaymentLoading: "Loading card payment…",
+      checkoutAuthorizeHoldLine: "Card hold only — you are charged if the professional accepts.",
       checkoutPaymentNetworksLine: "Visa, Mastercard, Amex, Discover · Apple Pay · Google Pay",
       checkoutDividerCard: "Or card",
+      bookingPayHoldHint: "Card hold now — charged only if the pro accepts.",
+      bookingHoldUntilAccept: "card hold",
+      bookingContinueToCard: "Continue to card",
+      bookingRequestSentHoldHint:
+        "Your card is authorized. You are only charged if the professional accepts.",
       applePayWalletRolloutNote: "",
       applePayBetaTestingNote:
         "Beta: Apple Pay did not load in this session (often domain or merchant verification). Card and Google Pay work reliably - use either to continue.",
@@ -2431,8 +2437,14 @@ export const translations = {
         "Le paiement par carte est temporairement indisponible. Réessayez plus tard ou contactez support@premiereservices.ca.",
       checkoutPaymentNetworkError: "Le paiement n’a pas pu être effectué. Vérifiez votre connexion et réessayez.",
       checkoutPaymentLoading: "Chargement du paiement par carte…",
+      checkoutAuthorizeHoldLine: "Pré-autorisation seulement — vous êtes débité si le professionnel accepte.",
       checkoutPaymentNetworksLine: "Visa, Mastercard, Amex, Discover · Apple Pay · Google Pay",
       checkoutDividerCard: "Ou carte",
+      bookingPayHoldHint: "Pré-autorisation maintenant — débit seulement si le pro accepte.",
+      bookingHoldUntilAccept: "pré-autorisation",
+      bookingContinueToCard: "Continuer vers la carte",
+      bookingRequestSentHoldHint:
+        "Votre carte est pré-autorisée. Le montant n’est débité que si le professionnel accepte.",
       applePayWalletRolloutNote: "",
       applePayBetaTestingNote:
         "Bêta : Apple Pay ne s’est pas chargé dans cette session (souvent la vérification du domaine ou du commerçant). La carte et Google Pay restent fiables - utilisez l’une ou l’autre pour continuer.",

@@ -45,7 +45,10 @@ export default function ClientBookingPayDialog({
   const norm = normalizeBookingInvoiceSnapshot(booking.id, booking.invoice_snapshot, {
     fallbackBookingPublicCode: booking.public_booking_code ?? undefined,
   });
-  const baseCents = norm?.subtotal_cents ?? 5000;
+  const baseCents =
+    norm && typeof (norm as { subtotal?: number }).subtotal === "number"
+      ? Math.max(500, Math.round((norm as { subtotal: number }).subtotal * 100))
+      : 5000;
 
   const dateLabel = booking.preferred_date
     ? new Date(String(booking.preferred_date) + "T12:00:00").toLocaleDateString(undefined, { dateStyle: "long" })

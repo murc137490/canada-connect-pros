@@ -2116,7 +2116,10 @@ export default function ProProfilePage() {
                           )
                         )}
                         profilePhone={clientProfilePhone}
-                        onSubmit={async (confirmedPhone) => {
+                        squareLocationId={pro.square_location_id}
+                        proProfileId={pro.id}
+                        clientId={user.id}
+                        onSubmit={async (confirmedPhone, paymentMeta) => {
                           const phoneNorm = phoneDigits(confirmedPhone);
                           if (phoneNorm.length === 10) {
                             const { error: phoneErr } = await supabase
@@ -2257,10 +2260,11 @@ export default function ProProfilePage() {
                               )
                             ),
                             currency: "cad",
-                            squarePaymentId: null,
-                            idempotencyKey: `booking-request-${user.id}-${Date.now()}`,
+                            squarePaymentId: paymentMeta.squarePaymentId ?? null,
+                            idempotencyKey: paymentMeta.idempotencyKey,
                             paymentMethodLabel:
-                              locale === "fr" ? "Paiement après acceptation du pro" : "Payment after pro accepts",
+                              paymentMeta.paymentMethodLabel?.trim() ||
+                              (locale === "fr" ? "Carte (pré-autorisation)" : "Card (authorized hold)"),
                             clientRenewsAnnually: wantsRenew,
                             renewalIntervalMonths: renewMonths,
                             renewalAnchorDate: wantsRenew && selectedBookingDate ? selectedBookingDate : null,
@@ -2390,6 +2394,13 @@ export default function ProProfilePage() {
                               .update({ invoice_snapshot: merged })
                               .eq("id", data.id);
                             if (snapErr) console.warn("Could not merge invoice snapshot:", snapErr.message);
+                          }
+                          if (data?.id && paymentMeta.idempotencyKey) {
+                            const { error: linkErr } = await supabase
+                              .from("payments")
+                              .update({ booking_id: data.id })
+                              .eq("idempotency_key", paymentMeta.idempotencyKey);
+                            if (linkErr) console.warn("payment link:", linkErr.message);
                           }
                           let idVerificationUploadFailed = false;
                           if (data?.id && user.id && bookingPhotoWithIdFile) {

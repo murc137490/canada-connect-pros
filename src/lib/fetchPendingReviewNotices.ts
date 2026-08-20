@@ -36,13 +36,12 @@ export async function fetchPendingReviewNotices(opts: {
       .eq("client_id", userId)
       .order("created_at", { ascending: false })
       .limit(20),
-    supabase.from("reviews").select("pro_profile_id, reviewer_id, booking_id").eq("reviewer_id", userId),
+    supabase.from("reviews").select("pro_profile_id, reviewer_id").eq("reviewer_id", userId),
   ]);
 
   const myReviews = (myReviewsRes.data ?? []) as {
     pro_profile_id: string;
     reviewer_id: string;
-    booking_id?: string | null;
   }[];
   const received = receivedRes.data ?? [];
   const proIds = [...new Set(received.map((r) => r.pro_profile_id))];

@@ -58,6 +58,11 @@ export interface SquareBookingPaymentProps {
    * `ops`: may show setup hints for operators.
    */
   audience?: "client" | "ops";
+  /**
+   * When true, Square authorizes (holds) the card without capturing.
+   * Capture/void later via square-finalize-payment when the pro accepts/declines.
+   */
+  authorizeOnly?: boolean;
 }
 
 export default function SquareBookingPayment({
@@ -70,6 +75,7 @@ export default function SquareBookingPayment({
   onSuccess,
   onError,
   audience = "client",
+  authorizeOnly = false,
 }: SquareBookingPaymentProps) {
   const { t } = useLanguage();
   const terms = t.terms;
@@ -181,6 +187,8 @@ export default function SquareBookingPayment({
           pro_profile_id: proProfileId,
           client_id: clientId,
           idempotency_key: idempotencyKeyRef.current,
+          autocomplete: !authorizeOnly,
+          authorize_only: authorizeOnly,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -257,7 +265,11 @@ export default function SquareBookingPayment({
           </span>
         </div>
         <p className="text-xs text-muted-foreground">
-          {terms.checkoutPaymentNetworksLine ?? "Visa, Mastercard, Amex, Discover · Apple Pay · Google Pay"}
+          {authorizeOnly
+            ? (terms.checkoutAuthorizeHoldLine ??
+                "Card hold only — you are charged if the professional accepts.")
+            : (terms.checkoutPaymentNetworksLine ??
+                "Visa, Mastercard, Amex, Discover · Apple Pay · Google Pay")}
         </p>
       </div>
       {loading && (

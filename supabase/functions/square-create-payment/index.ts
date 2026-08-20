@@ -243,7 +243,7 @@ Deno.serve(async (req) => {
         amount: amountCents,
         currency,
       },
-      autocomplete: true,
+      autocomplete: body.authorize_only === true || body.autocomplete === false ? false : true,
       reference_id: (bookingId ?? proProfileId).toString().slice(0, 40),
     };
     if (locationId) squareBody.location_id = locationId;

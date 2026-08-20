@@ -3027,6 +3027,23 @@ export default function Dashboard() {
     }
   };
 
+  const finalizeSquareBookingPayment = async (bookingId: string, action: "complete" | "cancel") => {
+    try {
+      const { data, error } = await supabase.functions.invoke("square-finalize-payment", {
+        body: { booking_id: bookingId, action },
+      });
+      if (error) {
+        console.warn("square-finalize-payment:", error.message);
+        return;
+      }
+      if (data && typeof data === "object" && "error" in data && data.error) {
+        console.warn("square-finalize-payment:", (data as { details?: string }).details ?? data.error);
+      }
+    } catch (e) {
+      console.warn("square-finalize-payment:", e);
+    }
+  };
+
   const handleDeclineBooking = async () => {
     if (!declineBookingId) return;
     setDeclineSubmitting(true);
@@ -3042,6 +3059,7 @@ export default function Dashboard() {
         })
         .eq("id", declineBookingId);
       if (error) throw error;
+      await finalizeSquareBookingPayment(declineBookingId, "cancel");
       const url = import.meta.env.VITE_SUPABASE_URL;
       if (url && session?.access_token) {
         try {
@@ -3091,6 +3109,7 @@ export default function Dashboard() {
         })
         .eq("id", bookingId);
       if (error) throw error;
+      await finalizeSquareBookingPayment(bookingId, "complete");
       toast({ title: t.dashboard.approveSuccess ?? "Booking accepted." });
       setProBookings((prev) =>
         prev.map((b) =>
