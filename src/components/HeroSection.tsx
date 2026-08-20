@@ -155,7 +155,9 @@ export default function HeroSection() {
             ? t.index.heroPostalLocationDenied
             : result.reason === "no_postal"
               ? t.index.heroPostalLocationNoPostal
-              : t.index.heroPostalLocationUnavailable;
+              : result.reason === "timeout"
+                ? t.index.heroPostalLocationTimeout
+                : t.index.heroPostalLocationUnavailable;
         setPostalError(msg);
         return;
       }
@@ -182,6 +184,7 @@ export default function HeroSection() {
       postalCode,
       t.index.heroPostalLocationDenied,
       t.index.heroPostalLocationNoPostal,
+      t.index.heroPostalLocationTimeout,
       t.index.heroPostalLocationUnavailable,
     ],
   );

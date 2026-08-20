@@ -95,6 +95,7 @@ export const translations = {
       heroPostalLocationDenied: "Location access denied. Enter your postal code.",
       heroPostalLocationUnavailable: "Couldn't detect your location. Enter your postal code.",
       heroPostalLocationNoPostal: "We found you, but no postal code. Enter it manually.",
+      heroPostalLocationTimeout: "Location timed out. Try again, or enter your postal code.",
       heroNeedAfterPostal: "Describe the job…",
       heroLocationLabel: "Where are you located?",
       heroLocationPlaceholder: "City or postal code",
@@ -1638,6 +1639,7 @@ export const translations = {
       postalLocationDenied: "Location access denied. Enter your postal code.",
       postalLocationUnavailable: "Couldn't detect your location. Enter your postal code.",
       postalLocationNoPostal: "We found you, but no postal code. Enter it manually.",
+      postalLocationTimeout: "Location timed out. Try again, or enter your postal code.",
     },
     reviews: {
       sectionTitle: "Reviews",
@@ -1867,6 +1869,7 @@ export const translations = {
       heroPostalLocationDenied: "Accès à la position refusé. Entrez votre code postal.",
       heroPostalLocationUnavailable: "Impossible de détecter votre position. Entrez votre code postal.",
       heroPostalLocationNoPostal: "Position trouvée, mais sans code postal. Entrez-le manuellement.",
+      heroPostalLocationTimeout: "Délai de localisation dépassé. Réessayez, ou entrez votre code postal.",
       heroNeedAfterPostal: "Décrivez la job…",
       heroLocationLabel: "Où êtes-vous situé?",
       heroLocationPlaceholder: "Ville ou code postal",
@@ -3418,6 +3421,7 @@ export const translations = {
       postalLocationDenied: "Accès à la position refusé. Entrez votre code postal.",
       postalLocationUnavailable: "Impossible de détecter votre position. Entrez votre code postal.",
       postalLocationNoPostal: "Position trouvée, mais sans code postal. Entrez-le manuellement.",
+      postalLocationTimeout: "Délai de localisation dépassé. Réessayez, ou entrez votre code postal.",
     },
     reviews: {
       sectionTitle: "Avis",

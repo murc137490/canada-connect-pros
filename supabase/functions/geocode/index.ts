@@ -396,6 +396,158 @@ async function geocodeZippopotamFsa(address: string): Promise<GeoOut | null> {
   };
 }
 
+function extractCaPostalFromText(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const m = text.toUpperCase().match(/\b[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d\b/);
+  return m ? compactPostal(m[0]) : null;
+}
+
+function spacedPostal(compact: string | null): string | null {
+  if (!compact || compact.length !== 6) return null;
+  return `${compact.slice(0, 3)} ${compact.slice(3)}`;
+}
+
+async function reverseGoogle(lat: number, lng: number): Promise<GeoOut | null> {
+  if (!API_KEY) return null;
+  try {
+    const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+    url.searchParams.set("latlng", `${lat},${lng}`);
+    url.searchParams.set("key", API_KEY);
+    url.searchParams.set("result_type", "street_address|premise|postal_code|route|locality");
+    let res = await fetch(url.toString());
+    let data = (await res.json()) as { status: string; results?: GoogleResult[]; error_message?: string };
+    if (data.status !== "OK" || !data.results?.length) {
+      const url2 = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+      url2.searchParams.set("latlng", `${lat},${lng}`);
+      url2.searchParams.set("key", API_KEY);
+      res = await fetch(url2.toString());
+      data = (await res.json()) as { status: string; results?: GoogleResult[] };
+    }
+    if (data.status !== "OK" || !data.results?.length) return null;
+
+    const withPostal =
+      data.results.find((r) => {
+        const p = postalFromComponents(r.address_components);
+        return !!p && p.length === 6;
+      }) ?? data.results[0];
+
+    const compact =
+      postalFromComponents(withPostal.address_components) ??
+      extractCaPostalFromText(withPostal.formatted_address);
+    const parsed = parseGoogleResult(withPostal, spacedPostal(compact));
+    if (!parsed) return null;
+    return {
+      ...parsed,
+      lat,
+      lng,
+      postal: spacedPostal(compact),
+      source: "google_reverse",
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function reverseGeocoderCa(lat: number, lng: number): Promise<GeoOut | null> {
+  try {
+    const url = `https://geocoder.ca/?reverse=1&latt=${encodeURIComponent(String(lat))}&longt=${encodeURIComponent(String(lng))}&json=1`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "PremiereServices/1.0 (reverse-geocode)", Accept: "application/json" },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      latt?: string | number;
+      longt?: string | number;
+      postal?: string;
+      standard?: { city?: string; prov?: string; staddress?: string };
+      error?: unknown;
+    };
+    if (data.error) return null;
+    const compact = data.postal ? compactPostal(String(data.postal)) : null;
+    if (!compact || compact.length !== 6) return null;
+    const city = data.standard?.city ?? null;
+    const province = data.standard?.prov ?? null;
+    const spaced = spacedPostal(compact)!;
+    return {
+      lat,
+      lng,
+      city,
+      province,
+      formattedAddress: [data.standard?.staddress, city, province, spaced, "Canada"].filter(Boolean).join(", "),
+      postal: spaced,
+      source: "geocoder.ca_reverse",
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function reverseNominatim(lat: number, lng: number): Promise<GeoOut | null> {
+  try {
+    const url =
+      `https://nominatim.openstreetmap.org/reverse?lat=${encodeURIComponent(String(lat))}` +
+      `&lon=${encodeURIComponent(String(lng))}&format=json&addressdetails=1&zoom=18`;
+    const res = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "PremiereServices/1.0 (https://www.premiereservices.ca; reverse-geocode)",
+      },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      display_name?: string;
+      address?: {
+        postcode?: string;
+        city?: string;
+        town?: string;
+        village?: string;
+        municipality?: string;
+        state?: string;
+        "ISO3166-2-lvl4"?: string;
+        country_code?: string;
+      };
+    };
+    const addr = data.address;
+    if (addr?.country_code && addr.country_code.toLowerCase() !== "ca") {
+      // Still try postal if present (border cases)
+    }
+    const compact = addr?.postcode ? compactPostal(addr.postcode) : extractCaPostalFromText(data.display_name);
+    if (!compact || compact.length !== 6) return null;
+    if (!/^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$/.test(compact)) return null;
+    const city = addr?.city || addr?.town || addr?.village || addr?.municipality || null;
+    let province = addr?.state || null;
+    const iso = addr?.["ISO3166-2-lvl4"];
+    if (iso?.includes("-")) province = iso.split("-")[1] || province;
+    const spaced = spacedPostal(compact)!;
+    return {
+      lat,
+      lng,
+      city,
+      province,
+      formattedAddress: data.display_name ?? [city, province, spaced, "Canada"].filter(Boolean).join(", "),
+      postal: spaced,
+      source: "nominatim_reverse",
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function reverseGeocodeCoords(lat: number, lng: number): Promise<GeoOut | null> {
+  const viaGoogle = await reverseGoogle(lat, lng);
+  if (viaGoogle?.postal) return viaGoogle;
+
+  const viaCa = await reverseGeocoderCa(lat, lng);
+  if (viaCa?.postal) return viaCa;
+
+  const viaNom = await reverseNominatim(lat, lng);
+  if (viaNom?.postal) return viaNom;
+
+  // Last resort: Google without requiring postal (caller may still fail)
+  if (viaGoogle) return viaGoogle;
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -408,7 +560,27 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = (await req.json().catch(() => ({}))) as { address?: string };
+    const body = (await req.json().catch(() => ({}))) as {
+      address?: string;
+      lat?: number;
+      lng?: number;
+    };
+
+    const lat = typeof body.lat === "number" ? body.lat : Number(body.lat);
+    const lng = typeof body.lng === "number" ? body.lng : Number(body.lng);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      const viaReverse = await reverseGeocodeCoords(lat, lng);
+      if (viaReverse) {
+        return new Response(JSON.stringify(viaReverse), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "not_found", reason: "reverse_unresolved" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const address = normalizeCanadianPostal((body.address || "").toString());
     if (!address) {
       return new Response(JSON.stringify({ error: "missing address" }), {

@@ -160,7 +160,9 @@ export default function Services() {
             ? t.services.postalLocationDenied
             : result.reason === "no_postal"
               ? t.services.postalLocationNoPostal
-              : t.services.postalLocationUnavailable;
+              : result.reason === "timeout"
+                ? t.services.postalLocationTimeout
+                : t.services.postalLocationUnavailable;
         setPostalError(msg);
         return;
       }
@@ -186,6 +188,7 @@ export default function Services() {
       postalCode,
       t.services.postalLocationDenied,
       t.services.postalLocationNoPostal,
+      t.services.postalLocationTimeout,
       t.services.postalLocationUnavailable,
     ],
   );

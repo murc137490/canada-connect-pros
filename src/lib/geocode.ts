@@ -268,29 +268,64 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
   return loc?.formattedAddress ?? null;
 }
 
-/** Reverse-geocode GPS coords to city/province + Canadian postal when available. */
-export async function reverseGeocodeToLocation(lat: number, lng: number): Promise<GeocodeLocation | null> {
-  if (!CLIENT_KEY) return null;
+async function reverseViaEdge(lat: number, lng: number): Promise<GeocodeLocation | null> {
+  if (!SUPABASE_URL || !SUPABASE_ANON) return null;
   try {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${CLIENT_KEY}&result_type=street_address|premise|postal_code|locality`;
-    const res = await fetch(url);
-    const data = (await res.json()) as {
-      status: string;
-      results?: GoogleResult[];
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/geocode`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SUPABASE_ANON}`,
+        apikey: SUPABASE_ANON,
+      },
+      body: JSON.stringify({ lat, lng }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as GeocodeLocation & { error?: string; postal?: string | null };
+    if (typeof data.lat !== "number" || typeof data.lng !== "number") return null;
+    return {
+      lat: data.lat,
+      lng: data.lng,
+      city: data.city ?? null,
+      province: data.province ?? null,
+      formattedAddress: data.formattedAddress,
+      postal: data.postal ?? null,
     };
-    if (data.status !== "OK" || !data.results?.length) {
-      // Broader fallback without result_type filter
-      const url2 = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${CLIENT_KEY}`;
-      const res2 = await fetch(url2);
-      const data2 = (await res2.json()) as { status: string; results?: GoogleResult[] };
-      if (data2.status !== "OK" || !data2.results?.length) return null;
-      return pickReverseResult(data2.results, lat, lng);
-    }
-    return pickReverseResult(data.results, lat, lng);
   } catch (err) {
-    console.warn("Reverse geocode error:", err);
+    console.warn("Edge reverse geocode error:", err);
     return null;
   }
+}
+
+/** Reverse-geocode GPS coords to city/province + Canadian postal when available. */
+export async function reverseGeocodeToLocation(lat: number, lng: number): Promise<GeocodeLocation | null> {
+  const viaEdge = await reverseViaEdge(lat, lng);
+  if (viaEdge?.postal && isCompleteCanadianPostal(formatCanadianPostalInput(viaEdge.postal))) {
+    return {
+      ...viaEdge,
+      postal: formatCanadianPostalInput(viaEdge.postal),
+    };
+  }
+
+  // Client Google often fails (referrer-restricted keys) — try only as secondary.
+  if (CLIENT_KEY) {
+    try {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${CLIENT_KEY}`;
+      const res = await fetch(url);
+      const data = (await res.json()) as { status: string; results?: GoogleResult[] };
+      if (data.status === "OK" && data.results?.length) {
+        const picked = pickReverseResult(data.results, lat, lng);
+        if (picked?.postal && isCompleteCanadianPostal(formatCanadianPostalInput(picked.postal))) {
+          return { ...picked, postal: formatCanadianPostalInput(picked.postal) };
+        }
+        if (picked && !viaEdge) return picked;
+      }
+    } catch (err) {
+      console.warn("Client reverse geocode error:", err);
+    }
+  }
+
+  return viaEdge;
 }
 
 function pickReverseResult(results: GoogleResult[], lat: number, lng: number): GeocodeLocation | null {
@@ -330,46 +365,74 @@ function pickReverseResult(results: GoogleResult[], lat: number, lng: number): G
 
 export type DetectBrowserLocationResult =
   | { ok: true; location: GeocodeLocation }
-  | { ok: false; reason: "unsupported" | "denied" | "unavailable" | "no_postal" };
+  | { ok: false; reason: "unsupported" | "denied" | "unavailable" | "no_postal" | "timeout" };
 
-/** Browser GPS → reverse geocode. Requires user permission. */
-export function detectBrowserLocationPostal(): Promise<DetectBrowserLocationResult> {
+function getCurrentPositionAsync(
+  options: PositionOptions,
+): Promise<{ ok: true; coords: GeolocationCoordinates } | { ok: false; code: number }> {
   return new Promise((resolve) => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      resolve({ ok: false, reason: "unsupported" });
+      resolve({ ok: false, code: 2 });
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const loc = await reverseGeocodeToLocation(lat, lng);
-        if (!loc) {
-          resolve({ ok: false, reason: "unavailable" });
-          return;
-        }
-        const spaced = loc.postal ? formatCanadianPostalInput(loc.postal) : "";
-        if (!spaced || !isCompleteCanadianPostal(spaced)) {
-          resolve({ ok: false, reason: "no_postal" });
-          return;
-        }
-        resolve({
-          ok: true,
-          location: {
-            ...loc,
-            lat,
-            lng,
-            postal: spaced,
-          },
-        });
-      },
-      (err) => {
-        if (err.code === err.PERMISSION_DENIED) resolve({ ok: false, reason: "denied" });
-        else resolve({ ok: false, reason: "unavailable" });
-      },
-      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60_000 },
+      (pos) => resolve({ ok: true, coords: pos.coords }),
+      (err) => resolve({ ok: false, code: err.code }),
+      options,
     );
   });
+}
+
+/** Browser GPS → reverse geocode. Requires user permission. */
+export async function detectBrowserLocationPostal(): Promise<DetectBrowserLocationResult> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    return { ok: false, reason: "unsupported" };
+  }
+  if (typeof window !== "undefined" && !window.isSecureContext) {
+    // Geolocation requires HTTPS (or localhost)
+    return { ok: false, reason: "unavailable" };
+  }
+
+  let gps = await getCurrentPositionAsync({
+    enableHighAccuracy: true,
+    timeout: 20000,
+    maximumAge: 120_000,
+  });
+
+  if (!gps.ok) {
+    // Retry with coarser/network location (often works on desktop)
+    gps = await getCurrentPositionAsync({
+      enableHighAccuracy: false,
+      timeout: 25000,
+      maximumAge: 300_000,
+    });
+  }
+
+  if (!gps.ok) {
+    if (gps.code === 1) return { ok: false, reason: "denied" };
+    if (gps.code === 3) return { ok: false, reason: "timeout" };
+    return { ok: false, reason: "unavailable" };
+  }
+
+  const lat = gps.coords.latitude;
+  const lng = gps.coords.longitude;
+  const loc = await reverseGeocodeToLocation(lat, lng);
+  if (!loc) {
+    return { ok: false, reason: "unavailable" };
+  }
+  const spaced = loc.postal ? formatCanadianPostalInput(loc.postal) : "";
+  if (!spaced || !isCompleteCanadianPostal(spaced)) {
+    return { ok: false, reason: "no_postal" };
+  }
+  return {
+    ok: true,
+    location: {
+      ...loc,
+      lat,
+      lng,
+      postal: spaced,
+    },
+  };
 }
 
 /**
