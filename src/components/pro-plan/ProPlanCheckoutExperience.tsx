@@ -131,16 +131,8 @@ export default function ProPlanCheckoutExperience({
       currencyCode: "CAD",
       total: {
         amount: chargeCents != null ? (chargeCents / 100).toFixed(2) : "0.00",
-        label: "Première Services",
-        pending: false,
+        label: "Premiere Services",
       },
-      lineItems: [
-        {
-          amount: chargeCents != null ? (chargeCents / 100).toFixed(2) : "0.00",
-          label: "Plan change",
-          pending: false,
-        },
-      ],
     }),
     [chargeCents]
   );

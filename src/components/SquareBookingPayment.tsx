@@ -130,18 +130,10 @@ export default function SquareBookingPayment({
       countryCode: "CA",
       currencyCode,
       total: {
+        // Keep label ASCII — some Apple Pay QR sessions cancel on odd Unicode in merchant labels.
         amount: amountStr,
-        label: "Première Services",
-        pending: false,
+        label: "Premiere Services",
       },
-      // Helps digital wallets (Apple Pay / Google Pay) show a clear line item.
-      lineItems: [
-        {
-          amount: amountStr,
-          label: "Total",
-          pending: false,
-        },
-      ],
     }),
     [amountStr, currencyCode]
   );
