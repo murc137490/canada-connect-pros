@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApplePay, CreditCard, Divider, GooglePay, PaymentForm } from "react-square-web-payments-sdk";
+import { ApplePay, CreditCard, GooglePay, PaymentForm } from "react-square-web-payments-sdk";
 import { Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useApplePaySquareMissingHint } from "@/hooks/useApplePaySquareMissingHint";
@@ -431,7 +431,6 @@ export default function ProPlanCheckoutExperience({
                           {applePayBetaText}
                         </p>
                       ) : null}
-                      <Divider>{terms.checkoutDividerCard ?? "Or card"}</Divider>
                       <CreditCard style={CARD_STYLE_CHECKOUT} />
                     </div>
                   </PaymentForm>

@@ -3,7 +3,6 @@ import { useApplePaySquareMissingHint } from "@/hooks/useApplePaySquareMissingHi
 import {
   ApplePay,
   CreditCard,
-  Divider,
   GooglePay,
   PaymentForm,
 } from "react-square-web-payments-sdk";
@@ -302,7 +301,6 @@ export default function SquareBookingPayment({
               {applePayBetaText}
             </p>
           ) : null}
-          <Divider>{terms.checkoutDividerCard ?? "Or card"}</Divider>
           <CreditCard style={CARD_STYLE} />
         </div>
       </PaymentForm>
