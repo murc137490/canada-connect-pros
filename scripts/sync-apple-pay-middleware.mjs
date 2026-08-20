@@ -1,23 +1,33 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 const body = readFileSync(
-  "public/.well-known/apple-developer-merchantid-domain-association",
+  "apple-pay/apple-developer-merchantid-domain-association",
   "utf8",
 );
 
+if (body.startsWith("{") || body.length < 8000) {
+  console.error(
+    "Association file looks decoded/short. Keep the Square hex download (~9098 chars).",
+  );
+  process.exit(1);
+}
+
+const rev = `hex-${body.length}-${Date.now().toString(36)}`;
+
 const middleware = `/**
- * Square Apple Pay domain verification.
- * Vercel static CDN answers HTTP Range with 206 Partial Content; Square reports "partial response".
- * Middleware always returns 200 + full body and ignores Range.
+ * Square Apple Pay domain association (hex, ~9098 bytes).
+ * Served only from Edge Middleware so Vercel CDN cannot keep serving an old
+ * decoded JSON copy (4549 bytes) that Square rejects as "partial response".
  *
- * After replacing public/.well-known/apple-developer-merchantid-domain-association, run:
- *   node scripts/sync-apple-pay-middleware.mjs
+ * Source of truth: apple-pay/apple-developer-merchantid-domain-association
+ * Sync: node scripts/sync-apple-pay-middleware.mjs
  */
 export const config = {
   matcher: "/.well-known/apple-developer-merchantid-domain-association",
 };
 
 const BODY = ${JSON.stringify(body)};
+const REV = ${JSON.stringify(rev)};
 
 export default function middleware() {
   const bytes = new TextEncoder().encode(BODY);
@@ -28,12 +38,16 @@ export default function middleware() {
       "Content-Disposition":
         'attachment; filename="apple-developer-merchantid-domain-association"',
       "Content-Length": String(bytes.byteLength),
-      "Cache-Control": "no-store",
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      "CDN-Cache-Control": "no-store",
+      "Vercel-CDN-Cache-Control": "no-store",
       "Accept-Ranges": "none",
+      "X-Assoc-Rev": REV,
+      "X-Assoc-Bytes": String(bytes.byteLength),
     },
   });
 }
 `;
 
 writeFileSync("middleware.ts", middleware);
-console.log(`Wrote middleware.ts (association body ${body.length} bytes)`);
+console.log(`Wrote middleware.ts rev=${rev} bytes=${body.length}`);

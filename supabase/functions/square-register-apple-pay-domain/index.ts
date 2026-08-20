@@ -37,18 +37,26 @@ Deno.serve(async (req) => {
       content_disposition: res.headers.get("content-disposition"),
       accept_ranges: res.headers.get("accept-ranges"),
       transfer_encoding: res.headers.get("transfer-encoding"),
+      x_assoc_rev: res.headers.get("x-assoc-rev"),
+      x_assoc_bytes: res.headers.get("x-assoc-bytes"),
       body_bytes: buf.byteLength,
-      starts_with_hex: /^[0-9A-Fa-f]/.test(text),
-      starts_with_json: text.startsWith("{"),
+      starts_with_hex: /^[0-9A-Fa-f]+$/.test(text.trim()),
+      starts_with_json: text.trimStart().startsWith("{"),
       preview: text.slice(0, 40),
+      ok_for_square: buf.byteLength === 9098 && /^[0-9A-Fa-f]+$/.test(text.trim()),
     };
   } catch (e) {
     probe = { error: String(e) };
   }
 
   const accessToken = (Deno.env.get("SQUARE_ACCESS_TOKEN") ?? "").trim();
+  const envParam = (url.searchParams.get("env") ?? "").trim().toLowerCase();
   const environment =
-    Deno.env.get("SQUARE_ENVIRONMENT") === "production" ? "production" : "sandbox";
+    envParam === "production" || envParam === "sandbox"
+      ? envParam
+      : Deno.env.get("SQUARE_ENVIRONMENT") === "production"
+      ? "production"
+      : "sandbox";
   const squareBase =
     environment === "production"
       ? "https://connect.squareup.com"

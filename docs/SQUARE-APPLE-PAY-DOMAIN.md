@@ -1,37 +1,38 @@
 # Apple Pay domain verification (Square)
 
-No Vite changes are needed.
+No Vite changes needed.
 
-## Square checklist (both domains)
+## What Square actually checks
 
-You have **two** rows in Square. Each must fetch the file **without a redirect**.
+Square’s API error (when it fails) looks like:
 
-| Domain | What must happen |
-|--------|------------------|
-| `www.premiereservices.ca` | File returns **200**, ~9098 hex bytes, and **downloads** |
-| `premiereservices.ca` | Same — **must not** 308 to www |
+`expected … to return 9098 bytes but instead returned 4549`
 
-Today, Vercel’s **domain redirect** (apex → www) breaks `premiereservices.ca`. That setting is in the Vercel dashboard, not in Vite.
+- **9098** = correct **hex** file from Square  
+- **4549** = hex was **decoded to JSON** (wrong)
 
-### Required Vercel step (apex)
+Your browser can download the correct file while Square still hits a **stale CDN edge** serving the old JSON. That shows up as “partial response” in the dashboard.
 
-1. Open [Vercel](https://vercel.com) → your project → **Settings** → **Domains**
-2. Click **`premiereservices.ca`**
-3. If it says **Redirect to** `www.premiereservices.ca`, **turn that redirect off** so the apex is a normal connected domain (same project)
-4. Keep `www.premiereservices.ca` as the primary/canonical site
+## Fix checklist
 
-After that, this repo’s `vercel.json` still redirects normal pages from apex → www, but **not** `/.well-known/...`, so Square can verify both hosts.
+1. Association is served from **Edge Middleware** only (`middleware.ts`), source file in `apple-pay/apple-developer-merchantid-domain-association` (hex).
+2. In **Vercel** → Project → **Deployments** → latest → **Redeploy** → enable **Clear cache and redeploy** (wording may vary).
+3. Confirm every region sees hex + revision header:
 
-### Then in Square
+   ```bash
+   curl -sI "https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association"
+   # expect: X-Assoc-Bytes: 9098  and  X-Assoc-Rev: hex-9098-...
+   curl -s "https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association" | wc -c
+   # expect: 9098
+   ```
 
-1. Confirm both URLs download the file (browser save dialog is expected):
-   - https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association
-   - https://premiereservices.ca/.well-known/apple-developer-merchantid-domain-association
-2. Click **Retry verification** on **`www.premiereservices.ca`** first
-3. Then retry **`premiereservices.ca`**
+4. In Square **Production**, verify **only** `www.premiereservices.ca`.
+5. Optional: remove `premiereservices.ca` (apex) from Square until Vercel’s apex→www redirect is turned off for that host.
 
-If you only need Apple Pay on www, you can **remove** the apex domain from Square entirely and only keep www.
+## Update the file later
 
-## File format
+Replace `apple-pay/apple-developer-merchantid-domain-association` with Square’s hex download, then:
 
-Host Square’s file as **hex** (~9098 chars, starts `7B227073…`). Do not decode to JSON.
+`node scripts/sync-apple-pay-middleware.mjs`
+
+Commit, push, clear Vercel cache redeploy.
