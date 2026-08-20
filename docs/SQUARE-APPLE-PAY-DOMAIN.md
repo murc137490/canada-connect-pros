@@ -1,51 +1,49 @@
 # Apple Pay domain verification (Square)
 
-Square may require you to **verify your website domain** for Apple Pay. You must host the association file at a fixed URL over **HTTPS**.
+No Vite config is required. The file lives in `public/.well-known/` and is copied to the site root at build time.
 
 ## Required URL
 
-After deploy, this must return **exactly** the file Square gives you (no HTML wrapper, no login page):
-
 `https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association`
 
-**Use the `www` URL.** Visiting `https://premiereservices.ca/...` (no www) redirects to www. In the Square list, click **Retry verification** on **`www.premiereservices.ca`**.
+**Only verify `www.premiereservices.ca`.** The apex `premiereservices.ca` **308-redirects** to www; Square/Apple do not accept redirects, so verifying the non-www domain always fails.
 
-It is **normal** if the browser asks to **download** the file.
+## Critical: host the hex file as-is
 
-## Critical: do not decode the file
+Square’s file is ~**9098** hex characters starting with `7B227073704964…`.
 
-Square’s download is a long **hex string** (starts with `7B227073704964...`, about **9098** characters).
+Do **not** decode it to JSON. Decoded JSON (~4549 bytes starting with `{"pspId":`) is rejected as **“partial response”**.
 
-Host it **exactly as downloaded**. Do **not** decode hex to JSON. If the live file starts with `{"pspId":` and is ~4549 bytes, Square reports **“partial response”** (it expected ~9098 bytes).
+Our live file must match Square’s canonical copy:
 
-Check:
+https://app.squareup.com/digital-wallets/apple-pay/apple-developer-merchantid-domain-association
 
-```bash
-curl -s "https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association" | wc -c
-# expect ~9098
-```
+## Steps
 
-## Steps (this repo — Vite)
+1. Download the verification file from Square (or use the canonical URL above).
+2. Save as `public/.well-known/apple-developer-merchantid-domain-association` (hex digits only, no decode).
+3. Commit, deploy.
+4. Confirm:
 
-1. In Square, **Download verification file**.
-2. Save it as `apple-developer-merchantid-domain-association` (no `.txt`). Keep the hex digits as-is.
-3. Put it at `public/.well-known/apple-developer-merchantid-domain-association`
-4. Sync Edge Middleware: `node scripts/sync-apple-pay-middleware.mjs`
-5. Commit and deploy.
-6. In Square, **Verify** / **Retry** on **`www.premiereservices.ca`**.
+   ```bash
+   curl -s "https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association" | wc -c
+   # expect 9098
+   curl -sI "https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association"
+   # expect 200 and Content-Length: 9098
+   ```
 
-Verification is **instant** once the correct file is live (not a multi-hour wait).
+5. In Square, **Retry verification** only on **`www.premiereservices.ca`**. It should succeed immediately.
 
-## If verification fails
+## If it still fails
 
-- **“Partial response”** — Almost always: hex was decoded to JSON (half size), or you verified the non-www host that redirects.
-- **HTTPS only**
-- **No SPA fallback** — must not be `index.html`
-- Fresh download from the **same** Square app / environment
+- You clicked Verify on **premiereservices.ca** (no www) → use **www** only.
+- Get the real error via API (needs your Square access token):
 
-## What else you need
+  ```bash
+  curl https://connect.squareup.com/v2/apple-pay/domains \
+    -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"domain_name\":\"www.premiereservices.ca\"}"
+  ```
 
-- HTTPS on the real domain
-- Square Apple Pay / Web payments setup with domain verified
-- Safari + Wallet for Apple Pay on the web
-- Production Square Application ID on the live site
+  The `detail` field often says `expected … N bytes but instead returned M`.
