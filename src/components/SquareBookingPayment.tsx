@@ -288,12 +288,12 @@ export default function SquareBookingPayment({
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {plans?.checkoutDigitalWallet ?? "Digital wallet"}
           </p>
-          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-            <div ref={applePayAnchorRef} className="min-h-[48px] min-w-0">
+          <div className="grid min-w-0 grid-cols-2 gap-3">
+            <div ref={applePayAnchorRef} className="min-h-[48px] min-w-0 overflow-hidden rounded-lg">
               <ApplePay id="rswps-apple-pay-container" />
             </div>
-            <div className="min-h-[48px] min-w-0">
-              <GooglePay id="rswps-google-pay-container" buttonSizeMode="fill" buttonType="long" />
+            <div className="min-h-[48px] min-w-0 overflow-hidden rounded-lg">
+              <GooglePay id="rswps-google-pay-container" buttonSizeMode="fill" buttonType="long" buttonColor="black" />
             </div>
           </div>
           {showApplePayBeta && applePayBetaText ? (

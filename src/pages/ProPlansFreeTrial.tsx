@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { CreditCard, PaymentForm } from "react-square-web-payments-sdk";
+import { ApplePay, CreditCard, GooglePay, PaymentForm } from "react-square-web-payments-sdk";
 import { Check, Loader2, ShieldCheck } from "lucide-react";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -211,7 +211,25 @@ export default function ProPlansFreeTrial() {
                           await handleTokenize(result as { status?: string; token?: string; errors?: unknown });
                         }}
                       >
-                        <CreditCard style={CARD_STYLE} />
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">
+                            {t.plans?.checkoutDigitalWallet ?? "Digital wallet"}
+                          </p>
+                          <div className="grid min-w-0 grid-cols-2 gap-3">
+                            <div className="min-h-[48px] min-w-0 overflow-hidden rounded-lg">
+                              <ApplePay id="trial-apple-pay" />
+                            </div>
+                            <div className="min-h-[48px] min-w-0 overflow-hidden rounded-lg">
+                              <GooglePay
+                                id="trial-google-pay"
+                                buttonSizeMode="fill"
+                                buttonType="long"
+                                buttonColor="black"
+                              />
+                            </div>
+                          </div>
+                          <CreditCard style={CARD_STYLE} />
+                        </div>
                       </PaymentForm>
                     </div>
                     {error ? <p className="text-sm text-destructive">{error}</p> : null}

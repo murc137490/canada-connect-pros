@@ -893,3 +893,24 @@
 .dark .current-plan-rainbow-heading {
   color: #ffffff;
 }
+
+/* Square Apple Pay button — required for the wallet control to render at full width */
+apple-pay-button,
+.sq-apple-pay,
+#rswps-apple-pay-container,
+#pro-plan-apple-pay,
+#trial-apple-pay {
+  --apple-pay-button-width: 100%;
+  --apple-pay-button-height: 48px;
+  --apple-pay-button-border-radius: 8px;
+  --apple-pay-button-padding: 0px;
+  --apple-pay-button-box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: 48px;
+}
+
+apple-pay-button {
+  -apple-pay-button-style: black;
+  -apple-pay-button-type: plain;
+}

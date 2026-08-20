@@ -418,12 +418,12 @@ export default function ProPlanCheckoutExperience({
                   >
                     <div className="space-y-4">
                       <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">{plans?.checkoutDigitalWallet ?? "Digital wallet"}</p>
-                      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-                        <div ref={applePayAnchorRef} className="min-h-[48px] min-w-0">
+                      <div className="grid min-w-0 grid-cols-2 gap-3">
+                        <div ref={applePayAnchorRef} className="min-h-[48px] min-w-0 overflow-hidden rounded-lg">
                           <ApplePay id="pro-plan-apple-pay" />
                         </div>
-                        <div className="min-h-[48px] min-w-0">
-                          <GooglePay id="pro-plan-google-pay" buttonSizeMode="fill" buttonType="long" />
+                        <div className="min-h-[48px] min-w-0 overflow-hidden rounded-lg">
+                          <GooglePay id="pro-plan-google-pay" buttonSizeMode="fill" buttonType="long" buttonColor="black" />
                         </div>
                       </div>
                       {showApplePayBeta && applePayBetaText ? (
