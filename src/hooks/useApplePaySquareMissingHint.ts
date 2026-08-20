@@ -1,17 +1,12 @@
 import { useEffect, useState, type RefObject } from "react";
-
-function applePayJsPresent(): boolean {
-  if (typeof window === "undefined") return false;
-  return typeof (window as unknown as { ApplePaySession?: unknown }).ApplePaySession !== "undefined";
-}
-
-function applePaySlotLooksEmpty(el: HTMLElement): boolean {
-  if (el.querySelector("iframe, button, [role='button'], apple-pay-button")) return false;
-  return el.getBoundingClientRect().height < 36;
-}
+import {
+  applePaySlotLooksLive,
+  ensureApplePaySdkLoaded,
+  isApplePayBrowserCapableSync,
+} from "@/lib/applePaySdk";
 
 /**
- * On Safari / Apple Pay–capable environments only: after Square mounts, show a short beta hint
+ * On Apple Pay–capable environments only: after Square mounts, show a short beta hint
  * if the Apple Pay wallet slot still looks empty (domain / merchant config / SDK).
  */
 export function useApplePaySquareMissingHint(anchorRef: RefObject<HTMLElement | null>, active: boolean): boolean {
@@ -22,34 +17,36 @@ export function useApplePaySquareMissingHint(anchorRef: RefObject<HTMLElement | 
       setShow(false);
       return;
     }
-    if (!applePayJsPresent()) {
-      setShow(false);
-      return;
-    }
 
     let cancelled = false;
     const delaysMs = [1400, 2800, 4800];
     const timers: number[] = [];
 
-    const tick = () => {
-      if (cancelled) return;
-      const el = anchorRef.current;
-      if (!el) return;
-      if (applePaySlotLooksEmpty(el)) setShow(true);
-      else {
-        setShow(false);
+    void (async () => {
+      await ensureApplePaySdkLoaded();
+      if (cancelled || !isApplePayBrowserCapableSync()) {
+        if (!cancelled) setShow(false);
+        return;
       }
-    };
 
-    for (const ms of delaysMs) {
-      timers.push(window.setTimeout(tick, ms));
-    }
+      const tick = () => {
+        if (cancelled) return;
+        const el = anchorRef.current;
+        if (!el) return;
+        setShow(!applePaySlotLooksLive(el));
+      };
+
+      for (const ms of delaysMs) {
+        timers.push(window.setTimeout(tick, ms));
+      }
+      tick();
+    })();
 
     return () => {
       cancelled = true;
       timers.forEach((id) => window.clearTimeout(id));
     };
-  }, [active]);
+  }, [active, anchorRef]);
 
   return show;
 }

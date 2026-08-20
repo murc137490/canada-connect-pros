@@ -21,6 +21,8 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/boot/long-shadow.css" />
+    <!-- Apple Pay JS 1.2+: required for Apple Pay on non-Safari desktop (QR → iPhone iOS 18+). -->
+    <script src="https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js" crossorigin="anonymous"></script>
     <script>
       try {
         var theme = localStorage.getItem("premiere-theme");

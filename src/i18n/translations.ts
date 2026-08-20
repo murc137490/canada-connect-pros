@@ -658,15 +658,15 @@ export const translations = {
         "Your card is authorized. You are only charged if the professional accepts.",
       applePayWalletRolloutNote: "",
       applePayBetaTestingNote:
-        "Apple Pay works in Safari on iPhone/Mac with Wallet. On Windows and Android, use Google Pay or card.",
+        "Apple Pay works in Safari on iPhone/Mac. On Windows or Android, tap Apple Pay for a QR code and finish on your iPhone.",
       applePayUnavailableOnDevice:
-        "Apple Pay is available in Safari on iPhone and Mac. Use Google Pay or card here.",
+        "Scan the QR with your iPhone Camera (iOS 18+) or open the link in Safari to pay with Apple Pay.",
       applePayHandoffButtonLabel: "Apple Pay",
       applePayHandoffHint:
-        "On Windows or Android, tap Apple Pay to show a QR code, then finish in Safari on your iPhone.",
+        "On Windows or Android, tap Apple Pay to show a QR code, then finish with Face ID / Touch ID on your iPhone.",
       applePayHandoffQrTitle: "Pay with Apple Pay on iPhone",
       applePayHandoffQrBody:
-        "Scan this code with your iPhone Camera, open in Safari, sign in with the same account, then tap Apple Pay.",
+        "Scan this code with your iPhone Camera (iOS 18+), open in Safari, sign in with the same account, then confirm with Apple Pay.",
       applePayHandoffWaiting: "Waiting for payment on your iPhone…",
       applePayHandoffCreateError: "Could not create Apple Pay link. Try again.",
       applePayHandoffNotFound: "This Apple Pay link was not found.",
@@ -2465,15 +2465,15 @@ export const translations = {
         "Votre carte est pré-autorisée. Le montant n’est débité que si le professionnel accepte.",
       applePayWalletRolloutNote: "",
       applePayBetaTestingNote:
-        "Apple Pay fonctionne dans Safari sur iPhone/Mac avec Wallet. Sur Windows et Android, utilisez Google Pay ou la carte.",
+        "Apple Pay fonctionne dans Safari sur iPhone/Mac. Sur Windows ou Android, touchez Apple Pay pour un code QR et terminez sur votre iPhone.",
       applePayUnavailableOnDevice:
-        "Apple Pay est disponible dans Safari sur iPhone et Mac. Utilisez Google Pay ou la carte ici.",
+        "Scannez le QR avec l’appareil photo de l’iPhone (iOS 18+) ou ouvrez le lien dans Safari pour payer avec Apple Pay.",
       applePayHandoffButtonLabel: "Apple Pay",
       applePayHandoffHint:
-        "Sur Windows ou Android, touchez Apple Pay pour afficher un code QR, puis terminez dans Safari sur votre iPhone.",
+        "Sur Windows ou Android, touchez Apple Pay pour afficher un code QR, puis confirmez avec Face ID / Touch ID sur votre iPhone.",
       applePayHandoffQrTitle: "Payer avec Apple Pay sur iPhone",
       applePayHandoffQrBody:
-        "Scannez ce code avec l’appareil photo de l’iPhone, ouvrez dans Safari, connectez-vous avec le même compte, puis touchez Apple Pay.",
+        "Scannez ce code avec l’appareil photo de l’iPhone (iOS 18+), ouvrez dans Safari, connectez-vous avec le même compte, puis confirmez avec Apple Pay.",
       applePayHandoffWaiting: "En attente du paiement sur votre iPhone…",
       applePayHandoffCreateError: "Impossible de créer le lien Apple Pay. Réessayez.",
       applePayHandoffNotFound: "Ce lien Apple Pay est introuvable.",

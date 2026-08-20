@@ -131,8 +131,17 @@ export default function SquareBookingPayment({
       currencyCode,
       total: {
         amount: amountStr,
-        label: "Total",
+        label: "Première Services",
+        pending: false,
       },
+      // Helps digital wallets (Apple Pay / Google Pay) show a clear line item.
+      lineItems: [
+        {
+          amount: amountStr,
+          label: "Total",
+          pending: false,
+        },
+      ],
     }),
     [amountStr, currencyCode]
   );
