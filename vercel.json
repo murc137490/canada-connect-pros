@@ -9,13 +9,25 @@
       "headers": [
         {
           "key": "Content-Type",
-          "value": "text/plain"
+          "value": "application/octet-stream"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "attachment; filename=\"apple-developer-merchantid-domain-association\""
         },
         {
           "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
+          "value": "no-store"
         }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/:path((?!\\.well-known/).*)",
+      "has": [{ "type": "host", "value": "premiereservices.ca" }],
+      "destination": "https://www.premiereservices.ca/:path*",
+      "permanent": true
     }
   ],
   "rewrites": [

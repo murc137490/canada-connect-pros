@@ -1,49 +1,37 @@
 # Apple Pay domain verification (Square)
 
-No Vite config is required. The file lives in `public/.well-known/` and is copied to the site root at build time.
+No Vite changes are needed.
 
-## Required URL
+## Square checklist (both domains)
 
-`https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association`
+You have **two** rows in Square. Each must fetch the file **without a redirect**.
 
-**Only verify `www.premiereservices.ca`.** The apex `premiereservices.ca` **308-redirects** to www; Square/Apple do not accept redirects, so verifying the non-www domain always fails.
+| Domain | What must happen |
+|--------|------------------|
+| `www.premiereservices.ca` | File returns **200**, ~9098 hex bytes, and **downloads** |
+| `premiereservices.ca` | Same — **must not** 308 to www |
 
-## Critical: host the hex file as-is
+Today, Vercel’s **domain redirect** (apex → www) breaks `premiereservices.ca`. That setting is in the Vercel dashboard, not in Vite.
 
-Square’s file is ~**9098** hex characters starting with `7B227073704964…`.
+### Required Vercel step (apex)
 
-Do **not** decode it to JSON. Decoded JSON (~4549 bytes starting with `{"pspId":`) is rejected as **“partial response”**.
+1. Open [Vercel](https://vercel.com) → your project → **Settings** → **Domains**
+2. Click **`premiereservices.ca`**
+3. If it says **Redirect to** `www.premiereservices.ca`, **turn that redirect off** so the apex is a normal connected domain (same project)
+4. Keep `www.premiereservices.ca` as the primary/canonical site
 
-Our live file must match Square’s canonical copy:
+After that, this repo’s `vercel.json` still redirects normal pages from apex → www, but **not** `/.well-known/...`, so Square can verify both hosts.
 
-https://app.squareup.com/digital-wallets/apple-pay/apple-developer-merchantid-domain-association
+### Then in Square
 
-## Steps
+1. Confirm both URLs download the file (browser save dialog is expected):
+   - https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association
+   - https://premiereservices.ca/.well-known/apple-developer-merchantid-domain-association
+2. Click **Retry verification** on **`www.premiereservices.ca`** first
+3. Then retry **`premiereservices.ca`**
 
-1. Download the verification file from Square (or use the canonical URL above).
-2. Save as `public/.well-known/apple-developer-merchantid-domain-association` (hex digits only, no decode).
-3. Commit, deploy.
-4. Confirm:
+If you only need Apple Pay on www, you can **remove** the apex domain from Square entirely and only keep www.
 
-   ```bash
-   curl -s "https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association" | wc -c
-   # expect 9098
-   curl -sI "https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association"
-   # expect 200 and Content-Length: 9098
-   ```
+## File format
 
-5. In Square, **Retry verification** only on **`www.premiereservices.ca`**. It should succeed immediately.
-
-## If it still fails
-
-- You clicked Verify on **premiereservices.ca** (no www) → use **www** only.
-- Get the real error via API (needs your Square access token):
-
-  ```bash
-  curl https://connect.squareup.com/v2/apple-pay/domains \
-    -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "{\"domain_name\":\"www.premiereservices.ca\"}"
-  ```
-
-  The `detail` field often says `expected … N bytes but instead returned M`.
+Host Square’s file as **hex** (~9098 chars, starts `7B227073…`). Do not decode to JSON.
