@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { Send, Bot, HelpCircle, BookOpen, Phone } from "lucide-react";
+import { Send, Bot, HelpCircle, BookOpen, Phone, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,9 +9,10 @@ import GradientText from "@/components/GradientText";
 import TextType from "@/components/TextType";
 import BlurText from "@/components/BlurText";
 import { sendSupportChatMessage, type SupportChatMessage } from "@/lib/supportChatApi";
+import { SUPPORT_EMAIL, SUPPORT_PHONE, SUPPORT_PHONE_TEL } from "@/config/legalConfig";
 
 export default function Support() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const prefillPrompt = searchParams.get("prompt");
@@ -23,7 +24,7 @@ export default function Support() {
         ? [{ role: "assistant", content: initialMessage }]
         : prev[0]?.role === "assistant"
           ? [{ ...prev[0], content: initialMessage }, ...prev.slice(1)]
-          : prev
+          : prev,
     );
   }, [initialMessage]);
   const [input, setInput] = useState("");
@@ -142,14 +143,14 @@ export default function Support() {
 
               <div className="grid sm:grid-cols-2 gap-3 mt-6 md:mt-8">
                 <a
-                  href="tel:+14509101400"
+                  href={SUPPORT_PHONE_TEL}
                   className="glass-card glass-hover rounded-xl p-3 md:p-4 space-y-1 min-w-0 block hover:opacity-90 transition-opacity"
                 >
                   <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0">
                     <Phone size={16} className="text-secondary" />
                   </div>
                   <h3 className="font-heading font-bold text-foreground text-sm">{t.support.callUs}</h3>
-                  <p className="text-xs text-muted-foreground">+1 450 910 1400</p>
+                  <p className="text-xs text-muted-foreground">{SUPPORT_PHONE}</p>
                   <p className="text-[11px] text-muted-foreground leading-tight">{t.support.contactHours}</p>
                 </a>
                 <div className="glass-card glass-hover rounded-xl p-3 md:p-4 space-y-1 min-w-0">
@@ -158,14 +159,14 @@ export default function Support() {
                   </div>
                   <h3 className="font-heading font-bold text-foreground text-sm">{t.support.email}</h3>
                   <p className="text-[11px] text-muted-foreground break-all min-w-0 select-text cursor-text" title="Select to copy">
-                    support@premiereservices.ca
+                    {SUPPORT_EMAIL}
                   </p>
                   <p className="text-[11px] text-muted-foreground leading-tight">{t.support.contactResponse}</p>
                   <a
-                    href="mailto:support@premiereservices.ca?subject=Premiere%20Services%20-%20Support"
+                    href={`mailto:${SUPPORT_EMAIL}?subject=Premiere%20Services%20-%20Support`}
                     className="inline-block mt-2 text-xs font-medium text-primary hover:underline focus:outline-none dark:text-sky-400 dark:hover:text-sky-300"
                   >
-                    Send email →
+                    {locale === "fr" ? "Envoyer un courriel →" : "Send email →"}
                   </a>
                 </div>
               </div>
@@ -181,9 +182,6 @@ export default function Support() {
                   <p className="text-xs opacity-70">{t.support.poweredBy}</p>
                 </div>
               </div>
-              {user ? (
-                <p className="border-b border-white/10 px-5 py-3 text-xs text-muted-foreground">{t.support.aiLanguageHint}</p>
-              ) : null}
 
               <div ref={scrollRef} className="h-96 overflow-y-auto p-5 space-y-4">
                 {messages.map((msg, i) => (
@@ -222,19 +220,27 @@ export default function Support() {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                    onKeyDown={(e) => e.key === "Enter" && void sendMessage()}
                     placeholder={t.support.askPlaceholder}
                     className="flex-1 glass-card rounded-2xl px-4 py-3 text-sm outline-none text-foreground placeholder:text-muted-foreground"
                   />
                   <Button
                     size="sm"
-                    onClick={sendMessage}
-                    disabled={loading || !input.trim()}
+                    onClick={() => void sendMessage()}
+                    disabled={loading || !input.trim() || !user}
                     className="bg-secondary text-secondary-foreground hover:bg-secondary/90 h-auto px-4"
                   >
                     <Send size={16} />
                   </Button>
                 </div>
+                {!user ? (
+                  <p className="text-center text-[11px] text-muted-foreground">
+                    {t.support.signInToUse}{" "}
+                    <Link to="/auth?mode=login" className="underline underline-offset-2 hover:text-foreground">
+                      {locale === "fr" ? "Connexion" : "Sign in"}
+                    </Link>
+                  </p>
+                ) : null}
                 <p className="text-center text-[11px] text-muted-foreground">
                   {t.support.chatDisclaimer}{" "}
                   <Link to="/terms" className="underline underline-offset-2 hover:text-foreground">

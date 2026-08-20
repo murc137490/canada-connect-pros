@@ -14,6 +14,12 @@ export const PRIVACY_CONTACT = {
 /** Public support contact (operational). */
 export const SUPPORT_EMAIL = "support@premiereservices.ca";
 
+/** Public support phone (display). */
+export const SUPPORT_PHONE = "+1 450 910 1400";
+
+/** tel: href for the public support phone. */
+export const SUPPORT_PHONE_TEL = "tel:+14509101400";
+
 /**
  * What "verified" means in the product UI today.
  * Do not expand this to "licensed" or "insured" without an actual verification process.
