@@ -7,10 +7,10 @@ const body = readFileSync(
 
 const middleware = `/**
  * Square Apple Pay domain verification.
- * Vercel static assets advertise Accept-Ranges and answer Range with 206;
- * Square's crawler then reports "partial response". Middleware always returns 200 + full body.
+ * Vercel static CDN answers HTTP Range with 206 Partial Content; Square reports "partial response".
+ * Middleware always returns 200 + full body and ignores Range.
  *
- * After replacing the association file under public/.well-known/, run:
+ * After replacing public/.well-known/apple-developer-merchantid-domain-association, run:
  *   node scripts/sync-apple-pay-middleware.mjs
  */
 export const config = {
@@ -20,13 +20,15 @@ export const config = {
 const BODY = ${JSON.stringify(body)};
 
 export default function middleware() {
-  return new Response(BODY, {
+  const bytes = new TextEncoder().encode(BODY);
+  return new Response(bytes, {
     status: 200,
     headers: {
-      "Content-Type": "text/plain; charset=utf-8",
+      "Content-Type": "text/plain",
       "Content-Disposition":
         'attachment; filename="apple-developer-merchantid-domain-association"',
-      "Cache-Control": "no-store, no-cache, must-revalidate",
+      "Content-Length": String(bytes.byteLength),
+      "Cache-Control": "no-store",
       "Accept-Ranges": "none",
     },
   });
