@@ -217,13 +217,39 @@ BEGIN
     now() - interval '19 days',
     910001,
     jsonb_build_object(
-      'demo', true,
-      'label', 'Satisfied complete — 5★',
-      'service', 'Plomberie express',
-      'subtotal_cents', 9500,
-      'tax_cents', 1421,
-      'total_cents', 10921,
-      'currency', 'CAD'
+      'v', 2,
+      'paid_at', (now() - interval '18 days')::text,
+      'pro_profile_id', v_pro_id::text,
+      'business_name', 'Pork Plomberie Pro (Demo)',
+      'service_name', 'Plomberie express',
+      'duration_label', '90 min',
+      'appointment_summary', to_char(current_date - 18, 'YYYY-MM-DD') || ' · 10:00',
+      'preferred_date', (current_date - 18)::text,
+      'preferred_time', '10:00',
+      'service_duration_minutes', 90,
+      'service_category_slug', 'home-improvement',
+      'service_slug', 'plumbing-services',
+      'currency', 'CAD',
+      'base_amount_cents', 9500,
+      'subtotal', 95,
+      'gst', 4.75,
+      'qst', 9.9500625,
+      'processing_fee', 4.75,
+      'total_cents', 11445,
+      'square_payment_id', 'demo_sq_sat1',
+      'idempotency_key', 'demo-sat-done-5',
+      'client_renews_annually', true,
+      'renewal_interval_months', 12,
+      'renewal_anchor_date', (current_date - 18)::text,
+      'booking_public_code', 'DEMO-SAT-DONE-5',
+      'invoice_number', 910001,
+      'supplier_legal_name', 'Pork Plomberie Inc.',
+      'supplier_address', '123 Rue Saint-Jacques, Montréal, QC H2Y 1L6',
+      'supplier_gst_number', '123456789RT0001',
+      'supplier_qst_number', '1234567890TQ0001',
+      'service_description_detailed', 'Plomberie express — 90 min — Fuite / réparation rapide',
+      'customer_address', '450 Av. Greene, Westmount, QC H3Z 2K4',
+      'payment_method_label', 'Visa •••• 4242'
     ),
     false, false, now() - interval '19 days'
   ) RETURNING id INTO v_b1;
@@ -231,7 +257,7 @@ BEGIN
   INSERT INTO public.payments (
     booking_id, pro_profile_id, amount_cents, currency, square_payment_id, status, idempotency_key, card_brand, card_last_4
   ) VALUES (
-    v_b1, v_pro_id, 10921, 'CAD', 'demo_sq_sat1', 'completed', 'demo-sat-done-5', 'VISA', '4242'
+    v_b1, v_pro_id, 11445, 'CAD', 'demo_sq_sat1', 'completed', 'demo-sat-done-5', 'VISA', '4242'
   );
 
   INSERT INTO public.reviews (pro_profile_id, reviewer_id, rating, title, content)
@@ -263,13 +289,36 @@ BEGIN
     now() - interval '11 days',
     910002,
     jsonb_build_object(
-      'demo', true,
-      'label', 'Satisfied complete — clear drain',
-      'service', 'Débouchage',
-      'subtotal_cents', 12000,
-      'tax_cents', 1794,
-      'total_cents', 13794,
-      'currency', 'CAD'
+      'v', 2,
+      'paid_at', (now() - interval '10 days')::text,
+      'pro_profile_id', v_pro_id::text,
+      'business_name', 'Pork Plomberie Pro (Demo)',
+      'service_name', 'Débouchage',
+      'duration_label', '90 min',
+      'appointment_summary', to_char(current_date - 10, 'YYYY-MM-DD') || ' · 14:00',
+      'preferred_date', (current_date - 10)::text,
+      'preferred_time', '14:00',
+      'service_duration_minutes', 90,
+      'service_category_slug', 'home-improvement',
+      'service_slug', 'drain-cleaning',
+      'currency', 'CAD',
+      'base_amount_cents', 12000,
+      'subtotal', 120,
+      'gst', 6,
+      'qst', 12.5685,
+      'processing_fee', 6,
+      'total_cents', 14457,
+      'square_payment_id', 'demo_sq_sat2',
+      'idempotency_key', 'demo-sat-done-ok',
+      'booking_public_code', 'DEMO-SAT-DONE-OK',
+      'invoice_number', 910002,
+      'supplier_legal_name', 'Pork Plomberie Inc.',
+      'supplier_address', '123 Rue Saint-Jacques, Montréal, QC H2Y 1L6',
+      'supplier_gst_number', '123456789RT0001',
+      'supplier_qst_number', '1234567890TQ0001',
+      'service_description_detailed', 'Débouchage — 90 min — Drain / canalisation',
+      'customer_address', '450 Av. Greene, Westmount, QC H3Z 2K4',
+      'payment_method_label', 'Mastercard •••• 4444'
     ),
     false, false, now() - interval '11 days'
   ) RETURNING id INTO v_b2;
@@ -277,7 +326,7 @@ BEGIN
   INSERT INTO public.payments (
     booking_id, pro_profile_id, amount_cents, currency, square_payment_id, status, idempotency_key, card_brand, card_last_4
   ) VALUES (
-    v_b2, v_pro_id, 13794, 'CAD', 'demo_sq_sat2', 'completed', 'demo-sat-done-ok', 'MASTERCARD', '4444'
+    v_b2, v_pro_id, 14457, 'CAD', 'demo_sq_sat2', 'completed', 'demo-sat-done-ok', 'MASTERCARD', '4444'
   );
 
   INSERT INTO public.client_reviews (pro_profile_id, client_id, booking_id, rating, content)
@@ -325,13 +374,36 @@ BEGIN
     now() - interval '8 days',
     910004,
     jsonb_build_object(
-      'demo', true,
-      'label', 'Dissatisfied mild — quality follow-up',
-      'service', 'Plomberie salle de bain',
-      'subtotal_cents', 20000,
-      'tax_cents', 2990,
-      'total_cents', 22990,
-      'currency', 'CAD'
+      'v', 2,
+      'paid_at', (now() - interval '7 days')::text,
+      'pro_profile_id', v_pro_id::text,
+      'business_name', 'Pork Plomberie Pro (Demo)',
+      'service_name', 'Plomberie salle de bain',
+      'duration_label', '120 min',
+      'appointment_summary', to_char(current_date - 7, 'YYYY-MM-DD') || ' · 11:00',
+      'preferred_date', (current_date - 7)::text,
+      'preferred_time', '11:00',
+      'service_duration_minutes', 120,
+      'service_category_slug', 'home-improvement',
+      'service_slug', 'bathroom-remodel',
+      'currency', 'CAD',
+      'base_amount_cents', 20000,
+      'subtotal', 200,
+      'gst', 10,
+      'qst', 20.9475,
+      'processing_fee', 10,
+      'total_cents', 24095,
+      'square_payment_id', 'demo_sq_dis1',
+      'idempotency_key', 'demo-dis-mild',
+      'booking_public_code', 'DEMO-DIS-MILD',
+      'invoice_number', 910004,
+      'supplier_legal_name', 'Pork Plomberie Inc.',
+      'supplier_address', '123 Rue Saint-Jacques, Montréal, QC H2Y 1L6',
+      'supplier_gst_number', '123456789RT0001',
+      'supplier_qst_number', '1234567890TQ0001',
+      'service_description_detailed', 'Plomberie salle de bain — 120 min — Robinet / joint',
+      'customer_address', '450 Av. Greene, Westmount, QC H3Z 2K4',
+      'payment_method_label', 'Visa •••• 1111'
     ),
     true, false, now() - interval '8 days'
   ) RETURNING id INTO v_b4;
@@ -339,7 +411,7 @@ BEGIN
   INSERT INTO public.payments (
     booking_id, pro_profile_id, amount_cents, currency, square_payment_id, status, idempotency_key, card_brand, card_last_4
   ) VALUES (
-    v_b4, v_pro_id, 22990, 'CAD', 'demo_sq_dis1', 'completed', 'demo-dis-mild', 'VISA', '1111'
+    v_b4, v_pro_id, 24095, 'CAD', 'demo_sq_dis1', 'completed', 'demo-dis-mild', 'VISA', '1111'
   );
 
   INSERT INTO public.booking_claim_requests (
@@ -373,13 +445,36 @@ BEGIN
     now() - interval '15 days',
     910005,
     jsonb_build_object(
-      'demo', true,
-      'label', 'Dissatisfied severe — refund claim',
-      'service', 'Chauffe-eau',
-      'subtotal_cents', 17500,
-      'tax_cents', 2616,
-      'total_cents', 20116,
-      'currency', 'CAD'
+      'v', 2,
+      'paid_at', (now() - interval '14 days')::text,
+      'pro_profile_id', v_pro_id::text,
+      'business_name', 'Pork Plomberie Pro (Demo)',
+      'service_name', 'Chauffe-eau',
+      'duration_label', '180 min',
+      'appointment_summary', to_char(current_date - 14, 'YYYY-MM-DD') || ' · 13:00',
+      'preferred_date', (current_date - 14)::text,
+      'preferred_time', '13:00',
+      'service_duration_minutes', 180,
+      'service_category_slug', 'home-improvement',
+      'service_slug', 'water-heater-services',
+      'currency', 'CAD',
+      'base_amount_cents', 17500,
+      'subtotal', 175,
+      'gst', 8.75,
+      'qst', 18.3290625,
+      'processing_fee', 8.75,
+      'total_cents', 21083,
+      'square_payment_id', 'demo_sq_dis2',
+      'idempotency_key', 'demo-dis-refund',
+      'booking_public_code', 'DEMO-DIS-REFUND',
+      'invoice_number', 910005,
+      'supplier_legal_name', 'Pork Plomberie Inc.',
+      'supplier_address', '123 Rue Saint-Jacques, Montréal, QC H2Y 1L6',
+      'supplier_gst_number', '123456789RT0001',
+      'supplier_qst_number', '1234567890TQ0001',
+      'service_description_detailed', 'Chauffe-eau — 180 min — Installation / service',
+      'customer_address', '450 Av. Greene, Westmount, QC H3Z 2K4',
+      'payment_method_label', 'Amex •••• 0005'
     ),
     false, false, now() - interval '15 days'
   ) RETURNING id INTO v_b5;
@@ -387,7 +482,7 @@ BEGIN
   INSERT INTO public.payments (
     booking_id, pro_profile_id, amount_cents, currency, square_payment_id, status, idempotency_key, card_brand, card_last_4
   ) VALUES (
-    v_b5, v_pro_id, 20116, 'CAD', 'demo_sq_dis2', 'completed', 'demo-dis-refund', 'AMEX', '0005'
+    v_b5, v_pro_id, 21083, 'CAD', 'demo_sq_dis2', 'completed', 'demo-dis-refund', 'AMEX', '0005'
   );
 
   INSERT INTO public.booking_claim_requests (

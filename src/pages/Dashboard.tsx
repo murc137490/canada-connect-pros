@@ -146,7 +146,9 @@ import { snapBudgetToTen } from "@/lib/budgetTen";
 import {
   CLIENT_BOOKING_ID_VERIFICATION_BUCKET,
   persistClientBookingIdVerificationOnProfile,
+  assertClientBookingIdFile,
 } from "@/lib/clientBookingIdVerification";
+import { computeBookingInvoiceFromBaseCents } from "@/lib/bookingInvoiceAmounts";
 import {
   customerRequestedExactSlot,
   disableDatesOutsideCustomerChoice,
@@ -411,6 +413,7 @@ export default function Dashboard() {
     postal_code?: string | null;
     address?: string | null;
     booking_id_verification_photo_path?: string | null;
+    booking_id_verification_status?: string | null;
     is_platform_admin?: boolean | null;
   } | null>(null);
   const { isPlatformAdmin: isAdmin, ready: platformAdminReady, isEnvListedAdmin } = usePlatformAdmin();
@@ -1586,6 +1589,9 @@ export default function Dashboard() {
         if (cancelled) return;
         if (error || !data?.signedUrl) setBookingIdVerificationPreviewUrl(null);
         else setBookingIdVerificationPreviewUrl(data.signedUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setBookingIdVerificationPreviewUrl(null);
       });
     return () => {
       cancelled = true;
@@ -5195,7 +5201,7 @@ export default function Dashboard() {
                   {profile?.booking_id_verification_photo_path?.trim() ? (
                     <>
                       {bookingIdVerificationPreviewUrl ? (
-                        profile.booking_id_verification_photo_path.toLowerCase().endsWith(".pdf") ? (
+                        (profile.booking_id_verification_photo_path ?? "").toLowerCase().endsWith(".pdf") ? (
                           <a
                             href={bookingIdVerificationPreviewUrl}
                             target="_blank"
@@ -5209,6 +5215,7 @@ export default function Dashboard() {
                             src={bookingIdVerificationPreviewUrl}
                             alt=""
                             className="rounded-lg border border-border max-h-64 w-full object-contain bg-muted/30"
+                            onError={() => setBookingIdVerificationPreviewUrl(null)}
                           />
                         )
                       ) : (
@@ -5222,7 +5229,33 @@ export default function Dashboard() {
                   <Input
                     type="file"
                     accept="image/*,.pdf"
-                    onChange={(e) => setAccountIdVerificationFile(e.target.files?.[0] ?? null)}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      e.target.value = "";
+                      if (!file) {
+                        setAccountIdVerificationFile(null);
+                        return;
+                      }
+                      try {
+                        assertClientBookingIdFile(file);
+                        setAccountIdVerificationFile(file);
+                      } catch (err) {
+                        setAccountIdVerificationFile(null);
+                        const code = (err as Error).message;
+                        toast({
+                          title: t.auth.toastError,
+                          description:
+                            code === "ID_FILE_TOO_LARGE"
+                              ? locale === "fr"
+                                ? "Fichier trop volumineux (max. 8 Mo)."
+                                : "File too large (max 8 MB)."
+                              : locale === "fr"
+                                ? "Utilisez une image ou un PDF."
+                                : "Please use an image or PDF.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
                     className="cursor-pointer"
                   />
                   <Button
@@ -5239,7 +5272,15 @@ export default function Dashboard() {
                             accountIdVerificationFile,
                             profile?.booking_id_verification_photo_path,
                           );
-                          setProfile((p) => (p ? { ...p, booking_id_verification_photo_path: path } : p));
+                          setProfile((p) =>
+                            p
+                              ? {
+                                  ...p,
+                                  booking_id_verification_photo_path: path,
+                                  booking_id_verification_status: "verified",
+                                }
+                              : p,
+                          );
                           setAccountIdVerificationFile(null);
                           toast({
                             title: t.dashboard.accountBookingIdVerificationSavedTitle,
@@ -5253,7 +5294,11 @@ export default function Dashboard() {
                               ? locale === "fr"
                                 ? "Colonne manquante en base de données. Exécutez la migration client_booking_id_verification dans Supabase."
                                 : "Database column missing. Run migration 20260516120000_client_booking_id_verification.sql in Supabase."
-                              : msg,
+                              : msg.includes("ID_FILE_TOO_LARGE")
+                                ? locale === "fr"
+                                  ? "Fichier trop volumineux (max. 8 Mo)."
+                                  : "File too large (max 8 MB)."
+                                : msg,
                             variant: "destructive",
                           });
                         } finally {
@@ -6923,28 +6968,52 @@ export default function Dashboard() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Pay to accept quote</DialogTitle>
+            <DialogTitle>
+              {t.dashboard.quotePayTitle ?? (locale === "fr" ? "Payer par carte" : "Pay by card")}
+            </DialogTitle>
           </DialogHeader>
           {quotePaymentTarget ? (
+            (() => {
+              const baseCents = Math.max(50, quotePaymentTarget.quote.price_cents ?? 0);
+              const invoice = computeBookingInvoiceFromBaseCents(baseCents);
+              return (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Complete payment to accept this quote.
+                {t.dashboard.quotePaySubtitle ??
+                  (locale === "fr"
+                    ? "Payez par carte pour accepter cette soumission."
+                    : "Pay by credit card to accept this quote.")}
               </p>
-              <div className="rounded-md border p-3 text-sm">
+              <div className="rounded-md border p-3 text-sm space-y-2">
                 <div className="flex items-center justify-between">
-                  <span>Quote amount</span>
-                  <span className="font-semibold">
-                    ${((quotePaymentTarget.quote.price_cents ?? 0) / 100).toFixed(2)} CAD
-                  </span>
+                  <span>{t.dashboard.quotePayQuoteAmount ?? (locale === "fr" ? "Montant de la soumission" : "Quote amount")}</span>
+                  <span>${(baseCents / 100).toFixed(2)} CAD</span>
+                </div>
+                <div className="flex items-center justify-between text-muted-foreground text-xs">
+                  <span>{t.dashboard.invoiceGst ?? "GST (5%)"}</span>
+                  <span>${invoice.gst.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between text-muted-foreground text-xs">
+                  <span>{t.dashboard.invoiceQst ?? "QST (9.975%)"}</span>
+                  <span>${invoice.qst.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between text-muted-foreground text-xs">
+                  <span>{t.dashboard.invoiceProcessing ?? "Processing fee"}</span>
+                  <span>${invoice.processingFee.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t pt-2 font-semibold">
+                  <span>{t.dashboard.quotePayTotalDue ?? (locale === "fr" ? "Total à payer" : "Total due")}</span>
+                  <span>${invoice.totalDollars} CAD</span>
                 </div>
               </div>
               <SquareBookingPayment
-                amountCents={Math.max(50, quotePaymentTarget.quote.price_cents ?? 0)}
-                baseAmountCents={Math.max(50, quotePaymentTarget.quote.price_cents ?? 0)}
+                amountCents={invoice.totalCents}
+                baseAmountCents={baseCents}
                 squareLocationId={quoteProSquareLoc}
                 currency="cad"
                 proProfileId={quotePaymentTarget.quote.pro_profile_id}
                 clientId={user.id}
+                audience="client"
                 onSuccess={() => {
                   void handleAcceptQuoteAfterPayment();
                 }}
@@ -6954,6 +7023,8 @@ export default function Dashboard() {
                 <p className="text-sm text-destructive">{quotePaymentError}</p>
               ) : null}
             </div>
+              );
+            })()
           ) : null}
         </DialogContent>
       </Dialog>

@@ -78,7 +78,7 @@ export function formatResolvedCancelPolicyText(
       const fee = moneyCad(feeCents, "fr");
       const refundHint =
         servicePriceCents != null && servicePriceCents > feeCents
-          ? ` Exemple : si le service est ${moneyCad(servicePriceCents, "fr")} et que vous avez déjà payé, un remboursement d’environ ${moneyCad(servicePriceCents - feeCents, "fr")} peut s’appliquer après déduction des frais (sous réserve du paiement Square et du traitement).`
+          ? ` Exemple : si le service est ${moneyCad(servicePriceCents, "fr")} et que vous avez déjà payé, un remboursement d’environ ${moneyCad(servicePriceCents - feeCents, "fr")} peut s’appliquer après déduction des frais (sous réserve du traitement du paiement).`
           : "";
       return {
         title: `Annulation : frais fixes de ${fee} si moins de 24 h`,
@@ -111,7 +111,7 @@ export function formatResolvedCancelPolicyText(
     const fee = moneyCad(feeCents, "en");
     const refundHint =
       servicePriceCents != null && servicePriceCents > feeCents
-        ? ` Example: if the service is ${moneyCad(servicePriceCents, "en")} and you already paid, about ${moneyCad(servicePriceCents - feeCents, "en")} may be refunded after the fee is deducted (subject to Square payment and processing).`
+        ? ` Example: if the service is ${moneyCad(servicePriceCents, "en")} and you already paid, about ${moneyCad(servicePriceCents - feeCents, "en")} may be refunded after the fee is deducted (subject to payment processing).`
         : "";
     return {
       title: `Cancellation: ${fee} fee if under 24 hours`,

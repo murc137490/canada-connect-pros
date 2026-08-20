@@ -1,15 +1,41 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const CLIENT_BOOKING_ID_VERIFICATION_BUCKET = "client-booking-verification";
+export const CLIENT_BOOKING_ID_MAX_BYTES = 8 * 1024 * 1024;
 
 function safeFileExt(file: File): string {
   const raw = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ?? "bin";
   return raw.length > 8 ? raw.slice(0, 8) : raw;
 }
 
+function newUploadId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  }
+}
+
+/** Reject oversized / non image-PDF files before upload (avoids opaque storage failures). */
+export function assertClientBookingIdFile(file: File): void {
+  if (!file || !(file instanceof File) || file.size <= 0) {
+    throw new Error("INVALID_ID_FILE");
+  }
+  if (file.size > CLIENT_BOOKING_ID_MAX_BYTES) {
+    throw new Error("ID_FILE_TOO_LARGE");
+  }
+  const type = (file.type || "").toLowerCase();
+  const nameOk = /\.(jpe?g|png|webp|gif|heic|heif|pdf)$/i.test(file.name);
+  const typeOk = type.startsWith("image/") || type === "application/pdf" || type === "";
+  if (!typeOk && !nameOk) {
+    throw new Error("ID_FILE_TYPE");
+  }
+}
+
 /** Uploads to `{userId}/{uuid}.{ext}`. Returns the storage object path (not a public URL). */
 export async function uploadClientBookingIdVerificationPhoto(userId: string, file: File): Promise<string> {
-  const path = `${userId}/${crypto.randomUUID()}.${safeFileExt(file)}`;
+  assertClientBookingIdFile(file);
+  const path = `${userId}/${newUploadId()}.${safeFileExt(file)}`;
   const { error } = await supabase.storage.from(CLIENT_BOOKING_ID_VERIFICATION_BUCKET).upload(path, file, {
     cacheControl: "3600",
     upsert: false,

@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Briefcase, Check,
-  Loader2, ShieldCheck, CalendarCheck, CreditCard, ChevronRight, Share2, Info, X, Heart
+  Loader2, ShieldCheck, CalendarCheck, CreditCard, ChevronRight, ChevronDown, Share2, Info, X, Heart
 } from "lucide-react";
 import { serviceCategories } from "@/data/services";
 import { getCategoryName } from "@/i18n/constants";
@@ -66,6 +66,7 @@ import { formatBookingTimeRange } from "@/lib/bookingTimeRange";
 import { buildProPageDarkTones, buildProPageLightTones } from "@/lib/brandProPageTones";
 import {
   persistClientBookingIdVerificationOnProfile,
+  assertClientBookingIdFile,
 } from "@/lib/clientBookingIdVerification";
 import { useTheme } from "next-themes";
 import { resolveStorageDisplayUrl } from "@/lib/resolveStorageUrl";
@@ -202,6 +203,7 @@ export default function ProProfilePage() {
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [bookingTermsAccepted, setBookingTermsAccepted] = useState(false);
   const [bookingCancelPolicyAccepted, setBookingCancelPolicyAccepted] = useState(false);
+  const [bookingCancelPolicyDetailsOpen, setBookingCancelPolicyDetailsOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState<1 | 2 | 3 | 4>(1);
   const [bookingPhotoWithIdFile, setBookingPhotoWithIdFile] = useState<File | null>(null);
   /** Storage path on profiles when user already completed verification on a past booking. */
@@ -1539,6 +1541,7 @@ export default function ProProfilePage() {
               } else {
                 setBookingTermsAccepted(false);
                 setBookingCancelPolicyAccepted(false);
+                setBookingCancelPolicyDetailsOpen(false);
                 setBookingStep(1);
                 setBookingPhotoWithIdFile(null);
                 setSelectedBookingDate(null);
@@ -1561,14 +1564,14 @@ export default function ProProfilePage() {
                 <DialogHeader>
                   <DialogTitle className="text-white">
                     {bookingStep === 1 && (t.terms.bookingSelectDate ?? "Select date & confirm")}
-                    {bookingStep === 2 && t.terms.bookingConfirmTitle}
-                    {bookingStep === 3 && t.terms.bookingStepVerification}
+                    {bookingStep === 2 && (t.terms.bookingStepVerification ?? "Verification")}
+                    {bookingStep === 3 && (t.terms.bookingStepVerification ?? "Verification")}
                   </DialogTitle>
                   <DialogDescription className="sr-only">
                     {bookingStep === 1 &&
                       (t.terms.bookingSelectDate ?? "Select date and confirm your booking request.")}
                     {bookingStep === 2 &&
-                      (t.terms.bookingConfirmTitle ?? "Accept terms and complete verification to request a booking.")}
+                      (t.terms.bookingStepVerification ?? "Upload a photo of yourself with ID.")}
                     {bookingStep === 3 && (t.terms.bookingStepVerification ?? "Verification")}
                   </DialogDescription>
                 </DialogHeader>
@@ -1846,8 +1849,39 @@ export default function ProProfilePage() {
                           <p className="text-sm font-bold text-amber-950 dark:text-amber-100 uppercase tracking-wide">
                             {locale === "fr" ? "Politique d’annulation (obligatoire)" : "Cancellation policy (required)"}
                           </p>
-                          <p className="text-base font-semibold text-foreground">{copy.title}</p>
-                          <p className="text-sm text-foreground/90 leading-relaxed">{copy.body}</p>
+                          <p className="text-base font-semibold text-foreground">{copy.short}</p>
+                          {resolved.policy === "late_fee" ? (
+                            <p className="text-sm text-foreground/90">
+                              {locale === "fr"
+                                ? "Annulation moins de 24 h avant le début du service = frais ci-dessus."
+                                : "Cancel less than 24 hours before start = the fee above applies."}
+                            </p>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left text-sm font-medium text-amber-950/90 dark:text-amber-100/90 hover:underline"
+                            aria-expanded={bookingCancelPolicyDetailsOpen}
+                            onClick={() => setBookingCancelPolicyDetailsOpen((o) => !o)}
+                          >
+                            <span>
+                              {bookingCancelPolicyDetailsOpen
+                                ? locale === "fr"
+                                  ? "Masquer les détails"
+                                  : "Hide details"
+                                : locale === "fr"
+                                  ? "Voir les détails"
+                                  : "View details"}
+                            </span>
+                            <ChevronDown
+                              size={16}
+                              className={`shrink-0 transition-transform ${bookingCancelPolicyDetailsOpen ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                          {bookingCancelPolicyDetailsOpen ? (
+                            <p className="text-sm text-foreground/90 leading-relaxed border-t border-amber-500/30 pt-3">
+                              {copy.body}
+                            </p>
+                          ) : null}
                           <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
                             <input
                               type="checkbox"
@@ -1986,7 +2020,33 @@ export default function ProProfilePage() {
                       <Input
                         type="file"
                         accept="image/*,.pdf"
-                        onChange={(e) => setBookingPhotoWithIdFile(e.target.files?.[0] ?? null)}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] ?? null;
+                          e.target.value = "";
+                          if (!file) {
+                            setBookingPhotoWithIdFile(null);
+                            return;
+                          }
+                          try {
+                            assertClientBookingIdFile(file);
+                            setBookingPhotoWithIdFile(file);
+                          } catch (err) {
+                            setBookingPhotoWithIdFile(null);
+                            const code = (err as Error).message;
+                            toast({
+                              title: t.auth.toastError,
+                              description:
+                                code === "ID_FILE_TOO_LARGE"
+                                  ? locale === "fr"
+                                    ? "Fichier trop volumineux (max. 8 Mo)."
+                                    : "File too large (max 8 MB)."
+                                  : locale === "fr"
+                                    ? "Utilisez une image ou un PDF."
+                                    : "Please use an image or PDF.",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
                         className="cursor-pointer bg-gray-800 border-gray-600 text-white"
                       />
                       <p className="text-xs text-white/80">{t.terms.bookingPhotoWithIdHint}</p>

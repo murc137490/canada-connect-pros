@@ -54,6 +54,11 @@ export interface SquareBookingPaymentProps {
   onSuccess: (meta: SquareBookingPaymentSuccessMeta) => void;
   onError: (message: string) => void;
   submitLabel?: string;
+  /**
+   * `client` (default): card/wallet UI; missing-config copy stays customer-friendly.
+   * `ops`: may show setup hints for operators.
+   */
+  audience?: "client" | "ops";
 }
 
 export default function SquareBookingPayment({
@@ -65,6 +70,7 @@ export default function SquareBookingPayment({
   clientId,
   onSuccess,
   onError,
+  audience = "client",
 }: SquareBookingPaymentProps) {
   const { t } = useLanguage();
   const terms = t.terms;
@@ -169,7 +175,10 @@ export default function SquareBookingPayment({
       const msg = (err as Error).message ?? "";
       if (msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
         onError(
-          "Network error. Check VITE_SUPABASE_URL in .env and that the square-create-payment Edge Function is deployed."
+          audience === "ops"
+            ? "Network error. Check VITE_SUPABASE_URL in .env and that the square-create-payment Edge Function is deployed."
+            : (terms.checkoutPaymentNetworkError ??
+                "Payment could not be completed. Check your connection and try again."),
         );
       } else {
         onError(msg || "Network error");
@@ -182,11 +191,19 @@ export default function SquareBookingPayment({
   if (!SQUARE_APP_ID || !locationIdForSdk) {
     return (
       <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground space-y-3">
-        <p>
-          Square is not configured. Add <code className="bg-muted px-1 rounded">VITE_SQUARE_APPLICATION_ID</code> and a location: either{" "}
-          <code className="bg-muted px-1 rounded">VITE_SQUARE_LOCATION_ID</code> or connect the pro&apos;s Square account in the dashboard. See{" "}
-          <code className="bg-muted px-1 rounded">docs/SQUARE-SETUP.md</code>.
-        </p>
+        {audience === "ops" ? (
+          <p>
+            Square is not configured. Add <code className="bg-muted px-1 rounded">VITE_SQUARE_APPLICATION_ID</code> and a
+            location: either <code className="bg-muted px-1 rounded">VITE_SQUARE_LOCATION_ID</code> or connect the
+            pro&apos;s Square account in the dashboard. See{" "}
+            <code className="bg-muted px-1 rounded">docs/SQUARE-SETUP.md</code>.
+          </p>
+        ) : (
+          <p>
+            {terms.checkoutPaymentUnavailable ??
+              "Card payment is temporarily unavailable. Please try again later or contact support."}
+          </p>
+        )}
       </div>
     );
   }
@@ -195,7 +212,7 @@ export default function SquareBookingPayment({
     <div className="space-y-4 relative rounded-lg bg-white dark:bg-muted p-1 text-foreground">
       <div className="rounded-lg border border-border bg-muted dark:bg-background/80 p-3 text-sm space-y-1">
         <div className="flex justify-between text-foreground">
-          <span>Charged total</span>
+          <span>{terms.checkoutChargedTotal ?? "Total to pay"}</span>
           <span className="font-medium">
             ${amountStr} {currencyCode}
           </span>
