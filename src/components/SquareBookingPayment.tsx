@@ -96,7 +96,7 @@ export default function SquareBookingPayment({
       }
     })()
   );
-  const applePayAnchorRef = useRef<HTMLDivElement>(null);
+  const walletApplePayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,7 +119,7 @@ export default function SquareBookingPayment({
   }, [squareLocationId]);
 
   const squareSdkReady = !!(applicationId && locationIdForSdk);
-  const showApplePayBeta = useApplePaySquareMissingHint(applePayAnchorRef, squareSdkReady);
+  const showApplePayBeta = useApplePaySquareMissingHint(walletApplePayRef, squareSdkReady);
   const applePayBetaText = (terms.applePayBetaTestingNote ?? "").trim();
 
   const amountStr = (amountCents / 100).toFixed(2);
@@ -302,7 +302,7 @@ export default function SquareBookingPayment({
               onRequestIphoneHandoff={onApplePayHandoffRequest}
               handoffButtonLabel={terms.applePayHandoffButtonLabel ?? "Apple Pay"}
             >
-              <div ref={applePayAnchorRef} className="min-h-12 min-w-0">
+              <div ref={walletApplePayRef} className="min-h-12 min-w-0">
                 <ApplePay id="rswps-apple-pay-container" />
               </div>
             </ApplePayWalletSlot>

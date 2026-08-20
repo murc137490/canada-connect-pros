@@ -82,7 +82,7 @@ export default function ProPlanCheckoutExperience({
   const [step, setStep] = useState<1 | 2>(1);
 
   const previewGeneration = useRef(0);
-  const applePayAnchorRef = useRef<HTMLDivElement>(null);
+  const walletApplePayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setStep(1);
@@ -425,7 +425,7 @@ export default function ProPlanCheckoutExperience({
                             "Apple Pay is available in Safari on iPhone and Mac. Use Google Pay or card here."
                           }
                         >
-                          <div ref={applePayAnchorRef} className="min-h-12 min-w-0">
+                          <div ref={walletApplePayRef} className="min-h-12 min-w-0">
                             <ApplePay id="pro-plan-apple-pay" />
                           </div>
                         </ApplePayWalletSlot>
