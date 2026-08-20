@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
 import { ApplePay, CreditCard, GooglePay, PaymentForm } from "react-square-web-payments-sdk";
 import { Check, Loader2, ShieldCheck } from "lucide-react";
 import Layout from "@/components/Layout";
+import { ApplePayWalletSlot } from "@/components/ApplePayWalletSlot";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -216,9 +217,15 @@ export default function ProPlansFreeTrial() {
                             {t.plans?.checkoutDigitalWallet ?? "Digital wallet"}
                           </p>
                           <div className="grid min-w-0 grid-cols-2 gap-3">
-                            <div className="min-h-[48px] min-w-0 overflow-hidden rounded-lg">
+                            <ApplePayWalletSlot
+                              className="min-h-[48px] min-w-0 overflow-hidden rounded-lg"
+                              unavailableLabel={
+                                t.terms?.applePayUnavailableOnDevice ??
+                                "Apple Pay is available in Safari on iPhone and Mac. Use Google Pay or card here."
+                              }
+                            >
                               <ApplePay id="trial-apple-pay" />
-                            </div>
+                            </ApplePayWalletSlot>
                             <div className="min-h-[48px] min-w-0 overflow-hidden rounded-lg">
                               <GooglePay
                                 id="trial-google-pay"
@@ -228,6 +235,10 @@ export default function ProPlansFreeTrial() {
                               />
                             </div>
                           </div>
+                          <p className="text-[11px] leading-relaxed text-neutral-500">
+                            {t.terms?.applePayBetaTestingNote ??
+                              "Apple Pay works in Safari on iPhone/Mac with Wallet. On Windows and Android, use Google Pay or card."}
+                          </p>
                           <CreditCard style={CARD_STYLE} />
                         </div>
                       </PaymentForm>

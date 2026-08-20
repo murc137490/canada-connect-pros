@@ -658,7 +658,9 @@ export const translations = {
         "Your card is authorized. You are only charged if the professional accepts.",
       applePayWalletRolloutNote: "",
       applePayBetaTestingNote:
-        "Beta: Apple Pay did not load in this session (often domain or merchant verification). Card and Google Pay work reliably - use either to continue.",
+        "Apple Pay works in Safari on iPhone/Mac with Wallet. On Windows and Android, use Google Pay or card.",
+      applePayUnavailableOnDevice:
+        "Apple Pay is available in Safari on iPhone and Mac. Use Google Pay or card here.",
     },
     createPro: {
       title: "Create Your Pro Account",
@@ -2447,7 +2449,9 @@ export const translations = {
         "Votre carte est pré-autorisée. Le montant n’est débité que si le professionnel accepte.",
       applePayWalletRolloutNote: "",
       applePayBetaTestingNote:
-        "Bêta : Apple Pay ne s’est pas chargé dans cette session (souvent la vérification du domaine ou du commerçant). La carte et Google Pay restent fiables - utilisez l’une ou l’autre pour continuer.",
+        "Apple Pay fonctionne dans Safari sur iPhone/Mac avec Wallet. Sur Windows et Android, utilisez Google Pay ou la carte.",
+      applePayUnavailableOnDevice:
+        "Apple Pay est disponible dans Safari sur iPhone et Mac. Utilisez Google Pay ou la carte ici.",
     },
     createPro: {
       title: "Créer votre compte Pro",

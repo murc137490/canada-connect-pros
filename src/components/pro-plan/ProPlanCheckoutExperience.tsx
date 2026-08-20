@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApplePay, CreditCard, GooglePay, PaymentForm } from "react-square-web-payments-sdk";
 import { Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useApplePaySquareMissingHint } from "@/hooks/useApplePaySquareMissingHint";
+import { ApplePayWalletSlot } from "@/components/ApplePayWalletSlot";
 import { computePlanChangePreview, type PlanPreviewOk, type PlanPreviewResult, type ProPlanId } from "@/lib/proPlanPreview";
 import { PLAN_CHECKOUT_SESSION_ERROR, submitPlanCheckout } from "@/lib/planCheckoutSubmit";
 import { cn } from "@/lib/utils";
@@ -195,7 +195,7 @@ export default function ProPlanCheckoutExperience({
   const previewReady = !previewLoading && !previewError && preview !== null;
   const needsPayment = previewReady && (chargeCents ?? 0) > 0;
   const freePlanChange = previewReady && chargeCents === 0;
-  const showApplePayBeta = useApplePaySquareMissingHint(applePayAnchorRef, needsPayment && squareReady && step === 2);
+  const applePayAnchorRef = useRef<HTMLDivElement>(null);
   const applePayBetaText = (terms.applePayBetaTestingNote ?? "").trim();
 
   const previewMode = preview?.mode ?? null;
@@ -419,18 +419,25 @@ export default function ProPlanCheckoutExperience({
                     <div className="space-y-4">
                       <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">{plans?.checkoutDigitalWallet ?? "Digital wallet"}</p>
                       <div className="grid min-w-0 grid-cols-2 gap-3">
-                        <div ref={applePayAnchorRef} className="min-h-[48px] min-w-0 overflow-hidden rounded-lg">
-                          <ApplePay id="pro-plan-apple-pay" />
-                        </div>
+                        <ApplePayWalletSlot
+                          className="min-h-[48px] min-w-0 overflow-hidden rounded-lg"
+                          unavailableLabel={
+                            terms.applePayUnavailableOnDevice ??
+                            "Apple Pay is available in Safari on iPhone and Mac. Use Google Pay or card here."
+                          }
+                        >
+                          <div ref={applePayAnchorRef} className="min-h-[48px] min-w-0">
+                            <ApplePay id="pro-plan-apple-pay" />
+                          </div>
+                        </ApplePayWalletSlot>
                         <div className="min-h-[48px] min-w-0 overflow-hidden rounded-lg">
                           <GooglePay id="pro-plan-google-pay" buttonSizeMode="fill" buttonType="long" buttonColor="black" />
                         </div>
                       </div>
-                      {showApplePayBeta && applePayBetaText ? (
-                        <p className="text-xs leading-relaxed text-amber-900 dark:text-amber-100 rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-1.5">
-                          {applePayBetaText}
-                        </p>
-                      ) : null}
+                      <p className="text-[11px] leading-relaxed text-neutral-500">
+                        {applePayBetaText ||
+                          "Apple Pay works in Safari on iPhone/Mac with Wallet. On Windows and Android, use Google Pay or card."}
+                      </p>
                       <CreditCard style={CARD_STYLE_CHECKOUT} />
                     </div>
                   </PaymentForm>

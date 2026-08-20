@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, useRef, type MutableRefObject } from "react";
 import { useApplePaySquareMissingHint } from "@/hooks/useApplePaySquareMissingHint";
+import { ApplePayWalletSlot } from "@/components/ApplePayWalletSlot";
 import {
   ApplePay,
   CreditCard,
@@ -289,13 +290,25 @@ export default function SquareBookingPayment({
             {plans?.checkoutDigitalWallet ?? "Digital wallet"}
           </p>
           <div className="grid min-w-0 grid-cols-2 gap-3">
-            <div ref={applePayAnchorRef} className="min-h-[48px] min-w-0 overflow-hidden rounded-lg">
-              <ApplePay id="rswps-apple-pay-container" />
-            </div>
+            <ApplePayWalletSlot
+              className="min-h-[48px] min-w-0 overflow-hidden rounded-lg"
+              unavailableLabel={
+                terms.applePayUnavailableOnDevice ??
+                "Apple Pay is available in Safari on iPhone and Mac. Use Google Pay or card here."
+              }
+            >
+              <div ref={applePayAnchorRef} className="min-h-[48px] min-w-0">
+                <ApplePay id="rswps-apple-pay-container" />
+              </div>
+            </ApplePayWalletSlot>
             <div className="min-h-[48px] min-w-0 overflow-hidden rounded-lg">
               <GooglePay id="rswps-google-pay-container" buttonSizeMode="fill" buttonType="long" buttonColor="black" />
             </div>
           </div>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            {terms.applePayBetaTestingNote ??
+              "Apple Pay works in Safari on iPhone/Mac with Wallet. On Windows and Android, use Google Pay or card."}
+          </p>
           {showApplePayBeta && applePayBetaText ? (
             <p className="text-xs leading-relaxed text-amber-900 dark:text-amber-100 rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-1.5">
               {applePayBetaText}
