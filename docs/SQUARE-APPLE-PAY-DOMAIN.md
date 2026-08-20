@@ -1,38 +1,41 @@
 # Apple Pay domain verification (Square)
 
-No Vite changes needed.
+## Root cause (Première)
 
-## What Square actually checks
+`www.premiereservices.ca` is fronted by **Cloudflare**. Square’s crawler uses public DNS → Cloudflare.
 
-Square’s API error (when it fails) looks like:
+Cloudflare was still serving an **old cached** association file (**4549** bytes of decoded JSON). Square expects **9098** hex bytes. The dashboard calls that a **“partial response.”**
 
-`expected … to return 9098 bytes but instead returned 4549`
+Your PC may hit Vercel directly (or a fresh edge) and download the correct file, while Square still gets Cloudflare’s stale copy.
 
-- **9098** = correct **hex** file from Square  
-- **4549** = hex was **decoded to JSON** (wrong)
+## Fix (do this in order)
 
-Your browser can download the correct file while Square still hits a **stale CDN edge** serving the old JSON. That shows up as “partial response” in the dashboard.
+### 1. Cloudflare — purge cache
 
-## Fix checklist
+1. Open [Cloudflare Dashboard](https://dash.cloudflare.com) → zone for `premiereservices.ca`
+2. **Caching** → **Configuration** → **Purge Everything** (or purge  
+   `https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association`)
+3. Recommended: **Caching** → **Cache Rules** → bypass cache for  
+   `http.request.uri.path starts with "/.well-known/"`
 
-1. Association is served from **Edge Middleware** only (`middleware.ts`), source file in `apple-pay/apple-developer-merchantid-domain-association` (hex).
-2. In **Vercel** → Project → **Deployments** → latest → **Redeploy** → enable **Clear cache and redeploy** (wording may vary).
-3. Confirm every region sees hex + revision header:
+### 2. Confirm Square will see hex (use a public resolver)
 
-   ```bash
-   curl -sI "https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association"
-   # expect: X-Assoc-Bytes: 9098  and  X-Assoc-Rev: hex-9098-...
-   curl -s "https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association" | wc -c
-   # expect: 9098
-   ```
+```bash
+# Should be ~9098 and start with 7B227073...
+curl -s "https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association" | wc -c
+curl -sI "https://1.1.1.1" # not this — use normal curl after purge:
+curl -sI "https://www.premiereservices.ca/.well-known/apple-developer-merchantid-domain-association"
+# expect header X-Assoc-Bytes: 9098 and X-Assoc-Rev: hex-9098-...
+```
 
-4. In Square **Production**, verify **only** `www.premiereservices.ca`.
-5. Optional: remove `premiereservices.ca` (apex) from Square until Vercel’s apex→www redirect is turned off for that host.
+Or open the URL in a private window / phone data (not only home Wi‑Fi).
 
-## Update the file later
+### 3. Square Production
 
-Replace `apple-pay/apple-developer-merchantid-domain-association` with Square’s hex download, then:
+Verify **`www.premiereservices.ca` only**. Remove apex if it redirects.
 
-`node scripts/sync-apple-pay-middleware.mjs`
+## Repo notes
 
-Commit, push, clear Vercel cache redeploy.
+- Source file: `apple-pay/apple-developer-merchantid-domain-association` (**hex**, do not decode)
+- Served by `middleware.ts` (run `node scripts/sync-apple-pay-middleware.mjs` after replacing the file)
+- No Vite config needed
