@@ -25,7 +25,9 @@ It is **normal** if the browser asks to **download** the file. Square’s own di
 
    `public/.well-known/apple-developer-merchantid-domain-association`
 
-   Vite copies everything under `public/` to the root of `dist/`.
+   Then sync Edge Middleware (required on Vercel so Square does not get HTTP 206):
+
+   `node scripts/sync-apple-pay-middleware.mjs`
 
 4. **Commit and deploy** your site.
 
@@ -40,9 +42,11 @@ It is **normal** if the browser asks to **download** the file. Square’s own di
 
 ## If verification fails
 
-- **“Partial response”** — Usually Square hit the **non-www** URL and followed a redirect. Verify **www** instead.
+- **“Partial response”** — Two common causes:
+  1. Verifying the **non-www** host (`premiereservices.ca`), which **308-redirects** to www. Always retry on **`www.premiereservices.ca`**.
+  2. Vercel answering **HTTP Range** with **206 Partial Content**. This repo serves the association file via **Edge Middleware** (`middleware.ts`) so Square always gets a full **200**. If you replace the file under `public/.well-known/`, run `node scripts/sync-apple-pay-middleware.mjs` before deploy.
 - **HTTPS only** — HTTP will not work for production verification.
-- **No SPA fallback** — The file must be a **static asset**, not your React `index.html`.
+- **No SPA fallback** — The file must not be your React `index.html`.
 - **Exact path** — Typos in the folder name or filename break verification.
 - **CDN cache** — Purge cache after uploading a new file.
 

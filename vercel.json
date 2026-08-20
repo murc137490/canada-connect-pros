@@ -9,22 +9,26 @@
       "headers": [
         {
           "key": "Content-Type",
-          "value": "application/octet-stream"
+          "value": "text/plain; charset=utf-8"
         },
         {
           "key": "Content-Disposition",
           "value": "attachment; filename=\"apple-developer-merchantid-domain-association\""
         },
         {
+          "key": "Accept-Ranges",
+          "value": "none"
+        },
+        {
           "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
+          "value": "no-store, no-cache, must-revalidate, max-age=0"
         }
       ]
     }
   ],
   "rewrites": [
     {
-      "source": "/((?!.*\\..*).*)",
+      "source": "/((?!\\.well-known(?:/|$)|.*\\..*).*)",
       "destination": "/index.html"
     }
   ]
