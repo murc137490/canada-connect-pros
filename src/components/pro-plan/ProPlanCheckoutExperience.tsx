@@ -195,7 +195,6 @@ export default function ProPlanCheckoutExperience({
   const previewReady = !previewLoading && !previewError && preview !== null;
   const needsPayment = previewReady && (chargeCents ?? 0) > 0;
   const freePlanChange = previewReady && chargeCents === 0;
-  const applePayAnchorRef = useRef<HTMLDivElement>(null);
   const applePayBetaText = (terms.applePayBetaTestingNote ?? "").trim();
 
   const previewMode = preview?.mode ?? null;
