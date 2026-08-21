@@ -934,31 +934,14 @@ export default function ProProfilePage() {
   const darkTones = isDarkMode ? buildProPageDarkTones(brandPrimaryHex, brandSecondaryHex) : null;
   const lightTones = !isDarkMode ? buildProPageLightTones(brandPrimaryHex, brandSecondaryHex) : null;
 
-  const pageShellStyle =
+  // Outer page stays theme black/white. Brand colors apply only to the profile card.
+  const profileCardStyle =
     isDarkMode && darkTones
-      ? { background: darkTones.shellGradient }
-      : featuredLook && !isDarkMode
-        ? (() => {
-            const pHex = String(pagePrimary).trim();
-            const sHex = String(pageSecondary).trim();
-            const pOk = /^#([0-9a-fA-F]{6})$/.test(pHex);
-            const sOk = /^#([0-9a-fA-F]{6})$/.test(sHex);
-            if (!pOk) {
-              return {
-                background: `linear-gradient(180deg, ${pageBackground} 0%, ${pageBackground} 58%, ${pagePrimary}22 100%)`,
-              };
-            }
-            if (sOk) {
-              return {
-                background: `linear-gradient(180deg, ${pageBackground} 0%, ${pageBackground} 22%, ${pHex}14 48%, ${pHex}26 76%, ${sHex}2a 100%)`,
-              };
-            }
-            return {
-              background: `linear-gradient(180deg, ${pageBackground} 0%, ${pageBackground} 28%, ${pHex}1a 52%, ${pHex}2e 100%)`,
-            };
-          })()
+      ? { backgroundColor: darkTones.cardSurface }
+      : featuredLook && !isDarkMode && pageBackground
+        ? { backgroundColor: pageBackground }
         : !isDarkMode && lightTones
-          ? { background: lightTones.shellGradient }
+          ? { backgroundColor: lightTones.cardSurface }
           : undefined;
 
   const featuredHeaderStyle = featuredLook
@@ -976,30 +959,20 @@ export default function ProProfilePage() {
 
   const pageInner = (
         <div
-          className={cn(
-            "min-h-screen relative text-foreground",
-            !isDarkMode && !pageShellStyle && "bg-gradient-page"
-          )}
+          className="min-h-screen relative bg-background text-foreground"
           ref={pageContentRef}
-          style={pageShellStyle}
         >
           <div className="relative z-10 w-full py-0 md:container md:py-10">
-          {/* Profile card: pops above tinted shell (light shadow/ring; dark shadow) */}
+          {/* Profile card: brand-customizable surface on a neutral theme page */}
           <div
             className={cn(
               "mb-0 overflow-hidden border-y border-border bg-white md:mb-14 md:rounded-2xl md:border",
-              !isDarkMode && lightTones
+              !isDarkMode && (lightTones || featuredLook)
                 ? "border-slate-300/80 shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_20px_50px_-14px_rgba(15,23,42,0.16)] ring-1 ring-slate-900/[0.07]"
                 : "shadow-[0_4px_20px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.06)]",
-              "dark:border-white/10 dark:bg-transparent dark:shadow-[0_4px_28px_rgba(0,0,0,0.45)]"
+              "dark:border-white/10 dark:bg-card dark:shadow-[0_4px_28px_rgba(0,0,0,0.45)]"
             )}
-            style={
-              isDarkMode && darkTones
-                ? { backgroundColor: darkTones.cardSurface }
-                : !isDarkMode && lightTones
-                  ? { backgroundColor: lightTones.cardSurface }
-                  : undefined
-            }
+            style={profileCardStyle}
           >
           {/* Header: very subtle neutral background (custom color from dashboard), soft shadow */}
           <header
