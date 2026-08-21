@@ -37,8 +37,16 @@ export type ApplePayHandoffRow = {
 const handoffs = () => (supabase as any).from("apple_pay_handoffs");
 
 export function applePayHandoffUrl(handoffId: string): string {
-  const origin = typeof window !== "undefined" ? window.location.origin : "https://www.premiereservices.ca";
-  return `${origin}/pay/apple-handoff/${handoffId}`;
+  // iPhone must open a public HTTPS host with Apple Pay domain verified.
+  // Never encode localhost / preview hosts into the QR — the phone cannot pay there.
+  const configured = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") || "";
+  const browserHost =
+    typeof window !== "undefined" ? window.location.hostname.replace(/^www\./, "").toLowerCase() : "";
+  const onProductionHost = browserHost === "premiereservices.ca";
+  const origin = onProductionHost
+    ? window.location.origin
+    : configured || "https://www.premiereservices.ca";
+  return `${origin}/pay/apple-handoff/${encodeURIComponent(handoffId)}`;
 }
 
 export async function createApplePayHandoff(draft: ApplePayHandoffDraft): Promise<ApplePayHandoffRow> {

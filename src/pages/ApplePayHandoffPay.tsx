@@ -5,6 +5,7 @@ import Layout from "@/components/Layout";
 import SquareBookingPayment, {
   type SquareBookingPaymentSuccessMeta,
 } from "@/components/SquareBookingPayment";
+import { isAppleSafariBrowser } from "@/components/ApplePayWalletSlot";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -28,8 +29,13 @@ export default function ApplePayHandoffPay() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [needsSafari, setNeedsSafari] = useState(false);
 
   const terms = t.terms;
+
+  useEffect(() => {
+    setNeedsSafari(typeof navigator !== "undefined" && !isAppleSafariBrowser());
+  }, []);
 
   useEffect(() => {
     if (!handoffId || authLoading) return;
@@ -255,6 +261,12 @@ export default function ApplePayHandoffPay() {
   return (
     <Layout>
       <div className="mx-auto max-w-lg px-4 py-8 space-y-4">
+        {needsSafari ? (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-50">
+            {terms.applePayHandoffOpenInSafari ??
+              "Apple Pay only works in Safari on iPhone. Tap Share → Open in Safari, then continue."}
+          </div>
+        ) : null}
         <div className="rounded-2xl border border-border bg-card overflow-hidden">
           <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white px-5 py-4">
             <h1 className="text-lg font-semibold">

@@ -663,10 +663,12 @@ export const translations = {
         "Scan the QR with your iPhone Camera (iOS 18+) or open the link in Safari to pay with Apple Pay.",
       applePayHandoffButtonLabel: "Apple Pay",
       applePayHandoffHint:
-        "On Windows or Android, tap Apple Pay to show a QR code, then finish with Face ID / Touch ID on your iPhone.",
+        "On Windows or Android, tap Apple Pay, scan the QR, then open the link in Safari on your iPhone (same account) to pay.",
       applePayHandoffQrTitle: "Pay with Apple Pay on iPhone",
       applePayHandoffQrBody:
-        "Scan this code with your iPhone Camera (iOS 18+), open in Safari, sign in with the same account, then confirm with Apple Pay.",
+        "Scan with Camera → Open in Safari (not Chrome). Sign in with the same account, then tap Apple Pay and confirm with Face ID.",
+      applePayHandoffOpenInSafari:
+        "Apple Pay only works in Safari on iPhone. Tap Share → Open in Safari, then continue.",
       applePayHandoffWaiting: "Waiting for payment on your iPhone…",
       applePayHandoffCreateError: "Could not create Apple Pay link. Try again.",
       applePayHandoffNotFound: "This Apple Pay link was not found.",
@@ -2470,10 +2472,12 @@ export const translations = {
         "Scannez le QR avec l’appareil photo de l’iPhone (iOS 18+) ou ouvrez le lien dans Safari pour payer avec Apple Pay.",
       applePayHandoffButtonLabel: "Apple Pay",
       applePayHandoffHint:
-        "Sur Windows ou Android, touchez Apple Pay pour afficher un code QR, puis confirmez avec Face ID / Touch ID sur votre iPhone.",
+        "Sur Windows ou Android, touchez Apple Pay, scannez le QR, puis ouvrez le lien dans Safari sur iPhone (même compte) pour payer.",
       applePayHandoffQrTitle: "Payer avec Apple Pay sur iPhone",
       applePayHandoffQrBody:
-        "Scannez ce code avec l’appareil photo de l’iPhone (iOS 18+), ouvrez dans Safari, connectez-vous avec le même compte, puis confirmez avec Apple Pay.",
+        "Scannez avec l’appareil photo → Ouvrir dans Safari (pas Chrome). Connectez-vous avec le même compte, puis touchez Apple Pay et confirmez avec Face ID.",
+      applePayHandoffOpenInSafari:
+        "Apple Pay ne fonctionne que dans Safari sur iPhone. Partager → Ouvrir dans Safari, puis continuez.",
       applePayHandoffWaiting: "En attente du paiement sur votre iPhone…",
       applePayHandoffCreateError: "Impossible de créer le lien Apple Pay. Réessayez.",
       applePayHandoffNotFound: "Ce lien Apple Pay est introuvable.",
