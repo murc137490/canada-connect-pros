@@ -13,13 +13,19 @@ const corsHeaders = {
 };
 
 function squareApiBase(): string {
-  const env = (Deno.env.get("SQUARE_ENVIRONMENT") ?? "").trim().toLowerCase();
   const appId = (
     Deno.env.get("SQUARE_APPLICATION_ID") ??
     Deno.env.get("SQUARE_OAUTH_APPLICATION_ID") ??
     ""
   ).trim();
-  const production = env === "production" || (!env && appId.startsWith("sq0idp-"));
+  // Match Web Payments SDK: sq0idp-* = Production API, sandbox-* = Sandbox API.
+  // Do not let a stale SQUARE_ENVIRONMENT=sandbox override a production app id
+  // (that mismatch cancels Apple Pay after the amount appears).
+  const production = appId.startsWith("sq0idp-")
+    ? true
+    : appId.startsWith("sandbox-")
+      ? false
+      : (Deno.env.get("SQUARE_ENVIRONMENT") ?? "").trim().toLowerCase() === "production";
   return production ? "https://connect.squareup.com" : "https://connect.squareupsandbox.com";
 }
 

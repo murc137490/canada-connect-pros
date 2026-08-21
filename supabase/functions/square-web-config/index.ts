@@ -29,12 +29,15 @@ Deno.serve(async (req) => {
     ""
   ).trim();
   const locationId = (Deno.env.get("SQUARE_LOCATION_ID") ?? "").trim();
-  // Prefer explicit secret; otherwise infer from application id prefix.
-  const envSecret = (Deno.env.get("SQUARE_ENVIRONMENT") ?? "").trim().toLowerCase();
-  const environment =
-    envSecret === "production" || (!envSecret && applicationId.startsWith("sq0idp-"))
+  // Application ID prefix is the source of truth. A Production sq0idp- id with
+  // SQUARE_ENVIRONMENT=sandbox breaks Apple Pay merchant validation (sheet opens then closes).
+  const environment = applicationId.startsWith("sandbox-")
+    ? "sandbox"
+    : applicationId.startsWith("sq0idp-")
       ? "production"
-      : "sandbox";
+      : (Deno.env.get("SQUARE_ENVIRONMENT") ?? "").trim().toLowerCase() === "production"
+        ? "production"
+        : "sandbox";
 
   if (!applicationId || !locationId) {
     return new Response(
