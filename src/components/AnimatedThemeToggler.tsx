@@ -3,8 +3,9 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
+/** Toggles light/dark. Default app theme follows the OS (`system`). */
 export default function AnimatedThemeToggler({ className = "" }: { className?: string }) {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -25,7 +26,7 @@ export default function AnimatedThemeToggler({ className = "" }: { className?: s
     );
   }
 
-  const isDark = theme === "dark";
+  const isDark = resolvedTheme === "dark";
 
   return (
     <button

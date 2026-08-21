@@ -58,7 +58,7 @@ function RedirectToPros() {
 
 const App = () => (
   <ErrorBoundary>
-  <ThemeProvider attribute="class" defaultTheme="light" enableSystem storageKey="premiere-theme">
+  <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="premiere-theme">
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
