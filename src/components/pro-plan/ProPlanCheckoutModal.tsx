@@ -17,7 +17,7 @@ export default function ProPlanCheckoutModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "max-h-[min(92vh,calc(100%-1.5rem))] gap-0 overflow-y-auto overflow-x-hidden border-neutral-200 bg-white p-0 shadow-2xl dark:border-neutral-800 dark:bg-black sm:max-w-lg",
+          "max-h-[min(92vh,calc(100%-1.5rem))] gap-0 overflow-y-auto overflow-x-hidden border-neutral-200 bg-white p-0 shadow-2xl dark:border-neutral-800 dark:bg-[#0a0a0a] sm:max-w-lg",
           "[&>button]:text-neutral-600 hover:[&>button]:text-neutral-950 dark:[&>button]:text-neutral-400 dark:hover:[&>button]:text-neutral-100"
         )}
       >

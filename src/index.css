@@ -71,12 +71,12 @@
 
   .dark {
     color-scheme: dark;
-    /* Matte near-black (Wealthsimple-style), not blue-tinted */
-    --background: 0 0% 4%;
+    /* Wealthsimple-style matte black (#0A0A0A) + raised cards (#1A1A1A) */
+    --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 10%;
+    --card: 0 0% 10.2%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 10%;
+    --popover: 0 0% 10.2%;
     --popover-foreground: 0 0% 98%;
     --primary: 214 70% 62%;
     --primary-foreground: 0 0% 6%;
@@ -91,7 +91,7 @@
     --border: 0 0% 16%;
     --input: 0 0% 14%;
     --ring: 214 70% 62%;
-    --sidebar-background: 0 0% 4%;
+    --sidebar-background: 0 0% 3.9%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 16%;
   }
@@ -177,9 +177,9 @@
     box-shadow: 0 24px 80px -20px rgba(0, 0, 0, 0.35);
   }
   .dark .support-glass {
-    background: rgba(22, 22, 22, 0.55);
+    background: rgba(26, 26, 26, 0.72);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 24px 80px -16px rgba(0, 0, 0, 0.75);
+    box-shadow: 0 24px 80px -16px rgba(0, 0, 0, 0.55);
   }
 
   @keyframes supportDotPulse {
@@ -333,21 +333,16 @@
     color: #fff;
   }
   .dark .footer-gradient {
-    background: linear-gradient(
-      135deg,
-      #1a365d 0%,
-      #1e3a5f 35%,
-      #2c5282 70%,
-      #2b6cb0 100%
-    );
+    background: #0a0a0a;
     color: #fff;
+    border-top: 1px solid hsl(0 0% 16%);
   }
   .bg-nav-glass {
     background: hsl(0 0% 100% / 0.9);
     backdrop-filter: var(--nav-blur);
   }
   .dark .bg-nav-glass {
-    background: hsl(222 47% 11% / 0.9);
+    background: hsl(0 0% 3.9% / 0.92);
   }
 
   /* Content panels: clear background and high-contrast text (light and dark) */
@@ -380,12 +375,12 @@
   .dark .glass-card {
     background: linear-gradient(
       145deg,
-      rgba(30, 41, 59, 0.72) 0%,
-      rgba(25, 35, 52, 0.65) 50%,
-      rgba(20, 28, 42, 0.6) 100%
+      rgba(26, 26, 26, 0.94) 0%,
+      rgba(22, 22, 22, 0.9) 50%,
+      rgba(18, 18, 18, 0.88) 100%
     );
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.35);
     color: hsl(var(--foreground));
   }
 

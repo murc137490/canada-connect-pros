@@ -15,7 +15,7 @@ export default function ProPlans() {
           className={cn(
             "absolute inset-0 z-0 rounded-none",
             resolvedTheme === "dark"
-              ? "bg-[radial-gradient(ellipse_at_bottom,_#262626_0%,_#000_100%)]"
+              ? "bg-[radial-gradient(ellipse_at_bottom,_#1a1a1a_0%,_#0a0a0a_100%)]"
               : "bg-[radial-gradient(ellipse_at_bottom,_#f5f5f5_0%,_#fff_100%)]"
           )}
           pointerEvents={false}

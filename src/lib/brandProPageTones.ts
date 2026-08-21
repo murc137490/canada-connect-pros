@@ -52,8 +52,9 @@ function mixRgb(
   ];
 }
 
-const NEAR_BLACK: [number, number, number] = [3, 7, 20];
+const NEAR_BLACK: [number, number, number] = [10, 10, 10]; /* #0A0A0A */
 const FALLBACK_PRIMARY: [number, number, number] = [30, 58, 95];
+const CARD_DARK_ANCHOR: [number, number, number] = [26, 26, 26]; /* #1A1A1A */
 
 /**
  * Light shell: cool gray base (not pure white) so brand mixes read like dark mode’s depth,
@@ -112,15 +113,15 @@ export function buildProPageDarkTones(
   const p = parseHexRgb(primaryHex) ?? FALLBACK_PRIMARY;
   const s = secondaryHex && parseHexRgb(secondaryHex) ? parseHexRgb(secondaryHex)! : p;
 
-  const shellTop = mixRgb(NEAR_BLACK, p, 0.16);
-  const shellMid = mixRgb(NEAR_BLACK, p, 0.22);
-  const shellBot = mixRgb(NEAR_BLACK, s, 0.24);
+  const shellTop = mixRgb(NEAR_BLACK, p, 0.1);
+  const shellMid = mixRgb(NEAR_BLACK, p, 0.14);
+  const shellBot = mixRgb(NEAR_BLACK, s, 0.16);
 
-  const cardRgb = mixRgb([2, 6, 18], p, 0.13);
-  const headerRgb = mixRgb([12, 18, 34], p, 0.2);
-  const sidebarRgb = mixRgb([5, 9, 22], p, 0.15);
-  const guaranteeRgb = mixRgb([8, 12, 26], p, 0.11);
-  const borderRgb = mixRgb([18, 24, 40], p, 0.28);
+  const cardRgb = mixRgb(CARD_DARK_ANCHOR, p, 0.1);
+  const headerRgb = mixRgb(CARD_DARK_ANCHOR, p, 0.16);
+  const sidebarRgb = mixRgb(CARD_DARK_ANCHOR, p, 0.08);
+  const guaranteeRgb = mixRgb(CARD_DARK_ANCHOR, p, 0.06);
+  const borderRgb = mixRgb([40, 40, 40], p, 0.2);
 
   const shellGradient = `linear-gradient(180deg, ${toHex(...shellTop)} 0%, ${toHex(...shellMid)} 48%, ${toHex(...shellBot)} 100%)`;
 
