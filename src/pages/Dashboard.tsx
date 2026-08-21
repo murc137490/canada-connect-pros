@@ -3220,11 +3220,24 @@ export default function Dashboard() {
         address: addressSave,
       }).eq("user_id", user.id);
       if (error) throw error;
+      const savedName = accountForm.full_name.trim();
+      // Keep auth metadata in sync so the header label updates without a full reload.
+      const { error: metaErr } = await supabase.auth.updateUser({
+        data: { full_name: savedName || null },
+      });
+      if (metaErr) console.warn(metaErr);
+      try {
+        window.dispatchEvent(
+          new CustomEvent("premiere:profile-updated", { detail: { full_name: savedName } })
+        );
+      } catch {
+        /* ignore */
+      }
       setProfile((prev) =>
         prev
           ? {
               ...prev,
-              full_name: accountForm.full_name.trim() || null,
+              full_name: savedName || null,
               phone: phone || null,
               birthday,
               email_language: accountForm.email_language,

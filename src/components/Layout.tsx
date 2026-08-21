@@ -127,6 +127,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { isPlatformAdmin } = usePlatformAdmin();
   const { items: whatsNewItems } = useWhatsNew();
 
+  /** Prefer profiles.full_name (source of truth) over possibly stale auth metadata. */
+  const [profileFullName, setProfileFullName] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user?.id) {
+      setProfileFullName(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!cancelled) setProfileFullName(data?.full_name?.trim() || null);
+    })();
+    const onProfileUpdated = (event: Event) => {
+      const name = (event as CustomEvent<{ full_name?: string }>).detail?.full_name;
+      if (typeof name === "string") setProfileFullName(name.trim() || null);
+    };
+    window.addEventListener("premiere:profile-updated", onProfileUpdated);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("premiere:profile-updated", onProfileUpdated);
+    };
+  }, [user?.id]);
+
   const showJoinPros =
     !isPlatformAdmin && shouldShowJoinPros(user?.id, activeVerifiedPro, activeVerifiedProReady);
   const navLinks = [
@@ -135,7 +162,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ...(showJoinPros ? [{ label: t.nav.joinPros, href: "/join-pros" }] : []),
   ];
 
-  const fullName = (user?.user_metadata?.full_name as string)?.trim();
+  const fullName =
+    (profileFullName || (user?.user_metadata?.full_name as string | undefined) || "").trim() || "";
   const dashboardLabel = fullName ? fullName.split(/\s+/)[0] || t.nav.dashboardShort : t.nav.dashboardShort;
   const isProProfilePage = /^\/pro\/[^/]+$/.test(location.pathname);
 
