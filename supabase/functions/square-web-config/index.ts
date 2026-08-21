@@ -29,7 +29,12 @@ Deno.serve(async (req) => {
     ""
   ).trim();
   const locationId = (Deno.env.get("SQUARE_LOCATION_ID") ?? "").trim();
-  const environment = Deno.env.get("SQUARE_ENVIRONMENT") === "production" ? "production" : "sandbox";
+  // Prefer explicit secret; otherwise infer from application id prefix.
+  const envSecret = (Deno.env.get("SQUARE_ENVIRONMENT") ?? "").trim().toLowerCase();
+  const environment =
+    envSecret === "production" || (!envSecret && applicationId.startsWith("sq0idp-"))
+      ? "production"
+      : "sandbox";
 
   if (!applicationId || !locationId) {
     return new Response(

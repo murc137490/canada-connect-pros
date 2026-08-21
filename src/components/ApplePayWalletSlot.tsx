@@ -1,5 +1,6 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  applePaySlotLooksLive,
   ensureApplePaySdkLoaded,
   isApplePayBrowserCapableSync,
   resolveApplePayBrowserCapable,
@@ -10,7 +11,7 @@ export function isApplePayBrowserCapable(): boolean {
   return isApplePayBrowserCapableSync();
 }
 
-/** True Safari (not Chrome/Firefox/Edge/iOS Chrome). Square's Apple Pay button paints correctly here. */
+/** True Safari (not Chrome/Firefox/Edge). Native Apple Pay button paints the logo here. */
 export function isAppleSafariBrowser(): boolean {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent;
@@ -20,7 +21,7 @@ export function isAppleSafariBrowser(): boolean {
 type ApplePayWalletSlotProps = {
   children: ReactNode;
   unavailableLabel: string;
-  /** Opens QR handoff so Windows/Android users finish on iPhone Safari (Square path). */
+  /** Opens Première QR handoff only when Square Apple Pay cannot mount. */
   onRequestIphoneHandoff?: () => void;
   handoffButtonLabel?: string;
   className?: string;
@@ -30,12 +31,10 @@ const btnBase =
   "flex h-12 w-full flex-row flex-nowrap items-center justify-center gap-2 rounded-[4px] bg-black px-3 text-[15px] font-semibold tracking-tight text-white ring-1 ring-white/25";
 
 /**
- * Safari + Wallet: mount Square `<ApplePay>` (native sheet).
- * Everyone else: branded Apple Pay button → Première QR handoff (iPhone Safari).
- *
- * Do NOT mount Square Apple Pay on Windows/Chrome — Apple's native QR often shows
- * the amount then dismisses (merchant validation), and Square's CSS button paints
- * as a blank/broken black box outside Safari.
+ * Prefer Square `<ApplePay>` whenever Apple Pay JS reports capability
+ * (Safari sheet, or Apple’s native Windows/Chrome QR).
+ * Branded overlay outside Safari (Square’s CSS button is otherwise blank).
+ * Première QR handoff only if Square never mounts.
  */
 export function ApplePayWalletSlot({
   children,
@@ -44,37 +43,72 @@ export function ApplePayWalletSlot({
   handoffButtonLabel,
   className,
 }: ApplePayWalletSlotProps) {
+  const slotRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
-  const [useSquareNative, setUseSquareNative] = useState(false);
+  const [sdkLive, setSdkLive] = useState(false);
+  const [isSafari, setIsSafari] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    const timers: number[] = [];
+
     void (async () => {
       await ensureApplePaySdkLoaded();
       if (cancelled) return;
-      const capable = await resolveApplePayBrowserCapable();
+      await resolveApplePayBrowserCapable();
       if (cancelled) return;
-      setUseSquareNative(isAppleSafariBrowser() && capable);
+      setIsSafari(isAppleSafariBrowser());
       setReady(true);
+
+      const probe = () => {
+        if (cancelled) return;
+        setSdkLive(applePaySlotLooksLive(slotRef.current));
+      };
+      for (const ms of [400, 1200, 2400, 4000, 6500]) {
+        timers.push(window.setTimeout(probe, ms));
+      }
+      probe();
     })();
+
     return () => {
       cancelled = true;
+      timers.forEach((id) => window.clearTimeout(id));
     };
   }, []);
 
   const label = handoffButtonLabel || "Apple Pay";
+  const showHandoff = ready && !sdkLive && !!onRequestIphoneHandoff;
+  const showDisabled = ready && !sdkLive && !onRequestIphoneHandoff;
+  const showOverlay = sdkLive && !isSafari;
 
   return (
-    <div className={`h-12 min-h-12 w-full ${className ?? ""}`.trim()}>
+    <div className={`relative h-12 min-h-12 w-full ${className ?? ""}`.trim()}>
+      {/* Always mount Square Apple Pay so Windows can open Apple’s native QR when capable. */}
+      <div
+        ref={slotRef}
+        className={`h-12 min-h-12 min-w-0 ${sdkLive ? "" : "invisible absolute inset-0"}`}
+        aria-hidden={!sdkLive}
+      >
+        {children}
+      </div>
+
+      {showOverlay ? (
+        <div
+          className="pointer-events-none absolute inset-0 z-[1] flex flex-row flex-nowrap items-center justify-center gap-2 rounded-[4px] bg-black text-white ring-1 ring-white/25"
+          aria-hidden
+        >
+          <ApplePayMark />
+          <span className="whitespace-nowrap text-[15px] font-semibold leading-none tracking-tight">Pay</span>
+        </div>
+      ) : null}
+
       {!ready ? (
         <div className={`${btnBase} opacity-80`} aria-hidden>
           <span className="text-xs text-white/60">…</span>
         </div>
       ) : null}
 
-      {ready && useSquareNative ? children : null}
-
-      {ready && !useSquareNative && onRequestIphoneHandoff ? (
+      {showHandoff ? (
         <button
           type="button"
           onClick={onRequestIphoneHandoff}
@@ -87,14 +121,8 @@ export function ApplePayWalletSlot({
         </button>
       ) : null}
 
-      {ready && !useSquareNative && !onRequestIphoneHandoff ? (
-        <button
-          type="button"
-          disabled
-          title={unavailableLabel}
-          aria-label={label}
-          className={`${btnBase} cursor-not-allowed opacity-80`}
-        >
+      {showDisabled ? (
+        <button type="button" disabled title={unavailableLabel} aria-label={label} className={`${btnBase} cursor-not-allowed opacity-80`}>
           <ApplePayMark />
           <span className="whitespace-nowrap leading-none">Pay</span>
         </button>
@@ -103,7 +131,6 @@ export function ApplePayWalletSlot({
   );
 }
 
-/** Apple logo mark — kept inline with "Pay" (official-style black button). */
 function ApplePayMark() {
   return (
     <svg

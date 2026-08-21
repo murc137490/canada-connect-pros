@@ -129,6 +129,8 @@ export default function ProPlanCheckoutExperience({
     () => ({
       countryCode: "CA",
       currencyCode: "CAD",
+      supportedNetworks: ["visa", "masterCard", "amex", "discover", "interac"],
+      merchantCapabilities: ["supports3DS"],
       total: {
         amount: chargeCents != null ? (chargeCents / 100).toFixed(2) : "0.00",
         label: "Premiere Services",

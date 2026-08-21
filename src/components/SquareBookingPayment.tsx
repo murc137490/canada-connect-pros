@@ -122,6 +122,23 @@ export default function SquareBookingPayment({
   const showApplePayBeta = useApplePaySquareMissingHint(walletApplePayRef, squareSdkReady);
   const applePayBetaText = (terms.applePayBetaTestingNote ?? "").trim();
 
+  useEffect(() => {
+    if (!applicationId) return;
+    const isProdApp = applicationId.startsWith("sq0idp-");
+    const isSandboxApp = applicationId.startsWith("sandbox-");
+    // Soft diagnostic: Apple Pay sheet that opens then closes is almost always
+    // domain / environment mismatch (Production domain + Sandbox secrets or vice versa).
+    if (typeof window !== "undefined" && window.location.hostname.includes("premiereservices.ca")) {
+      if (isSandboxApp) {
+        console.warn(
+          "[Apple Pay] This site is production but Square application ID is sandbox. Verify Apple Pay domain in Sandbox, or switch Edge secrets to Production (SQUARE_ENVIRONMENT=production + production app/location/token).",
+        );
+      } else if (isProdApp) {
+        // ok — production app id on production host
+      }
+    }
+  }, [applicationId]);
+
   const amountStr = (amountCents / 100).toFixed(2);
   const currencyCode = currency.toUpperCase().slice(0, 3);
 
@@ -129,8 +146,11 @@ export default function SquareBookingPayment({
     () => ({
       countryCode: "CA",
       currencyCode,
+      // Required by Apple Pay JS (incl. Windows QR → iPhone). Square docs omit these
+      // in the minimal sample; missing fields often cancel the sheet after scan.
+      supportedNetworks: ["visa", "masterCard", "amex", "discover", "interac"],
+      merchantCapabilities: ["supports3DS"],
       total: {
-        // Keep label ASCII — some Apple Pay QR sessions cancel on odd Unicode in merchant labels.
         amount: amountStr,
         label: "Premiere Services",
       },

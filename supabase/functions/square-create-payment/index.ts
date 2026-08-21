@@ -13,9 +13,14 @@ const corsHeaders = {
 };
 
 function squareApiBase(): string {
-  return Deno.env.get("SQUARE_ENVIRONMENT") === "production"
-    ? "https://connect.squareup.com"
-    : "https://connect.squareupsandbox.com";
+  const env = (Deno.env.get("SQUARE_ENVIRONMENT") ?? "").trim().toLowerCase();
+  const appId = (
+    Deno.env.get("SQUARE_APPLICATION_ID") ??
+    Deno.env.get("SQUARE_OAUTH_APPLICATION_ID") ??
+    ""
+  ).trim();
+  const production = env === "production" || (!env && appId.startsWith("sq0idp-"));
+  return production ? "https://connect.squareup.com" : "https://connect.squareupsandbox.com";
 }
 
 type TokenRow = {
