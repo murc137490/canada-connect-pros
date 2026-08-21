@@ -226,11 +226,11 @@ export default function ProPlansFreeTrial() {
                             >
                               <ApplePay id="trial-apple-pay" />
                             </ApplePayWalletSlot>
-                            <div className="min-h-[48px] min-w-0 overflow-hidden rounded-lg">
+                            <div className="sq-wallet-btn h-12 min-h-12 min-w-0 overflow-hidden rounded-[4px] ring-1 ring-white/25">
                               <GooglePay
                                 id="trial-google-pay"
                                 buttonSizeMode="fill"
-                                buttonType="long"
+                                buttonType="plain"
                                 buttonColor="black"
                               />
                             </div>

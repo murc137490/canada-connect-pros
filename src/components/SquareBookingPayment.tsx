@@ -295,7 +295,7 @@ export default function SquareBookingPayment({
           </p>
           <div className="grid min-w-0 grid-cols-2 gap-2.5">
             <ApplePayWalletSlot
-              className="sq-wallet-btn min-h-12 min-w-0 overflow-hidden rounded-[4px]"
+              className="sq-wallet-btn h-12 min-h-12 min-w-0 overflow-hidden rounded-[4px]"
               unavailableLabel={
                 terms.applePayUnavailableOnDevice ??
                 "Apple Pay is available in Safari on iPhone and Mac. Use Google Pay or card here."
@@ -303,15 +303,15 @@ export default function SquareBookingPayment({
               onRequestIphoneHandoff={onApplePayHandoffRequest}
               handoffButtonLabel={terms.applePayHandoffButtonLabel ?? "Apple Pay"}
             >
-              <div ref={walletApplePayRef} className="min-h-12 min-w-0">
+              <div ref={walletApplePayRef} className="h-12 min-h-12 min-w-0">
                 <ApplePay id="rswps-apple-pay-container" />
               </div>
             </ApplePayWalletSlot>
-            <div className="sq-wallet-btn min-h-12 min-w-0 overflow-hidden rounded-[4px] ring-1 ring-black/20">
+            <div className="sq-wallet-btn h-12 min-h-12 min-w-0 overflow-hidden rounded-[4px] ring-1 ring-white/25">
               <GooglePay
                 id="rswps-google-pay-container"
                 buttonSizeMode="fill"
-                buttonType="long"
+                buttonType="plain"
                 buttonColor="black"
               />
             </div>

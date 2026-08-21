@@ -419,18 +419,18 @@ export default function ProPlanCheckoutExperience({
                       <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">{plans?.checkoutDigitalWallet ?? "Digital wallet"}</p>
                       <div className="grid min-w-0 grid-cols-2 gap-2.5">
                         <ApplePayWalletSlot
-                          className="sq-wallet-btn min-h-12 min-w-0 overflow-hidden rounded-[4px]"
+                          className="sq-wallet-btn h-12 min-h-12 min-w-0 overflow-hidden rounded-[4px]"
                           unavailableLabel={
                             terms.applePayUnavailableOnDevice ??
                             "Apple Pay is available in Safari on iPhone and Mac. Use Google Pay or card here."
                           }
                         >
-                          <div ref={walletApplePayRef} className="min-h-12 min-w-0">
+                          <div ref={walletApplePayRef} className="h-12 min-h-12 min-w-0">
                             <ApplePay id="pro-plan-apple-pay" />
                           </div>
                         </ApplePayWalletSlot>
-                        <div className="sq-wallet-btn min-h-12 min-w-0 overflow-hidden rounded-[4px] ring-1 ring-black/20">
-                          <GooglePay id="pro-plan-google-pay" buttonSizeMode="fill" buttonType="long" buttonColor="black" />
+                        <div className="sq-wallet-btn h-12 min-h-12 min-w-0 overflow-hidden rounded-[4px] ring-1 ring-white/25">
+                          <GooglePay id="pro-plan-google-pay" buttonSizeMode="fill" buttonType="plain" buttonColor="black" />
                         </div>
                       </div>
                       <p className="text-[11px] leading-relaxed text-neutral-500">

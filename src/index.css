@@ -894,7 +894,7 @@
   color: #ffffff;
 }
 
-/* Square Apple Pay / Google Pay — crisp professional wallet buttons */
+/* Square Apple Pay / Google Pay — matched 48px wallet row */
 apple-pay-button,
 .sq-apple-pay,
 #rswps-apple-pay-container,
@@ -905,9 +905,11 @@ apple-pay-button,
   --apple-pay-button-border-radius: 4px;
   --apple-pay-button-padding: 0px;
   --apple-pay-button-box-sizing: border-box;
-  display: block;
-  width: 100%;
-  min-height: 48px;
+  display: block !important;
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
 }
 
 apple-pay-button {
@@ -916,6 +918,10 @@ apple-pay-button {
 }
 
 .sq-wallet-btn {
+  position: relative;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
   border-radius: 4px;
   overflow: hidden;
   background: #000;
@@ -926,8 +932,16 @@ apple-pay-button {
 #rswps-google-pay-container,
 #pro-plan-google-pay,
 #trial-google-pay {
+  display: block !important;
   width: 100% !important;
-  min-height: 48px;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
   border-radius: 4px !important;
-  overflow: hidden;
+  overflow: hidden !important;
+}
+
+/* Google Pay injects an iframe — keep the mark scaled to the fixed row height */
+.sq-wallet-btn iframe {
+  transform-origin: center center;
 }

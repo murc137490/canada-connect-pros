@@ -11,6 +11,14 @@ export function isApplePayBrowserCapable(): boolean {
   return isApplePayBrowserCapableSync();
 }
 
+/** Safari paints `-webkit-appearance: -apple-pay-button`; elsewhere it's a blank black box. */
+function nativeApplePayButtonPaintsLogo(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  const isSafari = /safari/i.test(ua) && !/chrome|chromium|crios|edg|firefox|fxios|android/i.test(ua);
+  return isSafari;
+}
+
 type ApplePayWalletSlotProps = {
   children: ReactNode;
   unavailableLabel: string;
@@ -22,13 +30,8 @@ type ApplePayWalletSlotProps = {
 
 /**
  * Always mounts the provider Apple Pay control (Square `<ApplePay>`).
- * After Apple Pay JS loads, if the SDK button appears (Safari sheet or provider
- * QR), we show it. Otherwise we fall back to the Première QR handoff button when
- * `onRequestIphoneHandoff` is provided.
- *
- * Square documents Safari-first Apple Pay; native Apple QR on Chrome/Windows is
- * officially supported by Stripe Express Checkout (`applePay: 'always'`). With
- * Square we keep QR → iPhone Safari until Square ships equivalent support.
+ * Outside Safari, Square's CSS Apple Pay button is a blank black box — we overlay
+ * the Apple mark so both wallet columns match visually.
  */
 export function ApplePayWalletSlot({
   children,
@@ -40,6 +43,7 @@ export function ApplePayWalletSlot({
   const slotRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
   const [sdkLive, setSdkLive] = useState(false);
+  const [paintNativeLogo, setPaintNativeLogo] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,6 +54,7 @@ export function ApplePayWalletSlot({
       if (cancelled) return;
       await resolveApplePayBrowserCapable();
       if (cancelled) return;
+      setPaintNativeLogo(nativeApplePayButtonPaintsLogo());
       setReady(true);
 
       const probe = () => {
@@ -71,17 +76,27 @@ export function ApplePayWalletSlot({
 
   const label = handoffButtonLabel || "Apple Pay";
   const showFallback = ready && !sdkLive;
+  const showBrandOverlay = sdkLive && !paintNativeLogo;
 
   return (
-    <div className={`relative min-h-12 ${className ?? ""}`.trim()}>
-      {/* Keep a real layout box so Square can measure/mount the wallet control. */}
+    <div className={`relative h-12 min-h-12 w-full ${className ?? ""}`.trim()}>
       <div
         ref={slotRef}
-        className={`min-h-12 min-w-0 ${sdkLive ? "" : "invisible absolute inset-0"}`}
+        className={`h-12 min-h-12 min-w-0 ${sdkLive ? "" : "invisible absolute inset-0"}`}
         aria-hidden={!sdkLive}
       >
         {children}
       </div>
+
+      {showBrandOverlay ? (
+        <div
+          className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center gap-1.5 rounded-[4px] bg-black text-white ring-1 ring-white/25"
+          aria-hidden
+        >
+          <ApplePayMark />
+          <span className="text-[15px] font-semibold tracking-tight">Pay</span>
+        </div>
+      ) : null}
 
       {!ready ? (
         <div
