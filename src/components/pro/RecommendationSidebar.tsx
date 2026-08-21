@@ -104,9 +104,9 @@ export default function RecommendationSidebar({
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Sparkles size={18} className="text-secondary" />
-        <h3 className="font-heading font-bold text-foreground">{t.services.betterMatch}</h3>
+        <h3 className="font-heading text-lg font-semibold text-foreground">{t.services.betterMatch}</h3>
       </div>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-base text-muted-foreground leading-relaxed">
         {t.services.betterMatchDesc}
       </p>
 

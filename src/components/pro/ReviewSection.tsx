@@ -170,8 +170,8 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
   const displayReviews = previewLimit != null ? reviews.slice(0, previewLimit) : reviews;
 
   return (
-    <div className="space-y-2.5 text-[0.6rem] sm:text-[0.62rem]" id={previewLimit == null ? scrollToId : undefined}>
-      <h2 className="font-heading text-[0.72rem] font-bold text-foreground leading-tight">
+    <div className="space-y-6" id={previewLimit == null ? scrollToId : undefined}>
+      <h2 className="font-heading text-lg font-semibold text-foreground">
         {t.reviews.sectionTitle} ({reviews.length})
       </h2>
 
@@ -180,21 +180,21 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
         <ReviewForm proProfileId={proProfileId} onSubmitted={handleReviewSubmitted} />
       )}
       {previewLimit == null && user && !isProOwner && hasBookingWithPro === true && formBlocked !== "none" && (
-        <p className="text-xs text-muted-foreground rounded-md border border-border/60 bg-muted/20 px-3 py-2">
+        <p className="text-sm text-muted-foreground rounded-md border border-border/60 bg-muted/20 px-3 py-2">
           {formBlocked === "locked" ? t.reviews.cannotReviewAgain : t.reviews.alreadyReviewedBody}
         </p>
       )}
 
       {loading ? (
-        <div className="flex justify-center py-3">
-          <Loader2 className="animate-spin text-muted-foreground" size={14} />
+        <div className="flex justify-center py-6">
+          <Loader2 className="animate-spin text-muted-foreground" size={20} />
         </div>
       ) : reviews.length === 0 ? (
-        <div className="text-center py-3 text-muted-foreground leading-snug">
+        <div className="text-center py-6 text-sm text-muted-foreground leading-relaxed">
           {hasBookingWithPro === true ? t.reviews.noReviewsYetFirst : t.reviews.noReviewsYet}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-4">
           {displayReviews.map((review) => {
             const initials = review.reviewer_name
               ?.split(" ")
@@ -214,19 +214,19 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
             );
 
             return (
-              <div key={review.id} className="bg-card border rounded-lg p-2.5 space-y-1.5">
-                <div className="flex items-start gap-2">
-                  <Avatar className="w-6 h-6 shrink-0">
-                    <AvatarFallback className="text-[0.55rem] leading-none bg-muted">{initials}</AvatarFallback>
+              <div key={review.id} className="bg-card border rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <Avatar className="w-10 h-10 shrink-0">
+                    <AvatarFallback className="text-sm bg-muted">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-medium text-card-foreground text-[0.65rem]">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-card-foreground text-sm">
                         {review.reviewer_name}
                       </span>
-                      <StarRating rating={review.rating} size={9} />
+                      <StarRating rating={review.rating} size={14} />
                     </div>
-                    <p className="text-[0.55rem] text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       {new Date(review.created_at).toLocaleDateString("en-CA", {
                         year: "numeric",
                         month: "long",
@@ -240,20 +240,20 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
                   const reviewBody = (
                     <>
                       {review.title && (
-                        <h4 className="font-semibold text-card-foreground text-[0.65rem] leading-snug">{review.title}</h4>
+                        <h4 className="font-semibold text-card-foreground text-base leading-snug">{review.title}</h4>
                       )}
                       {review.content && (
-                        <p className="text-[0.6rem] text-muted-foreground leading-snug">{review.content}</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{review.content}</p>
                       )}
                       {review.photos.length > 0 && (
-                        <div className="flex gap-1 flex-wrap">
+                        <div className="flex gap-2 flex-wrap">
                           {review.photos.map((photo) => (
                             <StorageDisplayImage
                               key={photo.id}
                               bucket="review-photos"
                               url={photo.url}
                               alt="Review photo"
-                              className="w-14 h-14 rounded-md object-cover border"
+                              className="w-20 h-20 rounded-md object-cover border"
                             />
                           ))}
                         </div>
@@ -278,11 +278,11 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
 
                 {/* Pro response */}
                 {review.response && !blurredForViewer && (
-                  <div className="ml-3 bg-muted/50 border rounded-md p-2">
-                    <p className="text-[0.55rem] font-semibold text-muted-foreground mb-0.5">
+                  <div className="ml-2 bg-muted/50 border rounded-md p-3">
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">
                       {t.reviews.responseFromPro}
                     </p>
-                    <p className="text-[0.6rem] text-card-foreground leading-snug">{review.response.content}</p>
+                    <p className="text-sm text-card-foreground leading-relaxed">{review.response.content}</p>
                   </div>
                 )}
 
@@ -290,25 +290,25 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
                 {isProOwner && !review.response && !blurredForViewer && (
                   <>
                     {respondingTo === review.id ? (
-                      <div className="ml-3 space-y-1">
+                      <div className="ml-2 space-y-2">
                         <Textarea
                           placeholder={t.reviews.writeResponse}
                           value={responseText}
                           onChange={(e) => setResponseText(e.target.value)}
                           maxLength={500}
-                          rows={2}
-                          className="text-[0.6rem] min-h-[2.5rem] py-1"
+                          rows={3}
+                          className="text-sm min-h-[4rem]"
                         />
-                        <div className="flex gap-1">
+                        <div className="flex gap-2">
                           <Button
                             size="sm"
-                            className="h-6 text-[0.55rem] px-2 bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                            className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
                             onClick={() => handleRespond(review.id)}
                             disabled={submittingResponse}
                           >
-                            {submittingResponse ? <Loader2 className="animate-spin" size={10} /> : t.reviews.postResponse}
+                            {submittingResponse ? <Loader2 className="animate-spin" size={14} /> : t.reviews.postResponse}
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-6 text-[0.55rem] px-2" onClick={() => setRespondingTo(null)}>
+                          <Button size="sm" variant="ghost" onClick={() => setRespondingTo(null)}>
                             {t.common.cancel}
                           </Button>
                         </div>
@@ -317,10 +317,10 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="ml-3 gap-0.5 text-muted-foreground h-6 text-[0.55rem] px-2"
+                        className="ml-2 gap-1.5 text-muted-foreground"
                         onClick={() => setRespondingTo(review.id)}
                       >
-                        <MessageSquare size={10} /> {t.reviews.respond}
+                        <MessageSquare size={14} /> {t.reviews.respond}
                       </Button>
                     )}
                   </>
@@ -335,7 +335,7 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
                 e.preventDefault();
                 document.getElementById(scrollToId)?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="inline-block text-[0.6rem] font-medium text-primary hover:underline mt-1"
+              className="inline-block text-sm font-medium text-primary hover:underline mt-1"
             >
               {t.reviews?.viewAll ?? "View all"} {reviews.length} {reviews.length === 1 ? (t.common?.review ?? "review") : (t.common?.reviews ?? "reviews")} →
             </a>

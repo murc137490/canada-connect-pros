@@ -1142,15 +1142,15 @@ export default function ProProfilePage() {
                   {mainBio ? (
                     <section className="pt-2">
                       <h2 className="font-heading text-lg font-semibold text-foreground mb-2">{t.profile?.about ?? "About"}</h2>
-                      <p className="text-muted-foreground leading-relaxed">{mainBio}</p>
+                      <p className="text-base text-muted-foreground leading-relaxed">{mainBio}</p>
                     </section>
                   ) : null}
                   <section>
                     <h2 className="font-heading text-lg font-semibold text-foreground mb-3">{t.profile?.overview ?? "Overview"}</h2>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
+                    <ul className="space-y-2 text-base text-muted-foreground">
                       {pro.years_experience > 0 && (
                         <li className="flex items-center gap-2">
-                          <Briefcase size={16} className="shrink-0" style={accentStyle} />
+                          <Briefcase size={18} className="shrink-0" style={accentStyle} />
                           {pro.years_experience} {t.common?.yearsExp ?? "years experience"}
                         </li>
                       )}
@@ -1158,9 +1158,9 @@ export default function ProProfilePage() {
                   </section>
                   <section className="pt-2">
                     <h2 className="font-heading text-lg font-semibold text-foreground mb-2">{t.profile?.languages ?? "Languages"}</h2>
-                    <p className="text-sm text-muted-foreground mb-4">{t.profile?.languagesIntro}</p>
+                    <p className="text-base text-muted-foreground mb-4">{t.profile?.languagesIntro}</p>
                     {languageEntries.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">{t.profile?.languagesEmpty}</p>
+                      <p className="text-base text-muted-foreground">{t.profile?.languagesEmpty}</p>
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {languageEntries.map((e, i) => {
@@ -1175,11 +1175,11 @@ export default function ProProfilePage() {
                           return (
                             <span
                               key={`${e.languageLabel}-${i}`}
-                              className="inline-flex flex-col items-start gap-0.5 rounded-2xl border border-neutral-300 bg-neutral-50 px-4 py-2.5 text-sm font-medium text-neutral-950 shadow-sm dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-50"
+                              className="inline-flex flex-col items-start gap-0.5 rounded-2xl border border-neutral-300 bg-neutral-50 px-4 py-2.5 text-base font-medium text-neutral-950 shadow-sm dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-50"
                             >
                               <span>{e.languageLabel}</span>
                               {levelLabel ? (
-                                <span className="text-xs font-normal text-neutral-600 dark:text-neutral-400">{levelLabel}</span>
+                                <span className="text-sm font-normal text-neutral-600 dark:text-neutral-400">{levelLabel}</span>
                               ) : null}
                             </span>
                           );
@@ -1427,7 +1427,7 @@ export default function ProProfilePage() {
                     <CalendarCheck size={20} /> {t.terms.requestBooking}
                   </Button>
                 )}
-                <div className="space-y-1.5 text-xs text-muted-foreground mt-3">
+                <div className="space-y-1.5 text-sm text-muted-foreground mt-3">
                   <p className="flex items-center gap-2">✔ {t.terms?.securePayment ?? "Secure payment"}</p>
                   <p className="flex items-center gap-2">✔ {t.guarantee?.title ?? "Booking protection"}</p>
                   <p className="flex items-center gap-2">✔ {t.common?.verified ?? "Verified professional"}</p>
@@ -1446,15 +1446,15 @@ export default function ProProfilePage() {
                       : undefined
                 }
               >
-                <h3 className="font-semibold text-sm mb-2 text-slate-700 dark:text-zinc-300">
+                <h3 className="font-semibold text-base mb-2 text-slate-700 dark:text-zinc-300">
                   {t.guarantee?.title ?? "Booking Guarantee"}
                 </h3>
-                <p className="text-xs leading-relaxed text-slate-600 dark:text-zinc-400">
+                <p className="text-sm leading-relaxed text-slate-600 dark:text-zinc-400">
                   {t.guarantee?.rebookingDesc ?? "If something goes wrong, we'll help you rebook at no extra cost."}
                 </p>
                 <Link
                   to="/terms"
-                  className="text-xs font-medium hover:underline mt-2 inline-block text-sky-800/90 hover:text-sky-900 dark:text-sky-200 dark:hover:text-sky-100"
+                  className="text-sm font-medium hover:underline mt-2 inline-block text-sky-800/90 hover:text-sky-900 dark:text-sky-200 dark:hover:text-sky-100"
                 >
                   {t.common?.learnMore ?? "Learn more"}
                 </Link>
@@ -1469,8 +1469,8 @@ export default function ProProfilePage() {
                       : undefined
                 }
               >
-                <h3 className="font-semibold text-foreground text-sm mb-2">{t.profile?.availability ?? "Availability"}</h3>
-                <p className="text-xs text-muted-foreground mb-2">{t.profile?.clickDateToBook ?? "Click an available date to request a booking."}</p>
+                <h3 className="font-semibold text-foreground text-base mb-2">{t.profile?.availability ?? "Availability"}</h3>
+                <p className="text-sm text-muted-foreground mb-2">{t.profile?.clickDateToBook ?? "Click an available date to request a booking."}</p>
                 <AvailabilityCalendar
                   availability={pro.availability}
                   busyDates={busyDatesList}

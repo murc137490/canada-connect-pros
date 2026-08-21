@@ -890,19 +890,33 @@
   color: #000000;
 }
 
-/* Pro public profile — About / sidebar / reviews / Better Match ~10% larger */
-.pro-profile-body-scale {
-  zoom: 1.1;
+/* Pro public profile — scale writing ~10% (typography only, not layout zoom) */
+.pro-profile-body-scale .text-xs {
+  font-size: 0.825rem; /* 12px → ~13.2px */
+  line-height: 1.35rem;
 }
-
-@supports not (zoom: 1) {
-  .pro-profile-body-scale {
-    transform: scale(1.1);
-    transform-origin: top center;
-    width: 90.909%;
-    margin-left: auto;
-    margin-right: auto;
-  }
+.pro-profile-body-scale .text-sm {
+  font-size: 0.9625rem; /* 14px → ~15.4px */
+  line-height: 1.5rem;
+}
+.pro-profile-body-scale .text-base {
+  font-size: 1.1rem; /* 16px → ~17.6px */
+  line-height: 1.65rem;
+}
+.pro-profile-body-scale .text-lg {
+  font-size: 1.2375rem; /* 18px → ~19.8px */
+  line-height: 1.75rem;
+}
+.pro-profile-body-scale .text-xl {
+  font-size: 1.375rem; /* 20px → 22px */
+  line-height: 1.9rem;
+}
+.pro-profile-body-scale .text-2xl {
+  font-size: 1.65rem; /* 24px → ~26.4px */
+  line-height: 2.1rem;
+}
+.pro-profile-body-scale .leading-relaxed {
+  line-height: 1.7;
 }
 
 .dark .current-plan-rainbow-heading {
