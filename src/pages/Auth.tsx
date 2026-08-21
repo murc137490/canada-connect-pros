@@ -142,9 +142,15 @@ export default function Auth() {
     try {
       await signInWithGoogle(redirect);
     } catch (err: unknown) {
+      const raw = (err as Error)?.message ?? "";
+      const providerOff = /provider is not enabled|unsupported provider/i.test(raw);
       toast({
         title: t.auth.toastError,
-        description: (err as Error).message,
+        description: providerOff
+          ? (locale === "fr"
+              ? "La connexion Google n’est pas encore activée. Activez le fournisseur Google dans Supabase (Authentication → Providers) avec le Client ID / Secret Google Cloud."
+              : "Google sign-in isn’t enabled yet. Turn on Google in Supabase (Authentication → Providers) and paste your Google Cloud Client ID / Secret.")
+          : raw || t.auth.toastError,
         variant: "destructive",
       });
       setGoogleLoading(false);
