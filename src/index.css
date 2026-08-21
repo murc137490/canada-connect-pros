@@ -927,11 +927,11 @@ apple-pay-button {
   background: #000;
 }
 
-.sq-wallet-btn iframe,
-.sq-wallet-btn > div,
+/* Size Square/Google injected nodes only — do NOT force display:block on brand overlays */
 #rswps-google-pay-container,
 #pro-plan-google-pay,
-#trial-google-pay {
+#trial-google-pay,
+.sq-wallet-btn iframe {
   display: block !important;
   width: 100% !important;
   height: 48px !important;
@@ -939,6 +939,37 @@ apple-pay-button {
   max-height: 48px !important;
   border-radius: 4px !important;
   overflow: hidden !important;
+}
+
+#rswps-apple-pay-container,
+#pro-plan-apple-pay,
+#trial-apple-pay {
+  display: block !important;
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+}
+
+/* Centered Apple Pay brand overlay (Windows / non-Safari) */
+.sq-apple-pay-brand {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  height: 48px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.sq-apple-pay-brand > * {
+  display: inline-block !important;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 /* Google Pay injects an iframe — keep the mark scaled to the fixed row height */

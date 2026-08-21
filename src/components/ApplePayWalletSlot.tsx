@@ -94,7 +94,7 @@ export function ApplePayWalletSlot({
 
       {showOverlay ? (
         <div
-          className="pointer-events-none absolute inset-0 z-[1] flex flex-row flex-nowrap items-center justify-center gap-2 rounded-[4px] bg-black text-white ring-1 ring-white/25"
+          className="sq-apple-pay-brand pointer-events-none absolute inset-0 z-[2] rounded-[4px] bg-black text-white ring-1 ring-white/25"
           aria-hidden
         >
           <ApplePayMark />
