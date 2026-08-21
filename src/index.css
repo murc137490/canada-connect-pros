@@ -890,6 +890,21 @@
   color: #000000;
 }
 
+/* Pro public profile — About / sidebar / reviews / Better Match ~10% larger */
+.pro-profile-body-scale {
+  zoom: 1.1;
+}
+
+@supports not (zoom: 1) {
+  .pro-profile-body-scale {
+    transform: scale(1.1);
+    transform-origin: top center;
+    width: 90.909%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
 .dark .current-plan-rainbow-heading {
   color: #ffffff;
 }

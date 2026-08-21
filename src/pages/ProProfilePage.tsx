@@ -1134,7 +1134,7 @@ export default function ProProfilePage() {
             </div>
           </div>
 
-          <div className="grid gap-8 px-4 pb-8 md:gap-14 md:px-8 md:pb-10 lg:grid-cols-3">
+          <div className="pro-profile-body-scale grid gap-8 px-4 pb-8 md:gap-14 md:px-8 md:pb-10 lg:grid-cols-3">
             {/* Main content: tab panels */}
             <div className="lg:col-span-2 space-y-10 md:space-y-14">
               {activeTab === "about" && (
