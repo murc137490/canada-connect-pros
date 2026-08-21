@@ -484,10 +484,25 @@ export default function Services() {
             <div className="space-y-12">
               {top5MostSearched.length > 0 && (
                 <section>
-                  <h2 className="mb-5 font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
+                  <h2 className="mb-3 font-heading text-base font-bold tracking-tight text-foreground sm:mb-5 sm:text-xl md:text-2xl">
                     {t.services.top5MostSearched}
                   </h2>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                  {/* Phone: compact name-only list */}
+                  <div className="flex flex-col gap-1.5 sm:hidden">
+                    {top5MostSearched.map((s) => (
+                      <Link
+                        key={`${s.categorySlug}-${s.slug}`}
+                        to={`/services/${s.categorySlug}/${s.slug}`}
+                        onClick={guardClick}
+                        className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2.5 text-sm font-medium text-foreground active:bg-muted"
+                      >
+                        <span className="truncate">{getServiceName(s.slug, locale, s.name)}</span>
+                        <ChevronRight size={14} className="shrink-0 text-muted-foreground" />
+                      </Link>
+                    ))}
+                  </div>
+                  {/* Tablet/desktop: image cards */}
+                  <div className="hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-5">
                     {top5MostSearched.map((s, i) => (
                       <motion.div
                         key={`${s.categorySlug}-${s.slug}`}
@@ -529,10 +544,10 @@ export default function Services() {
               )}
 
               <section>
-                <h2 className="mb-5 font-heading text-xl font-bold tracking-tight text-foreground md:text-2xl">
+                <h2 className="mb-3 font-heading text-base font-bold tracking-tight text-foreground sm:mb-5 sm:text-xl md:text-2xl">
                   {t.services.browseCategories}
                 </h2>
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-2 md:gap-5">
                   {serviceCategories.map((cat, index) => (
                     <ServiceCategoryTile
                       key={cat.slug}

@@ -35,11 +35,15 @@ export default function ServiceCategoryTile({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 28 }}
+      initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.55, delay: Math.min(index * 0.06, 0.36), ease: [0.22, 1, 0.36, 1] }}
-      className={cn(featured ? "md:col-span-2" : "md:col-span-1")}
+      viewport={{ once: true, margin: "-24px" }}
+      transition={{ duration: 0.4, delay: Math.min(index * 0.04, 0.28), ease: [0.22, 1, 0.36, 1] }}
+      className={cn(
+        /* Phone: equal 2×2 cells — no featured span */
+        "col-span-1",
+        featured && "md:col-span-2"
+      )}
     >
       <Link
         to={`/services/${category.slug}`}
@@ -49,16 +53,23 @@ export default function ServiceCategoryTile({
         onFocus={() => setHover(true)}
         onBlur={() => setHover(false)}
         className={cn(
-          "group relative block overflow-hidden rounded-3xl border border-border bg-card shadow-sm outline-none transition-shadow duration-300",
+          "group relative block overflow-hidden rounded-xl border border-border bg-card shadow-sm outline-none transition-shadow duration-300 sm:rounded-3xl",
           "hover:shadow-xl focus-visible:ring-2 focus-visible:ring-secondary",
           locked && "opacity-90"
         )}
       >
-        <div className={cn("relative overflow-hidden", featured ? "aspect-[16/9] md:aspect-[21/9]" : "aspect-[4/3]")}>
+        <div
+          className={cn(
+            "relative overflow-hidden",
+            /* Compact square-ish tiles on phone */
+            "aspect-[4/3] sm:aspect-[4/3]",
+            featured && "md:aspect-[21/9]"
+          )}
+        >
           <motion.img
             src={visual.image}
             srcSet={visual.imageSrcSet}
-            sizes={featured ? "(min-width: 768px) 90vw, 100vw" : "(min-width: 768px) 45vw, 100vw"}
+            sizes={featured ? "(min-width: 768px) 90vw, 50vw" : "(min-width: 768px) 45vw, 50vw"}
             alt={alt}
             loading="lazy"
             decoding="async"
@@ -75,7 +86,7 @@ export default function ServiceCategoryTile({
 
           {visual.lottie ? (
             <motion.div
-              className="absolute right-3 top-3 h-20 w-20 rounded-2xl bg-white/90 p-1 shadow-md backdrop-blur-sm md:right-5 md:top-5 md:h-24 md:w-24"
+              className="absolute right-2 top-2 hidden h-20 w-20 rounded-2xl bg-white/90 p-1 shadow-md backdrop-blur-sm sm:block md:right-5 md:top-5 md:h-24 md:w-24"
               animate={{ opacity: hover ? 1 : 0.85, y: hover ? 0 : 4 }}
               transition={{ duration: 0.35 }}
             >
@@ -83,7 +94,18 @@ export default function ServiceCategoryTile({
             </motion.div>
           ) : null}
 
-          <div className="absolute inset-x-0 bottom-0 p-5 md:p-7">
+          {/* Phone: name only */}
+          <div className="absolute inset-x-0 bottom-0 p-2.5 sm:hidden">
+            <div className="flex items-center justify-between gap-1">
+              <h2 className="min-w-0 font-heading text-[13px] font-bold leading-tight tracking-tight text-white">
+                {name}
+              </h2>
+              <ChevronRight size={14} className="shrink-0 text-white/90" />
+            </div>
+          </div>
+
+          {/* sm+: full copy */}
+          <div className="absolute inset-x-0 bottom-0 hidden p-5 sm:block md:p-7">
             <div className="flex items-end justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/80">
