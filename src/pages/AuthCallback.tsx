@@ -45,10 +45,17 @@ export default function AuthCallback() {
       const code = searchParams.get("code");
       if (code) {
         setMessage(t.auth.welcomeBack);
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         if (cancelled) return;
         if (error) {
-          fail(error.message);
+          // Another tab/init may have finished first — accept an existing session.
+          const { data: existing } = await supabase.auth.getSession();
+          if (!existing.session) {
+            fail(error.message);
+            return;
+          }
+        } else if (!data.session) {
+          fail(t.auth.toastError);
           return;
         }
       } else {

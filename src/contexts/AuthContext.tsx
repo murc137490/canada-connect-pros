@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email_language: emailLanguage === "fr" ? "fr" : "en",
           referral_code: referralCode?.trim() || undefined,
         },
-        emailRedirectTo: getPublicSiteOrigin(),
+        emailRedirectTo: `${getPublicSiteOrigin()}/auth/callback`,
       },
     });
     if (error) {

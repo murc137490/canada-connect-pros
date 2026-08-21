@@ -24,7 +24,9 @@ export const supabase = createClient<Database>(url, key, {
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true,
+    // AuthCallback owns ?code= exchange. Auto-detect races it and causes
+    // "PKCE code verifier not found" when both try to exchange.
+    detectSessionInUrl: false,
     flowType: "pkce",
   },
 });

@@ -82,6 +82,7 @@ export default function ResetPassword() {
         const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
         const accessToken = hashParams.get("access_token");
         const refreshToken = hashParams.get("refresh_token");
+        const code = new URLSearchParams(window.location.search).get("code");
 
         if (accessToken && refreshToken) {
           await supabase.auth.setSession({
@@ -89,6 +90,9 @@ export default function ResetPassword() {
             refresh_token: refreshToken,
           });
           window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+        } else if (code) {
+          await supabase.auth.exchangeCodeForSession(code);
+          window.history.replaceState(null, "", window.location.pathname);
         }
 
         const {
