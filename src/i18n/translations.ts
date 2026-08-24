@@ -62,6 +62,8 @@ export const translations = {
       startingPrice: "Starting price",
       requestCall: "Request a call",
       viewCredentialDetails: "View credential details",
+      credentialsVerificationDisclaimer:
+        "Première Services verifies certain credentials where applicable, but verification does not constitute an endorsement, guarantee, certification or warranty of the provider's work.",
       servesLabel: "Serves",
       clickDateToBook: "Click an available date to request a booking.",
       clickHereForAllServices: "Click here for all services",
@@ -534,7 +536,8 @@ export const translations = {
       faq2q: "How much does it cost to use Premiere Services?",
       faq2a: "It's completely free for customers to search, get quotes, and hire pros offering services. Pros pay a small fee to connect with leads.",
       faq3q: "Are the pros offering services verified?",
-      faq3a: "Yes, all pros go through a verification process including identity checks and license verification where applicable.",
+      faq3a:
+        "Pros go through a review process, and Première Services verifies certain credentials where applicable. Verification does not constitute an endorsement, guarantee, certification or warranty of the provider's work.",
       faq4q: "What if I'm not happy with the service?",
       faq4a: "If a booked service is not performed substantially as agreed, use Report an issue in your Dashboard. Refunds are case-by-case and not automatic. Contact support@premiereservices.ca.",
       faq5q: "Do you serve all provinces and territories?",
@@ -1871,6 +1874,8 @@ export const translations = {
       startingPrice: "Prix de base",
       requestCall: "Demander un rappel",
       viewCredentialDetails: "Voir les détails des références",
+      credentialsVerificationDisclaimer:
+        "Première Services vérifie certains titres de compétences le cas échéant, mais cette vérification ne constitue pas une approbation, une garantie, une certification ni une assurance quant au travail du fournisseur.",
       servesLabel: "Dessert",
       clickDateToBook: "Cliquez sur une date disponible pour demander une réservation.",
       clickHereForAllServices: "Voir tous les services",
@@ -2343,7 +2348,8 @@ export const translations = {
       faq2q: "Combien coûte l'utilisation de Premiere Services?",
       faq2a: "C'est gratuit pour les clients : recherche, soumissions et engagement d’un pro. Les pros paient des frais pour recevoir des demandes.",
       faq3q: "Les pros offrant des services sont-ils vérifiés ?",
-      faq3a: "Oui, tous les pros passent par une vérification (identité et licence le cas échéant).",
+      faq3a:
+        "Les pros passent par un processus d’examen, et Première Services vérifie certains titres de compétences le cas échéant. Cette vérification ne constitue pas une approbation, une garantie, une certification ni une assurance quant au travail du fournisseur.",
       faq4q: "Que faire si je ne suis pas satisfait du service?",
       faq4a: "Si un service réservé n’est pas réalisé substantiellement comme convenu, utilisez Signaler un problème dans votre tableau de bord. Les remboursements sont au cas par cas et non automatiques. Contactez support@premiereservices.ca.",
       faq5q: "Desservez-vous toutes les provinces et territoires?",

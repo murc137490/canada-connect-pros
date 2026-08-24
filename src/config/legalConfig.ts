@@ -21,12 +21,12 @@ export const SUPPORT_PHONE = "+1 450 910 1400";
 export const SUPPORT_PHONE_TEL = "tel:+14509101400";
 
 /**
- * What "verified" means in the product UI today.
+ * What "verified" / credential checks mean in the product UI today.
  * Do not expand this to "licensed" or "insured" without an actual verification process.
  */
 export const VERIFIED_PRO_DEFINITION = {
-  en: "A verified professional has submitted an application that was reviewed and accepted by Première Services administrators (identity and, where provided, licence documents may be reviewed). Verification is not a warranty of work quality, licensing completeness, or insurance coverage.",
-  fr: "Un professionnel vérifié a soumis une demande examinée et acceptée par les administrateurs de Première Services (pièce d’identité et, le cas échéant, documents de permis peuvent être examinés). La vérification n’est pas une garantie de qualité du travail, de permis complets, ni d’assurance.",
+  en: "Première Services verifies certain credentials where applicable, but verification does not constitute an endorsement, guarantee, certification or warranty of the provider's work.",
+  fr: "Première Services vérifie certains titres de compétences le cas échéant, mais cette vérification ne constitue pas une approbation, une garantie, une certification ni une assurance quant au travail du fournisseur.",
 } as const;
 
 /** Première Services platform fee shown to customers/pros (business model). */

@@ -1265,6 +1265,10 @@ export default function ProProfilePage() {
                       </p>
                     </section>
                   )}
+                  <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+                    {t.profile?.credentialsVerificationDisclaimer ??
+                      "Première Services verifies certain credentials where applicable, but verification does not constitute an endorsement, guarantee, certification or warranty of the provider's work."}
+                  </p>
                   <section id="reviews" className="lg:hidden">
                     <ReviewSection proProfileId={pro.id} proUserId={pro.user_id} scrollToId="reviews" />
                   </section>

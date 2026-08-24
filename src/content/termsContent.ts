@@ -143,7 +143,7 @@ export const TERMS_FULL_SECTIONS = [
   },
   {
     title: "3. NO WARRANTY",
-    body: `The Platform makes no warranties or guarantees regarding the quality, safety, legality, suitability, or outcome of services provided by Service Providers. Any verification conducted by the Platform is limited and does not guarantee qualifications, licensing, or background checks.`,
+    body: `The Platform makes no warranties or guarantees regarding the quality, safety, legality, suitability, or outcome of services provided by Service Providers. Première Services verifies certain credentials where applicable, but verification does not constitute an endorsement, guarantee, certification or warranty of the provider's work. Any verification conducted by the Platform is limited and does not guarantee qualifications, licensing completeness, insurance coverage, or background checks.`,
   },
   {
     title: "4. USER ACCOUNTS",
@@ -305,7 +305,7 @@ export const TERMS_FULL_SECTIONS_FR = [
   },
   {
     title: "3. AUCUNE GARANTIE",
-    body: `La Plateforme ne donne aucune garantie concernant la qualité, la sécurité, la légalité, la pertinence ou le résultat des services fournis par les Fournisseurs de services. Toute vérification effectuée par la Plateforme est limitée et ne garantit pas les qualifications, les permis, les licences ou les vérifications d'antécédents.`,
+    body: `La Plateforme ne donne aucune garantie concernant la qualité, la sécurité, la légalité, la pertinence ou le résultat des services fournis par les Fournisseurs de services. Première Services vérifie certains titres de compétences le cas échéant, mais cette vérification ne constitue pas une approbation, une garantie, une certification ni une assurance quant au travail du fournisseur. Toute vérification effectuée par la Plateforme est limitée et ne garantit pas les qualifications, la complétude des permis, la couverture d'assurance ou les vérifications d'antécédents.`,
   },
   {
     title: "4. COMPTES UTILISATEURS",
