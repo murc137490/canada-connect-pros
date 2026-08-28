@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { resolveSquareWebConfig } from "@/lib/squareWebConfig";
+import { PaymentProcessingOverlay } from "@/components/PaymentProcessingOverlay";
 
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -80,7 +81,7 @@ export default function SquareBookingPayment({
   authorizeOnly = false,
   onApplePayHandoffRequest,
 }: SquareBookingPaymentProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const terms = t.terms;
   const plans = t.plans;
   const [loading, setLoading] = useState(false);
@@ -297,9 +298,10 @@ export default function SquareBookingPayment({
         </p>
       </div>
       {loading && (
-        <div className="absolute inset-0 bg-white/90 dark:bg-background/90 flex items-center justify-center z-10 rounded-lg">
-          <Loader2 size={24} className="animate-spin text-muted-foreground" />
-        </div>
+        <PaymentProcessingOverlay
+          className="rounded-lg"
+          label={locale === "fr" ? "Traitement…" : "Processing…"}
+        />
       )}
       <PaymentForm
         applicationId={applicationId}

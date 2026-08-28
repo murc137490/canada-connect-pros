@@ -950,6 +950,18 @@ apple-pay-button {
   border-radius: 4px;
   overflow: hidden;
   background: #000;
+  isolation: isolate;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease, filter 0.22s ease;
+  will-change: transform;
+}
+
+.sq-wallet-btn:hover {
+  filter: brightness(1.06);
+}
+
+.sq-wallet-btn:active {
+  transform: scale(0.97);
+  filter: brightness(0.92);
 }
 
 /* Size Square/Google injected nodes only — do NOT force display:block on brand overlays */
@@ -964,6 +976,20 @@ apple-pay-button {
   max-height: 48px !important;
   border-radius: 4px !important;
   overflow: hidden !important;
+  background: #000 !important;
+  /* Soften Google’s iframe paint-in */
+  animation: sq-wallet-iframe-in 0.35s ease-out both;
+}
+
+@keyframes sq-wallet-iframe-in {
+  from {
+    opacity: 0.35;
+    transform: scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 #rswps-apple-pay-container,
@@ -1000,4 +1026,60 @@ apple-pay-button {
 /* Google Pay injects an iframe — keep the mark scaled to the fixed row height */
 .sq-wallet-btn iframe {
   transform-origin: center center;
+}
+
+/* Processing overlay after wallet/card submit — dark fade, not white flash */
+@keyframes sq-pay-overlay-in {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(10px);
+  }
+}
+
+@keyframes sq-pay-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+.sq-pay-processing-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  background: rgba(10, 10, 10, 0.58);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  animation: sq-pay-overlay-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  pointer-events: all;
+}
+
+.sq-pay-processing-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  animation: sq-pay-pulse 1.4s ease-in-out infinite;
+}
+
+.sq-pay-processing-label {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.88);
 }

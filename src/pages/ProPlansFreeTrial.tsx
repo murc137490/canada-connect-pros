@@ -11,6 +11,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { startGrowthTrial, type TrialSource } from "@/lib/trialCheckout";
 import { resolveSquareWebConfig } from "@/lib/squareWebConfig";
+import { PaymentProcessingOverlay } from "@/components/PaymentProcessingOverlay";
 
 const CARD_STYLE = {
   input: {
@@ -225,9 +226,10 @@ export default function ProPlansFreeTrial() {
                     </div>
                     <div className="relative rounded-md border bg-white p-4 [color-scheme:light]">
                       {loading && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/90">
-                          <Loader2 className="size-6 animate-spin text-neutral-500" />
-                        </div>
+                        <PaymentProcessingOverlay
+                          className="rounded-md"
+                          label={gt?.processing ?? t.plans?.checkoutProcessing ?? "Processing"}
+                        />
                       )}
                       <PaymentForm
                         applicationId={applicationId!}

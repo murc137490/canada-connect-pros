@@ -6,6 +6,7 @@ import { ApplePayWalletSlot } from "@/components/ApplePayWalletSlot";
 import { computePlanChangePreview, type PlanPreviewOk, type PlanPreviewResult, type ProPlanId } from "@/lib/proPlanPreview";
 import { PLAN_CHECKOUT_SESSION_ERROR, submitPlanCheckout } from "@/lib/planCheckoutSubmit";
 import { resolveSquareWebConfig } from "@/lib/squareWebConfig";
+import { PaymentProcessingOverlay } from "@/components/PaymentProcessingOverlay";
 import { cn } from "@/lib/utils";
 
 export type { ProPlanId };
@@ -432,9 +433,10 @@ export default function ProPlanCheckoutExperience({
                   style={{ colorScheme: "light" }}
                 >
                   {submitLoading && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/90">
-                      <Loader2 className="size-6 animate-spin text-neutral-500" />
-                    </div>
+                    <PaymentProcessingOverlay
+                      className="rounded-md"
+                      label={strings.processing || plans?.checkoutProcessing || "Processing"}
+                    />
                   )}
                   <PaymentForm
                     applicationId={applicationId!}
