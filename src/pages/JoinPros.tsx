@@ -4,21 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Shield, TrendingUp, Users, Star, ArrowRight, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { cn } from "@/lib/utils";
-import ProPlansContent from "@/components/ProPlansContent";
-import type { ProPlanId } from "@/lib/proPlanPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveVerifiedPro } from "@/hooks/useActiveVerifiedPro";
 import { useEffect, useState } from "react";
 import { ProProfileEditorDialog } from "@/components/pro/ProProfileEditorDialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import HomeChapter from "@/components/HomeChapter";
 import { useHomeScrollReveal } from "@/components/useHomeScrollReveal";
 
@@ -27,8 +16,6 @@ export default function JoinPros() {
   const navigate = useNavigate();
   const { t, locale } = useLanguage();
   const [proProfileId, setProProfileId] = useState<string | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<ProPlanId | null>(null);
-  const [missingProfileOpen, setMissingProfileOpen] = useState(false);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const { activeVerifiedPro } = useActiveVerifiedPro(user?.id);
 
@@ -67,15 +54,6 @@ export default function JoinPros() {
     { title: t.joinPros.easyStep2, description: t.joinPros.easyStep2Desc },
     { title: t.joinPros.easyStep3, description: t.joinPros.easyStep3Desc },
   ];
-
-  const handleSelectPlan = (plan: ProPlanId) => {
-    setSelectedPlan(plan);
-    if (!proProfileId) {
-      setMissingProfileOpen(true);
-      return;
-    }
-    navigate("/pro-plans");
-  };
 
   return (
     <Layout>
@@ -174,17 +152,30 @@ export default function JoinPros() {
 
         {user ? (
           <section className="border-t border-border/60 bg-background py-12 md:py-16">
-            <div className="container flex flex-col gap-8 px-4 md:px-6">
-              <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-                <div>
-                  <h2 className="font-heading text-2xl font-extrabold tracking-tight text-foreground md:text-3xl">
-                    {t.plans.title}
-                  </h2>
-                  <p className="mt-1 max-w-xl text-sm text-muted-foreground md:text-base">{t.plans.subtitle}</p>
-                </div>
+            <div className="container flex flex-col items-center gap-6 px-4 text-center md:px-6">
+              <div>
+                <h2 className="font-heading text-2xl font-extrabold tracking-tight text-foreground md:text-3xl">
+                  {t.plans.title}
+                </h2>
+                <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground md:text-base">
+                  {t.plans.subtitle}
+                </p>
+              </div>
+              <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Button
                   size="lg"
                   className="gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                  asChild
+                >
+                  <Link to="/pro-plans">
+                    {t.joinPros.viewPlans}
+                    <ArrowRight size={18} />
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="gap-2"
                   type="button"
                   onClick={() => setProfileEditorOpen(true)}
                 >
@@ -192,12 +183,6 @@ export default function JoinPros() {
                   <ArrowRight size={18} />
                 </Button>
               </div>
-              <ProPlansContent
-                showCompleteProfileCta={false}
-                interactive
-                currentPlanId={null}
-                onSelectPlan={handleSelectPlan}
-              />
             </div>
           </section>
         ) : (
@@ -229,43 +214,6 @@ export default function JoinPros() {
         )}
       </div>
 
-      <Dialog
-        open={missingProfileOpen}
-        onOpenChange={(open) => {
-          if (!open) setSelectedPlan(null);
-          setMissingProfileOpen(open);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Pro profile not created</DialogTitle>
-            <DialogDescription>
-              Do you want to finish setting up your pro profile before choosing a plan?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className={cn("gap-2 sm:gap-0")}>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setSelectedPlan(null);
-                setMissingProfileOpen(false);
-              }}
-            >
-              Not now
-            </Button>
-            <Button
-              type="button"
-              onClick={() => {
-                setMissingProfileOpen(false);
-                setProfileEditorOpen(true);
-              }}
-            >
-              {proProfileId ? t.joinPros.editProfile : t.joinPros.completeProfile}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <ProProfileEditorDialog
         open={profileEditorOpen}
         onOpenChange={setProfileEditorOpen}
