@@ -3,10 +3,11 @@ import { ApplePay, CreditCard, GooglePay, PaymentForm } from "react-square-web-p
 import { Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ApplePayWalletSlot } from "@/components/ApplePayWalletSlot";
+import { GooglePayWalletSlot } from "@/components/GooglePayWalletSlot";
+import { PaymentProcessingOverlay } from "@/components/PaymentProcessingOverlay";
 import { computePlanChangePreview, type PlanPreviewOk, type PlanPreviewResult, type ProPlanId } from "@/lib/proPlanPreview";
 import { PLAN_CHECKOUT_SESSION_ERROR, submitPlanCheckout } from "@/lib/planCheckoutSubmit";
 import { resolveSquareWebConfig } from "@/lib/squareWebConfig";
-import { PaymentProcessingOverlay } from "@/components/PaymentProcessingOverlay";
 import { cn } from "@/lib/utils";
 
 export type { ProPlanId };
@@ -460,9 +461,9 @@ export default function ProPlanCheckoutExperience({
                             <ApplePay id="pro-plan-apple-pay" />
                           </div>
                         </ApplePayWalletSlot>
-                        <div className="sq-wallet-btn h-12 min-h-12 min-w-0 overflow-hidden rounded-[4px] ring-1 ring-white/25">
+                        <GooglePayWalletSlot>
                           <GooglePay id="pro-plan-google-pay" buttonSizeMode="fill" buttonType="plain" buttonColor="black" />
-                        </div>
+                        </GooglePayWalletSlot>
                       </div>
                       <p className="text-[11px] leading-relaxed text-neutral-500">
                         {applePayBetaText ||

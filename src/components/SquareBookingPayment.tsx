@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { resolveSquareWebConfig } from "@/lib/squareWebConfig";
 import { PaymentProcessingOverlay } from "@/components/PaymentProcessingOverlay";
+import { GooglePayWalletSlot } from "@/components/GooglePayWalletSlot";
 
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -329,14 +330,14 @@ export default function SquareBookingPayment({
                 <ApplePay id="rswps-apple-pay-container" />
               </div>
             </ApplePayWalletSlot>
-            <div className="sq-wallet-btn h-12 min-h-12 min-w-0 overflow-hidden rounded-[4px] ring-1 ring-white/25">
+            <GooglePayWalletSlot>
               <GooglePay
                 id="rswps-google-pay-container"
                 buttonSizeMode="fill"
                 buttonType="plain"
                 buttonColor="black"
               />
-            </div>
+            </GooglePayWalletSlot>
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
             {onApplePayHandoffRequest

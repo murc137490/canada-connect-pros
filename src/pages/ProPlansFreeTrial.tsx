@@ -4,6 +4,7 @@ import { ApplePay, CreditCard, GooglePay, PaymentForm } from "react-square-web-p
 import { Check, Loader2, ShieldCheck } from "lucide-react";
 import Layout from "@/components/Layout";
 import { ApplePayWalletSlot } from "@/components/ApplePayWalletSlot";
+import { GooglePayWalletSlot } from "@/components/GooglePayWalletSlot";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -253,14 +254,14 @@ export default function ProPlansFreeTrial() {
                             >
                               <ApplePay id="trial-apple-pay" />
                             </ApplePayWalletSlot>
-                            <div className="sq-wallet-btn h-12 min-h-12 min-w-0 overflow-hidden rounded-[4px] ring-1 ring-white/25">
+                            <GooglePayWalletSlot>
                               <GooglePay
                                 id="trial-google-pay"
                                 buttonSizeMode="fill"
                                 buttonType="plain"
                                 buttonColor="black"
                               />
-                            </div>
+                            </GooglePayWalletSlot>
                           </div>
                           <p className="text-[11px] leading-relaxed text-neutral-500">
                             {t.terms?.applePayBetaTestingNote ??

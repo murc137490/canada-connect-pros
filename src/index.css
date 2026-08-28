@@ -968,6 +968,7 @@ apple-pay-button {
 #rswps-google-pay-container,
 #pro-plan-google-pay,
 #trial-google-pay,
+.sq-google-pay-slot iframe,
 .sq-wallet-btn iframe {
   display: block !important;
   width: 100% !important;
@@ -977,19 +978,14 @@ apple-pay-button {
   border-radius: 4px !important;
   overflow: hidden !important;
   background: #000 !important;
-  /* Soften Google’s iframe paint-in */
-  animation: sq-wallet-iframe-in 0.35s ease-out both;
 }
 
-@keyframes sq-wallet-iframe-in {
-  from {
-    opacity: 0.35;
-    transform: scale(1.02);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+/* Hide only Google Pay iframe paint (white flash) — brand cover sits on top */
+#rswps-google-pay-container,
+#pro-plan-google-pay,
+#trial-google-pay,
+.sq-google-pay-slot iframe {
+  opacity: 0.001 !important;
 }
 
 #rswps-apple-pay-container,
@@ -1018,6 +1014,36 @@ apple-pay-button {
 }
 
 .sq-apple-pay-brand > * {
+  display: inline-block !important;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* Google Pay branded cover — hides Square iframe white flash permanently */
+.sq-google-pay-brand {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  height: 48px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: #000 !important;
+  color: #fff !important;
+  border-radius: 4px;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), filter 0.18s ease;
+}
+
+.sq-google-pay-slot:active .sq-google-pay-brand {
+  transform: scale(0.98);
+  filter: brightness(0.9);
+}
+
+.sq-google-pay-brand > * {
   display: inline-block !important;
   vertical-align: middle;
   flex-shrink: 0;
