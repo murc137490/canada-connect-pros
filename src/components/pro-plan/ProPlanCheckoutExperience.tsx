@@ -5,12 +5,10 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { ApplePayWalletSlot } from "@/components/ApplePayWalletSlot";
 import { computePlanChangePreview, type PlanPreviewOk, type PlanPreviewResult, type ProPlanId } from "@/lib/proPlanPreview";
 import { PLAN_CHECKOUT_SESSION_ERROR, submitPlanCheckout } from "@/lib/planCheckoutSubmit";
+import { resolveSquareWebConfig } from "@/lib/squareWebConfig";
 import { cn } from "@/lib/utils";
 
 export type { ProPlanId };
-
-const SQUARE_APP_ID = import.meta.env.VITE_SQUARE_APPLICATION_ID as string | undefined;
-const SQUARE_LOCATION_ID = import.meta.env.VITE_SQUARE_LOCATION_ID as string | undefined;
 
 const SQUARE_DEVELOPER_URL = "https://developer.squareup.com/console/en/apps";
 
@@ -80,9 +78,32 @@ export default function ProPlanCheckoutExperience({
   const [preview, setPreview] = useState<PlanPreviewOk | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
+  const [configLoading, setConfigLoading] = useState(true);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [locationId, setLocationId] = useState<string | null>(null);
 
   const previewGeneration = useRef(0);
   const walletApplePayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setConfigLoading(true);
+    void (async () => {
+      const cfg = await resolveSquareWebConfig();
+      if (cancelled) return;
+      if (cfg) {
+        setApplicationId(cfg.applicationId);
+        setLocationId(cfg.locationId);
+      } else {
+        setApplicationId(null);
+        setLocationId(null);
+      }
+      setConfigLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     setStep(1);
@@ -193,7 +214,7 @@ export default function ProPlanCheckoutExperience({
   };
 
   const targetLabel = targetPlan ? planLabels[targetPlan] : "";
-  const squareReady = !!(SQUARE_APP_ID && SQUARE_LOCATION_ID);
+  const squareReady = !!(applicationId && locationId);
   const previewReady = !previewLoading && !previewError && preview !== null;
   const needsPayment = previewReady && (chargeCents ?? 0) > 0;
   const freePlanChange = previewReady && chargeCents === 0;
@@ -399,7 +420,13 @@ export default function ProPlanCheckoutExperience({
             </>
           ) : (
             <>
-              {needsPayment && squareReady ? (
+              {needsPayment && configLoading ? (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="size-6 animate-spin text-neutral-400" />
+                </div>
+              ) : null}
+
+              {needsPayment && !configLoading && squareReady ? (
                 <div
                   className="relative rounded-md border border-neutral-200 bg-white p-4 [color-scheme:light] dark:border-neutral-600"
                   style={{ colorScheme: "light" }}
@@ -410,8 +437,8 @@ export default function ProPlanCheckoutExperience({
                     </div>
                   )}
                   <PaymentForm
-                    applicationId={SQUARE_APP_ID!}
-                    locationId={SQUARE_LOCATION_ID!}
+                    applicationId={applicationId!}
+                    locationId={locationId!}
                     createPaymentRequest={createPaymentRequest}
                     cardTokenizeResponseReceived={async (token) => {
                       await handleTokenize(token as { status?: string; token?: string; errors?: unknown });
@@ -445,7 +472,7 @@ export default function ProPlanCheckoutExperience({
                 </div>
               ) : null}
 
-              {needsPayment && !squareReady ? (
+              {needsPayment && !configLoading && !squareReady ? (
                 <div className="border border-neutral-300 p-5 text-sm dark:border-neutral-600">
                   <p className="font-medium text-neutral-950 dark:text-neutral-50">{plans?.squareSetupTitle ?? "Card payment unavailable"}</p>
                   <p className="mt-2 leading-relaxed text-neutral-600 dark:text-neutral-400">{plans?.squareSetupBody ?? strings.squareMissing}</p>

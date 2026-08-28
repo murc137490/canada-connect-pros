@@ -381,9 +381,9 @@ export const translations = {
         "This is the first charge for your new plan (full monthly price). Prorated mid-period upgrades apply after you have an active subscription on file.",
       checkoutModeDowngrade: "You are moving to a lower plan. There is no extra charge today; your next renewal will show the new price.",
       monthlyRateLine: "Current plan: {{old}} / mo → New plan: {{new}} / mo (CAD)",
-      squareSetupTitle: "Card payment is not available in this build",
+      squareSetupTitle: "Card payment is not available",
       squareSetupBody:
-        "The amount above must be paid with Square. Add your Square application and location to the project’s .env: VITE_SQUARE_APPLICATION_ID and VITE_SQUARE_LOCATION_ID, then restart the app. The same keys are used for client booking payments.",
+        "Square application and location IDs are missing. Set them as Supabase Edge secrets (SQUARE_APPLICATION_ID / SQUARE_OAUTH_APPLICATION_ID and SQUARE_LOCATION_ID), deploy square-web-config, or add VITE_SQUARE_APPLICATION_ID and VITE_SQUARE_LOCATION_ID to the frontend .env and rebuild.",
       squareDevConsole: "Open Square Developer",
       checkoutNext: "Next",
       checkoutBack: "Back",
@@ -2193,9 +2193,9 @@ export const translations = {
         "C’est le premier prélèvement pour le nouveau forfait (prix mensuel entier). Les mises à niveau en cours de période seront au prorata une fois l’abonnement enregistré.",
       checkoutModeDowngrade: "Vous passez à un forfait moins élevé. Aucun frais aujourd’hui; le prochain renouvellement affichera le nouveau tarif.",
       monthlyRateLine: "Forfait actuel : {{old}} / mois → Nouveau forfait : {{new}} / mois (CAD)",
-      squareSetupTitle: "Paiement par carte indisponible dans cette version",
+      squareSetupTitle: "Paiement par carte indisponible",
       squareSetupBody:
-        "Le montant ci-dessus doit être payé via Square. Ajoutez l’identifiant d’application et l’emplacement Square au .env du projet : VITE_SQUARE_APPLICATION_ID et VITE_SQUARE_LOCATION_ID, puis redémarrez l’app. Les mêmes clés servent aux paiements de réservation client.",
+        "Les identifiants Square (application et emplacement) sont manquants. Définissez-les comme secrets Edge Supabase (SQUARE_APPLICATION_ID / SQUARE_OAUTH_APPLICATION_ID et SQUARE_LOCATION_ID), déployez square-web-config, ou ajoutez VITE_SQUARE_APPLICATION_ID et VITE_SQUARE_LOCATION_ID au .env frontend puis reconstruisez.",
       squareDevConsole: "Ouvrir Square Developer",
       checkoutNext: "Suivant",
       checkoutBack: "Retour",

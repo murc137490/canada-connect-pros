@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ApplePay, CreditCard, GooglePay, PaymentForm } from "react-square-web-payments-sdk";
 import { Check, Loader2, ShieldCheck } from "lucide-react";
@@ -10,9 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { startGrowthTrial, type TrialSource } from "@/lib/trialCheckout";
-
-const SQUARE_APP_ID = import.meta.env.VITE_SQUARE_APPLICATION_ID as string | undefined;
-const SQUARE_LOCATION_ID = import.meta.env.VITE_SQUARE_LOCATION_ID as string | undefined;
+import { resolveSquareWebConfig } from "@/lib/squareWebConfig";
 
 const CARD_STYLE = {
   input: {
@@ -38,12 +36,35 @@ export default function ProPlansFreeTrial() {
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [configLoading, setConfigLoading] = useState(true);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [locationId, setLocationId] = useState<string | null>(null);
 
   const token = searchParams.get("token");
   const source: TrialSource = token ? "personal" : location.pathname.endsWith("/freetrial") ? "freetrial" : "normal";
   const durationDays = source === "personal" ? 60 : source === "freetrial" ? 14 : 7;
   const redirect = `${location.pathname}${location.search}`;
-  const squareReady = !!(SQUARE_APP_ID && SQUARE_LOCATION_ID);
+  const squareReady = !!(applicationId && locationId);
+
+  useEffect(() => {
+    let cancelled = false;
+    setConfigLoading(true);
+    void (async () => {
+      const cfg = await resolveSquareWebConfig();
+      if (cancelled) return;
+      if (cfg) {
+        setApplicationId(cfg.applicationId);
+        setLocationId(cfg.locationId);
+      } else {
+        setApplicationId(null);
+        setLocationId(null);
+      }
+      setConfigLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const gt = t.plans?.growthTrial;
 
@@ -177,10 +198,14 @@ export default function ProPlansFreeTrial() {
                   <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-foreground">
                     {gt?.verifyEmail ?? "Please verify your email before starting a free trial, then refresh this page."}
                   </div>
+                ) : configLoading ? (
+                  <div className="flex justify-center py-10">
+                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                  </div>
                 ) : !squareReady ? (
                   <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-foreground">
                     {gt?.squareMissing ??
-                      "Square is not configured. Add the Square application and location environment variables before trials can start."}
+                      "Square is not configured. Set SQUARE_APPLICATION_ID and SQUARE_LOCATION_ID as Edge secrets (or VITE_SQUARE_* in .env)."}
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -205,8 +230,8 @@ export default function ProPlansFreeTrial() {
                         </div>
                       )}
                       <PaymentForm
-                        applicationId={SQUARE_APP_ID!}
-                        locationId={SQUARE_LOCATION_ID!}
+                        applicationId={applicationId!}
+                        locationId={locationId!}
                         createPaymentRequest={createPaymentRequest}
                         cardTokenizeResponseReceived={async (result) => {
                           await handleTokenize(result as { status?: string; token?: string; errors?: unknown });
