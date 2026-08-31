@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef, type MouseEvent } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useLocation } from "react-router-dom";
 import { searchProsByBusinessOrName, type ProBusinessSearchHit } from "@/lib/searchProBusiness";
 import { useScrollRestore } from "@/hooks/useScrollRestore";
 import Layout from "@/components/Layout";
@@ -27,10 +27,13 @@ import {
   BROWSE_POSTAL_CHANGED_EVENT,
 } from "@/lib/browsePostalStorage";
 import { useToast } from "@/hooks/use-toast";
+import { MOTION } from "@/motion/types";
 
 export default function Services() {
   const { locale, t } = useLanguage();
   const { toast } = useToast();
+  const location = useLocation();
+  const fromBrowsePros = Boolean((location.state as { fromBrowsePros?: boolean } | null)?.fromBrowsePros);
   const [searchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const [query, setQuery] = useState(initialQuery);
@@ -307,7 +310,12 @@ export default function Services() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-background">
+      <motion.div
+        className="min-h-screen bg-background"
+        initial={fromBrowsePros ? { opacity: 0, y: 22, filter: "blur(6px)" } : false}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        transition={{ duration: MOTION.reveal, ease: MOTION.ease }}
+      >
         <div className="border-b border-border bg-muted/40">
           <div className="container py-8 md:py-10">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
@@ -563,7 +571,7 @@ export default function Services() {
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     </Layout>
   );
 }

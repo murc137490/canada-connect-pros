@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
 import { Sparkles, ArrowRight, LocateFixed, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { MOTION } from "@/motion/types";
 import { getAllServices, getCategorySummariesForAI, getFlatServiceRecords } from "@/data/services";
 import type { ServiceRecordForAI } from "@/data/services";
 import { fetchProOfferedServiceRecordsForHero } from "@/lib/heroProOfferedServices";
@@ -101,6 +103,15 @@ export default function HeroSection() {
   const locationDetectOnceRef = useRef(false);
   const [locating, setLocating] = useState(false);
   const [textareaFocused, setTextareaFocused] = useState(false);
+  const [browseLeaving, setBrowseLeaving] = useState(false);
+
+  const goBrowseServices = useCallback(() => {
+    if (browseLeaving) return;
+    setBrowseLeaving(true);
+    window.setTimeout(() => {
+      navigate("/services", { state: { fromBrowsePros: true } });
+    }, 320);
+  }, [browseLeaving, navigate]);
 
   const normalizedPostal = useMemo(
     () => postalCode.trim().toUpperCase().replace(/\s+/g, " "),
@@ -475,7 +486,11 @@ export default function HeroSection() {
     "inline-flex items-center gap-2 rounded-full border border-border bg-background px-3.5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted";
 
   return (
-    <section className="relative overflow-x-hidden pt-[calc(4.5rem+env(safe-area-inset-top,0px))] pb-12 md:pb-16 lg:pt-[calc(5.5rem+env(safe-area-inset-top,0px))] lg:pb-24">
+    <motion.section
+      className="relative overflow-x-hidden pt-[calc(4.5rem+env(safe-area-inset-top,0px))] pb-12 md:pb-16 lg:pt-[calc(5.5rem+env(safe-area-inset-top,0px))] lg:pb-24"
+      animate={browseLeaving ? { opacity: 0, y: -18, filter: "blur(4px)" } : { opacity: 1, y: 0, filter: "blur(0px)" }}
+      transition={{ duration: MOTION.base, ease: MOTION.ease }}
+    >
       <div className="container-page">
         <div className="grid items-start gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-14 xl:gap-20">
           <div className="min-w-0">
@@ -496,12 +511,17 @@ export default function HeroSection() {
                   <ArrowRight className="cta-arrow h-4 w-4" />
                 </Link>
               </Button>
-              <a
-                href="#hero-search"
-                className="text-[15px] font-semibold text-foreground/80 underline-offset-4 hover:text-foreground hover:underline transition-colors"
+              <motion.button
+                type="button"
+                onClick={goBrowseServices}
+                disabled={browseLeaving}
+                className="group inline-flex items-center gap-1.5 text-[15px] font-semibold text-foreground/80 underline-offset-4 transition-colors hover:text-foreground hover:underline disabled:opacity-70"
+                whileTap={{ scale: 0.97 }}
+                transition={{ duration: MOTION.fast, ease: MOTION.ease }}
               >
                 {t.index.ctaFindPro}
-              </a>
+                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+              </motion.button>
             </div>
 
             <form id="hero-search" onSubmit={handleSubmit} className="mt-8 max-w-xl scroll-mt-28">
@@ -726,6 +746,6 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }
