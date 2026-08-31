@@ -357,8 +357,8 @@ export default function HelpFab() {
                     </div>
                   </div>
                 ) : (
-                  <div key={i} className="max-w-[95%] text-[14px] leading-relaxed text-foreground whitespace-pre-wrap">
-                    <ChatMessageContent text={msg.content} />
+                  <div key={i} className="max-w-[95%] text-[14px] leading-relaxed text-foreground">
+                    <ChatMessageContent text={msg.content} onNavigate={() => setOpen(false)} />
                   </div>
                 )
               )}

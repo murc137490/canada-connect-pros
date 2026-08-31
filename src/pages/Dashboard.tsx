@@ -41,6 +41,7 @@ import {
   ShieldAlert,
   BadgeCheck,
   AlertTriangle,
+  HelpCircle,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -773,8 +774,10 @@ export default function Dashboard() {
     const force = searchParams.get("tour") === "1";
     if (force) {
       dashTourSessionSkip.current.delete(segment);
-      setDashTourSegment(segment);
-      setDashTourOpen(true);
+      const t = window.setTimeout(() => {
+        setDashTourSegment(segment);
+        setDashTourOpen(true);
+      }, 450);
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
@@ -783,13 +786,16 @@ export default function Dashboard() {
         },
         { replace: true },
       );
-      return;
+      return () => window.clearTimeout(t);
     }
 
     if (isSegmentCompleted(user.id, segment)) return;
     if (dashTourSessionSkip.current.has(segment)) return;
-    setDashTourSegment(segment);
-    setDashTourOpen(true);
+    const t = window.setTimeout(() => {
+      setDashTourSegment(segment);
+      setDashTourOpen(true);
+    }, 650);
+    return () => window.clearTimeout(t);
   }, [
     user?.id,
     shellTab,
@@ -3985,9 +3991,33 @@ export default function Dashboard() {
         </aside>
       )}
       <div className="w-full max-w-4xl container mx-auto">
-        <h1 className="font-heading text-3xl md:text-4xl font-extrabold text-foreground dark:text-white mb-6 md:mb-8 text-center">
+        <h1 className="font-heading text-3xl md:text-4xl font-extrabold text-foreground dark:text-white mb-3 md:mb-4 text-center">
           {t.dashboard.title}
         </h1>
+        {proProfile && !isAdminDashboardShell && user?.id ? (
+          <div className="mb-6 md:mb-8 flex flex-wrap items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                const seg = segmentForTab(shellTab) ?? "account";
+                replayDashTour(seg);
+              }}
+            >
+              <HelpCircle size={14} aria-hidden />
+              {locale === "fr" ? "Guide de cette page" : "Guide this page"}
+            </Button>
+            <Button type="button" variant="ghost" size="sm" asChild>
+              <Link to="/help/dashboard-guide">
+                {t.footer.dashboardGuide ?? (locale === "fr" ? "Guide du tableau de bord" : "Dashboard guide")}
+              </Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="mb-6 md:mb-8" />
+        )}
 
         {proProfile && !proProfile.is_verified && !proProfileLoading && !isAdminDashboardShell && (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 mb-6 space-y-3">

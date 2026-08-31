@@ -1,23 +1,39 @@
 import { Fragment, type ReactNode } from "react";
-import { Link } from "react-router-dom";
 
-type Seg =
-  | { type: "text"; value: string }
-  | { type: "link"; href: string; label: string };
+export type ChatLink = { label: string; href: string };
 
-const SITE_HOSTS = new Set(["www.premiereservices.ca", "premiereservices.ca"]);
+/** Prefer markdown [label](url), then bare https URLs. */
+export function extractChatLinks(text: string): ChatLink[] {
+  const links: ChatLink[] = [];
+  const seen = new Set<string>();
+  const re = /\[([^\]]{1,80})\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>"'`\]]+)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const href = (m[2] || m[3] || "").replace(/[.,;:!?]+$/u, "");
+    const label = (m[1] || href).trim();
+    if (!href || seen.has(href)) continue;
+    seen.add(href);
+    links.push({ label, href });
+  }
+  return links;
+}
 
-/** Split text into plain runs and markdown / bare URL links. */
-export function parseChatLinks(text: string): Seg[] {
+/** Replace markdown links with just the label for cleaner body text. */
+export function stripMarkdownLinks(text: string): string {
+  return text.replace(/\[([^\]]{1,80})\]\((https?:\/\/[^\s)]+)\)/gi, "$1");
+}
+
+type Seg = { type: "text"; value: string } | { type: "link"; href: string; label: string };
+
+function parseChatLinks(text: string): Seg[] {
   const segs: Seg[] = [];
-  // Prefer markdown [label](url), then bare https URLs.
-  const re = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|(https?:\/\/[^\s<>"'`\]]+)/gi;
+  const re = /\[([^\]]{1,80})\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>"'`\]]+)/gi;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) segs.push({ type: "text", value: text.slice(last, m.index) });
     if (m[1] && m[2]) {
-      segs.push({ type: "link", label: m[1], href: m[2] });
+      segs.push({ type: "link", label: m[1].trim(), href: m[2] });
     } else if (m[3]) {
       const raw = m[3];
       const href = raw.replace(/[.,;:!?]+$/u, "");
@@ -31,43 +47,55 @@ export function parseChatLinks(text: string): Seg[] {
   return segs.length ? segs : [{ type: "text", value: text }];
 }
 
-function internalPath(href: string): string | null {
-  try {
-    const u = new URL(href);
-    if (!SITE_HOSTS.has(u.hostname.toLowerCase())) return null;
-    return `${u.pathname}${u.search}${u.hash}` || "/";
-  } catch {
-    return null;
-  }
-}
+const inlineLinkClass =
+  "font-semibold text-primary underline underline-offset-2 hover:opacity-90 break-words cursor-pointer";
 
-const linkClass =
-  "font-semibold text-primary underline underline-offset-2 hover:opacity-90 break-words";
+const ctaClass =
+  "inline-flex items-center justify-center rounded-full border border-primary/40 bg-primary px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90";
 
 /**
- * Renders assistant chat text with clickable links:
- * - Markdown: [Sign up](https://www.premiereservices.ca/...)
- * - Bare https URLs
- * Same-site links use in-app navigation.
+ * Renders assistant chat text with real <a href> links (full URLs — reliable redirects)
+ * plus optional large CTA buttons under the message.
  */
-export function ChatMessageContent({ text, className }: { text: string; className?: string }) {
+export function ChatMessageContent({
+  text,
+  className,
+  showCtas = true,
+  onNavigate,
+}: {
+  text: string;
+  className?: string;
+  showCtas?: boolean;
+  onNavigate?: () => void;
+}) {
+  const links = extractChatLinks(text);
   const segs = parseChatLinks(text);
   const nodes: ReactNode[] = segs.map((seg, i) => {
     if (seg.type === "text") return <Fragment key={i}>{seg.value}</Fragment>;
-    const path = internalPath(seg.href);
-    if (path) {
-      return (
-        <Link key={i} to={path} className={linkClass}>
-          {seg.label}
-        </Link>
-      );
-    }
     return (
-      <a key={i} href={seg.href} target="_blank" rel="noopener noreferrer" className={linkClass}>
+      <a
+        key={i}
+        href={seg.href}
+        className={inlineLinkClass}
+        onClick={() => onNavigate?.()}
+      >
         {seg.label}
       </a>
     );
   });
 
-  return <span className={className}>{nodes}</span>;
+  return (
+    <span className={className}>
+      <span className="whitespace-pre-wrap">{nodes}</span>
+      {showCtas && links.length > 0 ? (
+        <span className="mt-2.5 flex flex-wrap gap-2">
+          {links.map((l) => (
+            <a key={l.href} href={l.href} className={ctaClass} onClick={() => onNavigate?.()}>
+              {l.label}
+            </a>
+          ))}
+        </span>
+      ) : null}
+    </span>
+  );
 }
