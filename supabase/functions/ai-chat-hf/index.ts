@@ -1,6 +1,6 @@
 /**
- * Support AI (HF router): natural multi-turn support chat (not rigid classification lists).
- * Deploy as Edge Function `ai-chat-hf`. Requires HUGGINGFACE_API_KEY.
+ * Support AI: Gemini when GOOGLE_GENERATIVE_AI_API_KEY is set, else Hugging Face router.
+ * Deploy as Edge Function `ai-chat-hf`.
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.27.0";
@@ -9,10 +9,17 @@ const HF_CHAT_URL = "https://router.huggingface.co/v1/chat/completions";
 const HF_MODEL = "Featherless-Chat-Models/Mistral-7B-Instruct-v0.2:featherless-ai";
 
 const HF_KEY = Deno.env.get("HUGGINGFACE_API_KEY") || "";
+const GOOGLE_KEY = Deno.env.get("GOOGLE_GENERATIVE_AI_API_KEY") || "";
+const GEMINI_CHAT_MODEL = (Deno.env.get("GEMINI_CHAT_MODEL") || "gemini-3.6-flash").trim();
+/** Extra Gemini models tried when the primary is overloaded / missing. */
+const GEMINI_CHAT_FALLBACKS = (Deno.env.get("GEMINI_CHAT_FALLBACKS") || "gemini-3.5-flash,gemini-3.5-flash-lite,gemini-2.5-flash")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 
-if (!HF_KEY) console.warn("HUGGINGFACE_API_KEY not set");
+if (!GOOGLE_KEY && !HF_KEY) console.warn("Neither GOOGLE_GENERATIVE_AI_API_KEY nor HUGGINGFACE_API_KEY is set");
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) console.warn("Supabase env not set");
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
@@ -34,9 +41,136 @@ interface ChatRequest {
   language?: "en" | "fr";
   system_extension?: string;
   intent?: string;
-  /** Prior turns for support chatbot (no service-classification path). */
   conversation_history?: Turn[];
 }
+
+type ChatMsg = { role: "system" | "user" | "assistant"; content: string };
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function chatWithGeminiModel(
+  model: string,
+  messages: ChatMsg[],
+  maxTokens: number,
+  _temperature: number,
+): Promise<string> {
+  const systemParts = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  const contents: { role: string; parts: { text: string }[] }[] = [];
+  for (const m of messages) {
+    if (m.role === "system") continue;
+    contents.push({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    });
+  }
+  if (contents.length === 0) {
+    contents.push({ role: "user", parts: [{ text: "Hello" }] });
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(GOOGLE_KEY)}`;
+  const body: Record<string, unknown> = {
+    contents,
+    generationConfig: {
+      // Gemini 3 thinking can consume the budget; keep headroom for the visible reply.
+      maxOutputTokens: Math.max(maxTokens, 2048),
+      thinkingConfig: { thinkingLevel: "MINIMAL" },
+    },
+  };
+  if (systemParts) {
+    body.systemInstruction = { parts: [{ text: systemParts }] };
+  }
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`Gemini ${model} ${resp.status}: ${text.slice(0, 800)}`);
+  }
+  const json = (await resp.json()) as {
+    candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[];
+  };
+  const text =
+    json?.candidates?.[0]?.content?.parts
+      ?.filter((p) => !p.thought)
+      ?.map((p) => p.text ?? "")
+      .join("")
+      .trim() ?? "";
+  if (!text) throw new Error(`Gemini ${model} returned empty content`);
+  return text;
+}
+
+/** Try primary Gemini → short retry on 503 → other Gemini models → Hugging Face. */
+async function chatWithProviderChain(
+  messages: ChatMsg[],
+  maxTokens: number,
+  temperature: number,
+): Promise<{ text: string; provider: string }> {
+  const geminiModels = [GEMINI_CHAT_MODEL, ...GEMINI_CHAT_FALLBACKS].filter(
+    (m, i, arr) => m && arr.indexOf(m) === i,
+  );
+
+  if (GOOGLE_KEY) {
+    for (const model of geminiModels) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const text = await chatWithGeminiModel(model, messages, maxTokens, temperature);
+          return { text, provider: `gemini:${model}` };
+        } catch (err) {
+          const msg = String(err);
+          const overloaded = /\b503\b|UNAVAILABLE|high demand/i.test(msg);
+          console.error(`Gemini ${model} attempt ${attempt + 1} failed:`, msg.slice(0, 200));
+          if (overloaded && attempt === 0) {
+            await sleep(400);
+            continue;
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  if (HF_KEY) {
+    const text = await chatWithHf(messages, maxTokens, temperature);
+    if (!text) throw new Error("HuggingFace returned empty content");
+    return { text, provider: "huggingface" };
+  }
+
+  throw new Error("All AI providers unavailable");
+}
+
+function staticProviderDownMessage(language: "en" | "fr"): string {
+  return language === "fr"
+    ? "L’assistant est temporairement saturé. Écrivez-nous à support@premiereservices.ca (réponse sous 24 h) ou composez le +1 450 910 1400 (lun–ven, 8 h–20 h HE). Nous sommes là pour vous aider."
+    : "Our AI assistant is temporarily busy. Email support@premiereservices.ca (we reply within 24 hours) or call +1 450 910 1400 (Mon–Fri, 8am–8pm EST). We’re happy to help.";
+}
+
+async function chatWithHf(messages: ChatMsg[], maxTokens: number, temperature: number): Promise<string> {
+  const hfResp = await fetch(HF_CHAT_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${HF_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: HF_MODEL,
+      messages,
+      max_tokens: maxTokens,
+      temperature,
+    }),
+  });
+  if (!hfResp.ok) {
+    const text = await hfResp.text();
+    throw new Error(`HuggingFace ${hfResp.status}: ${text.slice(0, 800)}`);
+  }
+  const hfJson = (await hfResp.json()) as { choices?: { message?: { content?: string } }[] };
+  return hfJson?.choices?.[0]?.message?.content?.trim() ?? "";
+}
+
 
 // --- Topic gate: block only obvious non-Premiere retail / unrelated queries (no LLM). ---
 
@@ -192,34 +326,56 @@ Deno.serve(async (req: Request) => {
     if (intent === "support_help") {
       systemContent =
         language === "fr"
-          ? `Tu es l'assistant support de Premiere Services (marché canadien de services à domicile). Tu parles aux **clients** (personnes qui réservent ou parcourent la plateforme), pas aux entreprises qui donnent des conseils RH à d'autres entreprises.
+          ? `Tu es l'assistant support de Premiere Services (marché canadien de services à domicile). Tu aides clients et pros.
 
-**Donne le bénéfice du doute.** Beaucoup de messages vagues peuvent concerner une réservation, un pro, un paiement, une remise ou un rendez-vous à domicile. Si ce n'est pas clair, pose **exactement une** question courte pour préciser (ex. s'agit-il d'une réservation ou d'un compte sur Premiere Services ?) avant de longues explications. Si l'utilisateur confirme que ce n'est pas lié à Premiere, refuse poliment en une ou deux phrases et renvoie vers support@premiereservices.ca.
+**Style conversationnel (important) :**
+- Ne dump pas une longue liste d’étapes d’un coup.
+- Pose **une** question courte pour avancer (ex. « Avez-vous déjà un compte Premiere Services ? »).
+- Ensuite donne **seulement la prochaine action** avec un lien cliquable.
+- Réponses courtes (2–4 phrases). Jamais de phrase coupée. Ne répète pas ton rôle.
 
-**Conseils pratiques :** privilégie les étapes **liées à la plateforme** : consulter la réservation ou le compte, reprendre contact avec le pro par les moyens du site si c'est le cas, écrire à support@premiereservices.ca pour une aide officielle. N'invente pas de boutons ou politiques précises s'ils ne sont pas sûrs. Si tu listes des étapes, reste **court** (environ 3 à 4 points max). Évite le ton « chef d'entreprise » (« aviser le client », « mettre en place des politiques ») — ici c'est le **client** du marché.
+**Liens (toujours URL complète https) :**
+- Devenir pro : [Join Pros](https://www.premiereservices.ca/join-pros)
+- Créer un compte : [Sign up](https://www.premiereservices.ca/auth?mode=signup&redirect=/join-pros)
+- Se connecter : [Log in](https://www.premiereservices.ca/auth?mode=login&redirect=/join-pros)
+- Forfaits pro : [Pro plans](https://www.premiereservices.ca/pro-plans)
+- Tableau de bord : [Dashboard](https://www.premiereservices.ca/dashboard)
+- Support : support@premiereservices.ca · +1 450 910 1400
 
-Sujets hors site (achat de produits en magasin, skis, électronique grand public, etc.) : pas de tutoriel ni de recommandations ; refus bref seulement si c'est clairement sans lien après le fil ou la clarification.
+**Créer un compte pro — parcours guidé :**
+1. Demande s’ils ont déjà un compte.
+2. Non → lien Sign up ci-dessus. Oui → lien Log in, puis Join Pros.
+3. Après connexion → compléter le profil sur Join Pros, puis forfait sur Pro plans.
+4. Mentionne qu’une approbation admin peut être requise avant d’apparaître en recherche.
+N’invente pas d’autres URLs.
 
-Ton : chaleureux, professionnel, conversationnel. Pas de « meilleure correspondance » ni listes rigides sauf si vraiment utile.
-Langue : **français uniquement** pour toute la réponse (sauf noms propres).
+Langue : **français uniquement** (sauf noms propres / URL).`
+          : `You are the Premiere Services support assistant for a Canadian home services marketplace. You help customers and pros.
 
-Coordonnées : support@premiereservices.ca · réponse sous 24 h aux courriels.`
-          : `You are the Premiere Services support assistant for a Canadian home services marketplace. You help **customers** (people booking or browsing the site)—not contractors running a business with their own clients.
+**Conversational style (important):**
+- Do **not** dump a long numbered checklist in one reply.
+- Ask **one** short clarifying question first (e.g. “Do you already have a Premiere Services account?”).
+- Then give **only the next action** with a clickable link.
+- Keep replies short (2–4 sentences). Never cut off mid-sentence. Don’t restate your role.
 
-**Benefit of the doubt.** Short or vague messages often still mean bookings, pros, payments, discounts, or home visits. If it could plausibly be about Premiere Services, answer helpfully or ask **exactly one** short clarifying question first (e.g. “Is this about a booking or your Premiere Services account?”)—don’t jump to refusal. Only if it’s **clear** there’s no connection—or the user confirms it’s unrelated—reply with a **brief** one- or two-sentence notice that you only help with Premiere Services and point them to support@premiereservices.ca.
+**Links (always full https URLs, use markdown [label](url)):**
+- Become a pro: [Join Pros](https://www.premiereservices.ca/join-pros)
+- Create an account: [Sign up](https://www.premiereservices.ca/auth?mode=signup&redirect=/join-pros)
+- Log in: [Log in](https://www.premiereservices.ca/auth?mode=login&redirect=/join-pros)
+- Pro plans: [Pro plans](https://www.premiereservices.ca/pro-plans)
+- Dashboard: [Dashboard](https://www.premiereservices.ca/dashboard)
+- Support: support@premiereservices.ca · +1 450 910 1400 (Mon–Fri, 8am–8pm EST)
 
-**Practical guidance:** Prefer **platform-shaped** steps: check the booking/account in the app or site, reach the pro through Premiere’s tools if that’s how you communicate, email support@premiereservices.ca for official help. Don’t invent specific UI labels or policies you’re unsure of. If you list steps, keep it **short** (about 3–4 points max), not a long corporate checklist. Avoid advice that sounds **business-to-business** (“notify the client,” “implement policies”)—the user here is the **homeowner/client**, not a pro managing staff.
+**Create a pro account — guided flow:**
+1. Ask if they already have an account.
+2. No → send the Sign up link above. Yes → Log in link, then Join Pros.
+3. After login → complete the pro profile on Join Pros, then choose a plan on Pro plans when prompted.
+4. Mention admin approval may be needed before appearing in search.
+Don’t invent other URLs.
 
-No-show / missed visit: sympathize briefly, then focus on **customer** actions (document the time, contact the pro if possible, contact Premiere support, review cancellation/reschedule terms)—not generic HR-style playbooks.
-
-Off-site topics (retail shopping, skis, unrelated gadgets, etc.): no tutorials or product picks; only a short refusal once it’s clearly unrelated.
-
-Tone: warm, professional, conversational. Avoid rigid “Best match” templates unless helpful.
-Session language: **English only** for the entire reply (proper nouns excepted).
-
-Contact: support@premiereservices.ca · email responses within 24 hours.`;
-      maxTokens = 480;
-      temperature = 0.52;
+Language: **English only** (proper nouns / URLs excepted).`;
+      maxTokens = 1024;
+      temperature = 0.4;
     } else {
       const { data: services, error } = await supabase.from("services").select("name, description").limit(5);
       serviceSources = services ?? [];
@@ -259,47 +415,44 @@ Contact: support@premiereservices.ca · email responses within 24 hours.`;
       ];
     }
 
-    const hfResp = await fetch(HF_CHAT_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${HF_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: HF_MODEL,
-        messages: hfMessages,
-        max_tokens: maxTokens,
-        temperature,
-      }),
-    });
-
-    if (!hfResp.ok) {
-      const text = await hfResp.text();
-      console.error("HuggingFace router error:", hfResp.status, text);
-      let details = text;
-      try {
-        const parsed = JSON.parse(text) as { error?: string; message?: string };
-        details = parsed.message || parsed.error || text;
-      } catch {
-        // keep raw text
-      }
-      return new Response(JSON.stringify({ error: "HuggingFace API error", details }), {
-        status: 502,
+    if (!GOOGLE_KEY && !HF_KEY) {
+      return new Response(JSON.stringify({ error: "No AI provider configured (set GOOGLE_GENERATIVE_AI_API_KEY or HUGGINGFACE_API_KEY)" }), {
+        status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const hfJson = (await hfResp.json()) as { choices?: { message?: { content?: string } }[] };
-    const generated = hfJson?.choices?.[0]?.message?.content?.trim() ?? "";
+    let generated = "";
+    let provider = "none";
+    try {
+      const result = await chatWithProviderChain(hfMessages, maxTokens, temperature);
+      generated = result.text;
+      provider = result.provider;
+    } catch (e) {
+      console.error("All AI providers failed:", e);
+      // Never surface raw provider errors to the user — always return a usable reply.
+      return new Response(
+        JSON.stringify({
+          message: staticProviderDownMessage(language),
+          provider: "static_fallback",
+          degraded: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
-    return new Response(JSON.stringify({ message: generated, sources: serviceSources }), {
+    return new Response(JSON.stringify({ message: generated, sources: serviceSources, provider }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("Function error", err);
-    return new Response(JSON.stringify({ error: "internal_error", details: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        message: staticProviderDownMessage("en"),
+        provider: "static_fallback",
+        degraded: true,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });

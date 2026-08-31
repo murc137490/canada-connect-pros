@@ -388,6 +388,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <ul className="space-y-2 text-sm text-white/70">
                 <li><Link to="/terms" className="hover:text-white transition-colors">{t.footer.termsOfService}</Link></li>
                 <li>
+                  <Link to="/help/dashboard-guide" className="hover:text-white transition-colors">
+                    {t.footer.dashboardGuide ?? (locale === "fr" ? "Guide du tableau de bord" : "Dashboard guide")}
+                  </Link>
+                </li>
+                <li>
                   <Link to="/privacy" className="hover:text-white transition-colors">
                     {locale === "fr" ? "Confidentialité" : (t.footer.privacyPolicy ?? "Privacy")}
                   </Link>

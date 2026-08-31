@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from "react";
 import { format } from "date-fns";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -64,6 +64,13 @@ import ProBookingRequestCard from "@/components/pro/ProBookingRequestCard";
 import ProBookingRequestDetailDialog from "@/components/pro/ProBookingRequestDetailDialog";
 import ClientBookingPayDialog from "@/components/ClientBookingPayDialog";
 import DashboardReviewsPanel from "@/components/dashboard/DashboardReviewsPanel";
+import { DashboardTour, DashboardTourHelpButton } from "@/components/dashboard/DashboardTour";
+import {
+  type DashTourSegment,
+  isSegmentCompleted,
+  segmentForTab,
+} from "@/lib/dashboardTutorial";
+import { buildBookingInvoiceSnapshotV2 } from "@/lib/bookingInvoiceSnapshot";
 import ReviewForm from "@/components/pro/ReviewForm";
 
 const ProProfileEditorDialog = lazy(() => import("@/components/pro/ProProfileEditorDialog"));
@@ -720,6 +727,10 @@ export default function Dashboard() {
   const [bundleFormName, setBundleFormName] = useState("");
   const [bundleFormKeys, setBundleFormKeys] = useState<string[]>([]);
   const [savingBundle, setSavingBundle] = useState(false);
+  const [dashTourOpen, setDashTourOpen] = useState(false);
+  const [dashTourSegment, setDashTourSegment] = useState<DashTourSegment | null>(null);
+  const [dashTourTick, setDashTourTick] = useState(0);
+  const dashTourSessionSkip = useRef(new Set<DashTourSegment>());
 
   const setDashboardTab = useCallback(
     (tab: string) => {
@@ -735,6 +746,58 @@ export default function Dashboard() {
     },
     [setSearchParams],
   );
+
+  const openDashTour = useCallback((segment: DashTourSegment, opts?: { force?: boolean }) => {
+    if (!user?.id) return;
+    if (!opts?.force && isSegmentCompleted(user.id, segment)) return;
+    if (!opts?.force && dashTourSessionSkip.current.has(segment)) return;
+    setDashTourSegment(segment);
+    setDashTourOpen(true);
+  }, [user?.id]);
+
+  const replayDashTour = useCallback(
+    (segment: DashTourSegment) => {
+      dashTourSessionSkip.current.delete(segment);
+      openDashTour(segment, { force: true });
+    },
+    [openDashTour],
+  );
+
+  /** Auto-start incomplete segment for pros; honor ?tour=1 from Help page. */
+  useEffect(() => {
+    if (!user?.id || isAdminDashboardShell || !proProfile) return;
+    const segment = segmentForTab(shellTab);
+    if (!segment) return;
+    if (segment !== "account" && !proProfile.is_verified) return;
+
+    const force = searchParams.get("tour") === "1";
+    if (force) {
+      dashTourSessionSkip.current.delete(segment);
+      setDashTourSegment(segment);
+      setDashTourOpen(true);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("tour");
+          return next;
+        },
+        { replace: true },
+      );
+      return;
+    }
+
+    if (isSegmentCompleted(user.id, segment)) return;
+    if (dashTourSessionSkip.current.has(segment)) return;
+    setDashTourSegment(segment);
+    setDashTourOpen(true);
+  }, [
+    user?.id,
+    shellTab,
+    proProfile,
+    isAdminDashboardShell,
+    searchParams,
+    setSearchParams,
+  ]);
 
   /** Dismiss stale booking badges as soon as the dashboard opens (not only on Bookings tab). */
   useEffect(() => {
@@ -3973,7 +4036,7 @@ export default function Dashboard() {
                         <p className="text-muted-foreground">{profile?.full_name ?? ""}</p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6" data-tour="pro-stats">
                       <div className="rounded-lg bg-muted/50 p-4 text-center">
                         <p className="text-2xl font-bold text-foreground">{proStats.leads}</p>
                         <p className="text-sm text-muted-foreground flex items-center justify-center gap-1"><TrendingUp size={14} /> {t.dashboard.leads}</p>
@@ -3997,7 +4060,7 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border bg-card p-6 md:p-8">
+                  <div className="rounded-xl border bg-card p-6 md:p-8" data-tour="pro-avatar-square">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                       <div className="flex gap-3">
                         <div className="rounded-lg bg-muted p-3 shrink-0">
@@ -4037,7 +4100,7 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="overflow-hidden rounded-xl border bg-card p-4 sm:p-6 md:p-8">
+                  <div className="overflow-hidden rounded-xl border bg-card p-4 sm:p-6 md:p-8" data-tour="pro-featured">
                     <h3 className="font-heading font-bold text-foreground mb-2">{t.dashboard.featuredProfileDesign ?? "Featured profile design"}</h3>
                     <p className="text-sm text-muted-foreground mb-4">
                       {t.dashboard.proPageAestheticHint ?? "Change your template, background and colors. Clients will see these on your public page."}
@@ -4357,7 +4420,7 @@ export default function Dashboard() {
                     </DialogContent>
                   </Dialog>
 
-                  <div className="rounded-xl border bg-card p-6 md:p-8">
+                  <div className="rounded-xl border bg-card p-6 md:p-8" data-tour="pro-services">
                     <h3 className="font-heading font-bold text-foreground mb-2">{t.dashboard.myServices ?? "My Services"}</h3>
                     <p className="text-sm text-muted-foreground mb-4">
                       {t.dashboard.addService ?? "Add service"}, {t.dashboard.editService ?? "Edit service"}, {t.dashboard.setPrice ?? "Set price"}, {t.dashboard.setDuration ?? "Set duration"}.
@@ -4402,7 +4465,7 @@ export default function Dashboard() {
                             <li key={`${s.category_slug}-${s.service_slug}`} className="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-border/50 text-sm">
                               <div>
                                 <span className="font-medium text-foreground">{serviceName}</span>
-                                {dur ? <span className="text-muted-foreground"> ? {dur}</span> : null}
+                                {dur ? <span className="text-muted-foreground"> · {dur}</span> : null}
                                 {priceStr && <span className="text-muted-foreground ml-1">({priceStr})</span>}
                               </div>
                               <div className="flex gap-2">
@@ -4497,7 +4560,14 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {proProfile?.id ? <ProPortfolioEditor proProfileId={proProfile.id} /> : null}
+                  {proProfile?.id ? (
+                    <div data-tour="pro-portfolio">
+                      <ProPortfolioEditor proProfileId={proProfile.id} />
+                    </div>
+                  ) : null}
+                  <div className="flex justify-center">
+                    <DashboardTourHelpButton onClick={() => replayDashTour("pro")} />
+                  </div>
                 </div>
               )}
             </TabsContent>
@@ -4954,7 +5024,7 @@ export default function Dashboard() {
                 onSave={saveProfileAvatar}
               />
             </div>
-            <form onSubmit={saveAccount} className="rounded-xl border bg-card p-6 md:p-8 space-y-4 max-w-lg w-full mx-auto">
+            <form onSubmit={saveAccount} className="rounded-xl border bg-card p-6 md:p-8 space-y-4 max-w-lg w-full mx-auto" data-tour="account-profile">
               <div className="space-y-2">
                 <Label htmlFor="acc-name">{t.dashboard.accountName}</Label>
                 <Input id="acc-name" value={accountForm.full_name} onChange={(e) => setAccountForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Ryan Smith" />
@@ -5134,7 +5204,7 @@ export default function Dashboard() {
               </Button>
             </div>
             {proProfile ? (
-              <div className="rounded-xl border bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-4">
+              <div className="rounded-xl border bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-4" data-tour="account-cancel-policy">
                 <h3 className="font-heading font-semibold text-foreground">
                   {locale === "fr" ? "Politique d’annulation (clients)" : "Cancellation policy (clients)"}
                 </h3>
@@ -5233,7 +5303,7 @@ export default function Dashboard() {
                 </Button>
               </div>
             ) : null}
-            <div className="rounded-xl border bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-4">
+            <div className="rounded-xl border bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-4" data-tour="account-id-verification">
               <button
                 type="button"
                 onClick={() => setBookingIdVerificationOpen((open) => !open)}
@@ -5424,13 +5494,18 @@ export default function Dashboard() {
                 </Button>
               </div>
             )}
+            {proProfile ? (
+              <div className="flex justify-center w-full">
+                <DashboardTourHelpButton onClick={() => replayDashTour("account")} />
+              </div>
+            ) : null}
           </TabsContent>
 
           {!isAdminDashboardShell ? (
           <>
           <TabsContent value="bookings" className="space-y-4">
             {proProfile?.is_verified && proViewingMyRequests ? (
-              <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">
+              <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8" data-tour="booking-requests">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <h3 className="font-heading font-bold text-foreground">
                     {t.dashboard.myRequestsTitle ?? (locale === "fr" ? "Mes demandes" : "My requests")}
@@ -5440,14 +5515,14 @@ export default function Dashboard() {
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">{t.dashboard.acceptDenyHint ?? "Accept or deny each request below."}</p>
-                <p className="text-xs text-muted-foreground mb-4 rounded-md border border-border/60 bg-muted/20 px-3 py-2 leading-relaxed">
-                  {t.dashboard.bookingContactPrivacyHint ?? ""}
-                </p>
                 {proBookings.length === 0 ? (
                   <p className="text-sm text-muted-foreground">{t.dashboard.emptyBookings}</p>
                 ) : (
                   <ul className="space-y-3">{proBookings.map(renderProBookingRequestCard)}</ul>
                 )}
+                <div className="flex justify-center">
+                  <DashboardTourHelpButton onClick={() => replayDashTour("bookings")} />
+                </div>
               </div>
             ) : proProfile?.is_verified && !proViewingMyRequests ? (
               <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">
@@ -5458,16 +5533,13 @@ export default function Dashboard() {
                       {t.dashboard.schedule ?? "Schedule"} &amp; {t.dashboard.currentBookings}
                     </span>
                     <span className="sm:hidden">
-                      {t.dashboard.schedule ?? "Schedule"} &amp; {locale === "fr" ? "R?servations" : "Bookings"}
+                      {t.dashboard.schedule ?? "Schedule"} &amp; {locale === "fr" ? "Réservations" : "Bookings"}
                     </span>
                   </span>
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   <span className="hidden sm:inline">{t.dashboard.scheduleBookingHint ?? "Manage your availability and see bookings on the calendar. Accept or deny requests below."}</span>
-                  <span className="sm:hidden">{locale === "fr" ? "G?rez vos disponibilit?s et r?servations." : "Manage availability and bookings."}</span>
-                </p>
-                <p className="text-xs text-muted-foreground mb-4 rounded-md border border-border/60 bg-muted/20 px-3 py-2 leading-relaxed">
-                  {t.dashboard.bookingContactPrivacyHint ?? ""}
+                  <span className="sm:hidden">{locale === "fr" ? "Gérez vos disponibilités et réservations." : "Manage availability and bookings."}</span>
                 </p>
                 <p className="lg:hidden text-sm mb-4">
                   <a href="#dashboard-open-leads" className="font-medium text-primary underline underline-offset-2">
@@ -5485,6 +5557,7 @@ export default function Dashboard() {
                     </Link>
                   </div>
                 )}
+                <div data-tour="schedule-calendar">
                 <ProScheduleEditor
                   weekly={proWeeklySchedule}
                   unavailableDates={proUnavailableDates}
@@ -5534,7 +5607,9 @@ export default function Dashboard() {
                   {savingSchedule && <Loader2 size={16} className="animate-spin" />}
                   {t.common.save ?? "Save"} {t.dashboard.schedule}
                 </Button>
-                <div className="mt-8 mb-3 flex items-center justify-between gap-2">
+                </div>
+                <div data-tour="booking-requests" className="mt-8">
+                <div className="mb-3 flex items-center justify-between gap-2">
                   <h4 className="font-heading font-semibold text-foreground">{t.dashboard.bookingRequests ?? "Booking requests"}</h4>
                   <Button
                     type="button"
@@ -5553,6 +5628,7 @@ export default function Dashboard() {
                     {proBookings.map((b) => renderProBookingRequestCard(b))}
                   </ul>
                 )}
+                </div>
 
                 <div id="received-quotes" className="mt-10 rounded-xl border border-border bg-muted/20 p-5 sm:p-6 scroll-mt-24">
                   <h4 className="font-heading font-bold text-foreground mb-1">{t.dashboard.quotesReceivedSection}</h4>
@@ -5598,6 +5674,11 @@ export default function Dashboard() {
                     </ul>
                   )}
                 </div>
+                {proProfile?.is_verified ? (
+                  <div className="flex justify-center">
+                    <DashboardTourHelpButton onClick={() => replayDashTour("bookings")} />
+                  </div>
+                ) : null}
               </div>
             ) : (
               <div className="space-y-8">
@@ -5969,17 +6050,49 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="reviews" className="space-y-4">
-            <DashboardReviewsPanel
-              proProfileId={showProReviewSection ? proProfile?.id ?? null : null}
-              showProSection={showProReviewSection}
-              onReviewClient={(bookingId, clientId) => void openReviewClientDialog(bookingId, clientId)}
-              onReviewPro={(proId) => void openReviewProDialog(proId)}
-            />
+            <div data-tour="reviews-panel">
+              <DashboardReviewsPanel
+                proProfileId={showProReviewSection ? proProfile?.id ?? null : null}
+                showProSection={showProReviewSection}
+                onReviewClient={(bookingId, clientId) => void openReviewClientDialog(bookingId, clientId)}
+                onReviewPro={(proId) => void openReviewProDialog(proId)}
+              />
+            </div>
+            {proProfile ? (
+              <div className="flex justify-center">
+                <DashboardTourHelpButton onClick={() => replayDashTour("reviews")} />
+              </div>
+            ) : null}
           </TabsContent>
 
           <TabsContent value="invoices" className="space-y-4">
             {(() => {
+              void dashTourTick;
               const invoiceRows = clientBookings.filter((b) => b.status !== "declined");
+              const uid = user?.id;
+              const showMockInvoice =
+                Boolean(uid && proProfile) && uid != null && !isSegmentCompleted(uid, "invoices");
+              const mockSnapshot = showMockInvoice
+                ? buildBookingInvoiceSnapshotV2({
+                    proProfileId: "sample",
+                    businessName: locale === "fr" ? "Exemple Pro Inc." : "Sample Pro Inc.",
+                    supplierLegalName: locale === "fr" ? "Exemple Pro Inc." : "Sample Pro Inc.",
+                    supplierAddress: "123 Rue Exemple, Montreal, QC H2X 1Y4",
+                    serviceName: locale === "fr" ? "Service d'exemple" : "Sample service",
+                    serviceDescriptionDetailed:
+                      locale === "fr"
+                        ? "Facture d'exemple — service, frais de plateforme et taxes."
+                        : "Sample invoice — service, platform fee, and taxes.",
+                    appointmentSummary: locale === "fr" ? "Exemple · 60 min" : "Sample · 60 min",
+                    preferredDate: new Date().toISOString().slice(0, 10),
+                    preferredTime: "10:00",
+                    serviceDurationMinutes: 60,
+                    customerAddress: locale === "fr" ? "Adresse client (exemple)" : "Client address (sample)",
+                    baseAmountCents: 12000,
+                    currency: "CAD",
+                    paymentMethodLabel: "Card",
+                  })
+                : null;
               const statusLabel = (code: string) =>
                 code === "pending"
                   ? t.dashboard.bookingStatusPending
@@ -5992,40 +6105,66 @@ export default function Dashboard() {
                         : code === "cancelled"
                           ? t.dashboard.bookingStatusCancelled
                           : code;
-              if (invoiceRows.length === 0) {
-                return (
-                  <div className="rounded-xl border bg-card p-6 md:p-8 text-center text-muted-foreground">
-                    <FileText size={40} className="mx-auto mb-3 opacity-50" />
-                    <p className="mb-4">{t.dashboard.emptyInvoices}</p>
-                    <Button asChild variant="outline">
-                      <Link to="/services">{t.dashboard.browseServices}</Link>
-                    </Button>
-                  </div>
-                );
-              }
               return (
-                <div className="space-y-4">
+                <div className="space-y-4" data-tour="invoices-panel">
                   <p className="text-sm text-muted-foreground">{t.dashboard.invoicesIntro}</p>
-                  <div className="space-y-4">
-                    {invoiceRows.map((b) => (
+                  {mockSnapshot ? (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {locale === "fr" ? "Exemple (tutoriel)" : "Sample (tutorial)"}
+                      </p>
                       <BookingInvoiceCard
-                        key={b.id}
-                        bookingId={b.id}
-                        bookingPublicCode={b.public_booking_code ?? null}
-                        bookingStatus={statusLabel(b.status)}
-                        businessName={b.business_name || t.common.proFallback}
-                        createdAt={b.created_at}
-                        snapshotJson={b.invoice_snapshot}
-                        payment={bookingPaymentsById[b.id] ?? null}
-                        showSupplierAddress={b.pro_service_at_workspace_only === true}
-                        onReport={() => {
-                          setActiveTab("bookings");
-                          setClaimBooking({ id: b.id, pro_profile_id: b.pro_profile_id, statusCode: b.status });
-                          setClaimDialogOpen(true);
+                        bookingId="tour-sample-invoice"
+                        bookingPublicCode="SAMPLE"
+                        bookingStatus={locale === "fr" ? "Exemple" : "Sample"}
+                        businessName={mockSnapshot.business_name}
+                        createdAt={new Date().toISOString()}
+                        snapshotJson={mockSnapshot}
+                        payment={{
+                          amount_cents: mockSnapshot.total_cents,
+                          currency: mockSnapshot.currency,
+                          square_payment_id: null,
+                          status: "COMPLETED",
                         }}
+                        onReport={() => undefined}
                       />
-                    ))}
-                  </div>
+                    </div>
+                  ) : null}
+                  {invoiceRows.length === 0 && !mockSnapshot ? (
+                    <div className="rounded-xl border bg-card p-6 md:p-8 text-center text-muted-foreground">
+                      <FileText size={40} className="mx-auto mb-3 opacity-50" />
+                      <p className="mb-4">{t.dashboard.emptyInvoices}</p>
+                      <Button asChild variant="outline">
+                        <Link to="/services">{t.dashboard.browseServices}</Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {invoiceRows.map((b) => (
+                        <BookingInvoiceCard
+                          key={b.id}
+                          bookingId={b.id}
+                          bookingPublicCode={b.public_booking_code ?? null}
+                          bookingStatus={statusLabel(b.status)}
+                          businessName={b.business_name || t.common.proFallback}
+                          createdAt={b.created_at}
+                          snapshotJson={b.invoice_snapshot}
+                          payment={bookingPaymentsById[b.id] ?? null}
+                          showSupplierAddress={b.pro_service_at_workspace_only === true}
+                          onReport={() => {
+                            setActiveTab("bookings");
+                            setClaimBooking({ id: b.id, pro_profile_id: b.pro_profile_id, statusCode: b.status });
+                            setClaimDialogOpen(true);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {proProfile ? (
+                    <div className="flex justify-center">
+                      <DashboardTourHelpButton onClick={() => replayDashTour("invoices")} />
+                    </div>
+                  ) : null}
                 </div>
               );
             })()}
@@ -6483,7 +6622,7 @@ export default function Dashboard() {
                               {catName} ? {serviceName}
                               {(s.custom_price_min != null || s.custom_price_max != null) && (
                                 <span className="ml-2">
-                                  ({s.custom_price_min != null && s.custom_price_max != null ? `$${s.custom_price_min}?$${s.custom_price_max}` : s.custom_price_min != null ? `from $${s.custom_price_min}` : `up to $${s.custom_price_max}`})
+                                  ({s.custom_price_min != null && s.custom_price_max != null ? `$${s.custom_price_min}–$${s.custom_price_max}` : s.custom_price_min != null ? `from $${s.custom_price_min}` : `up to $${s.custom_price_max}`})
                                 </span>
                               )}
                               {s.description && <p className="text-xs mt-0.5 pl-2 border-l border-border">{s.description}</p>}
@@ -6748,7 +6887,7 @@ export default function Dashboard() {
                   className="w-28 text-foreground"
                 />
               </div>
-              <span className="text-muted-foreground">?</span>
+              <span className="text-muted-foreground">–</span>
               <div className="flex items-center gap-2">
                 <Label htmlFor="edit-budget-max" className="text-muted-foreground shrink-0">
                   {t.makeRequest.step5Max}
@@ -7152,6 +7291,21 @@ export default function Dashboard() {
             }
             setPayBookingTarget(null);
             setPayBookingSquareLoc(null);
+          }}
+        />
+      ) : null}
+      {user?.id && dashTourSegment ? (
+        <DashboardTour
+          userId={user.id}
+          segment={dashTourSegment}
+          open={dashTourOpen}
+          onClose={() => {
+            if (dashTourSegment) dashTourSessionSkip.current.add(dashTourSegment);
+            setDashTourOpen(false);
+          }}
+          onFinished={() => {
+            setDashTourTick((n) => n + 1);
+            setDashTourOpen(false);
           }}
         />
       ) : null}

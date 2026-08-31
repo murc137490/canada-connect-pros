@@ -18,6 +18,7 @@ import ProPlansManagement from "./pages/ProPlansManagement";
 import ProPlanCancel from "./pages/ProPlanCancel";
 import ProPlansFreeTrial from "./pages/ProPlansFreeTrial";
 import Support from "./pages/Support";
+import DashboardGuide from "./pages/DashboardGuide";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
@@ -94,6 +95,7 @@ const App = () => (
               <Route path="/make-request" element={<MonitorAdminGuard><MakeRequest /></MonitorAdminGuard>} />
               <Route path="/admin" element={<Navigate to="/dashboard?tab=admin" replace />} />
               <Route path="/support" element={<Support />} />
+              <Route path="/help/dashboard-guide" element={<DashboardGuide />} />
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/privacy-policy" element={<Navigate to="/privacy" replace />} />

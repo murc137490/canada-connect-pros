@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { sendSupportChatMessage, type SupportChatMessage } from "@/lib/supportChatApi";
 import { MOTION } from "@/motion/types";
 import { usePrefersReducedMotion } from "@/motion/usePrefersReducedMotion";
+import { ChatMessageContent } from "@/components/ChatMessageContent";
 
 const HISTORY_KEY = "premiere-support-chat-history";
 const ACTIVE_KEY = "premiere-support-chat-active";
@@ -357,7 +358,7 @@ export default function HelpFab() {
                   </div>
                 ) : (
                   <div key={i} className="max-w-[95%] text-[14px] leading-relaxed text-foreground whitespace-pre-wrap">
-                    {msg.content}
+                    <ChatMessageContent text={msg.content} />
                   </div>
                 )
               )}

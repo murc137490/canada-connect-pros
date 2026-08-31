@@ -10,6 +10,7 @@ import TextType from "@/components/TextType";
 import BlurText from "@/components/BlurText";
 import { sendSupportChatMessage, type SupportChatMessage } from "@/lib/supportChatApi";
 import { SUPPORT_EMAIL, SUPPORT_PHONE, SUPPORT_PHONE_TEL } from "@/config/legalConfig";
+import { ChatMessageContent } from "@/components/ChatMessageContent";
 
 export default function Support() {
   const { t, locale } = useLanguage();
@@ -196,7 +197,7 @@ export default function Support() {
                         msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-foreground"
                       }`}
                     >
-                      {msg.content}
+                      {msg.role === "assistant" ? <ChatMessageContent text={msg.content} /> : msg.content}
                     </div>
                   </div>
                 ))}

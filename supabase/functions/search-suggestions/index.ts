@@ -7,9 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-/** Serverless HF Inference (replaces deprecated api-inference.huggingface.co — see HF Inference Providers docs). */
+/** Serverless HF Inference (fallback). Prefer Gemini when GOOGLE_GENERATIVE_AI_API_KEY is set. */
 const HF_EMBED_URL =
   "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction";
+const GEMINI_EMBED_MODEL = (Deno.env.get("GEMINI_EMBED_MODEL") || "gemini-embedding-001").trim();
+const GEMINI_EMBED_DIM = 768;
 
 interface ServiceRecordForAI {
   name: string;
@@ -120,6 +122,40 @@ function parseBatchEmbeddings(data: unknown, n: number): number[][] | null {
   return null;
 }
 
+async function geminiEmbed(googleKey: string, inputs: string | string[]): Promise<number[][]> {
+  const arr = Array.isArray(inputs) ? inputs : [inputs];
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_EMBED_MODEL)}:batchEmbedContents?key=${encodeURIComponent(googleKey)}`;
+  const requests = arr.map((text) => ({
+    model: `models/${GEMINI_EMBED_MODEL}`,
+    content: { parts: [{ text }] },
+    outputDimensionality: GEMINI_EMBED_DIM,
+    taskType: "SEMANTIC_SIMILARITY",
+  }));
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ requests }),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Gemini embed ${res.status}: ${t.slice(0, 500)}`);
+  }
+  const data = (await res.json()) as { embeddings?: { values?: number[] }[] };
+  const out: number[][] = [];
+  for (const emb of data.embeddings ?? []) {
+    if (!emb.values?.length) throw new Error("Could not parse Gemini embedding");
+    out.push(emb.values);
+  }
+  if (out.length !== arr.length) throw new Error(`Gemini embed count mismatch ${out.length} vs ${arr.length}`);
+  return out;
+}
+
+async function embedTexts(opts: { googleKey?: string; hfKey?: string }, inputs: string | string[]): Promise<number[][]> {
+  if (opts.googleKey) return geminiEmbed(opts.googleKey, inputs);
+  if (opts.hfKey) return hfEmbed(opts.hfKey, inputs);
+  throw new Error("No embedding provider configured");
+}
+
 async function hfEmbed(
   hfKey: string,
   inputs: string | string[]
@@ -226,6 +262,7 @@ interface CachedCatalog {
   hash: string;
   records: ServiceRecordForAI[];
   vectors: number[][];
+  provider: "gemini" | "hf";
 }
 
 let catalogCache: CachedCatalog | null = null;
@@ -281,10 +318,14 @@ function recordsFromBody(serviceRecords: ServiceRecordForAI[] | undefined): Serv
   }));
 }
 
-/** Warm cache: batch embed all service strings — typically ONE HF call per chunk (not per service). */
-async function ensureCatalogEmbeddings(hfKey: string, records: ServiceRecordForAI[]): Promise<void> {
-  const h = hashCatalog(records);
-  if (catalogCache && catalogCache.hash === h && catalogCache.vectors.length === records.length) {
+/** Warm cache: batch embed all service strings. */
+async function ensureCatalogEmbeddings(
+  keys: { googleKey?: string; hfKey?: string },
+  records: ServiceRecordForAI[]
+): Promise<void> {
+  const provider: "gemini" | "hf" = keys.googleKey ? "gemini" : "hf";
+  const h = `${provider}:${hashCatalog(records)}`;
+  if (catalogCache && catalogCache.hash === h && catalogCache.vectors.length === records.length && catalogCache.provider === provider) {
     return;
   }
 
@@ -294,20 +335,24 @@ async function ensureCatalogEmbeddings(hfKey: string, records: ServiceRecordForA
 
   for (let i = 0; i < texts.length; i += CHUNK) {
     const chunk = texts.slice(i, i + CHUNK);
-    const vecs = await hfEmbed(hfKey, chunk);
+    const vecs = await embedTexts(keys, chunk);
     for (const v of vecs) allVecs.push(l2normalize(v));
   }
 
-  catalogCache = { hash: h, records, vectors: allVecs };
+  catalogCache = { hash: h, records, vectors: allVecs, provider };
 }
 
-async function ensureProOfferEmbeddings(hfKey: string, records: ServiceRecordForAI[]): Promise<void> {
+async function ensureProOfferEmbeddings(
+  keys: { googleKey?: string; hfKey?: string },
+  records: ServiceRecordForAI[]
+): Promise<void> {
   if (records.length === 0) {
     proOfferCache = null;
     return;
   }
-  const h = `pro:${hashCatalog(records)}`;
-  if (proOfferCache && proOfferCache.hash === h && proOfferCache.vectors.length === records.length) {
+  const provider: "gemini" | "hf" = keys.googleKey ? "gemini" : "hf";
+  const h = `pro:${provider}:${hashCatalog(records)}`;
+  if (proOfferCache && proOfferCache.hash === h && proOfferCache.vectors.length === records.length && proOfferCache.provider === provider) {
     return;
   }
   const texts = records.map((r) => r.embedText);
@@ -315,10 +360,10 @@ async function ensureProOfferEmbeddings(hfKey: string, records: ServiceRecordFor
   const allVecs: number[][] = [];
   for (let i = 0; i < texts.length; i += CHUNK) {
     const chunk = texts.slice(i, i + CHUNK);
-    const vecs = await hfEmbed(hfKey, chunk);
+    const vecs = await embedTexts(keys, chunk);
     for (const v of vecs) allVecs.push(l2normalize(v));
   }
-  proOfferCache = { hash: h, records, vectors: allVecs };
+  proOfferCache = { hash: h, records, vectors: allVecs, provider };
 }
 
 function topMatches(
@@ -370,10 +415,11 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const hfKey = Deno.env.get("HUGGINGFACE_API_KEY");
-    if (!hfKey) {
+    const googleKey = Deno.env.get("GOOGLE_GENERATIVE_AI_API_KEY")?.trim() || "";
+    const hfKey = Deno.env.get("HUGGINGFACE_API_KEY")?.trim() || "";
+    if (!googleKey && !hfKey) {
       return jsonResponse({
-        error: "HUGGINGFACE_API_KEY not configured",
+        error: "No embedding provider configured (set GOOGLE_GENERATIVE_AI_API_KEY or HUGGINGFACE_API_KEY)",
         suggestions: [],
         summary: null,
         followUpQuestions: [],
@@ -385,15 +431,17 @@ Deno.serve(async (req: Request) => {
       }, 503);
     }
 
+    const keys = { googleKey: googleKey || undefined, hfKey: hfKey || undefined };
+
     const catalogRecords = recordsFromBody(body.serviceRecords);
-    await ensureCatalogEmbeddings(hfKey, catalogRecords);
+    await ensureCatalogEmbeddings(keys, catalogRecords);
 
     if (!catalogCache || catalogCache.vectors.length !== catalogRecords.length) {
       throw new Error("Catalog embedding cache failed");
     }
 
     // Exactly ONE embedding call per user query (efficient path).
-    const [queryVecRaw] = await hfEmbed(hfKey, query);
+    const [queryVecRaw] = await embedTexts(keys, query);
     const queryVec = l2normalize(queryVecRaw);
 
     const top = topMatches(query, queryVec, catalogRecords, catalogCache.vectors, 12);
@@ -442,7 +490,7 @@ Deno.serve(async (req: Request) => {
     const bestNameLower = (best.name ?? "").trim().toLowerCase();
 
     if (proRecords.length > 0) {
-      await ensureProOfferEmbeddings(hfKey, proRecords);
+      await ensureProOfferEmbeddings(keys, proRecords);
       if (proOfferCache && proOfferCache.vectors.length === proRecords.length) {
         const proTop = topMatches(query, queryVec, proRecords, proOfferCache.vectors, 24);
         const seen = new Set<string>();

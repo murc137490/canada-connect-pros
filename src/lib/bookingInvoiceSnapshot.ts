@@ -38,7 +38,7 @@ export type BookingInvoiceSnapshotV1 = {
 };
 
 /** Stored on `bookings.invoice_snapshot` for new checkouts (Quebec-style bilingual invoice). */
-export type BookingInvoiceSnapshotV2 = BookingInvoiceSnapshotV1 & {
+export type BookingInvoiceSnapshotV2 = Omit<BookingInvoiceSnapshotV1, "v"> & {
   v: typeof BOOKING_INVOICE_SNAPSHOT_V2;
   invoice_number?: number | null;
   supplier_legal_name: string;

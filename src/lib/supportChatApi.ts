@@ -59,12 +59,9 @@ export async function sendSupportChatMessage(
     const details = data.details;
 
     if (!resp.ok) {
-      const displayMsg = details
-        ? `${errMsg || "Error"}: ${details}`
-        : errMsg
-          ? `The assistant couldn't respond: ${errMsg}`
-          : `Request failed (${resp.status}).`;
-      return { ok: false, reply: displayMsg };
+      // Never show raw Gemini/HF error dumps in the chat UI.
+      console.error("Support AI HTTP error", resp.status, errMsg, details);
+      return { ok: false, reply: fallbacks.errorGeneric };
     }
 
     return { ok: true, reply: reply || fallbacks.noReply };

@@ -109,7 +109,13 @@ function ReviewCard({
   return (
     <li className="rounded-lg border border-border/60 bg-muted/20 p-3 text-sm space-y-2">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <StarRating rating={rating} size={14} />
+        {blurred ? (
+          <span className="text-xs font-medium text-muted-foreground">
+            {t.reviews?.hiddenUntilYouReview ?? "Hidden until you review"}
+          </span>
+        ) : (
+          <StarRating rating={rating} size={14} />
+        )}
         <span className="text-xs text-muted-foreground">
           {new Date(date).toLocaleDateString(undefined, { dateStyle: "medium" })}
         </span>
