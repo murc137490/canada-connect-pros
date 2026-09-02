@@ -81,9 +81,9 @@
   width: clamp(280px, 90vw, 360px);
   max-height: min(85vh, 520px);
   /* iPhone-style frosted glass (light) */
-  background: rgba(255, 255, 255, 0.55);
-  -webkit-backdrop-filter: saturate(200%) blur(40px);
-  backdrop-filter: saturate(200%) blur(40px);
+  background: rgba(255, 255, 255, 0.45);
+  -webkit-backdrop-filter: saturate(200%) blur(50px);
+  backdrop-filter: saturate(200%) blur(50px);
   box-shadow:
     0 8px 40px rgba(0, 0, 0, 0.1),
     inset 0 0.5px 0 rgba(255, 255, 255, 0.75);
@@ -108,13 +108,13 @@
 
 .dark .user-menu-panel {
   /* iPhone dark translucent glass — not a solid green slab */
-  background: rgba(22, 24, 28, 0.42);
-  -webkit-backdrop-filter: saturate(180%) blur(48px);
-  backdrop-filter: saturate(180%) blur(48px);
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: saturate(180%) blur(50px);
+  backdrop-filter: saturate(180%) blur(50px);
   box-shadow:
     0 12px 48px rgba(0, 0, 0, 0.28),
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.22);
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.28);
   color: #fff;
 }
 

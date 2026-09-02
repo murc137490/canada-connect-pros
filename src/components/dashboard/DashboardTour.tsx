@@ -55,6 +55,8 @@ function queryTourTarget(selector: string): Element | null {
   }
   return nodes[0] ?? null;
 }
+
+function getHeaderBottom(): number {
   const header = document.querySelector<HTMLElement>("header.site-header");
   if (header) {
     const b = header.getBoundingClientRect().bottom;
