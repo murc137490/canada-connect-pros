@@ -86,9 +86,16 @@
 
   max-height: min(85vh, 520px);
 
-  background: linear-gradient(135deg, #fafbf9 0%, #f0f7f4 50%, #e8f0ec 100%);
+  /* iOS-style frosted glass */
+  background: rgba(255, 255, 255, 0.55);
 
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+  -webkit-backdrop-filter: saturate(180%) blur(28px);
+
+  backdrop-filter: saturate(180%) blur(28px);
+
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
 
   z-index: 9999;
 
@@ -98,7 +105,7 @@
 
   border-radius: 16px;
 
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.45);
 
   opacity: 0;
 
@@ -122,11 +129,17 @@
 
 .dark .user-menu-panel {
 
-  background: linear-gradient(135deg, #1a2520 0%, #162019 50%, #0f1412 100%);
+  background: rgba(28, 36, 32, 0.48);
 
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: saturate(180%) blur(32px);
 
-  border-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: saturate(180%) blur(32px);
+
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
+  border-color: rgba(255, 255, 255, 0.18);
 
 }
 
@@ -230,13 +243,13 @@
 
   padding-top: 1rem;
 
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
 
 }
 
 .dark .user-menu-logout {
 
-  border-top-color: rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.14);
 
 }
 
@@ -262,7 +275,7 @@
 
   .user-menu-backdrop.is-open {
 
-    background: rgba(0, 0, 0, 0.28);
+    background: rgba(0, 0, 0, 0.18);
 
   }
 
