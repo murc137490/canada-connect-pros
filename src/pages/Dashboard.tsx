@@ -5527,8 +5527,11 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : proProfile?.is_verified && !proViewingMyRequests ? (
-              <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">
-                <div data-tour="schedule-calendar" className="rounded-xl">
+              <div className="space-y-4">
+                <div
+                  data-tour="schedule-calendar"
+                  className="rounded-xl border bg-card p-4 sm:p-6 md:p-8"
+                >
                 <h3 className="font-heading font-bold text-foreground mb-4 flex items-start gap-2 text-base leading-snug sm:items-center sm:text-lg">
                   <Clock size={18} className="mt-0.5 shrink-0 sm:mt-0" />
                   <span className="min-w-0 flex items-center gap-1.5 flex-wrap">
@@ -5611,7 +5614,7 @@ export default function Dashboard() {
                   {t.common.save ?? "Save"} {t.dashboard.schedule}
                 </Button>
                 </div>
-                <div data-tour="booking-requests" className="mt-8">
+                <div data-tour="booking-requests" className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <h4 className="font-heading font-semibold text-foreground">{t.dashboard.bookingRequests ?? "Booking requests"}</h4>
                   <Button
@@ -5632,7 +5635,7 @@ export default function Dashboard() {
                 )}
                 </div>
 
-                <div id="received-quotes" className="mt-10 rounded-xl border border-border bg-muted/20 p-5 sm:p-6 scroll-mt-24">
+                <div id="received-quotes" className="rounded-xl border border-border bg-muted/20 p-5 sm:p-6 scroll-mt-24">
                   <h4 className="font-heading font-bold text-foreground mb-1">{t.dashboard.quotesReceivedSection}</h4>
                   <p className="text-sm text-muted-foreground mb-4">{t.dashboard.quotesReceivedHint}</p>
                   {jobRequests.length === 0 ? (
