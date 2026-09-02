@@ -20,7 +20,14 @@ type Props = {
   onFinished: () => void;
 };
 
-type HighlightBox = { top: number; left: number; width: number; height: number };
+type HighlightBox = {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+  /** CSS border-radius matching the target card */
+  radius: string;
+};
 
 const TOUR_OUTLINE = "#4EA1FF";
 
@@ -57,7 +64,22 @@ function getSheetTop(isPhone: boolean): number {
   return Math.round(window.innerHeight * 0.58);
 }
 
-function scrollTargetIntoBand(el: Element, isPhone: boolean, smooth: boolean) {
+/** Match card corners; bump slightly so the ring feels softer than a hard square. */
+function readFriendlyRadius(el: Element): string {
+  const raw = getComputedStyle(el as HTMLElement).borderRadius || "";
+  const first = raw.split(/\s+/)[0] ?? "";
+  const px = parseFloat(first);
+  if (Number.isFinite(px) && first.includes("px")) {
+    return `${Math.max(px, 14)}px`;
+  }
+  if (first.includes("rem")) {
+    const rem = parseFloat(first);
+    if (Number.isFinite(rem)) return `${Math.max(rem, 0.875)}rem`;
+  }
+  return "0.875rem";
+}
+
+function scrollTargetIntoBand(el: Element, isPhone: boolean) {
   const headerBottom = getHeaderBottom();
   const sheetTop = getSheetTop(isPhone);
   const bandTop = headerBottom + 10;
@@ -70,18 +92,18 @@ function scrollTargetIntoBand(el: Element, isPhone: boolean, smooth: boolean) {
   const delta = elMid - bandMid;
 
   if (Math.abs(delta) > 6) {
-    window.scrollBy({ top: delta, left: 0, behavior: smooth ? "smooth" : "auto" });
-    return Math.min(700, Math.max(280, Math.abs(delta) * 1.2));
+    // Instant scroll — outline should appear immediately after Next
+    window.scrollBy(0, delta);
   }
-  return 0;
 }
 
 function measureHighlight(el: Element, isPhone: boolean): HighlightBox {
-  const pad = isPhone ? 5 : 8;
+  const pad = isPhone ? 6 : 8;
   const r = el.getBoundingClientRect();
   const headerBottom = getHeaderBottom();
   const sheetTop = getSheetTop(isPhone);
   const maxBottom = Math.max(headerBottom + 64, sheetTop - 8);
+  const radius = readFriendlyRadius(el);
 
   let top = r.top - pad;
   let left = r.left - pad;
@@ -113,6 +135,7 @@ function measureHighlight(el: Element, isPhone: boolean): HighlightBox {
     left,
     width: Math.max(40, width),
     height: Math.max(40, height),
+    radius,
   };
 }
 
@@ -125,26 +148,21 @@ function SpotlightCutout({
   onDismiss: () => void;
 }) {
   const vw = typeof window !== "undefined" ? window.innerWidth : 0;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 0;
   const dim = "bg-black/55";
 
   return (
     <div className="absolute inset-0 z-[1]" aria-hidden>
-      {/* Top */}
       <div className={cn("absolute left-0 right-0 top-0", dim)} style={{ height: Math.max(0, rect.top) }} onClick={onDismiss} />
-      {/* Bottom */}
       <div
         className={cn("absolute bottom-0 left-0 right-0", dim)}
         style={{ top: rect.top + rect.height }}
         onClick={onDismiss}
       />
-      {/* Left */}
       <div
         className={cn("absolute", dim)}
         style={{ top: rect.top, left: 0, width: Math.max(0, rect.left), height: rect.height }}
         onClick={onDismiss}
       />
-      {/* Right */}
       <div
         className={cn("absolute", dim)}
         style={{
@@ -155,20 +173,18 @@ function SpotlightCutout({
         }}
         onClick={onDismiss}
       />
-      {/* Blue outline — hole stays undimmed */}
       <div
-        className="pointer-events-none absolute rounded-lg"
+        className="pointer-events-none absolute"
         style={{
           top: rect.top,
           left: rect.left,
           width: rect.width,
           height: rect.height,
+          borderRadius: rect.radius,
           border: `2.5px solid ${TOUR_OUTLINE}`,
-          boxShadow: `0 0 0 1px rgba(78,161,255,0.4), 0 0 14px rgba(78,161,255,0.35)`,
+          boxShadow: `0 0 0 1px rgba(78,161,255,0.35), 0 0 16px rgba(78,161,255,0.4)`,
         }}
       />
-      {/* Safety: ensure full coverage if layout odd */}
-      {vh <= 0 ? <div className={cn("absolute inset-0", dim)} onClick={onDismiss} /> : null}
     </div>
   );
 }
@@ -209,7 +225,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
     setIndex(0);
   }, [open, segment]);
 
-  // Smooth scroll first, then reveal bright outline
+  // Place outline ASAP: unlock → snap scroll → measure → lock → show
   useLayoutEffect(() => {
     if (!open || !step) {
       setRect(null);
@@ -218,47 +234,33 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
     }
 
     let cancelled = false;
-    let settleTimer = 0;
-    let revealTimer = 0;
+    let raf = 0;
 
     setSpotlightReady(false);
 
-    const finishPlace = (el: Element) => {
-      if (cancelled) return;
-      const box = measureHighlight(el, isPhone);
-      setRect(box);
-      applyScrollLock(window.scrollY);
-      revealTimer = window.setTimeout(() => {
-        if (!cancelled) setSpotlightReady(true);
-      }, 80);
-    };
-
-    const run = () => {
+    const place = () => {
       const el = document.querySelector(step.target);
       if (!el) {
         setRect(null);
         return;
       }
-
       clearScrollLock();
-      const waitMs = scrollTargetIntoBand(el, isPhone, true);
-
-      settleTimer = window.setTimeout(() => {
-        if (cancelled) return;
-        const target = document.querySelector(step.target) ?? el;
-        // Nudge once more without smooth if still off-band
-        scrollTargetIntoBand(target, isPhone, false);
-        finishPlace(target);
-      }, waitMs > 0 ? waitMs + 60 : 120);
+      scrollTargetIntoBand(el, isPhone);
+      const box = measureHighlight(el, isPhone);
+      setRect(box);
+      applyScrollLock(window.scrollY);
+      setSpotlightReady(true);
     };
 
-    // Let the coach sheet paint, then scroll
-    settleTimer = window.setTimeout(run, 40);
+    // One frame so the coach sheet is in the DOM for getSheetTop
+    raf = requestAnimationFrame(() => {
+      if (cancelled) return;
+      place();
+    });
 
     return () => {
       cancelled = true;
-      window.clearTimeout(settleTimer);
-      window.clearTimeout(revealTimer);
+      cancelAnimationFrame(raf);
     };
   }, [open, index, step, isPhone, clearScrollLock, applyScrollLock]);
 
@@ -330,17 +332,16 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: MOTION.fast }}
+        transition={{ duration: 0.15 }}
       >
-        {/* While scrolling: soft full dim; then cutout so outlined area is bright */}
         {!rect || !spotlightReady ? (
-          <div className="absolute inset-0 z-[1] bg-black/45" onClick={onClose} aria-hidden />
+          <div className="absolute inset-0 z-[1] bg-black/40" onClick={onClose} aria-hidden />
         ) : (
           <motion.div
             className="absolute inset-0 z-[1]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.28, ease: MOTION.ease }}
+            transition={{ duration: 0.12, ease: MOTION.ease }}
           >
             <SpotlightCutout rect={rect} onDismiss={onClose} />
           </motion.div>
@@ -353,9 +354,9 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
             data-tour-sheet
             className="absolute inset-x-0 bottom-0 z-[91] flex max-h-[min(42vh,18rem)] flex-col rounded-t-2xl border border-border bg-card text-card-foreground shadow-2xl"
             style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: MOTION.base, ease: MOTION.ease }}
+            transition={{ duration: 0.2, ease: MOTION.ease }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/30" aria-hidden />
@@ -398,9 +399,9 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
             data-tour-sheet
             className="absolute left-1/2 z-[91] w-[min(92vw,22rem)] -translate-x-1/2 rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-xl"
             style={{ top: cardTopDesktop }}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: MOTION.base, ease: MOTION.ease }}
+            transition={{ duration: 0.18, ease: MOTION.ease }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-2 flex items-start justify-between gap-2">

@@ -116,15 +116,6 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
         "Mettez à jour votre nom, téléphone, code postal et langue de courriel. Ces infos servent aux réservations et reçus.",
     },
     {
-      target: "[data-tour='account-id-verification']",
-      titleEn: "Booking ID verification",
-      titleFr: "Vérification d’identité",
-      bodyEn:
-        "You may upload a government ID for booking verification. Retention details are subject to legal review — Première stores it securely for platform checks.",
-      bodyFr:
-        "Vous pouvez téléverser une pièce d’identité pour la vérification. La conservation est sujette à révision juridique — Première la garde de façon sécurisée.",
-    },
-    {
       target: "[data-tour='account-cancel-policy']",
       titleEn: "Cancellation policy",
       titleFr: "Politique d’annulation",
@@ -132,6 +123,15 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
         "As a pro, set free cancellation, a late fee (fixed or %), or no cancellation per service when you edit each service on the Pro tab.",
       bodyFr:
         "En tant que pro, définissez l’annulation gratuite, des frais (fixe ou %) ou aucune annulation par service dans l’onglet Pro.",
+    },
+    {
+      target: "[data-tour='account-id-verification']",
+      titleEn: "Booking ID verification",
+      titleFr: "Vérification d’identité",
+      bodyEn:
+        "You may upload a government ID for booking verification. Retention details are subject to legal review — Première stores it securely for platform checks.",
+      bodyFr:
+        "Vous pouvez téléverser une pièce d’identité pour la vérification. La conservation est sujette à révision juridique — Première la garde de façon sécurisée.",
     },
   ],
   pro: [

@@ -10,7 +10,7 @@ type Props = {
   ariaLabel?: string;
 };
 
-/** Small bouncing red ! for Starter schedule window — opens tip on click. */
+/** Small bouncing red badge — oversized ! sits top-right of the circle. */
 export function StarterScheduleNotice({ message, upgradeLabel, className, ariaLabel }: Props) {
   return (
     <Popover>
@@ -18,18 +18,20 @@ export function StarterScheduleNotice({ message, upgradeLabel, className, ariaLa
         <button
           type="button"
           className={cn(
-            "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-red-500 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50",
+            "relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50",
             className,
           )}
           aria-label={ariaLabel ?? "Starter plan schedule info"}
         >
           <motion.span
-            className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[11px] font-black leading-none text-white shadow-sm"
-            animate={{ y: [0, -4, 0] }}
+            className="relative block h-[1.15rem] w-[1.15rem] rounded-full bg-red-500 shadow-sm"
+            animate={{ y: [0, -5, 0] }}
             transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut" }}
             aria-hidden
           >
-            !
+            <span className="pointer-events-none absolute -right-1.5 -top-3 text-[1.35rem] font-black leading-none text-red-600 drop-shadow-[0_1px_0_rgba(255,255,255,0.85)]">
+              !
+            </span>
           </motion.span>
         </button>
       </PopoverTrigger>
