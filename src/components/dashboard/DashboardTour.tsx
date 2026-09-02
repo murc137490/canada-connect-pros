@@ -79,7 +79,7 @@ function readFriendlyRadius(el: Element): string {
   return "0.875rem";
 }
 
-function scrollTargetIntoBand(el: Element, isPhone: boolean, smooth: boolean): number {
+function scrollTargetIntoBand(el: Element, isPhone: boolean): number {
   const headerBottom = getHeaderBottom();
   const sheetTop = getSheetTop(isPhone);
   const bandTop = headerBottom + 10;
@@ -93,10 +93,45 @@ function scrollTargetIntoBand(el: Element, isPhone: boolean, smooth: boolean): n
 
   if (Math.abs(delta) <= 6) return 0;
 
-  window.scrollBy({ top: delta, left: 0, behavior: smooth ? "smooth" : "auto" });
-  if (!smooth) return 0;
-  // Cap wait so the scroll-feel stays, without a 1–2s stall
-  return Math.min(320, Math.max(140, Math.abs(delta) * 0.55));
+  window.scrollBy({ top: delta, left: 0, behavior: "smooth" });
+  // Rough duration for native smooth scroll over this distance (no early cut-off / snap)
+  return Math.min(900, Math.max(280, Math.abs(delta) * 0.85));
+}
+
+/** Resolve when window scroll has gone idle (or hard timeout). */
+function waitForScrollIdle(maxMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    let lastY = window.scrollY;
+    let stableTicks = 0;
+    let finished = false;
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      window.clearInterval(poll);
+      window.clearTimeout(hardStop);
+      window.removeEventListener("scroll", onScroll);
+      resolve();
+    };
+
+    const onScroll = () => {
+      lastY = window.scrollY;
+      stableTicks = 0;
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    const poll = window.setInterval(() => {
+      if (Math.abs(window.scrollY - lastY) < 0.5) {
+        stableTicks += 1;
+        // ~100–120ms of stillness = scroll finished
+        if (stableTicks >= 3) finish();
+      } else {
+        lastY = window.scrollY;
+        stableTicks = 0;
+      }
+    }, 40);
+    const hardStop = window.setTimeout(finish, Math.max(120, maxMs));
+  });
 }
 
 function measureHighlight(el: Element, isPhone: boolean): HighlightBox {
@@ -227,7 +262,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
     setIndex(0);
   }, [open, segment]);
 
-  // Smooth scroll into place, then reveal outline (kept short)
+  // Smooth scroll the whole way, then reveal outline (no end snap)
   useLayoutEffect(() => {
     if (!open || !step) {
       setRect(null);
@@ -237,14 +272,11 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
 
     let cancelled = false;
     let raf = 0;
-    let settleTimer = 0;
 
     setSpotlightReady(false);
 
     const finishPlace = (el: Element) => {
       if (cancelled) return;
-      // Snap residual distance so the ring lands exact
-      scrollTargetIntoBand(el, isPhone, false);
       setRect(measureHighlight(el, isPhone));
       applyScrollLock(window.scrollY);
       setSpotlightReady(true);
@@ -258,18 +290,17 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
         return;
       }
       clearScrollLock();
-      const waitMs = scrollTargetIntoBand(el, isPhone, true);
-      settleTimer = window.setTimeout(() => {
+      const expectedMs = scrollTargetIntoBand(el, isPhone);
+      void waitForScrollIdle(expectedMs > 0 ? expectedMs + 80 : 80).then(() => {
         if (cancelled) return;
         const target = document.querySelector(step.target) ?? el;
         finishPlace(target);
-      }, waitMs > 0 ? waitMs + 40 : 50);
+      });
     });
 
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
-      window.clearTimeout(settleTimer);
     };
   }, [open, index, step, isPhone, clearScrollLock, applyScrollLock]);
 
@@ -350,7 +381,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
             className="absolute inset-0 z-[1]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.12, ease: MOTION.ease }}
+            transition={{ duration: 0.28, ease: MOTION.ease }}
           >
             <SpotlightCutout rect={rect} onDismiss={onClose} />
           </motion.div>
