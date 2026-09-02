@@ -22,6 +22,9 @@ type Props = {
 
 type HighlightBox = { top: number; left: number; width: number; height: number };
 
+/** Always-visible tour outline (not tied to theme primary, which is near-black in light mode). */
+const TOUR_OUTLINE = "#4EA1FF";
+
 function useIsPhone() {
   const [phone, setPhone] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(max-width: 639px)").matches : false,
@@ -36,57 +39,90 @@ function useIsPhone() {
   return phone;
 }
 
-/** Bottom of fixed site header (logo / lang / theme / account / menu) — never outline into this. */
+/** Bottom of fixed site header — never include logo / lang / theme / account / menu. */
 function getHeaderBottom(): number {
   const header = document.querySelector<HTMLElement>("header.site-header");
   if (header) {
     const b = header.getBoundingClientRect().bottom;
-    if (b > 0) return Math.ceil(b) + 6;
+    if (b > 0) return Math.ceil(b) + 4;
   }
-  return Math.ceil(56 + (parseInt(getComputedStyle(document.documentElement).getPropertyValue("env(safe-area-inset-top)") || "0", 10) || 0)) + 6;
+  return 60;
 }
 
-function phoneSheetReserve(): number {
-  return Math.min(300, Math.round(window.innerHeight * 0.44));
+function getSheetTop(isPhone: boolean): number {
+  if (!isPhone) return window.innerHeight - 8;
+  const sheet = document.querySelector<HTMLElement>("[data-tour-sheet]");
+  if (sheet) {
+    const t = sheet.getBoundingClientRect().top;
+    if (t > 40 && t < window.innerHeight) return t;
+  }
+  return Math.round(window.innerHeight * 0.58);
 }
 
-/** Place target in the band between header and (on phone) bottom sheet — once, no animation fight. */
 function scrollTargetIntoBand(el: Element, isPhone: boolean) {
   const headerBottom = getHeaderBottom();
-  const sheet = isPhone ? phoneSheetReserve() : 24;
+  const sheetTop = getSheetTop(isPhone);
   const bandTop = headerBottom + 10;
-  const bandBottom = window.innerHeight - sheet - 10;
+  const bandBottom = Math.max(bandTop + 100, sheetTop - 10);
+  const bandMid = (bandTop + bandBottom) / 2;
+
   const r = el.getBoundingClientRect();
-  let delta = 0;
-  if (r.top < bandTop) delta = r.top - bandTop;
-  else if (r.bottom > bandBottom) delta = r.bottom - bandBottom;
-  if (Math.abs(delta) > 2) {
-    window.scrollBy({ top: delta, left: 0, behavior: "instant" as ScrollBehavior });
+  const focusH = Math.min(Math.max(r.height, 40), bandBottom - bandTop);
+  const elMid = r.top + focusH / 2;
+  const delta = elMid - bandMid;
+  if (Math.abs(delta) > 6) {
+    window.scrollBy(0, delta);
+  }
+
+  const r2 = el.getBoundingClientRect();
+  if (r2.bottom < bandTop + 24 || r2.top > bandBottom - 24) {
+    el.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
   }
 }
 
-function measureHighlight(el: Element, isPhone: boolean): HighlightBox | null {
-  const pad = isPhone ? 3 : 6;
+/**
+ * Exact target box + small pad. Clip only so the blue outline stays in the
+ * visible band (below header, above coach sheet) — never drop the outline.
+ */
+function measureHighlight(el: Element, isPhone: boolean): HighlightBox {
+  const pad = isPhone ? 5 : 8;
   const r = el.getBoundingClientRect();
   const headerBottom = getHeaderBottom();
-  const sheetTop = isPhone ? window.innerHeight - phoneSheetReserve() : window.innerHeight - 8;
+  const sheetTop = getSheetTop(isPhone);
+  const maxBottom = Math.max(headerBottom + 64, sheetTop - 8);
 
-  // Exact target box, then clamp so it never covers the site header or the sheet.
   let top = r.top - pad;
   let left = r.left - pad;
-  let right = r.right + pad;
-  let bottom = r.bottom + pad;
+  let width = r.width + pad * 2;
+  let height = r.height + pad * 2;
 
-  top = Math.max(headerBottom, top);
-  left = Math.max(8, left);
-  right = Math.min(window.innerWidth - 8, right);
-  bottom = Math.min(sheetTop - 8, bottom);
+  if (top < headerBottom) {
+    height -= headerBottom - top;
+    top = headerBottom;
+  }
+  if (top + height > maxBottom) {
+    height = maxBottom - top;
+  }
 
-  const width = right - left;
-  const height = bottom - top;
-  if (width < 12 || height < 12) return null;
+  // Guarantee a visible outline frame even if the target is tall / partially covered
+  if (height < 48) {
+    top = Math.min(Math.max(r.top - pad, headerBottom + 4), maxBottom - 48);
+    height = Math.min(Math.max(r.height + pad * 2, 48), maxBottom - top);
+  }
+  if (width < 48) {
+    left = Math.max(6, r.left - pad);
+    width = Math.max(48, Math.min(r.width + pad * 2, window.innerWidth - left - 6));
+  }
 
-  return { top, left, width, height };
+  left = Math.max(6, Math.min(left, window.innerWidth - width - 6));
+  width = Math.min(width, window.innerWidth - left - 6);
+
+  return {
+    top: Math.max(0, top),
+    left,
+    width: Math.max(40, width),
+    height: Math.max(40, height),
+  };
 }
 
 export function DashboardTour({ userId, segment, open, onClose, onFinished }: Props) {
@@ -96,49 +132,84 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
   const [rect, setRect] = useState<HighlightBox | null>(null);
   const isPhone = useIsPhone();
   const lockY = useRef(0);
+  const locked = useRef(false);
 
   const step = steps[index];
   const fr = locale === "fr";
 
-  // Reset step when segment / open changes
+  const applyScrollLock = useCallback((y: number) => {
+    locked.current = true;
+    lockY.current = y;
+    const { documentElement: html, body } = document;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.touchAction = "none";
+  }, []);
+
+  const clearScrollLock = useCallback(() => {
+    if (!locked.current) return;
+    locked.current = false;
+    const { documentElement: html, body } = document;
+    html.style.overflow = "";
+    body.style.overflow = "";
+    body.style.touchAction = "";
+  }, []);
+
   useLayoutEffect(() => {
     if (!open) return;
     setIndex(0);
   }, [open, segment]);
 
-  // Position once per step, then freeze scroll until Skip / Next
   useLayoutEffect(() => {
     if (!open || !step) {
       setRect(null);
       return;
     }
 
-    const el = document.querySelector(step.target);
-    if (!el) {
-      setRect(null);
+    let cancelled = false;
+    let raf = 0;
+    let settleTimer = 0;
+
+    const place = () => {
+      const el = document.querySelector(step.target);
+      if (!el) {
+        setRect(null);
+        return;
+      }
+      clearScrollLock();
+      scrollTargetIntoBand(el, isPhone);
+      setRect(measureHighlight(el, isPhone));
+      applyScrollLock(window.scrollY);
+    };
+
+    place();
+    raf = requestAnimationFrame(() => {
+      if (cancelled) return;
+      place();
+      // Sheet finishes sliding up — remeasure so outline sits above it
+      settleTimer = window.setTimeout(() => {
+        if (cancelled) return;
+        const el = document.querySelector(step.target);
+        if (!el) return;
+        clearScrollLock();
+        scrollTargetIntoBand(el, isPhone);
+        setRect(measureHighlight(el, isPhone));
+        applyScrollLock(window.scrollY);
+      }, 320);
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      window.clearTimeout(settleTimer);
+    };
+  }, [open, index, step, isPhone, clearScrollLock, applyScrollLock]);
+
+  useEffect(() => {
+    if (!open) {
+      clearScrollLock();
       return;
     }
-
-    scrollTargetIntoBand(el, isPhone);
-    // Second frame after layout settles
-    const id = requestAnimationFrame(() => {
-      setRect(measureHighlight(el, isPhone));
-    });
-    return () => cancelAnimationFrame(id);
-  }, [open, index, step, isPhone]);
-
-  // Lock page scroll while tour is open (Skip / Next / close unlocks)
-  useEffect(() => {
-    if (!open) return;
-
-    lockY.current = window.scrollY;
-    const { documentElement: html, body } = document;
-    const prevHtmlOverflow = html.style.overflow;
-    const prevBodyOverflow = body.style.overflow;
-    const prevBodyTouch = body.style.touchAction;
-    html.style.overflow = "hidden";
-    body.style.overflow = "hidden";
-    body.style.touchAction = "none";
 
     const blockScroll = (e: Event) => {
       const target = e.target as HTMLElement | null;
@@ -150,16 +221,12 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
     window.addEventListener("touchmove", blockScroll, { passive: false });
 
     return () => {
-      html.style.overflow = prevHtmlOverflow;
-      body.style.overflow = prevBodyOverflow;
-      body.style.touchAction = prevBodyTouch;
       window.removeEventListener("wheel", blockScroll);
       window.removeEventListener("touchmove", blockScroll);
-      window.scrollTo(0, lockY.current);
+      clearScrollLock();
     };
-  }, [open]);
+  }, [open, clearScrollLock]);
 
-  // Remeasure only on orientation / resize — not on scroll (scroll is locked)
   useEffect(() => {
     if (!open || !step) return;
     const onResize = () => {
@@ -201,27 +268,46 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
   return createPortal(
     <AnimatePresence>
       <motion.div
-        key={`tour-${segment}-${index}`}
+        key={`tour-${segment}`}
         className="fixed inset-0 z-[90]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: MOTION.fast }}
       >
-        {/* Full dim — covers header so nav is not “in” the cutout */}
-        <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden />
+        {/* Base dim — header stays dimmed (not part of outline) */}
+        <div className="absolute inset-0 bg-black/55" onClick={onClose} aria-hidden />
 
+        {/* Blue outline around the spoken topic — border (not ring/boxShadow) so it always paints */}
         {rect ? (
-          <div
-            className="pointer-events-none absolute rounded-lg ring-2 ring-primary bg-transparent"
-            style={{
-              top: rect.top,
-              left: rect.left,
-              width: rect.width,
-              height: rect.height,
-              boxShadow: "0 0 0 9999px rgba(0,0,0,0.6)",
-            }}
-          />
+          isPhone ? (
+            <div
+              className="pointer-events-none absolute z-[1] rounded-lg"
+              style={{
+                top: rect.top,
+                left: rect.left,
+                width: rect.width,
+                height: rect.height,
+                border: `2.5px solid ${TOUR_OUTLINE}`,
+                boxShadow: `0 0 0 1px rgba(78,161,255,0.35), 0 0 12px rgba(78,161,255,0.45)`,
+              }}
+              aria-hidden
+            />
+          ) : (
+            <div
+              className="pointer-events-none absolute z-[1] rounded-xl bg-transparent"
+              style={{
+                top: rect.top,
+                left: rect.left,
+                width: rect.width,
+                height: rect.height,
+                border: `2.5px solid ${TOUR_OUTLINE}`,
+                // border stays; extra shadow dims outside without wiping the blue edge
+                boxShadow: `0 0 0 9999px rgba(0,0,0,0.55)`,
+              }}
+              aria-hidden
+            />
+          )
         ) : null}
 
         {isPhone ? (
@@ -229,11 +315,12 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
             role="dialog"
             aria-modal="true"
             data-tour-sheet
-            className="absolute inset-x-0 bottom-0 z-[91] flex max-h-[min(48vh,20rem)] flex-col rounded-t-2xl border border-border bg-card text-card-foreground shadow-2xl"
+            className="absolute inset-x-0 bottom-0 z-[91] flex max-h-[min(42vh,18rem)] flex-col rounded-t-2xl border border-border bg-card text-card-foreground shadow-2xl"
             style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: MOTION.base, ease: MOTION.ease }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/30" aria-hidden />
             <div className="flex min-h-0 flex-1 flex-col px-4 pb-3 pt-2">
@@ -278,6 +365,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: MOTION.base, ease: MOTION.ease }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-2 flex items-start justify-between gap-2">
               <div>
