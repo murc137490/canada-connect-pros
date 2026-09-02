@@ -75,12 +75,14 @@ export default function UserMenuDropdown({
       const rect = triggerRef.current!.getBoundingClientRect();
       const mobile = window.matchMedia("(max-width: 767px)").matches;
       if (mobile) {
+        // Position via CSS (centered); avoid inline transform — it kills glass open anim + blur.
         setPanelStyle({
           position: "fixed",
-          left: "50%",
-          right: "auto",
-          top: `calc(env(safe-area-inset-top, 0px) + 3.15rem)`,
-          transform: "translateX(-50%)",
+          width: undefined,
+          left: undefined,
+          right: undefined,
+          top: undefined,
+          transform: undefined,
         });
         return;
       }
@@ -93,7 +95,6 @@ export default function UserMenuDropdown({
         left,
         right: "auto",
         width,
-        transform: "none",
       });
     };
 
@@ -135,32 +136,34 @@ export default function UserMenuDropdown({
               aria-hidden={!open}
               role="menu"
             >
-              <ul className="user-menu-list" role="none">
-                {visibleItems.map((item, idx) => (
-                  <li key={item.link + idx} className="user-menu-item" role="none">
-                    <Link to={item.link} className="user-menu-link" role="menuitem" onClick={close}>
-                      <span className="sm-panel-itemLabel inline-flex items-center gap-2">
-                        {item.label}
-                        {item.badge != null && item.badge > 0 && (
-                          <span className="min-w-[1.125rem] h-[1.125rem] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
-                            {item.badge > 99 ? "99+" : item.badge}
-                          </span>
-                        )}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              <div className="user-menu-logout">
-                <button
-                  type="button"
-                  className="user-menu-link w-full justify-start bg-transparent border-none cursor-pointer"
-                  onClick={handleLogout}
-                  role="menuitem"
-                >
-                  <span className="sm-panel-itemLabel">{t.nav.logOut}</span>
-                  <LogOut size={18} className="ml-auto opacity-70" />
-                </button>
+              <div className="user-menu-panel__glass">
+                <ul className="user-menu-list" role="none">
+                  {visibleItems.map((item, idx) => (
+                    <li key={item.link + idx} className="user-menu-item" role="none">
+                      <Link to={item.link} className="user-menu-link" role="menuitem" onClick={close}>
+                        <span className="sm-panel-itemLabel inline-flex items-center gap-2">
+                          {item.label}
+                          {item.badge != null && item.badge > 0 && (
+                            <span className="min-w-[1.125rem] h-[1.125rem] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                              {item.badge > 99 ? "99+" : item.badge}
+                            </span>
+                          )}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <div className="user-menu-logout">
+                  <button
+                    type="button"
+                    className="user-menu-link w-full justify-start bg-transparent border-none cursor-pointer"
+                    onClick={handleLogout}
+                    role="menuitem"
+                  >
+                    <span className="sm-panel-itemLabel">{t.nav.logOut}</span>
+                    <LogOut size={18} className="ml-auto opacity-70" />
+                  </button>
+                </div>
               </div>
             </div>
           </>,

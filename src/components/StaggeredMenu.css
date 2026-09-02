@@ -1,265 +1,237 @@
-/* User menu dropdown */
+/* User menu dropdown — iPhone-style frosted glass */
 
 .user-menu-wrapper {
-
   position: relative;
-
   z-index: 9999;
-
 }
 
-
-
 .user-menu-trigger {
-
   display: inline-flex;
-
   align-items: center;
-
   gap: 0.5rem;
-
   padding: 0.5rem 0.75rem;
-
   background: hsl(var(--primary));
-
   color: hsl(var(--primary-foreground));
-
   border: none;
-
   border-radius: 9999px;
-
   font-weight: 600;
-
   font-size: 15px;
-
   cursor: pointer;
-
   transition: opacity 0.2s;
-
 }
 
 .user-menu-trigger:hover {
-
   opacity: 0.9;
-
 }
 
-
-
 .user-menu-backdrop {
-
   position: fixed;
-
   inset: 0;
-
-  background: transparent;
-
   z-index: 9998;
-
+  background: transparent;
   opacity: 0;
-
   pointer-events: none;
-
   transition: opacity 0.2s ease;
-
 }
 
 .user-menu-backdrop.is-open {
-
   opacity: 1;
-
   pointer-events: auto;
-
 }
 
+@media (max-width: 767px) {
+  .user-menu-backdrop.is-open {
+    /* Light scrim so page content still shows through the glass */
+    background: rgba(0, 0, 0, 0.08);
+  }
+}
 
-
+/*
+  Glass shell: NEVER put opacity/filter/isolation on this node —
+  those break backdrop-filter in Chromium.
+*/
 .user-menu-panel {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
+  position: fixed;
+  z-index: 9999;
   width: clamp(280px, 90vw, 360px);
   max-height: min(85vh, 520px);
-  /* iPhone-style frosted glass (light) */
-  background: rgba(255, 255, 255, 0.45);
-  -webkit-backdrop-filter: saturate(200%) blur(50px);
-  backdrop-filter: saturate(200%) blur(50px);
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.1),
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.75);
-  z-index: 9999;
-  padding: 1rem 0.75rem 1.25rem;
-  overflow-x: hidden;
-  overflow-y: auto;
-  border-radius: 16px;
-  border: 0.5px solid rgba(255, 255, 255, 0.55);
-  opacity: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 18px;
+  background: transparent;
+  overflow: visible;
   visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s;
-  /* Keep glass compositing clean across themes */
-  isolation: isolate;
-  color: #111;
+  pointer-events: none;
+  transform: translateY(-6px) scale(0.98);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.22s;
 }
 
 .user-menu-panel.is-open {
-  opacity: 1;
   visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
 }
 
-.dark .user-menu-panel {
-  /* iPhone dark translucent glass — not a solid green slab */
-  background: rgba(255, 255, 255, 0.12);
-  -webkit-backdrop-filter: saturate(180%) blur(50px);
-  backdrop-filter: saturate(180%) blur(50px);
+.user-menu-panel__glass {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: inherit;
+  padding: 0.85rem 0.7rem 1rem;
+  border-radius: inherit;
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Translucent fill + real blur of whatever is behind */
+  background: rgba(255, 255, 255, 0.52);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
   box-shadow:
-    0 12px 48px rgba(0, 0, 0, 0.28),
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.28);
-  border-color: rgba(255, 255, 255, 0.28);
+    0 10px 40px rgba(0, 0, 0, 0.14),
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.04) inset;
+  color: #111;
+}
+
+/* Glossy top sheen (iOS-like) */
+.user-menu-panel__glass::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 42%;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.12) 55%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  opacity: 0.9;
+}
+
+.dark .user-menu-panel__glass {
+  background: rgba(40, 42, 48, 0.45);
+  -webkit-backdrop-filter: blur(48px) saturate(160%);
+  backdrop-filter: blur(48px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.28) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.25) inset;
   color: #fff;
+}
+
+.dark .user-menu-panel__glass::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.06) 45%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  opacity: 1;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .user-menu-panel {
-    background: rgba(255, 255, 255, 0.92);
+  .user-menu-panel__glass {
+    background: rgba(255, 255, 255, 0.88);
   }
-  .dark .user-menu-panel {
-    background: rgba(28, 32, 36, 0.92);
+  .dark .user-menu-panel__glass {
+    background: rgba(36, 38, 44, 0.88);
   }
 }
-
-
 
 .user-menu-list {
-
   list-style: none;
-
   margin: 0;
-
   padding: 0;
-
   display: flex;
-
   flex-direction: column;
-
   gap: 0.25rem;
-
+  position: relative;
+  z-index: 1;
 }
-
-
 
 .user-menu-item {
-
   overflow: hidden;
-
   line-height: 1;
-
 }
 
-
-
 .user-menu-link {
-
   display: inline-flex;
-
   align-items: center;
-
   gap: 0.6rem;
-
   padding: 0.85rem 0.5rem;
-
-  color: #111;
-
+  color: inherit;
   font-weight: 600;
-
   font-size: 1.5rem;
-
   text-decoration: none;
-
   letter-spacing: -0.02em;
-
   transition: color 0.2s, background 0.2s;
-
   border-radius: 12px;
-
   width: 100%;
-
   box-sizing: border-box;
-
 }
 
 .dark .user-menu-link {
-
   color: #fff;
-
 }
 
 .user-menu-link:hover {
   color: var(--sm-accent, #007A56);
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .dark .user-menu-link:hover {
-  color: #a8e6cf;
-  background: rgba(255, 255, 255, 0.1);
+  color: #c8f5e2;
+  background: rgba(255, 255, 255, 0.12);
 }
-
-
 
 .user-menu-link .sm-panel-itemLabel {
-
   display: inline-block;
-
-  will-change: transform;
-
 }
 
-
-
 .user-menu-logout {
-
+  position: relative;
+  z-index: 1;
   margin-top: 1.5rem;
-
   padding-top: 1rem;
-
   border-top: 1px solid rgba(0, 0, 0, 0.1);
-
 }
 
 .dark .user-menu-logout {
-
-  border-top-color: rgba(255, 255, 255, 0.14);
-
+  border-top-color: rgba(255, 255, 255, 0.16);
 }
 
 .user-menu-logout .user-menu-link {
-
   font-size: 1rem;
-
   color: #666;
-
 }
 
 .dark .user-menu-logout .user-menu-link {
-
-  color: #aaa;
-
+  color: #bbb;
 }
 
-
-
-/* Phone: centered menu (~1.5× touch targets); tap outside closes (backdrop) */
-
+/* Phone */
 @media (max-width: 767px) {
-
-  .user-menu-backdrop.is-open {
-    background: rgba(0, 0, 0, 0.12);
-  }
-
   .user-menu-panel {
+    left: 50%;
+    right: auto;
+    top: calc(env(safe-area-inset-top, 0px) + 3.15rem);
     width: min(24.75rem, calc(100vw - 1.25rem));
     max-height: min(72vh, 33rem);
+    border-radius: 22px;
+    transform: translateX(-50%) translateY(-6px) scale(0.98);
+  }
+
+  .user-menu-panel.is-open {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+
+  .user-menu-panel__glass {
     padding: 0.675rem 0.6rem 0.825rem;
-    border-radius: 21px;
   }
 
   .user-menu-link {
@@ -280,103 +252,56 @@
   .user-menu-logout .user-menu-link {
     font-size: 1.21875rem;
   }
-
 }
 
-
-
-/* Desktop: compact account menu by default */
-
+/* Desktop */
 @media (min-width: 768px) {
-
   .user-menu-panel {
-
     width: min(20rem, 92vw);
-
     max-height: none;
-
-    overflow-y: visible;
-
-    padding: 0.85rem 0.7rem 1rem;
-
-    border-radius: 18px;
-
   }
 
-
+  .user-menu-panel__glass {
+    overflow-y: visible;
+    padding: 0.85rem 0.7rem 1rem;
+  }
 
   .user-menu-link {
-
     font-size: 1.125rem;
-
     padding: 0.65rem 0.7rem;
-
     border-radius: 10px;
-
   }
-
-
 
   .user-menu-list {
-
     gap: 0.125rem;
-
   }
-
-
 
   .user-menu-logout {
-
     margin-top: 0.5rem;
-
     padding-top: 0.5rem;
-
   }
-
-
 
   .user-menu-logout .user-menu-link {
-
     font-size: 0.875rem;
-
     padding: 0.45rem 0.55rem;
-
   }
-
-
-
-  /* Dashboard routes: roomier menu on PC */
 
   .user-menu-panel.user-menu-panel--dashboard {
-
     width: min(24rem, 94vw);
-
-    padding: 1rem 0.85rem 1.15rem;
-
     border-radius: 20px;
-
   }
 
-
+  .user-menu-panel--dashboard .user-menu-panel__glass {
+    padding: 1rem 0.85rem 1.15rem;
+  }
 
   .user-menu-panel--dashboard .user-menu-link {
-
     font-size: 1.25rem;
-
     padding: 0.72rem 0.8rem;
-
     border-radius: 12px;
-
   }
-
-
 
   .user-menu-panel--dashboard .user-menu-logout .user-menu-link {
-
     font-size: 1.0625rem;
-
   }
-
 }
-
-
