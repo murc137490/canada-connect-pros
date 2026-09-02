@@ -70,8 +70,8 @@ import { StarterScheduleNotice } from "@/components/dashboard/StarterScheduleNot
 import { AvailableJobsFab } from "@/components/dashboard/AvailableJobsFab";
 import {
   type DashTourSegment,
-  isSegmentCompleted,
-  markSegmentCompleted,
+  shouldAutoStartSegment,
+  suppressAutoTour,
   segmentForTab,
 } from "@/lib/dashboardTutorial";
 import ReviewForm from "@/components/pro/ReviewForm";
@@ -753,7 +753,7 @@ export default function Dashboard() {
 
   const openDashTour = useCallback((segment: DashTourSegment, opts?: { force?: boolean }) => {
     if (!user?.id) return;
-    if (!opts?.force && isSegmentCompleted(user.id, segment)) return;
+    if (!opts?.force && !shouldAutoStartSegment(user.id, segment)) return;
     if (!opts?.force && dashTourSessionSkip.current.has(segment)) return;
     setDashTourSegment(segment);
     setDashTourOpen(true);
@@ -767,7 +767,9 @@ export default function Dashboard() {
     [openDashTour],
   );
 
-  /** Auto-start incomplete segment for pros; honor ?tour=1 from Help page. */
+  const tourParam = searchParams.get("tour");
+
+  /** Auto-start once per pro; honor ?tour=1 from Help. Persist as soon as we open so refresh won't re-show. */
   useEffect(() => {
     if (!user?.id || isAdminDashboardShell || !proProfile) return;
     const segment = segmentForTab(shellTab);
@@ -778,7 +780,7 @@ export default function Dashboard() {
     }
     if (segment !== "account" && !proProfile.is_verified) return;
 
-    const force = searchParams.get("tour") === "1";
+    const force = tourParam === "1";
     if (force) {
       dashTourSessionSkip.current.delete(segment);
       const t = window.setTimeout(() => {
@@ -796,9 +798,16 @@ export default function Dashboard() {
       return () => window.clearTimeout(t);
     }
 
-    if (isSegmentCompleted(user.id, segment)) return;
+    if (!shouldAutoStartSegment(user.id, segment)) return;
     if (dashTourSessionSkip.current.has(segment)) return;
+    const uid = user.id;
     const t = window.setTimeout(() => {
+      // Re-check at fire time (dismiss / other tab may have suppressed meanwhile)
+      if (!shouldAutoStartSegment(uid, segment)) return;
+      if (dashTourSessionSkip.current.has(segment)) return;
+      // Mark seen immediately so a refresh mid-tour does not reopen it
+      suppressAutoTour(uid, segment);
+      dashTourSessionSkip.current.add(segment);
       setDashTourSegment(segment);
       setDashTourOpen(true);
     }, 650);
@@ -806,9 +815,10 @@ export default function Dashboard() {
   }, [
     user?.id,
     shellTab,
-    proProfile,
+    proProfile?.id,
+    proProfile?.is_verified,
     isAdminDashboardShell,
-    searchParams,
+    tourParam,
     setSearchParams,
   ]);
 
@@ -7332,14 +7342,18 @@ export default function Dashboard() {
           segment={dashTourSegment}
           open={dashTourOpen}
           onClose={() => {
-            // Any dismiss (Skip / X / overlay) counts as seen — auto-tour won't return
+            // Any dismiss (Skip / X / overlay) — never auto-show again
             if (user?.id && dashTourSegment) {
-              markSegmentCompleted(user.id, dashTourSegment);
+              suppressAutoTour(user.id, dashTourSegment);
               dashTourSessionSkip.current.add(dashTourSegment);
             }
             setDashTourOpen(false);
           }}
           onFinished={() => {
+            if (user?.id && dashTourSegment) {
+              suppressAutoTour(user.id, dashTourSegment);
+              dashTourSessionSkip.current.add(dashTourSegment);
+            }
             setDashTourTick((n) => n + 1);
             setDashTourOpen(false);
           }}

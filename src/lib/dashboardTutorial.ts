@@ -20,6 +20,8 @@ export const DASH_TOUR_TAB: Record<DashTourSegment, string> = {
 
 type TourState = {
   completed: Partial<Record<DashTourSegment, boolean>>;
+  /** When set, auto-start is off for every segment (Help / ?tour=1 can still force). */
+  autoSuppressedAt?: string;
   dismissedAllAt?: string;
 };
 
@@ -28,12 +30,14 @@ function storageKey(userId: string) {
 }
 
 function readState(userId: string): TourState {
+  if (!userId || typeof window === "undefined") return { completed: {} };
   try {
     const raw = localStorage.getItem(storageKey(userId));
     if (!raw) return { completed: {} };
     const parsed = JSON.parse(raw) as TourState;
     return {
       completed: parsed.completed ?? {},
+      autoSuppressedAt: parsed.autoSuppressedAt,
       dismissedAllAt: parsed.dismissedAllAt,
     };
   } catch {
@@ -42,19 +46,31 @@ function readState(userId: string): TourState {
 }
 
 function writeState(userId: string, state: TourState) {
+  if (!userId || typeof window === "undefined") return;
   try {
     localStorage.setItem(storageKey(userId), JSON.stringify(state));
   } catch {
-    /* ignore quota */
+    /* ignore quota / private mode */
   }
 }
 
+/** True when this segment should not auto-open (completed or whole-tour suppressed). */
+export function shouldAutoStartSegment(userId: string, segment: DashTourSegment): boolean {
+  if (!userId) return false;
+  const state = readState(userId);
+  if (state.autoSuppressedAt) return false;
+  if (state.completed[segment] === true) return false;
+  return true;
+}
+
 export function isSegmentCompleted(userId: string, segment: DashTourSegment): boolean {
-  return readState(userId).completed[segment] === true;
+  const state = readState(userId);
+  return state.completed[segment] === true || Boolean(state.autoSuppressedAt);
 }
 
 export function areAllSegmentsCompleted(userId: string): boolean {
   const state = readState(userId);
+  if (state.autoSuppressedAt) return true;
   return DASH_TOUR_SEGMENTS.every((s) => state.completed[s] === true);
 }
 
@@ -63,14 +79,26 @@ export function markSegmentCompleted(userId: string, segment: DashTourSegment) {
   state.completed[segment] = true;
   if (DASH_TOUR_SEGMENTS.every((s) => state.completed[s] === true)) {
     state.dismissedAllAt = new Date().toISOString();
+    state.autoSuppressedAt = state.autoSuppressedAt ?? state.dismissedAllAt;
   }
+  writeState(userId, state);
+}
+
+/** Persist that auto-tour should not run again (any dismiss / first auto-open). */
+export function suppressAutoTour(userId: string, segment?: DashTourSegment) {
+  const state = readState(userId);
+  const now = new Date().toISOString();
+  state.autoSuppressedAt = state.autoSuppressedAt ?? now;
+  if (segment) state.completed[segment] = true;
   writeState(userId, state);
 }
 
 export function markAllSegmentsCompleted(userId: string) {
   const state = readState(userId);
+  const now = new Date().toISOString();
   for (const s of DASH_TOUR_SEGMENTS) state.completed[s] = true;
-  state.dismissedAllAt = new Date().toISOString();
+  state.dismissedAllAt = now;
+  state.autoSuppressedAt = state.autoSuppressedAt ?? now;
   writeState(userId, state);
 }
 
@@ -78,11 +106,20 @@ export function resetSegment(userId: string, segment: DashTourSegment) {
   const state = readState(userId);
   state.completed[segment] = false;
   delete state.dismissedAllAt;
+  // Keep autoSuppressedAt so reset-for-replay via Help still needs ?tour=1 / force;
+  // clear suppress only when explicitly replaying all.
   writeState(userId, state);
 }
 
 export function resetAllSegments(userId: string) {
   writeState(userId, { completed: {} });
+}
+
+/** Clear suppress so a forced replay can be followed by normal per-segment completion again. */
+export function clearAutoTourSuppress(userId: string) {
+  const state = readState(userId);
+  delete state.autoSuppressedAt;
+  writeState(userId, state);
 }
 
 /** Map dashboard tab query to a tour segment (if any). */

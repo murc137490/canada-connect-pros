@@ -8,7 +8,7 @@ import { MOTION } from "@/motion/types";
 import {
   type DashTourSegment,
   TOUR_STEPS,
-  markSegmentCompleted,
+  suppressAutoTour,
 } from "@/lib/dashboardTutorial";
 import { cn } from "@/lib/utils";
 
@@ -385,10 +385,9 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
   }, [open, step, isPhone, spotlightReady]);
 
   const finish = useCallback(() => {
-    markSegmentCompleted(userId, segment);
+    suppressAutoTour(userId, segment);
     onFinished();
-    onClose();
-  }, [userId, segment, onFinished, onClose]);
+  }, [userId, segment, onFinished]);
 
   const next = useCallback(() => {
     if (index >= steps.length - 1) {
