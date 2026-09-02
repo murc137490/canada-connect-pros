@@ -768,7 +768,11 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user?.id || isAdminDashboardShell || !proProfile) return;
     const segment = segmentForTab(shellTab);
-    if (!segment) return;
+    if (!segment) {
+      // Favorites / other tabs have no tour — never fall back to account
+      setDashTourOpen(false);
+      return;
+    }
     if (segment !== "account" && !proProfile.is_verified) return;
 
     const force = searchParams.get("tour") === "1";
