@@ -133,6 +133,15 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
       bodyFr:
         "Vous pouvez téléverser une pièce d’identité pour la vérification. La conservation est sujette à révision juridique — Première la garde de façon sécurisée.",
     },
+    {
+      target: "[data-tour='available-jobs']",
+      titleEn: "Available jobs near you",
+      titleFr: "Travaux disponibles près de vous",
+      bodyEn:
+        "Open leads near you show up here. Browse and take jobs that fit your radius and availability.",
+      bodyFr:
+        "Les demandes ouvertes près de vous apparaissent ici. Parcourez et prenez les jobs qui correspondent à votre rayon et vos disponibilités.",
+    },
   ],
   pro: [
     {

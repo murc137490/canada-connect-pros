@@ -1350,7 +1350,7 @@ export const translations = {
         "Waiting for {email}. The coupon unlocks when they verify their inbox link.",
       referralCodeStaysHidden: "The coupon stays hidden until they confirm email.",
       referralBlurb:
-        "After your friend verifies their email address (clicks the confirmation link), you get a 14-day Growth trial.",
+        "Inviting a friend gives you a free 14-day Growth trial.",
       referralCouponUnlocked: "Coupon unlocked",
       referralCouponHidden: "Hidden coupon",
       referralCopyToken: "Copy code",
@@ -3172,7 +3172,7 @@ export const translations = {
         "En attente de {email}. Le coupon se déverrouille lorsqu’ils cliquent le lien dans leur boîte de réception.",
       referralCodeStaysHidden: "Le code reste caché jusqu’à la confirmation du courriel.",
       referralBlurb:
-        "Lorsque votre ami confirme son courriel (lien de vérification), vous obtenez un essai Croissance de 14 jours.",
+        "Inviter un ami vous offre un essai Croissance gratuit de 14 jours.",
       referralCouponUnlocked: "Coupon déverrouillé",
       referralCouponHidden: "Coupon caché",
       referralCopyToken: "Copier le code",

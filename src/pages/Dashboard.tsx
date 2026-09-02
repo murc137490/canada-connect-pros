@@ -6752,11 +6752,9 @@ export default function Dashboard() {
       {proProfile?.is_verified && (
         <aside
           id="dashboard-open-leads"
+          data-tour="available-jobs"
           className="mt-8 w-full max-w-4xl mx-auto lg:mt-0 lg:mx-0 lg:w-80 lg:max-w-none lg:shrink-0 lg:fixed lg:right-4 lg:top-24 lg:z-30 max-h-[min(70vh,calc(100vh-8rem))] lg:max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border bg-card p-4 shadow-sm scroll-mt-24"
         >
-          <div className="hidden lg:flex justify-end mb-3">
-            <WhatsNewMenu items={whatsNewItems} variant="desktop" />
-          </div>
           <h3 className="font-heading font-bold text-foreground mb-3">{t.dashboard.availableJobsPanelTitle}</h3>
           {availableJobsNoCoordsBanner ? (
             <p className="text-xs text-amber-800 dark:text-amber-200 bg-amber-500/15 border border-amber-500/30 rounded-lg p-2 mb-3">
