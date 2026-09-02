@@ -1093,7 +1093,8 @@ export const translations = {
       accountSaved: "Profile updated.",
       accountBookingIdVerificationTitle: "Booking ID verification",
       accountBookingIdVerificationFrontOnly:
-        "Upload the front of your ID only (recto) - not the back. Used only so your pro can verify identity for bookings.",
+        "Replace with a new photo or PDF (optional)",
+      accountBookingIdClickToChange: "Click to change picture",
       accountBookingIdVerificationViewPdf: "Open PDF",
       accountBookingIdVerificationSaved: "Your ID verification is saved for future bookings.",
       accountBookingIdVerificationSavedTitle: "Saved",
@@ -2914,7 +2915,8 @@ export const translations = {
       accountSaved: "Profil mis à jour.",
       accountBookingIdVerificationTitle: "Vérification d’identité (réservations)",
       accountBookingIdVerificationFrontOnly:
-        "Téléversez le recto de votre pièce d'identité seulement - pas le verso. Utilisé uniquement pour que le pro puisse vérifier votre identité.",
+        "Remplacez par une nouvelle photo ou un PDF (facultatif)",
+      accountBookingIdClickToChange: "Cliquez pour changer la photo",
       accountBookingIdVerificationViewPdf: "Ouvrir le PDF",
       accountBookingIdVerificationSaved:
         "Votre pièce d'identité est enregistrée pour les prochaines réservations.",

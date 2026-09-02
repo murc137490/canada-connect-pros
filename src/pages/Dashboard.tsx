@@ -71,6 +71,7 @@ import { AvailableJobsFab } from "@/components/dashboard/AvailableJobsFab";
 import {
   type DashTourSegment,
   isSegmentCompleted,
+  markSegmentCompleted,
   segmentForTab,
 } from "@/lib/dashboardTutorial";
 import ReviewForm from "@/components/pro/ReviewForm";
@@ -5425,7 +5426,10 @@ export default function Dashboard() {
               </button>
               {bookingIdVerificationOpen ? (
                 <div id="account-booking-id-verification" className="space-y-4">
-                  <p className="text-sm text-muted-foreground">{t.dashboard.accountBookingIdVerificationFrontOnly}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t.terms.bookingPhotoWithIdReplaceLabel ??
+                      t.dashboard.accountBookingIdVerificationFrontOnly}
+                  </p>
                   {profile?.booking_id_verification_photo_path?.trim() ? (
                     <>
                       {bookingIdVerificationPreviewUrl ? (
@@ -5449,43 +5453,47 @@ export default function Dashboard() {
                       ) : (
                         <p className="text-xs text-muted-foreground">{t.dashboard.accountIdPreviewUnavailable}</p>
                       )}
-                      <p className="text-xs text-muted-foreground">{t.terms.bookingPhotoWithIdReplaceLabel}</p>
                     </>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">{t.terms.bookingPhotoWithIdHint}</p>
-                  )}
-                  <Input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] ?? null;
-                      e.target.value = "";
-                      if (!file) {
-                        setAccountIdVerificationFile(null);
-                        return;
-                      }
-                      try {
-                        assertClientBookingIdFile(file);
-                        setAccountIdVerificationFile(file);
-                      } catch (err) {
-                        setAccountIdVerificationFile(null);
-                        const code = (err as Error).message;
-                        toast({
-                          title: t.auth.toastError,
-                          description:
-                            code === "ID_FILE_TOO_LARGE"
-                              ? locale === "fr"
-                                ? "Fichier trop volumineux (max. 8 Mo)."
-                                : "File too large (max 8 MB)."
-                              : locale === "fr"
-                                ? "Utilisez une image ou un PDF."
-                                : "Please use an image or PDF.",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                    className="cursor-pointer"
-                  />
+                  ) : null}
+                  <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-md border border-dashed border-border bg-muted/20 px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted/40">
+                    <span className="truncate">
+                      {accountIdVerificationFile
+                        ? accountIdVerificationFile.name
+                        : (t.dashboard.accountBookingIdClickToChange ?? "Click to change picture")}
+                    </span>
+                    <Input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        e.target.value = "";
+                        if (!file) {
+                          setAccountIdVerificationFile(null);
+                          return;
+                        }
+                        try {
+                          assertClientBookingIdFile(file);
+                          setAccountIdVerificationFile(file);
+                        } catch (err) {
+                          setAccountIdVerificationFile(null);
+                          const code = (err as Error).message;
+                          toast({
+                            title: t.auth.toastError,
+                            description:
+                              code === "ID_FILE_TOO_LARGE"
+                                ? locale === "fr"
+                                  ? "Fichier trop volumineux (max. 8 Mo)."
+                                  : "File too large (max 8 MB)."
+                                : locale === "fr"
+                                  ? "Utilisez une image ou un PDF."
+                                  : "Please use an image or PDF.",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      className="sr-only"
+                    />
+                  </label>
                   <Button
                     type="button"
                     disabled={!accountIdVerificationFile || accountIdVerificationSaving || !user?.id}
@@ -7324,7 +7332,11 @@ export default function Dashboard() {
           segment={dashTourSegment}
           open={dashTourOpen}
           onClose={() => {
-            if (dashTourSegment) dashTourSessionSkip.current.add(dashTourSegment);
+            // Any dismiss (Skip / X / overlay) counts as seen — auto-tour won't return
+            if (user?.id && dashTourSegment) {
+              markSegmentCompleted(user.id, dashTourSegment);
+              dashTourSessionSkip.current.add(dashTourSegment);
+            }
             setDashTourOpen(false);
           }}
           onFinished={() => {
