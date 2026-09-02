@@ -72,7 +72,6 @@ import {
   isSegmentCompleted,
   segmentForTab,
 } from "@/lib/dashboardTutorial";
-import { buildBookingInvoiceSnapshotV2 } from "@/lib/bookingInvoiceSnapshot";
 import ReviewForm from "@/components/pro/ReviewForm";
 
 const ProProfileEditorDialog = lazy(() => import("@/components/pro/ProProfileEditorDialog"));
@@ -6072,32 +6071,7 @@ export default function Dashboard() {
 
           <TabsContent value="invoices" className="space-y-4">
             {(() => {
-              void dashTourTick;
               const invoiceRows = clientBookings.filter((b) => b.status !== "declined");
-              const uid = user?.id;
-              const showMockInvoice =
-                Boolean(uid && proProfile) && uid != null && !isSegmentCompleted(uid, "invoices");
-              const mockSnapshot = showMockInvoice
-                ? buildBookingInvoiceSnapshotV2({
-                    proProfileId: "sample",
-                    businessName: locale === "fr" ? "Exemple Pro Inc." : "Sample Pro Inc.",
-                    supplierLegalName: locale === "fr" ? "Exemple Pro Inc." : "Sample Pro Inc.",
-                    supplierAddress: "123 Rue Exemple, Montreal, QC H2X 1Y4",
-                    serviceName: locale === "fr" ? "Service d'exemple" : "Sample service",
-                    serviceDescriptionDetailed:
-                      locale === "fr"
-                        ? "Facture d'exemple — service, frais de plateforme et taxes."
-                        : "Sample invoice — service, platform fee, and taxes.",
-                    appointmentSummary: locale === "fr" ? "Exemple · 60 min" : "Sample · 60 min",
-                    preferredDate: new Date().toISOString().slice(0, 10),
-                    preferredTime: "10:00",
-                    serviceDurationMinutes: 60,
-                    customerAddress: locale === "fr" ? "Adresse client (exemple)" : "Client address (sample)",
-                    baseAmountCents: 12000,
-                    currency: "CAD",
-                    paymentMethodLabel: "Card",
-                  })
-                : null;
               const statusLabel = (code: string) =>
                 code === "pending"
                   ? t.dashboard.bookingStatusPending
@@ -6112,32 +6086,14 @@ export default function Dashboard() {
                           : code;
               return (
                 <div className="space-y-4" data-tour="invoices-panel">
-                  {mockSnapshot ? (
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {locale === "fr" ? "Exemple (tutoriel)" : "Sample (tutorial)"}
-                      </p>
-                      <BookingInvoiceCard
-                        bookingId="tour-sample-invoice"
-                        bookingPublicCode="SAMPLE"
-                        bookingStatus={locale === "fr" ? "Exemple" : "Sample"}
-                        businessName={mockSnapshot.business_name}
-                        createdAt={new Date().toISOString()}
-                        snapshotJson={mockSnapshot}
-                        payment={{
-                          amount_cents: mockSnapshot.total_cents,
-                          currency: mockSnapshot.currency,
-                          square_payment_id: null,
-                          status: "COMPLETED",
-                        }}
-                        onReport={() => undefined}
-                      />
-                    </div>
-                  ) : null}
-                  {invoiceRows.length === 0 && !mockSnapshot ? (
+                  {invoiceRows.length === 0 ? (
                     <div className="rounded-xl border bg-card p-6 md:p-8 text-center text-muted-foreground">
                       <FileText size={40} className="mx-auto mb-3 opacity-50" />
-                      <p className="mb-4">{t.dashboard.emptyInvoices}</p>
+                      <p className="mb-2 font-medium text-foreground">{t.dashboard.emptyInvoices}</p>
+                      <p className="mb-4 text-sm leading-relaxed max-w-md mx-auto">
+                        {t.dashboard.invoicesEmptyExplain ??
+                          "When you pay for a booking on Première, a receipt will show up here with the date, amount, payment method, platform fee, and taxes. Open “View receipt details” for the full breakdown."}
+                      </p>
                       <Button asChild variant="outline">
                         <Link to="/services">{t.dashboard.browseServices}</Link>
                       </Button>

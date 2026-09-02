@@ -951,6 +951,8 @@ export const translations = {
       reviewFromClient: "Client",
       reviewTargetClient: "Client",
       emptyInvoices: "No invoices yet.",
+      invoicesEmptyExplain:
+        "When you pay for a booking on Première, a receipt will show up here with the date, amount, payment method, platform fee, and taxes. Open “View receipt details” for the full breakdown.",
       invoicesIntro:
         "Receipts for bookings you paid on the platform. Each card shows the date, amount, and payment method; open “View receipt details” for more. Use “Report an issue” if something went wrong.",
       invoiceDate: "Date",
@@ -2766,6 +2768,8 @@ export const translations = {
       reviewFromClient: "Client",
       reviewTargetClient: "Client",
       emptyInvoices: "Aucune facture pour le moment.",
+      invoicesEmptyExplain:
+        "Lorsque vous payez une réservation sur Première, un reçu apparaîtra ici avec la date, le montant, le mode de paiement, les frais de plateforme et les taxes. Ouvrez « Voir les détails du reçu » pour le détail complet.",
       invoicesIntro:
         "Reçus pour les réservations payées sur la plateforme. Chaque carte affiche la date, le montant et le mode de paiement; ouvrez « Voir les détails du reçu » pour en savoir plus. Utilisez « Signaler un problème » en cas de difficulté.",
       invoiceDate: "Date",
