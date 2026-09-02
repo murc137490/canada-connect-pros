@@ -5507,20 +5507,33 @@ export default function Dashboard() {
           <>
           <TabsContent value="bookings" className="space-y-4">
             {proProfile?.is_verified && proViewingMyRequests ? (
-              <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8" data-tour="booking-requests">
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                  <h3 className="font-heading font-bold text-foreground">
-                    {t.dashboard.myRequestsTitle ?? (locale === "fr" ? "Mes demandes" : "My requests")}
-                  </h3>
-                  <Button type="button" variant="outline" size="sm" asChild>
-                    <Link to="/dashboard?tab=bookings">{t.dashboard.schedule ?? "Schedule"}</Link>
-                  </Button>
+              <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">
+                <div data-tour="booking-requests" className="rounded-xl">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <h3 className="font-heading font-bold text-foreground">
+                      {t.dashboard.myRequestsTitle ?? (locale === "fr" ? "Mes demandes" : "My requests")}
+                    </h3>
+                    <Button type="button" variant="outline" size="sm" asChild>
+                      <Link to="/dashboard?tab=bookings">{t.dashboard.schedule ?? "Schedule"}</Link>
+                    </Button>
+                  </div>
+                  {proBookings.length === 0 ? (
+                    <div className="flex min-h-[7.5rem] flex-col justify-center rounded-lg border border-dashed border-border/70 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                      <p className="font-medium text-foreground mb-1">{t.dashboard.emptyBookings}</p>
+                      <p className="leading-relaxed">
+                        {t.dashboard.bookingRequestsEmptyExplain ??
+                          "When a client books you, the request appears here with their details, date, and Accept / Deny actions."}
+                      </p>
+                    </div>
+                  ) : (
+                    <ul className="space-y-3">{renderProBookingRequestCard(proBookings[0])}</ul>
+                  )}
                 </div>
-                {proBookings.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t.dashboard.emptyBookings}</p>
-                ) : (
-                  <ul className="space-y-3">{proBookings.map(renderProBookingRequestCard)}</ul>
-                )}
+                {proBookings.length > 1 ? (
+                  <ul className="mt-3 space-y-3">
+                    {proBookings.slice(1).map((b) => renderProBookingRequestCard(b))}
+                  </ul>
+                ) : null}
                 <div className="flex justify-center">
                   <DashboardTourHelpButton onClick={() => replayDashTour("bookings")} />
                 </div>
@@ -5613,25 +5626,39 @@ export default function Dashboard() {
                   {t.common.save ?? "Save"} {t.dashboard.schedule}
                 </Button>
                 </div>
-                <div data-tour="booking-requests" className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <h4 className="font-heading font-semibold text-foreground">{t.dashboard.bookingRequests ?? "Booking requests"}</h4>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    asChild
-                  >
-                    <Link to="/dashboard?tab=bookings&view=my-requests">{locale === "fr" ? "Mes demandes" : "My requests"}</Link>
-                  </Button>
-                </div>
-                {proBookings.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t.dashboard.emptyBookings}</p>
-                ) : (
-                  <ul className="space-y-3">
-                    {proBookings.map((b) => renderProBookingRequestCard(b))}
-                  </ul>
-                )}
+                <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">
+                  <div data-tour="booking-requests" className="rounded-xl">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <h4 className="font-heading font-semibold text-foreground">
+                        {t.dashboard.bookingRequests ?? "Booking requests"}
+                      </h4>
+                      <Button type="button" variant="outline" size="sm" asChild>
+                        <Link to="/dashboard?tab=bookings&view=my-requests">
+                          {locale === "fr" ? "Mes demandes" : "My requests"}
+                        </Link>
+                      </Button>
+                    </div>
+                    {proBookings.length === 0 ? (
+                      <div className="flex min-h-[7.5rem] flex-col justify-center rounded-lg border border-dashed border-border/70 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                        <p className="font-medium text-foreground mb-1">
+                          {t.dashboard.emptyBookings}
+                        </p>
+                        <p className="leading-relaxed">
+                          {t.dashboard.bookingRequestsEmptyExplain ??
+                            "When a client books you, the request appears here with their details, date, and Accept / Deny actions."}
+                        </p>
+                      </div>
+                    ) : (
+                      <ul className="space-y-3">
+                        {renderProBookingRequestCard(proBookings[0])}
+                      </ul>
+                    )}
+                  </div>
+                  {proBookings.length > 1 ? (
+                    <ul className="mt-3 space-y-3">
+                      {proBookings.slice(1).map((b) => renderProBookingRequestCard(b))}
+                    </ul>
+                  ) : null}
                 </div>
 
                 <div id="received-quotes" className="rounded-xl border border-border bg-muted/20 p-5 sm:p-6 scroll-mt-24">

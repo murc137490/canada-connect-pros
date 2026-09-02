@@ -870,6 +870,8 @@ export const translations = {
       reviews: "My Reviews",
       invoices: "Invoices",
       emptyBookings: "No bookings yet.",
+      bookingRequestsEmptyExplain:
+        "When a client books you, the request appears here with their details, date, and Accept / Deny actions.",
       browseServices: "Browse services",
       findPros: "Find pros",
       deleteRequest: "Delete",
@@ -2685,6 +2687,8 @@ export const translations = {
       reviews: "Mes avis",
       invoices: "Factures",
       emptyBookings: "Aucune réservation pour le moment.",
+      bookingRequestsEmptyExplain:
+        "Lorsqu’un client vous réserve, la demande apparaît ici avec ses détails, la date et les actions Accepter / Refuser.",
       browseServices: "Parcourir les services",
       findPros: "Trouver des pros",
       deleteRequest: "Supprimer",

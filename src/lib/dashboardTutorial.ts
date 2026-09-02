@@ -186,9 +186,9 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
       titleEn: "Booking requests",
       titleFr: "Demandes de réservation",
       bodyEn:
-        "Accept or deny each request. When you complete a job, upload 2–3 proof photos for your protection.",
+        "New client requests show up here one at a time in this list. Accept or deny each one; when you complete a job, upload 2–3 proof photos for your protection.",
       bodyFr:
-        "Acceptez ou refusez chaque demande. À la fin d’un job, téléversez 2–3 photos de preuve pour votre protection.",
+        "Les nouvelles demandes clients apparaissent ici dans cette liste. Acceptez ou refusez chacune; à la fin d’un job, téléversez 2–3 photos de preuve pour votre protection.",
     },
   ],
   reviews: [
