@@ -45,7 +45,16 @@ function useIsPhone() {
   return phone;
 }
 
-function getHeaderBottom(): number {
+function queryTourTarget(selector: string): Element | null {
+  const nodes = document.querySelectorAll(selector);
+  if (!nodes.length) return null;
+  for (const n of nodes) {
+    const r = n.getBoundingClientRect();
+    // Prefer a visible match (e.g. mobile FAB vs hidden desktop aside)
+    if (r.width >= 8 && r.height >= 8) return n;
+  }
+  return nodes[0] ?? null;
+}
   const header = document.querySelector<HTMLElement>("header.site-header");
   if (header) {
     const b = header.getBoundingClientRect().bottom;
@@ -278,7 +287,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
     setSpotlightReady(false);
 
     const measureNow = () => {
-      const target = document.querySelector(step.target);
+      const target = queryTourTarget(step.target);
       if (!target || cancelled) return;
       setRect(measureHighlight(target, isPhone));
     };
@@ -305,7 +314,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
 
     raf = requestAnimationFrame(() => {
       if (cancelled) return;
-      const el = document.querySelector(step.target);
+      const el = queryTourTarget(step.target);
       if (!el) {
         setRect(null);
         return;
@@ -360,7 +369,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
   useEffect(() => {
     if (!open || !step || !spotlightReady) return;
     const onResize = () => {
-      const el = document.querySelector(step.target);
+      const el = queryTourTarget(step.target);
       if (!el) {
         setRect(null);
         return;

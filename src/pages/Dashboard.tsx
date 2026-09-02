@@ -67,6 +67,7 @@ import ClientBookingPayDialog from "@/components/ClientBookingPayDialog";
 import DashboardReviewsPanel from "@/components/dashboard/DashboardReviewsPanel";
 import { DashboardTour, DashboardTourHelpButton } from "@/components/dashboard/DashboardTour";
 import { StarterScheduleNotice } from "@/components/dashboard/StarterScheduleNotice";
+import { AvailableJobsFab } from "@/components/dashboard/AvailableJobsFab";
 import {
   type DashTourSegment,
   isSegmentCompleted,
@@ -659,6 +660,7 @@ export default function Dashboard() {
   // Pro: available jobs (open job_requests) for sidebar
   const [availableJobs, setAvailableJobs] = useState<AvailableJobItem[]>([]);
   const [availableJobsNoCoordsBanner, setAvailableJobsNoCoordsBanner] = useState(false);
+  const [mobileJobsOpen, setMobileJobsOpen] = useState(false);
   const [browsePostalTick, setBrowsePostalTick] = useState(0);
 
   useEffect(() => {
@@ -3538,6 +3540,100 @@ export default function Dashboard() {
     return `$${br.trim()}`;
   };
 
+  const renderAvailableJobsBody = () => (
+    <>
+      {availableJobsNoCoordsBanner ? (
+        <p className="text-xs text-amber-800 dark:text-amber-200 bg-amber-500/15 border border-amber-500/30 rounded-lg p-2 mb-3">
+          {t.dashboard.availableJobsNoCoordsBanner}
+        </p>
+      ) : null}
+      {availableJobs.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t.dashboard.availableJobsEmpty}</p>
+      ) : (
+        <ul className="space-y-3">
+          {displayJobs.map((job) => {
+            const isLocked = lockedAvailableJobIds.has(job.id);
+            return (
+              <li
+                key={job.id}
+                className={`relative overflow-hidden rounded-lg border p-3 text-sm ${isLocked ? "cursor-pointer border-primary/20 bg-muted/20" : "border-border/50"}`}
+                onClick={isLocked ? showClientRequestUpgradePrompt : undefined}
+                onKeyDown={(event) => {
+                  if (!isLocked) return;
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    showClientRequestUpgradePrompt();
+                  }
+                }}
+                role={isLocked ? "button" : undefined}
+                tabIndex={isLocked ? 0 : undefined}
+              >
+                <div className={isLocked ? "pointer-events-none select-none blur-sm" : ""}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground line-clamp-1">
+                        {job.category || (locale === "fr" ? "Service" : "Service")}
+                      </p>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{job.description}</p>
+                    </div>
+                    <p className="text-muted-foreground text-xs whitespace-nowrap shrink-0 mt-0.5">
+                      {jobUpText(job.created_at)}
+                    </p>
+                  </div>
+                  {job.distance_km != null && (
+                    <p
+                      className={`text-xs mt-1 ${job.outside_service_radius ? "text-amber-700 dark:text-amber-300" : "text-muted-foreground"}`}
+                    >
+                      {(t.dashboard.availableJobsDistanceLine ?? "~{{km}} km · {{suffix}}")
+                        .replace("{{km}}", String(Math.round(job.distance_km)))
+                        .replace(
+                          "{{suffix}}",
+                          job.outside_service_radius
+                            ? (t.dashboard.availableJobsOutsideRadius ?? "Outside your service radius")
+                            : (t.dashboard.availableJobsNearYou ?? "near you"),
+                        )}
+                    </p>
+                  )}
+                  {job.budget_range && (
+                    <p className="text-muted-foreground text-xs">
+                      {t.dashboard.budgetLabel ?? "Budget:"} {formatJobRequestBudget(job.budget_range)}
+                    </p>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 w-full"
+                    onClick={() => {
+                      setSelectedJobForQuote(job);
+                      setMobileJobsOpen(false);
+                    }}
+                    disabled={isLocked}
+                  >
+                    {t.dashboard.viewMoreSendQuote ?? "View more & send quote"}
+                  </Button>
+                </div>
+                {isLocked && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/35 px-4 text-center">
+                    <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow">
+                      {t.dashboard.requestLockedBadge ?? "Upgrade to unlock"}
+                    </span>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {hasMoreJobs && (
+        <Button variant="ghost" size="sm" className="w-full mt-3" onClick={() => setShowMoreJobs((v) => !v)}>
+          {showMoreJobs
+            ? (t.dashboard.showLessJobs ?? "Show less")
+            : (t.dashboard.viewMoreAvailableJobs ?? "View more available jobs")}
+        </Button>
+      )}
+    </>
+  );
+
   const timingRequestLabel = (value: string | null | undefined) => {
     const o = TIMING_OPTIONS.find((x) => x.value === value);
     if (!o) return value?.trim() || "?";
@@ -5577,12 +5673,6 @@ export default function Dashboard() {
                     )}
                   </span>
                 </h3>
-                <p className="lg:hidden text-sm mb-4">
-                  <a href="#dashboard-open-leads" className="font-medium text-primary underline underline-offset-2">
-                    {t.dashboard.availableJobsPanelTitle}
-                  </a>
-                  <span className="text-muted-foreground"> · {t.dashboard.availableJobsViewOnMobile}</span>
-                </p>
                 <ProScheduleEditor
                   weekly={proWeeklySchedule}
                   unavailableDates={proUnavailableDates}
@@ -6750,87 +6840,29 @@ export default function Dashboard() {
       </div>
 
       {proProfile?.is_verified && (
-        <aside
-          id="dashboard-open-leads"
-          data-tour="available-jobs"
-          className="mt-8 w-full max-w-4xl mx-auto lg:mt-0 lg:mx-0 lg:w-80 lg:max-w-none lg:shrink-0 lg:fixed lg:right-4 lg:top-24 lg:z-30 max-h-[min(70vh,calc(100vh-8rem))] lg:max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border bg-card p-4 shadow-sm scroll-mt-24"
-        >
-          <h3 className="font-heading font-bold text-foreground mb-3">{t.dashboard.availableJobsPanelTitle}</h3>
-          {availableJobsNoCoordsBanner ? (
-            <p className="text-xs text-amber-800 dark:text-amber-200 bg-amber-500/15 border border-amber-500/30 rounded-lg p-2 mb-3">
-              {t.dashboard.availableJobsNoCoordsBanner}
-            </p>
-          ) : null}
-          {availableJobs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t.dashboard.availableJobsEmpty}</p>
-          ) : (
-            <ul className="space-y-3">
-              {displayJobs.map((job) => {
-                const isLocked = lockedAvailableJobIds.has(job.id);
-                return (
-                <li
-                  key={job.id}
-                  className={`relative overflow-hidden rounded-lg border p-3 text-sm ${isLocked ? "cursor-pointer border-primary/20 bg-muted/20" : "border-border/50"}`}
-                  onClick={isLocked ? showClientRequestUpgradePrompt : undefined}
-                  onKeyDown={(event) => {
-                    if (!isLocked) return;
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      showClientRequestUpgradePrompt();
-                    }
-                  }}
-                  role={isLocked ? "button" : undefined}
-                  tabIndex={isLocked ? 0 : undefined}
-                >
-                  <div className={isLocked ? "pointer-events-none select-none blur-sm" : ""}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="font-medium text-foreground line-clamp-1">{job.category || (locale === "fr" ? "Service" : "Service")}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{job.description}</p>
-                        </div>
-                        <p className="text-muted-foreground text-xs whitespace-nowrap shrink-0 mt-0.5">
-                          {jobUpText(job.created_at)}
-                        </p>
-                      </div>
-                  {job.distance_km != null && (
-                    <p
-                      className={`text-xs mt-1 ${job.outside_service_radius ? "text-amber-700 dark:text-amber-300" : "text-muted-foreground"}`}
-                    >
-                      {(t.dashboard.availableJobsDistanceLine ?? "~{{km}} km · {{suffix}}")
-                        .replace("{{km}}", String(Math.round(job.distance_km)))
-                        .replace(
-                          "{{suffix}}",
-                          job.outside_service_radius
-                            ? (t.dashboard.availableJobsOutsideRadius ?? "Outside your service radius")
-                            : (t.dashboard.availableJobsNearYou ?? "near you"),
-                        )}
-                    </p>
-                  )}
-                  {job.budget_range && (
-                    <p className="text-muted-foreground text-xs">{t.dashboard.budgetLabel ?? "Budget:"} {formatJobRequestBudget(job.budget_range)}</p>
-                  )}
-                  <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => setSelectedJobForQuote(job)} disabled={isLocked}>
-                    {t.dashboard.viewMoreSendQuote ?? "View more & send quote"}
-                  </Button>
-                  </div>
-                  {isLocked && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-background/35 px-4 text-center">
-                      <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow">
-                        {t.dashboard.requestLockedBadge ?? "Upgrade to unlock"}
-                      </span>
-                    </div>
-                  )}
-                </li>
-                );
-              })}
-            </ul>
-          )}
-          {hasMoreJobs && (
-            <Button variant="ghost" size="sm" className="w-full mt-3" onClick={() => setShowMoreJobs((v) => !v)}>
-              {showMoreJobs ? (t.dashboard.showLessJobs ?? "Show less") : (t.dashboard.viewMoreAvailableJobs ?? "View more available jobs")}
-            </Button>
-          )}
-        </aside>
+        <>
+          <aside
+            id="dashboard-open-leads"
+            data-tour="available-jobs"
+            className="mt-8 hidden w-full max-w-4xl mx-auto lg:mt-0 lg:mx-0 lg:block lg:w-80 lg:max-w-none lg:shrink-0 lg:fixed lg:right-4 lg:top-24 lg:z-30 max-h-[min(70vh,calc(100vh-8rem))] lg:max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border bg-card p-4 shadow-sm scroll-mt-24"
+          >
+            <h3 className="font-heading font-bold text-foreground mb-3">{t.dashboard.availableJobsPanelTitle}</h3>
+            {renderAvailableJobsBody()}
+          </aside>
+          <AvailableJobsFab
+            open={mobileJobsOpen}
+            onOpenChange={setMobileJobsOpen}
+            title={t.dashboard.availableJobsPanelTitle}
+            ariaLabel={
+              locale === "fr"
+                ? "Travaux disponibles près de vous"
+                : "Available jobs near you"
+            }
+            badgeCount={availableJobs.length}
+          >
+            {renderAvailableJobsBody()}
+          </AvailableJobsFab>
+        </>
       )}
       </div>
       </div>
