@@ -10,7 +10,7 @@ type Props = {
   ariaLabel?: string;
 };
 
-/** Small bouncing red badge — oversized ! sits top-right of the circle. */
+/** Small bouncing red badge — white tilted ! mostly inside the circle (~70%). */
 export function StarterScheduleNotice({ message, upgradeLabel, className, ariaLabel }: Props) {
   return (
     <Popover>
@@ -24,12 +24,21 @@ export function StarterScheduleNotice({ message, upgradeLabel, className, ariaLa
           aria-label={ariaLabel ?? "Starter plan schedule info"}
         >
           <motion.span
-            className="relative block h-[1.15rem] w-[1.15rem] rounded-full bg-red-500 shadow-sm"
+            className="relative flex h-6 w-6 items-center justify-center overflow-visible rounded-full bg-red-500 shadow-sm"
             animate={{ y: [0, -5, 0] }}
             transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut" }}
             aria-hidden
           >
-            <span className="pointer-events-none absolute -right-1.5 -top-3 text-[1.35rem] font-black leading-none text-red-600 drop-shadow-[0_1px_0_rgba(255,255,255,0.85)]">
+            <span
+              className="pointer-events-none absolute text-[1.15rem] font-black leading-none text-white"
+              style={{
+                // ~70% inside; peek top-right, slightly tilted
+                top: "42%",
+                left: "52%",
+                transform: "translate(-35%, -62%) rotate(16deg)",
+                textShadow: "0 1px 1px rgba(0,0,0,0.25)",
+              }}
+            >
               !
             </span>
           </motion.span>

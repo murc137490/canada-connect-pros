@@ -174,12 +174,12 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
   bookings: [
     {
       target: "[data-tour='schedule-calendar']",
-      titleEn: "Schedule calendar",
-      titleFr: "Calendrier",
+      titleEn: "Schedule & availability",
+      titleFr: "Horaire et disponibilités",
       bodyEn:
-        "Click a day to toggle full-day availability or add blocked hours (From → To). Save schedule to publish. Starter plans only open a rolling 30-day window.",
+        "Use the calendar and weekly template to set when you’re open. Click a day for full-day off or blocked hours, then save. Starter plans only open a rolling 30-day window.",
       bodyFr:
-        "Cliquez un jour pour bloquer la journée ou des plages (De → À). Enregistrez pour publier. Essentiel = fenêtre glissante de 30 jours.",
+        "Utilisez le calendrier et le modèle hebdomadaire pour vos disponibilités. Cliquez un jour pour une journée complète ou des plages bloquées, puis enregistrez. Essentiel = fenêtre glissante de 30 jours.",
     },
     {
       target: "[data-tour='booking-requests']",

@@ -5527,7 +5527,8 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : proProfile?.is_verified && !proViewingMyRequests ? (
-              <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8" data-tour="schedule-calendar">
+              <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">
+                <div data-tour="schedule-calendar" className="rounded-xl">
                 <h3 className="font-heading font-bold text-foreground mb-4 flex items-start gap-2 text-base leading-snug sm:items-center sm:text-lg">
                   <Clock size={18} className="mt-0.5 shrink-0 sm:mt-0" />
                   <span className="min-w-0 flex items-center gap-1.5 flex-wrap">
@@ -5560,7 +5561,6 @@ export default function Dashboard() {
                   </a>
                   <span className="text-muted-foreground"> · {t.dashboard.availableJobsViewOnMobile}</span>
                 </p>
-                <div>
                 <ProScheduleEditor
                   weekly={proWeeklySchedule}
                   unavailableDates={proUnavailableDates}
