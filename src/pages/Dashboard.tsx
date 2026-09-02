@@ -3996,19 +3996,22 @@ export default function Dashboard() {
         </h1>
         {proProfile && !isAdminDashboardShell && user?.id ? (
           <div className="mb-6 md:mb-8 flex flex-wrap items-center justify-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => {
-                const seg = segmentForTab(shellTab) ?? "account";
-                replayDashTour(seg);
-              }}
-            >
-              <HelpCircle size={14} aria-hidden />
-              {locale === "fr" ? "Guide de cette page" : "Guide this page"}
-            </Button>
+            {segmentForTab(shellTab) ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => {
+                  const seg = segmentForTab(shellTab);
+                  if (!seg) return;
+                  replayDashTour(seg);
+                }}
+              >
+                <HelpCircle size={14} aria-hidden />
+                {locale === "fr" ? "Guide de cette page" : "Guide this page"}
+              </Button>
+            ) : null}
             <Button type="button" variant="ghost" size="sm" asChild>
               <Link to="/help/dashboard-guide">
                 {t.footer.dashboardGuide ?? (locale === "fr" ? "Guide du tableau de bord" : "Dashboard guide")}
