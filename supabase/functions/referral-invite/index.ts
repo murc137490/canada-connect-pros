@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
         return json(
           {
             error:
-              "Missing email configuration. Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS (same as Auth SMTP in the Supabase Dashboard), or set RESEND_API_KEY.",
+              "Missing email configuration. Set RESEND_API_KEY (recommended for Edge), or SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS.",
           },
           500
         );
@@ -462,33 +462,56 @@ function renderInviteEmail(language: "en" | "fr", vars: { senderName: string; si
 
 type SendInviteResult = { ok: true } | { ok: false; hint: string; details?: string };
 
-/** Prefer SMTP (same mail path as Auth confirmation when you reuse Dashboard SMTP secrets); else Resend. */
+/**
+ * Prefer Resend HTTP API when RESEND_API_KEY is set (reliable on Edge).
+ * Otherwise SMTP. If SMTP is configured and fails, fall back to Resend when available.
+ */
 async function sendReferralInviteEmail(toEmail: string, subject: string, html: string): Promise<SendInviteResult> {
   const fromAddr = effectiveTransactionalFrom(FROM_EMAIL);
+  const hasSmtp = Boolean(SMTP_HOST?.trim() && SMTP_USER && SMTP_PASS);
+  const hasResend = Boolean(RESEND_API_KEY?.trim());
 
-  if (SMTP_HOST?.trim() && SMTP_USER && SMTP_PASS) {
-    const smtpOk = await sendInviteViaSmtp(toEmail, subject, html, fromAddr);
-    if (smtpOk) return { ok: true };
+  if (hasResend) {
+    const r = await sendViaResend(toEmail, subject, html);
+    if (r.ok) return { ok: true };
+    // If Resend fails (e.g. domain not verified yet) and SMTP exists, try SMTP once.
+    if (hasSmtp) {
+      const smtp = await sendInviteViaSmtp(toEmail, subject, html, fromAddr);
+      if (smtp.ok) return { ok: true };
+    }
     return {
       ok: false,
       hint:
-        "Could not send via SMTP. Check that SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS match Project Settings → Auth → SMTP, and redeploy this function.",
+        r.hint ??
+        "Could not send email via Resend. Verify premiereservices.ca in Resend (DNS) and that RESEND_API_KEY is correct.",
+      details: r.details,
     };
   }
 
-  if (RESEND_API_KEY) {
-    const r = await sendViaResend(toEmail, subject, html);
-    if (r.ok) return { ok: true };
-    return { ok: false, hint: r.hint ?? "Could not send email (Resend).", details: r.details };
+  if (hasSmtp) {
+    const smtp = await sendInviteViaSmtp(toEmail, subject, html, fromAddr);
+    if (smtp.ok) return { ok: true };
+    return {
+      ok: false,
+      hint:
+        smtp.hint ??
+        "Could not send via SMTP. Add RESEND_API_KEY (recommended) or fix SMTP_HOST/PORT/USER/PASS to match Auth → SMTP.",
+      details: smtp.details,
+    };
   }
 
   return {
     ok: false,
-    hint: "No email transport available (configure SMTP or RESEND_API_KEY).",
+    hint: "No email transport available. Set RESEND_API_KEY (recommended) or SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS.",
   };
 }
 
-async function sendInviteViaSmtp(toEmail: string, subject: string, html: string, fromEmailAddr: string): Promise<boolean> {
+async function sendInviteViaSmtp(
+  toEmail: string,
+  subject: string,
+  html: string,
+  fromEmailAddr: string,
+): Promise<{ ok: true } | { ok: false; hint: string; details?: string }> {
   const host = SMTP_HOST!.trim();
   const port = parseInt(SMTP_PORT || "587", 10);
   const from = FROM_NAME.trim() ? `${FROM_NAME.trim()} <${fromEmailAddr}>` : fromEmailAddr;
@@ -506,9 +529,16 @@ async function sendInviteViaSmtp(toEmail: string, subject: string, html: string,
     });
     await client.send({ from, to: toEmail, subject, content: " ", html });
     client.close();
-    return true;
-  } catch {
-    return false;
+    return { ok: true };
+  } catch (error) {
+    const details = error instanceof Error ? error.message : String(error);
+    console.error("referral-invite SMTP failed:", details);
+    return {
+      ok: false,
+      hint:
+        "SMTP send failed from the Edge Function (common with STARTTLS on port 587). Prefer RESEND_API_KEY instead of SMTP for invites.",
+      details,
+    };
   }
 }
 
