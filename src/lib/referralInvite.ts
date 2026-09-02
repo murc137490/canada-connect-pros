@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { errorMessage } from "@/lib/errorMessage";
 
-const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 export type ReferralInvite = {
   id: string;
@@ -49,67 +49,105 @@ async function accessToken(): Promise<string | null> {
   return refreshed.session?.access_token ?? null;
 }
 
+function parseBody(raw: string): ReferralInviteResponse {
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as ReferralInviteResponse;
+  } catch {
+    return {};
+  }
+}
+
+function errorFromBody(parsed: ReferralInviteResponse, raw: string, status: number): Error {
+  const piece =
+    parsed.error != null
+      ? errorMessage(parsed.error)
+      : parsed.details != null
+        ? errorMessage(parsed.details)
+        : raw.trim()
+          ? raw.trim()
+          : "";
+  if (status === 503) {
+    return new Error(
+      piece || "Invite service is warming up. Wait a few seconds and try again.",
+    );
+  }
+  if (status === 401) return new Error(piece || "Please sign in again and retry.");
+  if (status === 502) {
+    return new Error(
+      piece ||
+        "Invite email could not be sent. Check Edge Function secrets (SMTP_* or RESEND_API_KEY).",
+    );
+  }
+  return new Error(piece || `Invite request failed (HTTP ${status}).`);
+}
+
+async function postReferralInvite(
+  token: string,
+  body: Record<string, unknown>,
+): Promise<{ data: ReferralInviteResponse | null; error: Error | null; status?: number }> {
+  const base = functionsBaseUrl();
+  if (!base) return { data: null, error: new Error("VITE_SUPABASE_URL is missing in this deploy.") };
+  if (!ANON_KEY) return { data: null, error: new Error("VITE_SUPABASE_ANON_KEY is missing in this deploy.") };
+
+  const url = `${base}/functions/v1/referral-invite`;
+  let lastNetwork: unknown = null;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          apikey: ANON_KEY,
+          "x-client-info": "premiere-web",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const raw = await res.text().catch(() => "");
+      const parsed = parseBody(raw);
+
+      if (res.status === 503 && attempt === 0) {
+        await new Promise((r) => setTimeout(r, 800));
+        continue;
+      }
+
+      if (!res.ok) {
+        return { data: null, error: errorFromBody(parsed, raw, res.status), status: res.status };
+      }
+
+      if (parsed.error && parsed.ok !== true) {
+        return { data: null, error: new Error(errorMessage(parsed.error)) };
+      }
+
+      return { data: parsed, error: null, status: res.status };
+    } catch (error) {
+      lastNetwork = error;
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 800));
+        continue;
+      }
+    }
+  }
+
+  const message = errorMessage(lastNetwork);
+  return {
+    data: null,
+    error: new Error(
+      /network|fetch|failed to fetch|cors|load failed|aborted/i.test(message) || lastNetwork instanceof TypeError
+        ? `Could not reach invite service at ${url}. Check your connection and try again.`
+        : message || "Invite request failed.",
+    ),
+  };
+}
+
 export async function referralInvite(
   action: "list" | "send" | "claim" | "validate_code" | "redeem_code",
-  params: Record<string, unknown> = {}
+  params: Record<string, unknown> = {},
 ) {
   const token = await accessToken();
   if (!token) return { data: null, error: new Error("Please sign in again and retry.") };
-  const base = functionsBaseUrl();
-  if (!base) return { data: null, error: new Error("VITE_SUPABASE_URL missing") };
-  if (!ANON_KEY) return { data: null, error: new Error("VITE_SUPABASE_ANON_KEY missing") };
-
-  try {
-    const res = await fetch(`${base}/functions/v1/referral-invite`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        apikey: ANON_KEY,
-      },
-      body: JSON.stringify({ action, ...params }),
-    });
-
-    const raw = await res.text().catch(() => "");
-    let parsed: ReferralInviteResponse = {};
-    if (raw) {
-      try {
-        parsed = JSON.parse(raw) as ReferralInviteResponse;
-      } catch {
-        parsed = {};
-      }
-    }
-
-    if (!res.ok) {
-      const piece =
-        parsed.error != null
-          ? errorMessage(parsed.error)
-          : parsed.details != null
-            ? errorMessage(parsed.details)
-            : raw.trim()
-              ? raw.trim()
-              : "";
-      const msg = piece || `HTTP ${res.status}`;
-      return { data: null, error: new Error(msg) };
-    }
-
-    return { data: parsed, error: null };
-  } catch (error) {
-    const message = errorMessage(error);
-    const looksLikeNetwork =
-      /network|fetch|failed to fetch|cors|load failed|aborted/i.test(message) ||
-      error instanceof TypeError;
-    if (looksLikeNetwork) {
-      const refHint =
-        /https?:\/\/([a-z0-9]+)\.supabase\.co/i.exec(functionsBaseUrl())?.[1] ??
-        "YOUR_PROJECT_REF";
-      return {
-        data: null,
-        error: new Error(
-          `Could not reach the referral-invite Edge Function (network or 404). Fix: (1) Deploy: run "supabase login" then "supabase functions deploy referral-invite --project-ref ${refHint}" from the repo root (or create function "referral-invite" in Dashboard → Edge Functions and paste supabase/functions/referral-invite/index.ts). (2) Ensure VITE_SUPABASE_URL in your app matches that project (e.g. https://${refHint}.supabase.co). (3) In Dashboard → Edge Functions → Secrets, set SUPABASE_SERVICE_ROLE_KEY (and SMTP_* or RESEND_API_KEY for sending invites).`
-        ),
-      };
-    }
-    return { data: null, error: error instanceof Error ? error : new Error(message) };
-  }
+  return postReferralInvite(token, { action, ...params });
 }
