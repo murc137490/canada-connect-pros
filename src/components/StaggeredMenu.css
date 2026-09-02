@@ -75,72 +75,56 @@
 
 
 .user-menu-panel {
-
   position: absolute;
-
   top: calc(100% + 6px);
-
   right: 0;
-
   width: clamp(280px, 90vw, 360px);
-
   max-height: min(85vh, 520px);
-
-  /* iOS-style frosted glass */
+  /* iPhone-style frosted glass (light) */
   background: rgba(255, 255, 255, 0.55);
-
-  -webkit-backdrop-filter: saturate(180%) blur(28px);
-
-  backdrop-filter: saturate(180%) blur(28px);
-
+  -webkit-backdrop-filter: saturate(200%) blur(40px);
+  backdrop-filter: saturate(200%) blur(40px);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
-
+    0 8px 40px rgba(0, 0, 0, 0.1),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.75);
   z-index: 9999;
-
   padding: 1rem 0.75rem 1.25rem;
-
+  overflow-x: hidden;
   overflow-y: auto;
-
   border-radius: 16px;
-
-  border: 1px solid rgba(255, 255, 255, 0.45);
-
+  border: 0.5px solid rgba(255, 255, 255, 0.55);
   opacity: 0;
-
   visibility: hidden;
-
-  transform: translateY(-8px);
-
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
-
+  transition: opacity 0.2s ease, visibility 0.2s;
+  /* Keep glass compositing clean across themes */
+  isolation: isolate;
+  color: #111;
 }
 
 .user-menu-panel.is-open {
-
   opacity: 1;
-
   visibility: visible;
-
-  transform: translateY(0);
-
 }
 
 .dark .user-menu-panel {
-
-  background: rgba(28, 36, 32, 0.48);
-
-  -webkit-backdrop-filter: saturate(180%) blur(32px);
-
-  backdrop-filter: saturate(180%) blur(32px);
-
+  /* iPhone dark translucent glass — not a solid green slab */
+  background: rgba(22, 24, 28, 0.42);
+  -webkit-backdrop-filter: saturate(180%) blur(48px);
+  backdrop-filter: saturate(180%) blur(48px);
   box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 12px 48px rgba(0, 0, 0, 0.28),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
 
-  border-color: rgba(255, 255, 255, 0.18);
-
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .user-menu-panel {
+    background: rgba(255, 255, 255, 0.92);
+  }
+  .dark .user-menu-panel {
+    background: rgba(28, 32, 36, 0.92);
+  }
 }
 
 
@@ -210,19 +194,13 @@
 }
 
 .user-menu-link:hover {
-
   color: var(--sm-accent, #007A56);
-
-  background: rgba(0, 122, 86, 0.08);
-
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .dark .user-menu-link:hover {
-
-  color: #7dd3b0;
-
-  background: rgba(255, 255, 255, 0.06);
-
+  color: #a8e6cf;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 
@@ -274,79 +252,33 @@
 @media (max-width: 767px) {
 
   .user-menu-backdrop.is-open {
-
-    background: rgba(0, 0, 0, 0.18);
-
+    background: rgba(0, 0, 0, 0.12);
   }
-
-
 
   .user-menu-panel {
-
-    position: fixed;
-
-    left: 50%;
-
-    right: auto;
-
-    top: calc(env(safe-area-inset-top, 0px) + 3.15rem);
-
     width: min(24.75rem, calc(100vw - 1.25rem));
-
     max-height: min(72vh, 33rem);
-
     padding: 0.675rem 0.6rem 0.825rem;
-
     border-radius: 21px;
-
-    transform: translateX(-50%) translateY(-6px);
-
   }
-
-
-
-  .user-menu-panel.is-open {
-
-    transform: translateX(-50%) translateY(0);
-
-  }
-
-
 
   .user-menu-link {
-
     font-size: 1.3125rem;
-
     padding: 0.675rem 0.75rem;
-
     border-radius: 12px;
-
   }
-
-
 
   .user-menu-list {
-
     gap: 0.2rem;
-
   }
-
-
 
   .user-menu-logout {
-
     margin-top: 0.6rem;
-
     padding-top: 0.6rem;
-
   }
 
-
-
   .user-menu-logout .user-menu-link {
-
     font-size: 1.21875rem;
-
   }
 
 }

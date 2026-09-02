@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { LogOut, User } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -37,6 +38,9 @@ export default function UserMenuDropdown({
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelStyle, setPanelStyle] = useState<CSSProperties>({});
 
   const close = useCallback(() => {
     setOpen(false);
@@ -46,9 +50,9 @@ export default function UserMenuDropdown({
     if (!open) return;
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       const target = e.target as Node;
-      if (wrapperRef.current && !wrapperRef.current.contains(target)) {
-        close();
-      }
+      if (wrapperRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      close();
     };
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("touchstart", handleClickOutside);
@@ -63,6 +67,45 @@ export default function UserMenuDropdown({
     };
   }, [open, close]);
 
+  /** Portal panel under body so backdrop-filter can blur the real page (not a clipped header). */
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return;
+
+    const place = () => {
+      const rect = triggerRef.current!.getBoundingClientRect();
+      const mobile = window.matchMedia("(max-width: 767px)").matches;
+      if (mobile) {
+        setPanelStyle({
+          position: "fixed",
+          left: "50%",
+          right: "auto",
+          top: `calc(env(safe-area-inset-top, 0px) + 3.15rem)`,
+          transform: "translateX(-50%)",
+        });
+        return;
+      }
+      const width = Math.min(384, Math.max(280, window.innerWidth * 0.9));
+      let left = rect.right - width;
+      left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
+      setPanelStyle({
+        position: "fixed",
+        top: rect.bottom + 6,
+        left,
+        right: "auto",
+        width,
+        transform: "none",
+      });
+    };
+
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
+
   const toggle = useCallback(() => {
     setOpen((o) => !o);
   }, []);
@@ -76,10 +119,60 @@ export default function UserMenuDropdown({
 
   const visibleItems = items.filter((i) => i.show);
 
+  const menuPortal =
+    typeof document !== "undefined"
+      ? createPortal(
+          <>
+            <div
+              className={`user-menu-backdrop ${open ? "is-open" : ""}`}
+              aria-hidden={!open}
+              onClick={close}
+            />
+            <div
+              ref={panelRef}
+              className={`user-menu-panel ${panelClassName ?? ""} ${open ? "is-open" : ""}`.trim()}
+              style={{ ["--sm-accent" as string]: accentColor, ...panelStyle }}
+              aria-hidden={!open}
+              role="menu"
+            >
+              <ul className="user-menu-list" role="none">
+                {visibleItems.map((item, idx) => (
+                  <li key={item.link + idx} className="user-menu-item" role="none">
+                    <Link to={item.link} className="user-menu-link" role="menuitem" onClick={close}>
+                      <span className="sm-panel-itemLabel inline-flex items-center gap-2">
+                        {item.label}
+                        {item.badge != null && item.badge > 0 && (
+                          <span className="min-w-[1.125rem] h-[1.125rem] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                            {item.badge > 99 ? "99+" : item.badge}
+                          </span>
+                        )}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <div className="user-menu-logout">
+                <button
+                  type="button"
+                  className="user-menu-link w-full justify-start bg-transparent border-none cursor-pointer"
+                  onClick={handleLogout}
+                  role="menuitem"
+                >
+                  <span className="sm-panel-itemLabel">{t.nav.logOut}</span>
+                  <LogOut size={18} className="ml-auto opacity-70" />
+                </button>
+              </div>
+            </div>
+          </>,
+          document.body,
+        )
+      : null;
+
   return (
     <div ref={wrapperRef} className="user-menu-wrapper" style={{ ["--sm-accent" as string]: accentColor }}>
       <div className="relative inline-block">
         <button
+          ref={triggerRef}
           type="button"
           className={`user-menu-trigger ${triggerClassName ?? ""}`.trim()}
           onClick={toggle}
@@ -99,51 +192,7 @@ export default function UserMenuDropdown({
           </span>
         )}
       </div>
-
-      <div
-        className={`user-menu-backdrop ${open ? "is-open" : ""}`}
-        aria-hidden={!open}
-        onClick={close}
-      />
-
-      <div
-        className={`user-menu-panel ${panelClassName ?? ""} ${open ? "is-open" : ""}`.trim()}
-        aria-hidden={!open}
-        role="menu"
-      >
-        <ul className="user-menu-list" role="none">
-          {visibleItems.map((item, idx) => (
-            <li key={item.link + idx} className="user-menu-item" role="none">
-              <Link
-                to={item.link}
-                className="user-menu-link"
-                role="menuitem"
-                onClick={close}
-              >
-                <span className="sm-panel-itemLabel inline-flex items-center gap-2">
-                  {item.label}
-                  {item.badge != null && item.badge > 0 && (
-                    <span className="min-w-[1.125rem] h-[1.125rem] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
-                      {item.badge > 99 ? "99+" : item.badge}
-                    </span>
-                  )}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <div className="user-menu-logout">
-          <button
-            type="button"
-            className="user-menu-link w-full justify-start bg-transparent border-none cursor-pointer"
-            onClick={handleLogout}
-            role="menuitem"
-          >
-            <span className="sm-panel-itemLabel">{t.nav.logOut}</span>
-            <LogOut size={18} className="ml-auto opacity-70" />
-          </button>
-        </div>
-      </div>
+      {menuPortal}
     </div>
   );
 }
