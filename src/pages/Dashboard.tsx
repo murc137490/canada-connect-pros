@@ -868,7 +868,7 @@ export default function Dashboard() {
           icon: <Shield size={20} />,
           label: t.dashboard.admin ?? "Admin",
           onClick: () => setDashboardTab("admin"),
-          className: shellTab === "admin" ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "",
+          className: shellTab === "admin" ? "dock-item-active" : "",
         },
         {
           id: "admin-job-requests",
@@ -882,7 +882,7 @@ export default function Dashboard() {
           icon: <User size={20} />,
           label: t.dashboard.myAccount,
           onClick: () => setDashboardTab("account"),
-          className: shellTab === "account" ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "",
+          className: shellTab === "account" ? "dock-item-active" : "",
         },
       ];
     }
@@ -892,7 +892,7 @@ export default function Dashboard() {
         icon: <User size={20} />,
         label: t.dashboard.myAccount,
         onClick: () => setDashboardTab("account"),
-        className: activeTab === "account" ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "",
+        className: activeTab === "account" ? "dock-item-active" : "",
       },
       ...(showProDockIcon
         ? [
@@ -901,7 +901,7 @@ export default function Dashboard() {
               icon: <Briefcase size={20} />,
               label: t.dashboard.proProfile,
               onClick: () => setDashboardTab("pro"),
-              className: activeTab === "pro" ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "",
+              className: activeTab === "pro" ? "dock-item-active" : "",
             },
           ]
         : []),
@@ -910,7 +910,7 @@ export default function Dashboard() {
         icon: <CalendarDays size={20} />,
         label: t.dashboard.bookings,
         onClick: () => setDashboardTab("bookings"),
-        className: activeTab === "bookings" ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "",
+        className: activeTab === "bookings" ? "dock-item-active" : "",
         badge: notificationCount,
       },
       {
@@ -918,21 +918,21 @@ export default function Dashboard() {
         icon: <Heart size={20} />,
         label: t.dashboard.favorites,
         onClick: () => setDashboardTab("favorites"),
-        className: activeTab === "favorites" ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "",
+        className: activeTab === "favorites" ? "dock-item-active" : "",
       },
       {
         id: "reviews",
         icon: <Star size={20} />,
         label: t.dashboard.reviews,
         onClick: () => setDashboardTab("reviews"),
-        className: activeTab === "reviews" ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "",
+        className: activeTab === "reviews" ? "dock-item-active" : "",
       },
       {
         id: "invoices",
         icon: <FileText size={20} />,
         label: t.dashboard.invoices,
         onClick: () => setDashboardTab("invoices"),
-        className: activeTab === "invoices" ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "",
+        className: activeTab === "invoices" ? "dock-item-active" : "",
       },
     ];
   }, [

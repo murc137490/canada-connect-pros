@@ -15,21 +15,19 @@
   position: relative;
   z-index: 0;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   flex-wrap: nowrap;
   justify-content: center;
   align-content: center;
-  /* Mobile: full width of column so the strip stays easy to hit */
   width: 100%;
   max-width: min(56rem, 100%);
-  gap: 0.35rem 0.45rem;
+  gap: 0.45rem;
   border-radius: 1rem;
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));
-  padding: 0.55rem 0.5rem 0.7rem;
+  padding: 0.65rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
-  /* Must stay visible: overflow:auto clips upward tooltips and can break stacking with tab content */
   overflow: visible;
 }
 
@@ -39,38 +37,23 @@
   max-width: min(56rem, 100%);
   margin-inline: auto;
   gap: 0.55rem 0.65rem;
-  padding: 0.75rem 0.85rem 0.95rem;
+  padding: 0.75rem 0.85rem;
+  align-items: flex-end;
 }
 
-@media (max-width: 639px) {
-  .dock-outer:not(.dock-outer-wide) {
-    min-height: 5.25rem;
-  }
-
-  .dock-panel:not(.dock-panel-wide) {
-    gap: 0.28rem 0.32rem;
-  }
-}
-
-@media (max-width: 359px) {
-  .dock-panel.dock-panel-mobile-narrow {
-    gap: 0.2rem 0.16rem;
-    padding-left: 0.28rem;
-    padding-right: 0.28rem;
-  }
-}
-
-/* Mobile only: taller card + centered row so larger icons fit (desktop .dock-panel-wide unchanged) */
+/* Mobile: equal padding all sides, equal flex slots */
 .dock-panel.dock-panel-mobile {
+  width: 100%;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  padding: 1rem 0.42rem 1.1rem;
-  gap: 0.38rem 0.36rem;
+  gap: 0.35rem;
+  padding: 0.65rem;
+  border-radius: 1rem;
 }
 
 .dock-panel.dock-panel-mobile-narrow {
-  padding: 0.88rem 0.34rem 0.98rem;
-  gap: 0.32rem 0.24rem;
+  gap: 0.28rem;
+  padding: 0.55rem;
 }
 
 .dock-item {
@@ -85,7 +68,23 @@
   border: 1px solid hsl(var(--border));
   cursor: pointer;
   outline: none;
-  transition: box-shadow 0.2s;
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+/* Mobile: each slot same width so the row looks even */
+.dock-panel-mobile .dock-item {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto !important;
+  max-width: none;
+  aspect-ratio: 1 / 1;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.dock-panel-mobile-narrow .dock-item {
+  border-radius: 10px;
 }
 
 .dock-item:hover,
@@ -97,17 +96,27 @@
   box-shadow: 0 4px 12px rgba(0, 122, 86, 0.2);
 }
 
+/* Active: inset highlight — same outer size as siblings (no ring-offset) */
+.dock-item.dock-item-active {
+  border-color: hsl(var(--primary));
+  background-color: hsl(var(--primary) / 0.14);
+  box-shadow: inset 0 0 0 1.5px hsl(var(--primary));
+}
+
 .dock-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0.35rem;
   flex-shrink: 0;
+  width: 100%;
+  height: 100%;
 }
 
-/* Desktop / tablet: unchanged */
 .dock-panel-wide .dock-icon {
   padding: 0.4rem;
+  width: auto;
+  height: auto;
 }
 
 .dock-panel-wide .dock-icon svg {
@@ -116,25 +125,24 @@
   flex-shrink: 0;
 }
 
-/* Mobile comfortable: larger glyphs + padding inside taller card */
 .dock-outer-mobile .dock-icon {
-  padding: 0.52rem 0.48rem;
+  padding: 0.4rem;
 }
 
 .dock-outer-mobile .dock-icon svg {
-  width: 2.125rem;
-  height: 2.125rem;
-  flex-shrink: 0;
-}
-
-.dock-outer-mobile-narrow .dock-icon svg {
-  width: 1.8125rem;
-  height: 1.8125rem;
+  width: 1.65rem;
+  height: 1.65rem;
   flex-shrink: 0;
 }
 
 .dock-outer-mobile-narrow .dock-icon {
-  padding: 0.46rem 0.38rem;
+  padding: 0.32rem;
+}
+
+.dock-outer-mobile-narrow .dock-icon svg {
+  width: 1.45rem;
+  height: 1.45rem;
+  flex-shrink: 0;
 }
 
 .dock-label {
@@ -156,4 +164,15 @@
   transform: translateX(-50%);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   pointer-events: none;
+}
+
+@media (max-width: 639px) {
+  .dock-outer:not(.dock-outer-wide) {
+    min-height: 4.25rem;
+  }
+
+  /* Hide hover tooltips on touch — they overflow / feel broken */
+  .dock-panel-mobile .dock-label {
+    display: none;
+  }
 }

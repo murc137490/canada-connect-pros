@@ -41,6 +41,7 @@ function DockItem({
   distance,
   magnification,
   baseItemSize,
+  fixedSize,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -50,6 +51,8 @@ function DockItem({
   distance: number;
   magnification: number;
   baseItemSize: number;
+  /** Mobile: skip spring sizing so every slot stays equal. */
+  fixedSize?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const isHovered = useMotionValue(0);
@@ -66,6 +69,33 @@ function DockItem({
     [baseItemSize, magnification, baseItemSize]
   );
   const size = useSpring(targetSize, spring);
+
+  if (fixedSize) {
+    return (
+      <div
+        ref={ref}
+        onClick={onClick}
+        className={`dock-item ${className}`}
+        tabIndex={0}
+        role="button"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick?.();
+          }
+        }}
+      >
+        {Children.map(children, (child) =>
+          typeof child === "object" &&
+          child !== null &&
+          "type" in child &&
+          (child as React.ReactElement).type === DockLabel
+            ? null
+            : child
+        )}
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -205,20 +235,28 @@ export default function Dock({
 
   return (
     <motion.div
-      style={{ height, scrollbarWidth: "none" }}
+      style={{ height: isWide ? height : undefined, scrollbarWidth: "none" }}
       className={`dock-outer${isWide ? " dock-outer-wide" : layout === "mobile-narrow" ? " dock-outer-mobile-narrow" : " dock-outer-mobile"}`}
     >
       <motion.div
-        onMouseMove={({ pageX }) => {
-          isHovered.set(1);
-          mouseX.set(pageX);
-        }}
-        onMouseLeave={() => {
-          isHovered.set(0);
-          mouseX.set(Infinity);
-        }}
+        onMouseMove={
+          isWide
+            ? ({ pageX }) => {
+                isHovered.set(1);
+                mouseX.set(pageX);
+              }
+            : undefined
+        }
+        onMouseLeave={
+          isWide
+            ? () => {
+                isHovered.set(0);
+                mouseX.set(Infinity);
+              }
+            : undefined
+        }
         className={`dock-panel${isWide ? " dock-panel-wide" : layout === "mobile-narrow" ? " dock-panel-mobile dock-panel-mobile-narrow" : " dock-panel-mobile"} ${className}`.trim()}
-        style={{ minHeight: panelHeight }}
+        style={isWide ? { minHeight: panelHeight } : undefined}
         role="toolbar"
         aria-label="Steps"
       >
@@ -232,6 +270,7 @@ export default function Dock({
             distance={distance}
             magnification={magnification}
             baseItemSize={baseItemSize}
+            fixedSize={!isWide}
           >
             <DockIcon>
               {item.badge != null && item.badge > 0 ? (
