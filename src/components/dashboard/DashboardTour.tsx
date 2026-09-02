@@ -262,7 +262,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
     setIndex(0);
   }, [open, segment]);
 
-  // Smooth scroll the whole way, then reveal outline (no end snap)
+  // Smooth scroll; bring outline in ~0.5s before settle, then lock when idle
   useLayoutEffect(() => {
     if (!open || !step) {
       setRect(null);
@@ -272,14 +272,35 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
 
     let cancelled = false;
     let raf = 0;
+    let earlyTimer = 0;
+    let followRaf = 0;
 
     setSpotlightReady(false);
 
-    const finishPlace = (el: Element) => {
+    const measureNow = () => {
+      const target = document.querySelector(step.target);
+      if (!target || cancelled) return;
+      setRect(measureHighlight(target, isPhone));
+    };
+
+    const startFollowing = () => {
       if (cancelled) return;
-      setRect(measureHighlight(el, isPhone));
-      applyScrollLock(window.scrollY);
+      measureNow();
       setSpotlightReady(true);
+      const tick = () => {
+        if (cancelled) return;
+        measureNow();
+        followRaf = requestAnimationFrame(tick);
+      };
+      followRaf = requestAnimationFrame(tick);
+    };
+
+    const stopFollowingAndLock = () => {
+      cancelAnimationFrame(followRaf);
+      followRaf = 0;
+      if (cancelled) return;
+      measureNow();
+      applyScrollLock(window.scrollY);
     };
 
     raf = requestAnimationFrame(() => {
@@ -291,16 +312,26 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
       }
       clearScrollLock();
       const expectedMs = scrollTargetIntoBand(el, isPhone);
-      void waitForScrollIdle(expectedMs > 0 ? expectedMs + 80 : 80).then(() => {
+      // Show outline ~half a second before the scroll would finish
+      const earlyMs =
+        expectedMs <= 0 ? 40 : Math.max(60, expectedMs - 500);
+
+      earlyTimer = window.setTimeout(() => {
         if (cancelled) return;
-        const target = document.querySelector(step.target) ?? el;
-        finishPlace(target);
+        startFollowing();
+      }, earlyMs);
+
+      void waitForScrollIdle(expectedMs > 0 ? expectedMs + 120 : 100).then(() => {
+        if (cancelled) return;
+        stopFollowingAndLock();
       });
     });
 
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(followRaf);
+      window.clearTimeout(earlyTimer);
     };
   }, [open, index, step, isPhone, clearScrollLock, applyScrollLock]);
 
