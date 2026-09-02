@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { HelpCircle, X } from "lucide-react";
@@ -20,6 +20,8 @@ type Props = {
   onFinished: () => void;
 };
 
+type HighlightBox = { top: number; left: number; width: number; height: number };
+
 function useIsPhone() {
   const [phone, setPhone] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(max-width: 639px)").matches : false,
@@ -34,96 +36,166 @@ function useIsPhone() {
   return phone;
 }
 
+/** Bottom of fixed site header (logo / lang / theme / account / menu) — never outline into this. */
+function getHeaderBottom(): number {
+  const header = document.querySelector<HTMLElement>("header.site-header");
+  if (header) {
+    const b = header.getBoundingClientRect().bottom;
+    if (b > 0) return Math.ceil(b) + 6;
+  }
+  return Math.ceil(56 + (parseInt(getComputedStyle(document.documentElement).getPropertyValue("env(safe-area-inset-top)") || "0", 10) || 0)) + 6;
+}
+
+function phoneSheetReserve(): number {
+  return Math.min(300, Math.round(window.innerHeight * 0.44));
+}
+
+/** Place target in the band between header and (on phone) bottom sheet — once, no animation fight. */
+function scrollTargetIntoBand(el: Element, isPhone: boolean) {
+  const headerBottom = getHeaderBottom();
+  const sheet = isPhone ? phoneSheetReserve() : 24;
+  const bandTop = headerBottom + 10;
+  const bandBottom = window.innerHeight - sheet - 10;
+  const r = el.getBoundingClientRect();
+  let delta = 0;
+  if (r.top < bandTop) delta = r.top - bandTop;
+  else if (r.bottom > bandBottom) delta = r.bottom - bandBottom;
+  if (Math.abs(delta) > 2) {
+    window.scrollBy({ top: delta, left: 0, behavior: "instant" as ScrollBehavior });
+  }
+}
+
+function measureHighlight(el: Element, isPhone: boolean): HighlightBox | null {
+  const pad = isPhone ? 3 : 6;
+  const r = el.getBoundingClientRect();
+  const headerBottom = getHeaderBottom();
+  const sheetTop = isPhone ? window.innerHeight - phoneSheetReserve() : window.innerHeight - 8;
+
+  // Exact target box, then clamp so it never covers the site header or the sheet.
+  let top = r.top - pad;
+  let left = r.left - pad;
+  let right = r.right + pad;
+  let bottom = r.bottom + pad;
+
+  top = Math.max(headerBottom, top);
+  left = Math.max(8, left);
+  right = Math.min(window.innerWidth - 8, right);
+  bottom = Math.min(sheetTop - 8, bottom);
+
+  const width = right - left;
+  const height = bottom - top;
+  if (width < 12 || height < 12) return null;
+
+  return { top, left, width, height };
+}
+
 export function DashboardTour({ userId, segment, open, onClose, onFinished }: Props) {
   const { locale } = useLanguage();
   const steps = TOUR_STEPS[segment];
   const [index, setIndex] = useState(0);
-  const [rect, setRect] = useState<DOMRect | null>(null);
+  const [rect, setRect] = useState<HighlightBox | null>(null);
   const isPhone = useIsPhone();
+  const lockY = useRef(0);
 
   const step = steps[index];
   const fr = locale === "fr";
 
-  const measure = useCallback(() => {
-    if (!step) {
-      setRect(null);
-      return;
-    }
-    const el = document.querySelector(step.target);
-    if (!el) {
-      setRect(null);
-      return;
-    }
-    el.scrollIntoView({
-      behavior: "smooth",
-      block: isPhone ? "start" : "center",
-      inline: "nearest",
-    });
-    // Leave room above the bottom sheet on phones
-    if (isPhone) {
-      window.setTimeout(() => {
-        const r = el.getBoundingClientRect();
-        const sheetReserve = Math.min(280, window.innerHeight * 0.42);
-        if (r.bottom > window.innerHeight - sheetReserve) {
-          window.scrollBy({ top: r.bottom - (window.innerHeight - sheetReserve) + 12, behavior: "smooth" });
-        }
-        setRect(el.getBoundingClientRect());
-      }, 280);
-    } else {
-      setRect(el.getBoundingClientRect());
-    }
-  }, [step, isPhone]);
-
+  // Reset step when segment / open changes
   useLayoutEffect(() => {
     if (!open) return;
     setIndex(0);
   }, [open, segment]);
 
+  // Position once per step, then freeze scroll until Skip / Next
   useLayoutEffect(() => {
+    if (!open || !step) {
+      setRect(null);
+      return;
+    }
+
+    const el = document.querySelector(step.target);
+    if (!el) {
+      setRect(null);
+      return;
+    }
+
+    scrollTargetIntoBand(el, isPhone);
+    // Second frame after layout settles
+    const id = requestAnimationFrame(() => {
+      setRect(measureHighlight(el, isPhone));
+    });
+    return () => cancelAnimationFrame(id);
+  }, [open, index, step, isPhone]);
+
+  // Lock page scroll while tour is open (Skip / Next / close unlocks)
+  useEffect(() => {
     if (!open) return;
-    measure();
-    const onResize = () => measure();
+
+    lockY.current = window.scrollY;
+    const { documentElement: html, body } = document;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    const prevBodyTouch = body.style.touchAction;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.touchAction = "none";
+
+    const blockScroll = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest?.("[data-tour-sheet]")) return;
+      e.preventDefault();
+    };
+
+    window.addEventListener("wheel", blockScroll, { passive: false });
+    window.addEventListener("touchmove", blockScroll, { passive: false });
+
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+      body.style.touchAction = prevBodyTouch;
+      window.removeEventListener("wheel", blockScroll);
+      window.removeEventListener("touchmove", blockScroll);
+      window.scrollTo(0, lockY.current);
+    };
+  }, [open]);
+
+  // Remeasure only on orientation / resize — not on scroll (scroll is locked)
+  useEffect(() => {
+    if (!open || !step) return;
+    const onResize = () => {
+      const el = document.querySelector(step.target);
+      if (!el) {
+        setRect(null);
+        return;
+      }
+      setRect(measureHighlight(el, isPhone));
+    };
     window.addEventListener("resize", onResize);
-    window.addEventListener("scroll", onResize, true);
-    const t = window.setTimeout(measure, 350);
+    window.addEventListener("orientationchange", onResize);
     return () => {
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("scroll", onResize, true);
-      window.clearTimeout(t);
+      window.removeEventListener("orientationchange", onResize);
     };
-  }, [open, index, measure]);
+  }, [open, step, isPhone]);
 
-  if (!open || !step) return null;
-
-  const finish = () => {
+  const finish = useCallback(() => {
     markSegmentCompleted(userId, segment);
     onFinished();
     onClose();
-  };
+  }, [userId, segment, onFinished, onClose]);
 
-  const next = () => {
+  const next = useCallback(() => {
     if (index >= steps.length - 1) {
       finish();
       return;
     }
     setIndex((i) => i + 1);
-  };
+  }, [index, steps.length, finish]);
 
-  const pad = isPhone ? 4 : 8;
-  const highlight = rect
-    ? {
-        top: Math.max(8, rect.top - pad),
-        left: Math.max(8, rect.left - pad),
-        width: Math.min(window.innerWidth - 16, rect.width + pad * 2),
-        height: Math.min(
-          isPhone ? window.innerHeight * 0.45 : window.innerHeight - 16,
-          rect.height + pad * 2,
-        ),
-      }
-    : null;
+  if (!open || !step) return null;
 
-  const cardTopDesktop = highlight
-    ? Math.min(window.innerHeight - 220, highlight.top + highlight.height + 12)
+  const cardTopDesktop = rect
+    ? Math.min(window.innerHeight - 220, rect.top + rect.height + 12)
     : window.innerHeight / 2 - 100;
 
   return createPortal(
@@ -136,36 +208,28 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
         exit={{ opacity: 0 }}
         transition={{ duration: MOTION.fast }}
       >
-        <div className="absolute inset-0 bg-black/55" onClick={onClose} aria-hidden />
-        {highlight && !isPhone ? (
+        {/* Full dim — covers header so nav is not “in” the cutout */}
+        <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden />
+
+        {rect ? (
           <div
-            className="pointer-events-none absolute rounded-xl ring-2 ring-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.55)] bg-transparent"
+            className="pointer-events-none absolute rounded-lg ring-2 ring-primary bg-transparent"
             style={{
-              top: highlight.top,
-              left: highlight.left,
-              width: highlight.width,
-              height: highlight.height,
-            }}
-          />
-        ) : null}
-        {highlight && isPhone ? (
-          <div
-            className="pointer-events-none absolute rounded-lg ring-2 ring-primary/90"
-            style={{
-              top: highlight.top,
-              left: highlight.left,
-              width: highlight.width,
-              height: Math.min(highlight.height, window.innerHeight * 0.4),
+              top: rect.top,
+              left: rect.left,
+              width: rect.width,
+              height: rect.height,
+              boxShadow: "0 0 0 9999px rgba(0,0,0,0.6)",
             }}
           />
         ) : null}
 
-        {/* Phone: bottom sheet — always fully on-screen */}
         {isPhone ? (
           <motion.div
             role="dialog"
             aria-modal="true"
-            className="absolute inset-x-0 bottom-0 z-[91] flex max-h-[min(52vh,22rem)] flex-col rounded-t-2xl border border-border bg-card text-card-foreground shadow-2xl"
+            data-tour-sheet
+            className="absolute inset-x-0 bottom-0 z-[91] flex max-h-[min(48vh,20rem)] flex-col rounded-t-2xl border border-border bg-card text-card-foreground shadow-2xl"
             style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
@@ -178,7 +242,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                     {index + 1} / {steps.length}
                   </p>
-                  <h3 className="font-heading text-base font-bold text-foreground leading-snug">
+                  <h3 className="font-heading text-base font-bold leading-snug text-foreground">
                     {fr ? step.titleFr : step.titleEn}
                   </h3>
                 </div>
@@ -191,7 +255,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
                   <X size={18} />
                 </button>
               </div>
-              <p className="min-h-0 flex-1 overflow-y-auto text-sm leading-relaxed text-muted-foreground pr-1">
+              <p className="min-h-0 flex-1 overflow-y-auto pr-1 text-sm leading-relaxed text-muted-foreground overscroll-contain">
                 {fr ? step.bodyFr : step.bodyEn}
               </p>
               <div className="mt-3 flex shrink-0 items-center justify-between gap-2 border-t border-border/60 pt-3">
@@ -208,6 +272,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
           <motion.div
             role="dialog"
             aria-modal="true"
+            data-tour-sheet
             className="absolute left-1/2 z-[91] w-[min(92vw,22rem)] -translate-x-1/2 rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-xl"
             style={{ top: cardTopDesktop }}
             initial={{ opacity: 0, y: 10 }}
@@ -249,7 +314,6 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
   );
 }
 
-/** Tiny ? control to replay a single segment. */
 export function DashboardTourHelpButton({
   onClick,
   className,
