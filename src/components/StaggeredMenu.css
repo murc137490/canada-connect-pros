@@ -83,91 +83,25 @@
   border-radius: inherit;
   overflow-x: hidden;
   overflow-y: auto;
-  /* Slightly foggy see-through glass (light) */
-  background: rgba(255, 255, 255, 0.16) !important;
-  background-color: rgba(255, 255, 255, 0.16) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(190%) !important;
-  backdrop-filter: blur(18px) saturate(190%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.1),
-    0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 -1px 0 rgba(255, 255, 255, 0.25) inset;
+  /* Even foggy glass — flat fill, no blotchy sheen overlays */
+  background: rgba(255, 255, 255, 0.2) !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
+  backdrop-filter: blur(22px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
   color: #111;
-}
-
-/* Glossy specular sheen */
-.user-menu-panel__glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 0;
-  background: linear-gradient(
-    155deg,
-    rgba(255, 255, 255, 0.72) 0%,
-    rgba(255, 255, 255, 0.28) 22%,
-    rgba(255, 255, 255, 0.06) 48%,
-    rgba(255, 255, 255, 0) 68%,
-    rgba(255, 255, 255, 0.14) 100%
-  );
-}
-
-.user-menu-panel__glass::after {
-  content: "";
-  position: absolute;
-  top: 1px;
-  left: 12%;
-  right: 12%;
-  height: 38%;
-  border-radius: 999px;
-  pointer-events: none;
-  z-index: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.55) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  filter: blur(6px);
-  opacity: 0.85;
 }
 
 .dark .user-menu-panel__glass,
 :is(html.dark, .dark) .user-menu-panel__glass {
-  /* Foggy dark glass — more transparent */
-  background: rgba(255, 255, 255, 0.06) !important;
-  background-color: rgba(255, 255, 255, 0.06) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(170%) !important;
-  backdrop-filter: blur(20px) saturate(170%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  box-shadow:
-    0 16px 48px rgba(0, 0, 0, 0.2),
-    0 1px 0 rgba(255, 255, 255, 0.45) inset,
-    0 -1px 0 rgba(255, 255, 255, 0.08) inset;
+  background: rgba(255, 255, 255, 0.08) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+  backdrop-filter: blur(24px) saturate(150%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
   color: #fff;
-}
-
-.dark .user-menu-panel__glass::before,
-:is(html.dark, .dark) .user-menu-panel__glass::before {
-  background: linear-gradient(
-    155deg,
-    rgba(255, 255, 255, 0.4) 0%,
-    rgba(255, 255, 255, 0.14) 26%,
-    rgba(255, 255, 255, 0.03) 52%,
-    rgba(255, 255, 255, 0) 70%,
-    rgba(255, 255, 255, 0.1) 100%
-  );
-}
-
-.dark .user-menu-panel__glass::after,
-:is(html.dark, .dark) .user-menu-panel__glass::after {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.35) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  opacity: 0.7;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
