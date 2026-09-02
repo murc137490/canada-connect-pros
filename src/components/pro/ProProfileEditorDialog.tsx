@@ -740,11 +740,6 @@ export function ProProfileEditorDialog({
           <section className="rounded-lg border border-border/80 bg-muted/20 p-4 space-y-4">
             <div>
               <h2 className="font-semibold text-foreground dark:text-white">{t.dashboard?.accountDetailsTitle ?? "Account details"}</h2>
-              <p className="text-xs text-muted-foreground dark:text-white/75 mt-1">
-                {locale === "fr"
-                  ? "Utilisé pour le tableau de bord, les pages d'accueil et les reçus."
-                  : "Used to prefill the home and Services pages and for receipts."}
-              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="acc-full-name">{t.dashboard?.accountName ?? "Name"}</Label>
@@ -1273,10 +1268,8 @@ export function ProProfileEditorDialog({
 
           <div className="space-y-4 rounded-xl border border-border p-4">
             <Label className="text-base font-semibold">{t.createPro.pageAesthetic ?? "Personalize your page"}</Label>
-            <p className="text-sm text-muted-foreground">{t.createPro.pageAestheticHint ?? "Choose a template and colors so your public profile looks unique to clients."}</p>
             <div>
-              <p className="text-sm font-medium text-foreground mb-1">{t.dashboard?.serviceTags ?? "Service tags"}</p>
-              <p className="text-xs text-muted-foreground mb-2">{t.dashboard?.serviceTagsHint ?? "e.g. Emergency Repair, Commercial Work."}</p>
+              <p className="text-sm font-medium text-foreground mb-2">{t.dashboard?.serviceTags ?? "Service tags"}</p>
               <div className="flex flex-wrap gap-2">
                 {SERVICE_TAG_OPTIONS.map((tag) => (
                   <label key={tag} className="inline-flex items-center gap-1.5 cursor-pointer">
@@ -1295,8 +1288,7 @@ export function ProProfileEditorDialog({
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground mb-1">{t.createPro.colorSchemeLabel ?? "Color scheme"}</p>
-              <p className="text-xs text-muted-foreground mb-2">{t.createPro.colorSchemeHint ?? "Pick a palette. Preview updates immediately."}</p>
+              <p className="text-sm font-medium text-foreground mb-2">{t.createPro.colorSchemeLabel ?? "Color scheme"}</p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {PRO_PAGE_COLOR_SCHEMES.map((scheme) => {
                   const isSelected = pageColorSchemeId === scheme.id;

@@ -1123,10 +1123,8 @@ export const translations = {
       featuredProfileDesign: "Featured profile design",
       proPageAestheticHint: "Choose how your public profile looks: template, background color and highlights.",
       squarePaymentsHeading: "Square payouts",
-      squarePaymentsConnected:
-        "Your Square account is connected. Client payments settle to your Square account. Première Services’ platform fee is 5% of the service subtotal (shown on invoices).",
-      squarePaymentsNotConnected:
-        "Connect your Square account to receive client booking payments on your own Square balance. Première Services’ platform fee is 5% of the service subtotal.",
+      squarePaymentsConnected: "Square connected.",
+      squarePaymentsNotConnected: "Connect Square here and link your account.",
       squareConnectButton: "Connect Square",
       squareDisconnectButton: "Disconnect Square",
       squareConnectStarted: "Redirecting to Square…",
@@ -2943,10 +2941,8 @@ export const translations = {
       featuredProfileDesign: "Profil mis en vedette",
       proPageAestheticHint: "Choisissez l'apparence de votre profil public: modèle, couleur d'arrière-plan et couleurs d'accent.",
       squarePaymentsHeading: "Paiements Square",
-      squarePaymentsConnected:
-        "Votre compte Square est relié. Les paiements des clients sont versés sur votre compte Square. Les frais de plateforme Première Services sont de 5 % du sous-total du service (affichés sur les factures).",
-      squarePaymentsNotConnected:
-        "Reliez votre compte Square pour recevoir les paiements de réservation sur votre solde Square. Les frais de plateforme Première Services sont de 5 % du sous-total du service.",
+      squarePaymentsConnected: "Square connecté.",
+      squarePaymentsNotConnected: "Connectez Square ici et liez votre compte.",
       squareConnectButton: "Relier Square",
       squareDisconnectButton: "Déconnecter Square",
       squareConnectStarted: "Redirection vers Square…",

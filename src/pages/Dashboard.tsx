@@ -66,6 +66,7 @@ import ProBookingRequestDetailDialog from "@/components/pro/ProBookingRequestDet
 import ClientBookingPayDialog from "@/components/ClientBookingPayDialog";
 import DashboardReviewsPanel from "@/components/dashboard/DashboardReviewsPanel";
 import { DashboardTour, DashboardTourHelpButton } from "@/components/dashboard/DashboardTour";
+import { StarterScheduleNotice } from "@/components/dashboard/StarterScheduleNotice";
 import {
   type DashTourSegment,
   isSegmentCompleted,
@@ -4098,11 +4099,11 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <h3 className="font-heading font-bold text-foreground mb-1">{t.dashboard.squarePaymentsHeading}</h3>
-                          <p className="text-sm text-muted-foreground max-w-prose">
-                            {proProfile.square_location_id
-                              ? t.dashboard.squarePaymentsConnected
-                              : t.dashboard.squarePaymentsNotConnected}
-                          </p>
+                          {!proProfile.square_location_id ? (
+                            <p className="text-sm text-muted-foreground max-w-prose">
+                              {t.dashboard.squarePaymentsNotConnected}
+                            </p>
+                          ) : null}
                         </div>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-2 shrink-0">
@@ -4131,15 +4132,11 @@ export default function Dashboard() {
                   </div>
 
                   <div className="overflow-hidden rounded-xl border bg-card p-4 sm:p-6 md:p-8" data-tour="pro-featured">
-                    <h3 className="font-heading font-bold text-foreground mb-2">{t.dashboard.featuredProfileDesign ?? "Featured profile design"}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {t.dashboard.proPageAestheticHint ?? "Change your template, background and colors. Clients will see these on your public page."}
-                    </p>
+                    <h3 className="font-heading font-bold text-foreground mb-4">{t.dashboard.featuredProfileDesign ?? "Featured profile design"}</h3>
                     <div className="grid min-w-0 gap-4 md:grid-cols-2">
                       <div className="min-w-0 space-y-4">
                         <div className={canEditFeaturedProfileDesign ? "min-w-0" : "min-w-0 opacity-40 blur-[1px]"}>
-                          <p className="text-sm font-medium text-foreground mb-1">{t.createPro.colorSchemeLabel ?? "Color scheme"}</p>
-                          <p className="text-xs text-muted-foreground mb-2">{t.createPro.colorSchemeHint ?? "Pick a palette. Preview updates immediately."} The primary color is used for the right sidebar (Starting price, Booking Guarantee, Availability) on your public page and the mock phone.</p>
+                          <p className="text-sm font-medium text-foreground mb-2">{t.createPro.colorSchemeLabel ?? "Color scheme"}</p>
                           <div className="sm:hidden">
                             {(() => {
                               const selectedScheme = getSchemeById(proPageColorSchemeId) ?? PRO_PAGE_COLOR_SCHEMES[0];
@@ -4278,8 +4275,7 @@ export default function Dashboard() {
                           </div>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-foreground mb-1">{t.dashboard.serviceTags ?? "Service tags"}</p>
-                          <p className="text-xs text-muted-foreground mb-2">{t.dashboard.serviceTagsHint ?? "e.g. Emergency Repair, Commercial Work. Shown on your public page."}</p>
+                          <p className="text-sm font-medium text-foreground mb-2">{t.dashboard.serviceTags ?? "Service tags"}</p>
                           <div className="flex max-w-full flex-wrap gap-2 overflow-hidden">
                             {SERVICE_TAG_OPTIONS.map((tag) => (
                               <label key={tag} className="inline-flex max-w-full cursor-pointer items-center gap-1.5">
@@ -4451,21 +4447,12 @@ export default function Dashboard() {
                   </Dialog>
 
                   <div className="rounded-xl border bg-card p-6 md:p-8" data-tour="pro-services">
-                    <h3 className="font-heading font-bold text-foreground mb-2">{t.dashboard.myServices ?? "My Services"}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {t.dashboard.addService ?? "Add service"}, {t.dashboard.editService ?? "Edit service"}, {t.dashboard.setPrice ?? "Set price"}, {t.dashboard.setDuration ?? "Set duration"}.
-                      {hasGrowthServiceExtras(subscriptionTierNormalized)
-                        ? ` ${t.dashboard.autoReplyGrowthHint ?? ""} ${t.dashboard.renewalGrowthHint ?? ""}`
-                        : ` ${t.dashboard.serviceBundlesComingSoon ?? ""}`}
-                    </p>
+                    <h3 className="font-heading font-bold text-foreground mb-4">{t.dashboard.myServices ?? "My Services"}</h3>
                     <div className="mb-6 flex flex-wrap items-end gap-3">
                       <div className="min-w-[140px]">
                         <Label htmlFor="dashboard-starting-price" className="text-sm font-medium text-foreground">
                           {t.profile?.startingPrice ?? "Starting price"}
                         </Label>
-                        <p className="text-xs text-muted-foreground mt-0.5 mb-1">
-                          {t.dashboard.startingPriceHint ?? "Shown on your public page. Used for payment when no service price is set."}
-                        </p>
                         <Input
                           id="dashboard-starting-price"
                           type="text"
@@ -4826,7 +4813,6 @@ export default function Dashboard() {
                   <>
                     <div>
                       <Label>{t.dashboard.autoReplyLabel ?? "Automated reply"}</Label>
-                      <p className="text-xs text-neutral-400 mt-0.5">{t.dashboard.autoReplyGrowthHint}</p>
                       <Textarea
                         placeholder={t.dashboard.autoReplyPlaceholder ?? ""}
                         value={serviceFormAutoReply}
@@ -4837,7 +4823,6 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <Label>{t.dashboard.renewalMonthsLabel ?? "Renewal (months)"}</Label>
-                      <p className="text-xs text-neutral-400 mt-0.5">{t.dashboard.renewalGrowthHint}</p>
                       <Input
                         type="text"
                         inputMode="numeric"
@@ -5080,7 +5065,6 @@ export default function Dashboard() {
                   maxLength={7}
                   className="font-mono uppercase tracking-wide"
                 />
-                <p className="text-xs text-muted-foreground">{t.dashboard.accountPostalHint}</p>
               </div>
               {proProfile ? (
                 <div className="space-y-2">
@@ -5090,7 +5074,6 @@ export default function Dashboard() {
                       <span className="italic">{t.dashboard.accountBusinessAddressNotSet}</span>
                     )}
                   </p>
-                  <p className="text-xs text-muted-foreground">{t.dashboard.accountBusinessAddressSyncedHint}</p>
                   <Button type="button" variant="outline" size="sm" onClick={() => setProProfileEditorOpen(true)}>
                     {t.joinPros?.editProfile ?? "Edit Pro Profile"}
                   </Button>
@@ -5114,7 +5097,6 @@ export default function Dashboard() {
               <div className="space-y-2">
                 <Label>{t.dashboard.accountEmail}</Label>
                 <Input value={user.email ?? ""} readOnly className="bg-muted" />
-                <p className="text-xs text-muted-foreground">{t.dashboard.accountEmailHint}</p>
               </div>
               <div className="space-y-2">
                 <Label>{t.auth.emailLanguageLabel}</Label>
@@ -5144,7 +5126,6 @@ export default function Dashboard() {
                     Français
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground">{t.dashboard.accountEmailLanguageHint}</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="acc-birthday">{t.dashboard.accountBirthday}</Label>
@@ -5179,9 +5160,6 @@ export default function Dashboard() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-muted-foreground">
-                    {t.dashboard.mainCategoryHint ?? "The services you list are for this one category. You can change it anytime."}
-                  </p>
                 </div>
               )}
               <Button type="submit" disabled={accountSaving} className="gap-2">
@@ -5238,11 +5216,6 @@ export default function Dashboard() {
                 <h3 className="font-heading font-semibold text-foreground">
                   {locale === "fr" ? "Politique d’annulation (clients)" : "Cancellation policy (clients)"}
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  {locale === "fr"
-                    ? "Par défaut pour vos réservations. Vous pouvez aussi fixer des frais par service dans Mes services (Ajouter / Modifier un service)."
-                    : "Default for your bookings. You can also set a fee per service in My Services (Add / Edit service)."}
-                </p>
                 <div className="space-y-2">
                   <Label>{locale === "fr" ? "Option" : "Option"}</Label>
                   <select
@@ -5544,7 +5517,6 @@ export default function Dashboard() {
                     <Link to="/dashboard?tab=bookings">{t.dashboard.schedule ?? "Schedule"}</Link>
                   </Button>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">{t.dashboard.acceptDenyHint ?? "Accept or deny each request below."}</p>
                 {proBookings.length === 0 ? (
                   <p className="text-sm text-muted-foreground">{t.dashboard.emptyBookings}</p>
                 ) : (
@@ -5556,37 +5528,38 @@ export default function Dashboard() {
               </div>
             ) : proProfile?.is_verified && !proViewingMyRequests ? (
               <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">
-                <h3 className="font-heading font-bold text-foreground mb-1 flex items-start gap-2 text-base leading-snug sm:items-center sm:text-lg">
+                <h3 className="font-heading font-bold text-foreground mb-4 flex items-start gap-2 text-base leading-snug sm:items-center sm:text-lg">
                   <Clock size={18} className="mt-0.5 shrink-0 sm:mt-0" />
-                  <span className="min-w-0">
+                  <span className="min-w-0 flex items-center gap-1.5 flex-wrap">
                     <span className="hidden sm:inline">
                       {t.dashboard.schedule ?? "Schedule"} &amp; {t.dashboard.currentBookings}
                     </span>
                     <span className="sm:hidden">
                       {t.dashboard.schedule ?? "Schedule"} &amp; {locale === "fr" ? "Réservations" : "Bookings"}
                     </span>
+                    {(subscriptionTierNormalized === "starter" || subscriptionTierNormalized == null) && (
+                      <StarterScheduleNotice
+                        message={
+                          subscriptionTierNormalized == null
+                            ? (t.dashboard.proTabNoPaidPlanBody ?? "")
+                            : (t.dashboard.tierStarterScheduleCallout ?? "")
+                        }
+                        upgradeLabel={t.dashboard.upgradeDowngradeLink}
+                        ariaLabel={
+                          locale === "fr"
+                            ? "Info plan Essentiel — fenêtre de 30 jours"
+                            : "Starter plan info — 30-day window"
+                        }
+                      />
+                    )}
                   </span>
                 </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  <span className="hidden sm:inline">{t.dashboard.scheduleBookingHint ?? "Manage your availability and see bookings on the calendar. Accept or deny requests below."}</span>
-                  <span className="sm:hidden">{locale === "fr" ? "Gérez vos disponibilités et réservations." : "Manage availability and bookings."}</span>
-                </p>
                 <p className="lg:hidden text-sm mb-4">
                   <a href="#dashboard-open-leads" className="font-medium text-primary underline underline-offset-2">
                     {t.dashboard.availableJobsPanelTitle}
                   </a>
                   <span className="text-muted-foreground"> · {t.dashboard.availableJobsViewOnMobile}</span>
                 </p>
-                {(subscriptionTierNormalized === "starter" || subscriptionTierNormalized == null) && (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-50 p-3 text-sm mb-4">
-                    {subscriptionTierNormalized == null
-                      ? (t.dashboard.proTabNoPaidPlanBody ?? "")
-                      : (t.dashboard.tierStarterScheduleCallout ?? "")}{" "}
-                    <Link to="/pro-plans" className="font-semibold underline underline-offset-2">
-                      {t.dashboard.upgradeDowngradeLink}
-                    </Link>
-                  </div>
-                )}
                 <div data-tour="schedule-calendar">
                 <ProScheduleEditor
                   weekly={proWeeklySchedule}
@@ -5650,7 +5623,6 @@ export default function Dashboard() {
                     <Link to="/dashboard?tab=bookings&view=my-requests">{locale === "fr" ? "Mes demandes" : "My requests"}</Link>
                   </Button>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">{t.dashboard.acceptDenyHint ?? "Accept or deny each request below."}</p>
                 {proBookings.length === 0 ? (
                   <p className="text-sm text-muted-foreground">{t.dashboard.emptyBookings}</p>
                 ) : (
@@ -6137,7 +6109,6 @@ export default function Dashboard() {
                           : code;
               return (
                 <div className="space-y-4" data-tour="invoices-panel">
-                  <p className="text-sm text-muted-foreground">{t.dashboard.invoicesIntro}</p>
                   {mockSnapshot ? (
                     <div className="space-y-2">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

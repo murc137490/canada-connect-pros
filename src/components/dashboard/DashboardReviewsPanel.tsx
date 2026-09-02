@@ -385,11 +385,8 @@ export default function DashboardReviewsPanel({
     );
   }
 
-  const blurMsgPro =
-    t.reviews.blurredUntilYouReviewPro ?? "Leave your review to read theirs in full.";
-  const blurMsgClient =
-    t.reviews.blurredUntilYouReviewClient ??
-    "Review this client to read their full review.";
+  const blurMsgPro = "";
+  const blurMsgClient = "";
   const blurCta = t.reviews.leaveReview ?? "Leave a review";
   const reviewClientCta = t.dashboard.reviewClient ?? "Review client";
   const pendingTitle = t.dashboard.reviewsPendingTitle ?? "Ready to review";

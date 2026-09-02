@@ -127,11 +127,7 @@ export default function ProPortfolioEditor({ proProfileId }: { proProfileId: str
 
   return (
     <div className="rounded-xl border bg-card p-6 md:p-8 mt-6">
-      <h3 className="font-heading font-bold text-foreground mb-1">{t.dashboard.portfolioTitle ?? "Portfolio"}</h3>
-      <p className="text-sm text-muted-foreground mb-4">
-        {t.dashboard.portfolioHint ??
-          "Photos appear on your public profile under Services. Your profile photo is managed in the preview section above."}
-      </p>
+      <h3 className="font-heading font-bold text-foreground mb-4">{t.dashboard.portfolioTitle ?? "Portfolio"}</h3>
 
       {loading ? (
         <div className="flex justify-center py-8">

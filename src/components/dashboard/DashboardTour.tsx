@@ -22,7 +22,6 @@ type Props = {
 
 type HighlightBox = { top: number; left: number; width: number; height: number };
 
-/** Always-visible tour outline (not tied to theme primary, which is near-black in light mode). */
 const TOUR_OUTLINE = "#4EA1FF";
 
 function useIsPhone() {
@@ -39,7 +38,6 @@ function useIsPhone() {
   return phone;
 }
 
-/** Bottom of fixed site header — never include logo / lang / theme / account / menu. */
 function getHeaderBottom(): number {
   const header = document.querySelector<HTMLElement>("header.site-header");
   if (header) {
@@ -59,7 +57,7 @@ function getSheetTop(isPhone: boolean): number {
   return Math.round(window.innerHeight * 0.58);
 }
 
-function scrollTargetIntoBand(el: Element, isPhone: boolean) {
+function scrollTargetIntoBand(el: Element, isPhone: boolean, smooth: boolean) {
   const headerBottom = getHeaderBottom();
   const sheetTop = getSheetTop(isPhone);
   const bandTop = headerBottom + 10;
@@ -70,20 +68,14 @@ function scrollTargetIntoBand(el: Element, isPhone: boolean) {
   const focusH = Math.min(Math.max(r.height, 40), bandBottom - bandTop);
   const elMid = r.top + focusH / 2;
   const delta = elMid - bandMid;
-  if (Math.abs(delta) > 6) {
-    window.scrollBy(0, delta);
-  }
 
-  const r2 = el.getBoundingClientRect();
-  if (r2.bottom < bandTop + 24 || r2.top > bandBottom - 24) {
-    el.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
+  if (Math.abs(delta) > 6) {
+    window.scrollBy({ top: delta, left: 0, behavior: smooth ? "smooth" : "auto" });
+    return Math.min(700, Math.max(280, Math.abs(delta) * 1.2));
   }
+  return 0;
 }
 
-/**
- * Exact target box + small pad. Clip only so the blue outline stays in the
- * visible band (below header, above coach sheet) — never drop the outline.
- */
 function measureHighlight(el: Element, isPhone: boolean): HighlightBox {
   const pad = isPhone ? 5 : 8;
   const r = el.getBoundingClientRect();
@@ -104,7 +96,6 @@ function measureHighlight(el: Element, isPhone: boolean): HighlightBox {
     height = maxBottom - top;
   }
 
-  // Guarantee a visible outline frame even if the target is tall / partially covered
   if (height < 48) {
     top = Math.min(Math.max(r.top - pad, headerBottom + 4), maxBottom - 48);
     height = Math.min(Math.max(r.height + pad * 2, 48), maxBottom - top);
@@ -125,11 +116,69 @@ function measureHighlight(el: Element, isPhone: boolean): HighlightBox {
   };
 }
 
+/** Four dim panels leave a bright hole — content inside the outline stays clear. */
+function SpotlightCutout({
+  rect,
+  onDismiss,
+}: {
+  rect: HighlightBox;
+  onDismiss: () => void;
+}) {
+  const vw = typeof window !== "undefined" ? window.innerWidth : 0;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 0;
+  const dim = "bg-black/55";
+
+  return (
+    <div className="absolute inset-0 z-[1]" aria-hidden>
+      {/* Top */}
+      <div className={cn("absolute left-0 right-0 top-0", dim)} style={{ height: Math.max(0, rect.top) }} onClick={onDismiss} />
+      {/* Bottom */}
+      <div
+        className={cn("absolute bottom-0 left-0 right-0", dim)}
+        style={{ top: rect.top + rect.height }}
+        onClick={onDismiss}
+      />
+      {/* Left */}
+      <div
+        className={cn("absolute", dim)}
+        style={{ top: rect.top, left: 0, width: Math.max(0, rect.left), height: rect.height }}
+        onClick={onDismiss}
+      />
+      {/* Right */}
+      <div
+        className={cn("absolute", dim)}
+        style={{
+          top: rect.top,
+          left: rect.left + rect.width,
+          width: Math.max(0, vw - (rect.left + rect.width)),
+          height: rect.height,
+        }}
+        onClick={onDismiss}
+      />
+      {/* Blue outline — hole stays undimmed */}
+      <div
+        className="pointer-events-none absolute rounded-lg"
+        style={{
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+          border: `2.5px solid ${TOUR_OUTLINE}`,
+          boxShadow: `0 0 0 1px rgba(78,161,255,0.4), 0 0 14px rgba(78,161,255,0.35)`,
+        }}
+      />
+      {/* Safety: ensure full coverage if layout odd */}
+      {vh <= 0 ? <div className={cn("absolute inset-0", dim)} onClick={onDismiss} /> : null}
+    </div>
+  );
+}
+
 export function DashboardTour({ userId, segment, open, onClose, onFinished }: Props) {
   const { locale } = useLanguage();
   const steps = TOUR_STEPS[segment];
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<HighlightBox | null>(null);
+  const [spotlightReady, setSpotlightReady] = useState(false);
   const isPhone = useIsPhone();
   const lockY = useRef(0);
   const locked = useRef(false);
@@ -160,48 +209,56 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
     setIndex(0);
   }, [open, segment]);
 
+  // Smooth scroll first, then reveal bright outline
   useLayoutEffect(() => {
     if (!open || !step) {
       setRect(null);
+      setSpotlightReady(false);
       return;
     }
 
     let cancelled = false;
-    let raf = 0;
     let settleTimer = 0;
+    let revealTimer = 0;
 
-    const place = () => {
+    setSpotlightReady(false);
+
+    const finishPlace = (el: Element) => {
+      if (cancelled) return;
+      const box = measureHighlight(el, isPhone);
+      setRect(box);
+      applyScrollLock(window.scrollY);
+      revealTimer = window.setTimeout(() => {
+        if (!cancelled) setSpotlightReady(true);
+      }, 80);
+    };
+
+    const run = () => {
       const el = document.querySelector(step.target);
       if (!el) {
         setRect(null);
         return;
       }
-      clearScrollLock();
-      scrollTargetIntoBand(el, isPhone);
-      setRect(measureHighlight(el, isPhone));
-      applyScrollLock(window.scrollY);
-    };
 
-    place();
-    raf = requestAnimationFrame(() => {
-      if (cancelled) return;
-      place();
-      // Sheet finishes sliding up — remeasure so outline sits above it
+      clearScrollLock();
+      const waitMs = scrollTargetIntoBand(el, isPhone, true);
+
       settleTimer = window.setTimeout(() => {
         if (cancelled) return;
-        const el = document.querySelector(step.target);
-        if (!el) return;
-        clearScrollLock();
-        scrollTargetIntoBand(el, isPhone);
-        setRect(measureHighlight(el, isPhone));
-        applyScrollLock(window.scrollY);
-      }, 320);
-    });
+        const target = document.querySelector(step.target) ?? el;
+        // Nudge once more without smooth if still off-band
+        scrollTargetIntoBand(target, isPhone, false);
+        finishPlace(target);
+      }, waitMs > 0 ? waitMs + 60 : 120);
+    };
+
+    // Let the coach sheet paint, then scroll
+    settleTimer = window.setTimeout(run, 40);
 
     return () => {
       cancelled = true;
-      cancelAnimationFrame(raf);
       window.clearTimeout(settleTimer);
+      window.clearTimeout(revealTimer);
     };
   }, [open, index, step, isPhone, clearScrollLock, applyScrollLock]);
 
@@ -228,7 +285,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
   }, [open, clearScrollLock]);
 
   useEffect(() => {
-    if (!open || !step) return;
+    if (!open || !step || !spotlightReady) return;
     const onResize = () => {
       const el = document.querySelector(step.target);
       if (!el) {
@@ -243,7 +300,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
     };
-  }, [open, step, isPhone]);
+  }, [open, step, isPhone, spotlightReady]);
 
   const finish = useCallback(() => {
     markSegmentCompleted(userId, segment);
@@ -275,40 +332,19 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
         exit={{ opacity: 0 }}
         transition={{ duration: MOTION.fast }}
       >
-        {/* Base dim — header stays dimmed (not part of outline) */}
-        <div className="absolute inset-0 bg-black/55" onClick={onClose} aria-hidden />
-
-        {/* Blue outline around the spoken topic — border (not ring/boxShadow) so it always paints */}
-        {rect ? (
-          isPhone ? (
-            <div
-              className="pointer-events-none absolute z-[1] rounded-lg"
-              style={{
-                top: rect.top,
-                left: rect.left,
-                width: rect.width,
-                height: rect.height,
-                border: `2.5px solid ${TOUR_OUTLINE}`,
-                boxShadow: `0 0 0 1px rgba(78,161,255,0.35), 0 0 12px rgba(78,161,255,0.45)`,
-              }}
-              aria-hidden
-            />
-          ) : (
-            <div
-              className="pointer-events-none absolute z-[1] rounded-xl bg-transparent"
-              style={{
-                top: rect.top,
-                left: rect.left,
-                width: rect.width,
-                height: rect.height,
-                border: `2.5px solid ${TOUR_OUTLINE}`,
-                // border stays; extra shadow dims outside without wiping the blue edge
-                boxShadow: `0 0 0 9999px rgba(0,0,0,0.55)`,
-              }}
-              aria-hidden
-            />
-          )
-        ) : null}
+        {/* While scrolling: soft full dim; then cutout so outlined area is bright */}
+        {!rect || !spotlightReady ? (
+          <div className="absolute inset-0 z-[1] bg-black/45" onClick={onClose} aria-hidden />
+        ) : (
+          <motion.div
+            className="absolute inset-0 z-[1]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.28, ease: MOTION.ease }}
+          >
+            <SpotlightCutout rect={rect} onDismiss={onClose} />
+          </motion.div>
+        )}
 
         {isPhone ? (
           <motion.div

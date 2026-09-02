@@ -436,13 +436,6 @@ export default function ProScheduleEditor({
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm text-muted-foreground mb-2">
-          {t.dashboard?.scheduleCalendarHint ?? "Preview: your availability and specific dates below."}
-        </p>
-        <p className="text-xs text-muted-foreground mb-2">
-          {t.dashboard?.clickDateToSetHint ??
-            "Click a date: turn off “Available” for a full day off, or keep it on and add blocked hours clients cannot book."}
-        </p>
         <AvailabilityCalendar
           availability={weeklyScheduleToAvailability(weekly)}
           busyDates={busyDates}
@@ -500,17 +493,6 @@ export default function ProScheduleEditor({
               <h5 className="font-semibold text-foreground text-sm">
                 {t.dashboard?.scheduleBlockedHoursTitle ?? "Blocked hours on this day"}
               </h5>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t.dashboard?.scheduleBlockedHoursHint ??
-                  "Clients cannot start a booking during these ranges (within your working hours for this day). Save schedule below to apply."}
-              </p>
-              {weeklyWindowForSelected ? (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {(t.dashboard?.scheduleWorkingWindowLabel ?? "Working window this day: {{start}}–{{end}}")
-                    .replace("{{start}}", weeklyWindowForSelected.start)
-                    .replace("{{end}}", weeklyWindowForSelected.end)}
-                </p>
-              ) : null}
             </div>
             {invalidSlotRange ? (
               <p className="text-xs text-destructive font-medium">
@@ -606,9 +588,6 @@ export default function ProScheduleEditor({
                 rows={3}
                 className="text-sm resize-none"
               />
-              <p className="text-[11px] text-muted-foreground">
-                {t.dashboard?.scheduleClientMessageHint ?? "Shown on your public page when someone picks this date. Save schedule to publish."}
-              </p>
             </div>
           </div>
         ) : null}
@@ -660,10 +639,7 @@ export default function ProScheduleEditor({
       </div>
 
       <div>
-        <h4 className="font-medium text-foreground mb-2">{t.dashboard?.weeklyTemplate ?? "Weekly template"}</h4>
-        <p className="text-sm text-muted-foreground mb-3">
-          {t.dashboard?.weeklyTemplateHint ?? "Set which days you're available and your hours (e.g. 9:00–17:00)."}
-        </p>
+        <h4 className="font-medium text-foreground mb-3">{t.dashboard?.weeklyTemplate ?? "Weekly template"}</h4>
         <div className="rounded-lg border bg-card p-3 sm:p-4 overflow-x-auto">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-7 min-w-0 sm:min-w-[280px]">
             {WEEKDAY_KEYS.map((key) => (
