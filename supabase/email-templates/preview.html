@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Premiere email preview</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #e8e4de; }
+    .bar { padding: 16px 20px; background: #141A24; color: #fff; }
+    .bar a { color: #c8d4f0; margin-right: 16px; }
+    iframe { width: 100%; height: calc(100vh - 56px); border: 0; background: #F8F6F3; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    Preview:
+    <a href="magic-link.html" target="p">Magic link</a>
+    <a href="reset-password.html" target="p">Password reset</a>
+    <a href="confirm-signup.html" target="p">Confirm signup</a>
+  </div>
+  <iframe name="p" src="magic-link.html" title="Email preview"></iframe>
+</body>
+</html>

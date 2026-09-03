@@ -1,5 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  emailParagraph,
+  emailPrimaryButton,
+  emailSecondaryNote,
+  emailShell,
+} from "../_shared/premiereEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -423,40 +429,40 @@ async function uniqueReferralCode(admin: ReturnType<typeof createClient>) {
 
 function renderInviteEmail(language: "en" | "fr", vars: { senderName: string; signupUrl: string }) {
   const isFr = language === "fr";
+  const title = isFr ? "Vous êtes invité" : "You’re invited";
+  const bodyHtml =
+    emailParagraph(
+      isFr
+        ? `${vars.senderName} vous invite à rejoindre Premiere Services.`
+        : `${vars.senderName} invited you to join Premiere Services.`,
+    ) +
+    emailParagraph(
+      isFr
+        ? "Acceptez l’invitation pour créer votre compte et commencer."
+        : "Accept the invitation to set up your account and get started.",
+    ) +
+    emailPrimaryButton(isFr ? "Accepter l’invitation" : "Accept invitation", vars.signupUrl) +
+    emailSecondaryNote(
+      isFr
+        ? "Si vous n’êtes pas à l’origine de cette invitation, ignorez ce courriel."
+        : "If you didn’t expect this invitation, you can ignore this email.",
+    );
+
   return {
-    subject: isFr ? "Premiere Services - Vous avez reçu une invitation" : "Premiere Services - You've been invited",
-    html: `<!doctype html>
-<html>
-  <body style="margin:0;background:#f6f7fb;font-family:Arial,sans-serif;color:#111827;">
-    <div style="max-width:640px;margin:0 auto;padding:24px;">
-      <div style="background:#ffffff;border-radius:14px;padding:24px;border:1px solid #e5e7eb;">
-        <h1 style="margin:0 0 8px;font-size:20px;line-height:1.3;font-weight:700;">Premiere Services</h1>
-        <p style="margin:0 0 16px;color:#374151;font-size:14px;line-height:1.6;">
-          ${isFr ? `${escapeHtml(vars.senderName)} vous a invité.` : `${escapeHtml(vars.senderName)} invited you.`}
-        </p>
-        <p style="margin:0 0 16px;color:#374151;font-size:14px;line-height:1.6;">
-          ${isFr ? "Cliquez sur le bouton ci-dessous pour accepter l’invitation et configurer votre compte." : "Click the button below to accept the invitation and set up your account."}
-        </p>
-        <a href="${escapeAttr(vars.signupUrl)}" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:700;">
-          ${isFr ? "Accepter l’invitation" : "Accept invitation"}
-        </a>
-        <p style="margin:18px 0 0;color:#6b7280;font-size:12px;line-height:1.6;">
-          ${isFr ? "Si vous n’êtes pas à l’origine de cette invitation, vous pouvez ignorer cet email." : "If you didn’t request this invitation, you can ignore this email."}
-        </p>
-        <p style="margin:16px 0 0;font-size:12px;line-height:18px;color:#6b7280;text-align:center;">
-          <a href="${SITE_URL}" style="color:#1e3a5f;text-decoration:underline;">Premiere Services</a>
-          ·
-          <a href="${SITE_URL}/terms" style="color:#1e3a5f;text-decoration:underline;">${isFr ? "Conditions d'utilisation" : "Terms of Service"}</a>
-          ·
-          <a href="${SITE_URL}/privacy" style="color:#1e3a5f;text-decoration:underline;">${isFr ? "Politique de confidentialité" : "Privacy Policy"}</a>
-        </p>
-        <p style="margin:10px 0 0;font-size:12px;line-height:18px;color:#6b7280;text-align:center;">
-          Premiere Services · Canada · ${isFr ? "Ceci est un courriel automatisé." : "This is an automated email."}
-        </p>
-      </div>
-    </div>
-  </body>
-</html>`,
+    subject: isFr ? "Invitation Premiere Services" : "Premiere Services invitation",
+    html: emailShell({
+      language,
+      preheader: isFr
+        ? `${vars.senderName} vous a invité sur Premiere Services.`
+        : `${vars.senderName} invited you to Premiere Services.`,
+      eyebrow: isFr ? "Invitation" : "Invitation",
+      title,
+      bodyHtml,
+      siteUrl: SITE_URL,
+      termsUrl: `${SITE_URL}/terms`,
+      privacyUrl: `${SITE_URL}/privacy`,
+      supportEmail: REPLY_TO_EMAIL,
+    }),
   };
 }
 

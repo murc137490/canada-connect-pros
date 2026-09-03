@@ -1,8 +1,16 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { callerIsPlatformModerator, getPlatformAdminEmails } from "../_shared/platformAdmin.ts";
+import {
+  emailDetails,
+  emailParagraph,
+  emailPrimaryButton,
+  emailSecondaryNote,
+  emailShell,
+  type EmailLanguage,
+} from "../_shared/premiereEmail.ts";
 
-type Language = "en" | "fr";
+type Language = EmailLanguage;
 type EmailType =
   | "booking_created"
   | "booking_confirmed"
@@ -15,6 +23,16 @@ type EmailType =
   | "auth_magic_link";
 
 type TemplateVars = Record<string, string | number | null | undefined>;
+
+type TemplateCopy = {
+  subject: string;
+  preheader: string;
+  eyebrow: string;
+  title: string;
+  /** Body built with helpers; may contain {{vars}} for later substitution */
+  body: string;
+  showPolicyLinks?: boolean;
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -250,7 +268,7 @@ async function resolveRecipient(
       confirmation_url: stringOrNull(body.confirmation_url) ?? stringOrNull(vars.confirmation_url) ?? "",
       reset_url: stringOrNull(body.reset_url) ?? stringOrNull(vars.reset_url) ?? "",
       magic_link_url: stringOrNull(body.magic_link_url) ?? stringOrNull(vars.magic_link_url) ?? "",
-      expires_in: stringOrNull(body.expires_in) ?? stringOrNull(vars.expires_in) ?? "1 hour",
+      expires_in: stringOrNull(body.expires_in) ?? stringOrNull(vars.expires_in) ?? (language === "fr" ? "1 heure" : "1 hour"),
       support_hours: language === "fr" ? SUPPORT_HOURS_FR : SUPPORT_HOURS_EN,
       terms_url: `${SITE_URL}/terms`,
       privacy_url: `${SITE_URL}/privacy`,
@@ -259,207 +277,345 @@ async function resolveRecipient(
 }
 
 function renderTemplate(type: EmailType, language: Language, vars: TemplateVars) {
+  const name = str(vars.name).trim();
+  const enriched: TemplateVars = {
+    ...vars,
+    name_suffix: name ? `, ${name}` : "",
+    email: str(vars.email || vars.client_email || "").trim() || (language === "fr" ? "votre compte" : "your account"),
+  };
   const t = copy[type][language];
+  const bodyHtml = replaceVars(t.body, enriched, "html");
+  const title = replaceVars(t.title, enriched);
+  const eyebrow = replaceVars(t.eyebrow, enriched);
+  const preheader = replaceVars(t.preheader, enriched);
   return {
-    subject: replaceVars(t.subject, vars),
-    html: layout(replaceVars(t.heading, vars), replaceVars(t.preheader, vars), replaceVars(t.body, vars, "html"), language, vars),
+    subject: replaceVars(t.subject, enriched),
+    html: emailShell({
+      language,
+      preheader,
+      eyebrow,
+      title,
+      bodyHtml,
+      siteUrl: SITE_URL,
+      termsUrl: str(enriched.terms_url ?? `${SITE_URL}/terms`),
+      privacyUrl: str(enriched.privacy_url ?? `${SITE_URL}/privacy`),
+      supportEmail: REPLY_TO_EMAIL,
+      supportHours: str(enriched.support_hours),
+      showPolicyLinks: Boolean(t.showPolicyLinks),
+      cancellationPolicyUrl: str(enriched.cancellation_policy_url ?? `${SITE_URL}/terms`),
+    }),
   };
 }
 
-const copy: Record<EmailType, Record<Language, { subject: string; preheader: string; heading: string; body: string }>> = {
+const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
   booking_created: {
     en: {
-      subject: "Premiere Services - Booking request received",
-      preheader: "Booking request received",
-      heading: "Thank you for booking, {{name}}.",
-      body: detailsBlock([
-        ["Booking ID", "{{booking_id}}"],
-        ["Service", "{{service_type}}"],
-        ["Date", "{{booking_date}}"],
-        ["Time", "{{booking_time}} {{timezone}}"],
-        ["Location", "{{booking_location}}"],
-        ["Professional", "{{pro_name}}"],
-      ]) + cta("Manage booking", "{{manage_booking_url}}") + paragraph("We received your booking request and will send another email once it is confirmed."),
+      subject: "We received your booking request",
+      preheader: "Your Premiere Services booking request is in.",
+      eyebrow: "Booking",
+      title: "Thanks, {{name}} — we received your request",
+      showPolicyLinks: true,
+      body:
+        emailParagraph("We’ll email you again once your booking is confirmed.") +
+        detailsBlock([
+          ["Booking ID", "{{booking_id}}"],
+          ["Service", "{{service_type}}"],
+          ["Date", "{{booking_date}}"],
+          ["Time", "{{booking_time}} {{timezone}}"],
+          ["Location", "{{booking_location}}"],
+          ["Professional", "{{pro_name}}"],
+        ]) +
+        cta("Manage booking", "{{manage_booking_url}}"),
     },
     fr: {
-      subject: "Premiere Services - Demande de réservation reçue",
-      preheader: "Demande de réservation reçue",
-      heading: "Merci pour votre réservation, {{name}}.",
-      body: detailsBlock([
-        ["ID de réservation", "{{booking_id}}"],
-        ["Service", "{{service_type}}"],
-        ["Date", "{{booking_date}}"],
-        ["Heure", "{{booking_time}} {{timezone}}"],
-        ["Lieu", "{{booking_location}}"],
-        ["Professionnel", "{{pro_name}}"],
-      ]) + cta("Gérer la réservation", "{{manage_booking_url}}") + paragraph("Nous avons bien reçu votre demande de réservation. Vous recevrez un autre courriel lorsque la réservation sera confirmée."),
+      subject: "Nous avons reçu votre demande de réservation",
+      preheader: "Votre demande de réservation Premiere Services est enregistrée.",
+      eyebrow: "Réservation",
+      title: "Merci, {{name}} — nous avons bien reçu votre demande",
+      showPolicyLinks: true,
+      body:
+        emailParagraph("Nous vous écrirons de nouveau lorsque votre réservation sera confirmée.") +
+        detailsBlock([
+          ["ID de réservation", "{{booking_id}}"],
+          ["Service", "{{service_type}}"],
+          ["Date", "{{booking_date}}"],
+          ["Heure", "{{booking_time}} {{timezone}}"],
+          ["Lieu", "{{booking_location}}"],
+          ["Professionnel", "{{pro_name}}"],
+        ]) +
+        cta("Gérer la réservation", "{{manage_booking_url}}"),
     },
   },
   booking_confirmed: {
     en: {
-      subject: "Premiere Services - Your booking is confirmed",
-      preheader: "Your booking is confirmed",
-      heading: "Hi {{name}}, your booking is confirmed.",
-      body: detailsBlock([
-        ["Booking ID", "{{booking_id}}"],
-        ["Service", "{{service_type}}"],
-        ["Date", "{{booking_date}}"],
-        ["Time", "{{booking_time}} {{timezone}}"],
-        ["Location", "{{booking_location}}"],
-        ["Professional", "{{pro_name}}"],
-        ["Amount paid", "{{amount_paid}}"],
-      ]) + cta("View booking details", "{{manage_booking_url}}") + paragraph("Your payment is complete or your booking has been confirmed by our team."),
+      subject: "Your booking is confirmed",
+      preheader: "You’re all set — booking confirmed.",
+      eyebrow: "Confirmed",
+      title: "You’re booked, {{name}}",
+      showPolicyLinks: true,
+      body:
+        emailParagraph("Your Premiere Services booking is confirmed.") +
+        detailsBlock([
+          ["Booking ID", "{{booking_id}}"],
+          ["Service", "{{service_type}}"],
+          ["Date", "{{booking_date}}"],
+          ["Time", "{{booking_time}} {{timezone}}"],
+          ["Location", "{{booking_location}}"],
+          ["Professional", "{{pro_name}}"],
+          ["Amount paid", "{{amount_paid}}"],
+        ]) +
+        cta("View booking", "{{manage_booking_url}}"),
     },
     fr: {
-      subject: "Premiere Services - Votre réservation est confirmée",
-      preheader: "Votre réservation est confirmée",
-      heading: "Bonjour {{name}}, votre réservation est confirmée.",
-      body: detailsBlock([
-        ["ID de réservation", "{{booking_id}}"],
-        ["Service", "{{service_type}}"],
-        ["Date", "{{booking_date}}"],
-        ["Heure", "{{booking_time}} {{timezone}}"],
-        ["Lieu", "{{booking_location}}"],
-        ["Professionnel", "{{pro_name}}"],
-        ["Montant payé", "{{amount_paid}}"],
-      ]) + cta("Voir les détails", "{{manage_booking_url}}") + paragraph("Votre paiement est complété ou votre réservation a été confirmée par notre équipe."),
+      subject: "Votre réservation est confirmée",
+      preheader: "Tout est prêt — réservation confirmée.",
+      eyebrow: "Confirmée",
+      title: "C’est confirmé, {{name}}",
+      showPolicyLinks: true,
+      body:
+        emailParagraph("Votre réservation Premiere Services est confirmée.") +
+        detailsBlock([
+          ["ID de réservation", "{{booking_id}}"],
+          ["Service", "{{service_type}}"],
+          ["Date", "{{booking_date}}"],
+          ["Heure", "{{booking_time}} {{timezone}}"],
+          ["Lieu", "{{booking_location}}"],
+          ["Professionnel", "{{pro_name}}"],
+          ["Montant payé", "{{amount_paid}}"],
+        ]) +
+        cta("Voir la réservation", "{{manage_booking_url}}"),
     },
   },
   booking_cancelled: {
     en: {
-      subject: "Premiere Services - Booking cancelled",
-      preheader: "Booking cancelled",
-      heading: "Hi {{name}}, your booking has been cancelled.",
-      body: detailsBlock([
-        ["Booking ID", "{{booking_id}}"],
-        ["Service", "{{service_type}}"],
-        ["Original date", "{{booking_date}}"],
-        ["Original time", "{{booking_time}} {{timezone}}"],
-        ["Location", "{{booking_location}}"],
-        ["Reason", "{{cancellation_reason}}"],
-      ]) + cta("Manage booking", "{{manage_booking_url}}") + paragraph("Refunds or rebooking options, if applicable, follow the cancellation policy."),
+      subject: "Your booking was cancelled",
+      preheader: "Booking cancellation notice.",
+      eyebrow: "Cancelled",
+      title: "Your booking was cancelled",
+      showPolicyLinks: true,
+      body:
+        emailParagraph("Hi {{name}}, this booking is no longer active.") +
+        detailsBlock([
+          ["Booking ID", "{{booking_id}}"],
+          ["Service", "{{service_type}}"],
+          ["Original date", "{{booking_date}}"],
+          ["Original time", "{{booking_time}} {{timezone}}"],
+          ["Location", "{{booking_location}}"],
+          ["Reason", "{{cancellation_reason}}"],
+        ]) +
+        cta("Manage bookings", "{{manage_booking_url}}") +
+        emailSecondaryNote("Refunds or rebooking, if applicable, follow the cancellation policy."),
     },
     fr: {
-      subject: "Premiere Services - Réservation annulée",
-      preheader: "Réservation annulée",
-      heading: "Bonjour {{name}}, votre réservation a été annulée.",
-      body: detailsBlock([
-        ["ID de réservation", "{{booking_id}}"],
-        ["Service", "{{service_type}}"],
-        ["Date originale", "{{booking_date}}"],
-        ["Heure originale", "{{booking_time}} {{timezone}}"],
-        ["Lieu", "{{booking_location}}"],
-        ["Raison", "{{cancellation_reason}}"],
-      ]) + cta("Gérer la réservation", "{{manage_booking_url}}") + paragraph("Les remboursements ou options de nouvelle réservation, si applicables, suivent notre politique d’annulation."),
+      subject: "Votre réservation a été annulée",
+      preheader: "Avis d’annulation de réservation.",
+      eyebrow: "Annulée",
+      title: "Votre réservation a été annulée",
+      showPolicyLinks: true,
+      body:
+        emailParagraph("Bonjour {{name}}, cette réservation n’est plus active.") +
+        detailsBlock([
+          ["ID de réservation", "{{booking_id}}"],
+          ["Service", "{{service_type}}"],
+          ["Date originale", "{{booking_date}}"],
+          ["Heure originale", "{{booking_time}} {{timezone}}"],
+          ["Lieu", "{{booking_location}}"],
+          ["Raison", "{{cancellation_reason}}"],
+        ]) +
+        cta("Gérer les réservations", "{{manage_booking_url}}") +
+        emailSecondaryNote("Les remboursements ou nouvelles réservations, le cas échéant, suivent la politique d’annulation."),
     },
   },
   booking_reminder: {
     en: {
-      subject: "Premiere Services - Booking reminder",
-      preheader: "Booking reminder",
-      heading: "Hi {{name}}, your booking is coming up {{reminder_window}}.",
-      body: detailsBlock([
-        ["Service", "{{service_type}}"],
-        ["Date", "{{booking_date}}"],
-        ["Time", "{{booking_time}} {{timezone}}"],
-        ["Location", "{{booking_location}}"],
-        ["Professional", "{{pro_name}}"],
-      ]) + cta("Manage booking", "{{manage_booking_url}}") + paragraph("If you need to cancel or reschedule, please do so as early as possible."),
+      subject: "Reminder: your booking is coming up",
+      preheader: "Your Premiere Services booking is soon.",
+      eyebrow: "Reminder",
+      title: "Coming up {{reminder_window}}, {{name}}",
+      showPolicyLinks: true,
+      body:
+        detailsBlock([
+          ["Service", "{{service_type}}"],
+          ["Date", "{{booking_date}}"],
+          ["Time", "{{booking_time}} {{timezone}}"],
+          ["Location", "{{booking_location}}"],
+          ["Professional", "{{pro_name}}"],
+        ]) +
+        cta("Manage booking", "{{manage_booking_url}}") +
+        emailSecondaryNote("Need to cancel or reschedule? Please do so as early as you can."),
     },
     fr: {
-      subject: "Premiere Services - Rappel de réservation",
-      preheader: "Rappel de réservation",
-      heading: "Bonjour {{name}}, votre réservation approche {{reminder_window}}.",
-      body: detailsBlock([
-        ["Service", "{{service_type}}"],
-        ["Date", "{{booking_date}}"],
-        ["Heure", "{{booking_time}} {{timezone}}"],
-        ["Lieu", "{{booking_location}}"],
-        ["Professionnel", "{{pro_name}}"],
-      ]) + cta("Gérer la réservation", "{{manage_booking_url}}") + paragraph("Si vous devez annuler ou déplacer votre réservation, veuillez le faire le plus tôt possible."),
+      subject: "Rappel : votre réservation approche",
+      preheader: "Votre réservation Premiere Services approche.",
+      eyebrow: "Rappel",
+      title: "Ça approche {{reminder_window}}, {{name}}",
+      showPolicyLinks: true,
+      body:
+        detailsBlock([
+          ["Service", "{{service_type}}"],
+          ["Date", "{{booking_date}}"],
+          ["Heure", "{{booking_time}} {{timezone}}"],
+          ["Lieu", "{{booking_location}}"],
+          ["Professionnel", "{{pro_name}}"],
+        ]) +
+        cta("Gérer la réservation", "{{manage_booking_url}}") +
+        emailSecondaryNote("Besoin d’annuler ou de déplacer ? Faites-le le plus tôt possible."),
     },
   },
   support_receipt: {
     en: {
-      subject: "Premiere Services - We received your message",
-      preheader: "We received your message",
-      heading: "Hi {{name}}, thanks for contacting us.",
-      body: paragraph("Our support team received your message and will get back to you as soon as possible.") + detailsBlock([["Ticket ID", "{{ticket_id}}"], ["Subject", "{{subject}}"], ["Submitted", "{{submitted_date}}"], ["Message", "{{message}}"]]),
+      subject: "We received your message",
+      preheader: "Our team has your support request.",
+      eyebrow: "Support",
+      title: "Thanks for writing, {{name}}",
+      body:
+        emailParagraph("Our support team received your message and will get back to you soon.") +
+        detailsBlock([
+          ["Ticket ID", "{{ticket_id}}"],
+          ["Subject", "{{subject}}"],
+          ["Submitted", "{{submitted_date}}"],
+          ["Message", "{{message}}"],
+        ]),
     },
     fr: {
-      subject: "Premiere Services - Nous avons reçu votre message",
-      preheader: "Nous avons reçu votre message",
-      heading: "Bonjour {{name}}, merci de nous avoir contactés.",
-      body: paragraph("Notre équipe de support a bien reçu votre message et vous répondra dès que possible.") + detailsBlock([["ID du billet", "{{ticket_id}}"], ["Sujet", "{{subject}}"], ["Date d’envoi", "{{submitted_date}}"], ["Message", "{{message}}"]]),
+      subject: "Nous avons reçu votre message",
+      preheader: "Notre équipe a bien reçu votre demande.",
+      eyebrow: "Soutien",
+      title: "Merci de nous avoir écrits, {{name}}",
+      body:
+        emailParagraph("Notre équipe de soutien a bien reçu votre message et vous répondra sous peu.") +
+        detailsBlock([
+          ["ID du billet", "{{ticket_id}}"],
+          ["Sujet", "{{subject}}"],
+          ["Date d’envoi", "{{submitted_date}}"],
+          ["Message", "{{message}}"],
+        ]),
     },
   },
   admin_new_booking: {
     en: {
-      subject: "Premiere Services - New booking received",
-      preheader: "Internal booking notification",
-      heading: "New booking received",
-      body: detailsBlock([["Booking ID", "{{booking_id}}"], ["Client", "{{client_name}}"], ["Client email", "{{client_email}}"], ["Client phone", "{{client_phone}}"], ["Professional", "{{pro_name}}"], ["Service", "{{service_type}}"], ["Date", "{{booking_date}}"], ["Time", "{{booking_time}} {{timezone}}"], ["Location", "{{booking_location}}"], ["Status", "{{booking_status}}"], ["Payment status", "{{payment_status}}"]]) + cta("Open admin booking", "{{admin_booking_url}}"),
+      subject: "New booking received",
+      preheader: "Internal booking notification.",
+      eyebrow: "Admin",
+      title: "New booking received",
+      body:
+        detailsBlock([
+          ["Booking ID", "{{booking_id}}"],
+          ["Client", "{{client_name}}"],
+          ["Client email", "{{client_email}}"],
+          ["Client phone", "{{client_phone}}"],
+          ["Professional", "{{pro_name}}"],
+          ["Service", "{{service_type}}"],
+          ["Date", "{{booking_date}}"],
+          ["Time", "{{booking_time}} {{timezone}}"],
+          ["Location", "{{booking_location}}"],
+          ["Status", "{{booking_status}}"],
+          ["Payment status", "{{payment_status}}"],
+        ]) +
+        cta("Open in admin", "{{admin_booking_url}}"),
     },
     fr: {
-      subject: "Premiere Services - Nouvelle réservation reçue",
-      preheader: "Notification interne",
-      heading: "Nouvelle réservation reçue",
-      body: detailsBlock([["ID de réservation", "{{booking_id}}"], ["Client", "{{client_name}}"], ["Courriel client", "{{client_email}}"], ["Téléphone client", "{{client_phone}}"], ["Professionnel", "{{pro_name}}"], ["Service", "{{service_type}}"], ["Date", "{{booking_date}}"], ["Heure", "{{booking_time}} {{timezone}}"], ["Lieu", "{{booking_location}}"], ["Statut", "{{booking_status}}"], ["Statut du paiement", "{{payment_status}}"]]) + cta("Ouvrir dans l’admin", "{{admin_booking_url}}"),
+      subject: "Nouvelle réservation reçue",
+      preheader: "Notification interne.",
+      eyebrow: "Admin",
+      title: "Nouvelle réservation reçue",
+      body:
+        detailsBlock([
+          ["ID de réservation", "{{booking_id}}"],
+          ["Client", "{{client_name}}"],
+          ["Courriel client", "{{client_email}}"],
+          ["Téléphone client", "{{client_phone}}"],
+          ["Professionnel", "{{pro_name}}"],
+          ["Service", "{{service_type}}"],
+          ["Date", "{{booking_date}}"],
+          ["Heure", "{{booking_time}} {{timezone}}"],
+          ["Lieu", "{{booking_location}}"],
+          ["Statut", "{{booking_status}}"],
+          ["Statut du paiement", "{{payment_status}}"],
+        ]) +
+        cta("Ouvrir dans l’admin", "{{admin_booking_url}}"),
     },
   },
-  auth_confirm_signup: authCopy("Confirm your account", "Confirmez votre compte", "Confirm email", "Confirmer mon courriel", "{{confirmation_url}}"),
-  auth_reset_password: authCopy("Reset your password", "Réinitialisez votre mot de passe", "Reset password", "Réinitialiser le mot de passe", "{{reset_url}}"),
-  auth_magic_link: authCopy("Sign in securely", "Connectez-vous de façon sécurisée", "Sign in", "Me connecter", "{{magic_link_url}}"),
-};
-
-function authCopy(enHeading: string, frHeading: string, enButton: string, frButton: string, url: string) {
-  return {
+  auth_confirm_signup: {
     en: {
-      subject: `Premiere Services - ${enHeading}`,
-      preheader: enHeading,
-      heading: `Hi {{name}}, ${enHeading.toLowerCase()}.`,
-      body: paragraph("Use the secure link below for your Premiere Services account.") + cta(enButton, url) + paragraph("If you did not request this email, you can ignore it."),
+      subject: "Confirm your Premiere Services account",
+      preheader: "One step left to activate your account.",
+      eyebrow: "Account",
+      title: "Confirm your email",
+      body:
+        emailParagraph("Welcome{{name_suffix}}. Confirm your email to finish setting up Premiere Services.") +
+        cta("Confirm email", "{{confirmation_url}}") +
+        emailSecondaryNote("This link expires in {{expires_in}}. If you didn’t create an account, you can ignore this email."),
     },
     fr: {
-      subject: `Premiere Services - ${frHeading}`,
-      preheader: frHeading,
-      heading: `Bonjour {{name}}, ${frHeading.toLowerCase()}.`,
-      body: paragraph("Utilisez le lien sécurisé ci-dessous pour votre compte Premiere Services.") + cta(frButton, url) + paragraph("Si vous n’avez pas demandé ce courriel, vous pouvez l’ignorer."),
+      subject: "Confirmez votre compte Premiere Services",
+      preheader: "Une dernière étape pour activer votre compte.",
+      eyebrow: "Compte",
+      title: "Confirmez votre courriel",
+      body:
+        emailParagraph("Bienvenue{{name_suffix}}. Confirmez votre courriel pour terminer la création de votre compte Premiere Services.") +
+        cta("Confirmer mon courriel", "{{confirmation_url}}") +
+        emailSecondaryNote("Ce lien expire dans {{expires_in}}. Si vous n’avez pas créé de compte, ignorez ce courriel."),
     },
-  };
-}
-
-function layout(heading: string, preheader: string, body: string, language: Language, vars: TemplateVars) {
-  const terms = language === "fr" ? "Conditions" : "Terms";
-  const privacy = language === "fr" ? "Politique de confidentialité" : "Privacy Policy";
-  const support = language === "fr" ? "Support" : "Support";
-  return `<!doctype html><html><body style="margin:0;background:#f6f7fb;font-family:Arial,sans-serif;color:#111827;">
-  <div style="display:none;max-height:0;overflow:hidden;">${escapeHtml(preheader)}</div>
-  <div style="max-width:640px;margin:0 auto;padding:28px;">
-    <div style="background:#ffffff;border-radius:16px;padding:28px;border:1px solid #e5e7eb;">
-      <h1 style="margin:0 0 8px;font-size:24px;">Premiere Services</h1>
-      <p style="margin:0 0 24px;color:#6b7280;">${escapeHtml(preheader)}</p>
-      <h2 style="font-size:20px;margin:0 0 12px;">${escapeHtml(heading)}</h2>
-      ${body}
-      <p style="margin-top:24px;font-size:14px;color:#6b7280;">${support}: <a href="mailto:${escapeHtml(REPLY_TO_EMAIL)}">${escapeHtml(REPLY_TO_EMAIL)}</a> · ${escapeHtml(str(vars.support_hours))}</p>
-      <p style="font-size:14px;color:#6b7280;">${language === "fr" ? "Annulation / replanification" : "Cancellation / reschedule"}: <a href="${escapeAttr(str(vars.cancellation_policy_url ?? `${SITE_URL}/terms`))}">${terms}</a></p>
-      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-      <p style="font-size:12px;color:#9ca3af;">Premiere Services · <a href="${escapeAttr(str(vars.terms_url ?? `${SITE_URL}/terms`))}">${terms}</a> · <a href="${escapeAttr(str(vars.privacy_url ?? `${SITE_URL}/privacy`))}">${privacy}</a></p>
-    </div>
-  </div>
-</body></html>`;
-}
+  },
+  auth_reset_password: {
+    en: {
+      subject: "Reset your Premiere Services password",
+      preheader: "Reset your Premiere Services password securely.",
+      eyebrow: "Security",
+      title: "Reset your password",
+      body:
+        emailParagraph("Hi{{name_suffix}}, we received a request to reset the password for {{email}}.") +
+        emailParagraph("Use the button below to choose a new password.") +
+        cta("Reset password", "{{reset_url}}") +
+        emailSecondaryNote("This link expires in {{expires_in}}. If you didn’t ask for a reset, you can ignore this email — your password won’t change.") +
+        emailSecondaryNote("For your security, never share this link with anyone."),
+    },
+    fr: {
+      subject: "Réinitialisez votre mot de passe Premiere Services",
+      preheader: "Réinitialisez votre mot de passe Premiere Services en toute sécurité.",
+      eyebrow: "Sécurité",
+      title: "Réinitialisez votre mot de passe",
+      body:
+        emailParagraph("Bonjour{{name_suffix}}, nous avons reçu une demande de réinitialisation pour {{email}}.") +
+        emailParagraph("Utilisez le bouton ci-dessous pour choisir un nouveau mot de passe.") +
+        cta("Réinitialiser le mot de passe", "{{reset_url}}") +
+        emailSecondaryNote("Ce lien expire dans {{expires_in}}. Si vous n’avez pas fait cette demande, ignorez ce courriel — votre mot de passe ne changera pas.") +
+        emailSecondaryNote("Pour votre sécurité, ne partagez jamais ce lien."),
+    },
+  },
+  auth_magic_link: {
+    en: {
+      subject: "Your Premiere Services sign-in link",
+      preheader: "Your secure Premiere Services sign-in link.",
+      eyebrow: "Sign in",
+      title: "Welcome back{{name_suffix}}",
+      body:
+        emailParagraph("Use the secure button below to access your Premiere Services account. No password needed for this step.") +
+        cta("Sign in securely", "{{magic_link_url}}") +
+        emailSecondaryNote("This link expires in {{expires_in}}. If you didn’t request it, you can safely ignore this email.") +
+        emailSecondaryNote("For your security, don’t forward this email."),
+    },
+    fr: {
+      subject: "Votre lien de connexion Premiere Services",
+      preheader: "Votre lien de connexion sécurisé Premiere Services.",
+      eyebrow: "Connexion",
+      title: "Bon retour{{name_suffix}}",
+      body:
+        emailParagraph("Utilisez le bouton sécurisé ci-dessous pour accéder à votre compte Premiere Services. Aucun mot de passe n’est requis pour cette étape.") +
+        cta("Se connecter en toute sécurité", "{{magic_link_url}}") +
+        emailSecondaryNote("Ce lien expire dans {{expires_in}}. Si vous ne l’avez pas demandé, ignorez ce courriel.") +
+        emailSecondaryNote("Pour votre sécurité, ne transférez pas ce courriel."),
+    },
+  },
+};
 
 function detailsBlock(rows: [string, string][]) {
-  return `<div style="background:#f9fafb;border-radius:12px;padding:18px;margin:22px 0;">${rows.map(([label, value]) => `<p style="margin:0 0 8px;"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</p>`).join("")}</div>`;
-}
-
-function paragraph(text: string) {
-  return `<p style="line-height:1.6;">${escapeHtml(text)}</p>`;
+  return emailDetails(rows);
 }
 
 function cta(label: string, url: string) {
-  return `<a href="${escapeAttr(url)}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:bold;">${escapeHtml(label)}</a>`;
+  return emailPrimaryButton(label, url);
 }
 
 function replaceVars(input: string, vars: TemplateVars, mode: "plain" | "html" = "plain") {
@@ -550,10 +706,6 @@ function escapeHtml(value: string) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
-}
-
-function escapeAttr(value: string) {
-  return escapeHtml(value).replace(/'/g, "&#39;");
 }
 
 function trimTrailingSlash(value: string) {

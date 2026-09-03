@@ -33,7 +33,7 @@ export function isPlatformAdminEmail(email: string | null | undefined): boolean 
 }
 
 export async function callerIsPlatformModerator(
-  adminClient: { from: (table: string) => { select: (cols: string) => { eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: unknown }> } } } } },
+  adminClient: { from: (table: string) => unknown },
   _userId: string,
   email: string | undefined,
 ): Promise<boolean> {
