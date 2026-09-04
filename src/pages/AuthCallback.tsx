@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { clearOAuthRedirect, peekOAuthRedirect } from "@/lib/oauthRedirect";
+import { canUsePlatformAdminTools, isPlatformAdminEmail, isSuperAdminEmail } from "@/lib/platformAdmin";
 
 /**
  * Handles Supabase Google (and other) OAuth return: PKCE ?code= exchange,
@@ -70,7 +71,24 @@ export default function AuthCallback() {
         }
       }
 
-      const next = peekOAuthRedirect(searchParams.get("redirect") || "/");
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      let next = peekOAuthRedirect(searchParams.get("redirect") || "/");
+      if (user?.id) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("is_platform_admin")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (
+          isPlatformAdminEmail(user.email) ||
+          isSuperAdminEmail(user.email) ||
+          canUsePlatformAdminTools(user.email, prof?.is_platform_admin === true)
+        ) {
+          next = "/dashboard?tab=admin";
+        }
+      }
       clearOAuthRedirect();
       if (!cancelled) navigate(next, { replace: true });
     };

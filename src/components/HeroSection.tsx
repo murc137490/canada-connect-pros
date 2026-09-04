@@ -91,7 +91,6 @@ export default function HeroSection() {
   >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [proOfferedRecords, setProOfferedRecords] = useState<ServiceRecordForAI[]>([]);
   const [proNameMatches, setProNameMatches] = useState<ProBusinessSearchHit[]>([]);
   const navigate = useNavigate();
@@ -336,7 +335,6 @@ export default function HeroSection() {
       setClarifyingMessage(null);
       setBestMatch(null);
       setError(false);
-      setErrorDetails(null);
       try {
         const proSearchPromise = searchProsByBusinessOrName(cleaned, 6);
         const response = await fetch(SEARCH_URL, {
@@ -374,18 +372,11 @@ export default function HeroSection() {
                 : [];
           setFollowUpMatches(follow.filter((x) => x?.serviceSlug));
         } else {
-          const errMsg = data.error || `Error ${response.status}`;
-          const details = typeof data.details === "string" ? data.details : (data as { details?: { message?: string } }).details?.message;
-          console.warn("Hero AI suggestions failed:", errMsg, details);
           setSuggestions([]);
-          setErrorDetails(details || errMsg);
           setError(true);
         }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error("Search suggestions error:", err);
+      } catch {
         setSuggestions([]);
-        setErrorDetails(msg);
         setError(true);
       } finally {
         setLoading(false);
@@ -403,7 +394,6 @@ export default function HeroSection() {
       setFollowUpMatches([]);
       setProNameMatches([]);
       setError(false);
-      setErrorDetails(null);
       return;
     }
 
@@ -642,12 +632,10 @@ export default function HeroSection() {
 
                 {error && !loading && (
                   <div className="mt-3 border-t border-border/70 pt-3">
-                    <p className="text-sm text-destructive">{t.index.heroAiError}</p>
-                    {errorDetails && (
-                      <p className="mt-1 break-words text-xs text-muted-foreground" title={errorDetails}>
-                        {errorDetails.length > 120 ? `${errorDetails.slice(0, 120)}…` : errorDetails}
-                      </p>
-                    )}
+                    <p className="text-sm text-muted-foreground">{t.index.heroAiError}</p>
+                    <a href="/support" className="mt-1 inline-block text-sm font-semibold text-primary underline-offset-2 hover:underline">
+                      {t.index.heroAiErrorSupport ?? "Contact support"}
+                    </a>
                   </div>
                 )}
 

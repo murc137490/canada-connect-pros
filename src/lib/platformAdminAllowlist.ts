@@ -1,5 +1,10 @@
-/** Only these accounts may be platform admins (monitor / control panel). No other email can gain admin. */
+/** Seed monitor emails + supreme super-admin. Dynamic admins use profiles.is_platform_admin. */
+
+export const SUPER_ADMIN_EMAIL = "murc137490@gmail.com";
+
+/** Legacy seeded monitor accounts (still valid). */
 export const PLATFORM_ADMIN_ALLOWLIST = [
+  SUPER_ADMIN_EMAIL,
   "admin1@premiereservices.ca",
   "admin2@premiereservices.ca",
   "admin3@premiereservices.ca",

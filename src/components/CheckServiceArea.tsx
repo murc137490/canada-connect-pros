@@ -48,16 +48,16 @@ export default function CheckServiceArea() {
 
       if (error) {
         setResult("error");
-        setErrorMessage(error.message);
+        setErrorMessage(t.index.checkServiceError);
         return;
       }
 
       const list = (data ?? []) as ServingPro[];
       setPros(list);
       setResult(list.length > 0 ? "yes" : "no");
-    } catch (err) {
+    } catch {
       setResult("error");
-      setErrorMessage((err as Error).message ?? t.index.checkServiceError);
+      setErrorMessage(t.index.checkServiceError);
     }
   };
 

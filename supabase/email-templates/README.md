@@ -1,6 +1,8 @@
 # Premiere Services email templates
 
-Brand-aligned transactional emails (navy `#102556`, warm stone `#F8F6F3`, Manrope + Instrument Serif wordmark).
+Brand-aligned transactional emails (navy `#102556`, warm stone `#F8F6F3`, white letter panel, Manrope + Instrument Serif wordmark).
+
+**Visual bar:** credible from a premium Canadian marketplace you’d trust with a booking and payment — calm, intentional, distinctly Premiere — not a generic SaaS/Resend demo.
 
 ## App pipeline (Resend)
 

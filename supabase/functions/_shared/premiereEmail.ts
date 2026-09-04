@@ -1,8 +1,11 @@
 /**
  * Premiere Services transactional email design system.
- * Brand-aligned with the web app: navy primary, warm stone background,
- * Manrope/system sans, Instrument Serif–style wordmark (Georgia fallback).
- * Email-safe: table layout, inline styles, no JS.
+ *
+ * Visual bar: would this look credible from a premium Canadian marketplace
+ * you’d trust with a booking and payment? Immediate YES.
+ *
+ * Brand: navy primary, warm stone page, Manrope + Instrument Serif wordmark.
+ * Email-safe: tables, inline styles, no JS. No decorative chrome.
  */
 
 export type EmailLanguage = "en" | "fr";
@@ -20,7 +23,7 @@ export const EMAIL_BRAND = {
   border: "#E0DAD2",
   surface: "#FFFFFF",
   surfaceMuted: "#F3F0EB",
-  /** Site --accent maple — use sparingly */
+  /** Site --accent maple — use sparingly (status rules only) */
   accent: "#E86B0C",
   support: "support@premiereservices.ca",
   fontSans:
@@ -59,28 +62,28 @@ function attr(value: string) {
   return esc(value);
 }
 
-/** Quiet wordmark — matches site “Première” heading weight, not a giant H1. */
+/** Quiet wordmark — matches site “Première”, not a giant H1. */
 export function emailHeader(siteUrl: string): string {
   const home = attr(siteUrl || "https://premiereservices.ca");
   return `
   <tr>
-    <td style="padding:0 0 28px 0;">
+    <td style="padding:0 0 32px 0;">
       <a href="${home}" style="text-decoration:none;color:${EMAIL_BRAND.ink};">
-        <span style="font-family:${EMAIL_BRAND.fontSerif};font-size:26px;line-height:1.15;font-weight:400;letter-spacing:-0.02em;color:${EMAIL_BRAND.ink};">Première</span>
-        <span style="display:inline-block;margin-left:6px;font-family:${EMAIL_BRAND.fontSans};font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:${EMAIL_BRAND.muted};vertical-align:middle;">Services</span>
+        <span style="font-family:${EMAIL_BRAND.fontSerif};font-size:28px;line-height:1.1;font-weight:400;letter-spacing:-0.02em;color:${EMAIL_BRAND.ink};">Première</span>
+        <span style="display:inline-block;margin-left:8px;font-family:${EMAIL_BRAND.fontSans};font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:${EMAIL_BRAND.muted};vertical-align:0.35em;">Services</span>
       </a>
-      <div style="margin-top:18px;height:2px;width:36px;background-color:${EMAIL_BRAND.primary};border-radius:1px;line-height:2px;font-size:2px;">&nbsp;</div>
+      <div style="margin-top:20px;height:2px;width:40px;background-color:${EMAIL_BRAND.primary};line-height:2px;font-size:2px;">&nbsp;</div>
     </td>
   </tr>`;
 }
 
 export function emailEyebrow(text: string): string {
   if (!text.trim()) return "";
-  return `<p style="margin:0 0 10px 0;font-family:${EMAIL_BRAND.fontSans};font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${EMAIL_BRAND.muted};">${esc(text)}</p>`;
+  return `<p style="margin:0 0 12px 0;font-family:${EMAIL_BRAND.fontSans};font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:${EMAIL_BRAND.primary};">${esc(text)}</p>`;
 }
 
 export function emailTitle(text: string): string {
-  return `<h1 style="margin:0 0 16px 0;font-family:${EMAIL_BRAND.fontSans};font-size:26px;line-height:1.25;font-weight:700;letter-spacing:-0.025em;color:${EMAIL_BRAND.ink};">${esc(text)}</h1>`;
+  return `<h1 style="margin:0 0 20px 0;font-family:${EMAIL_BRAND.fontSans};font-size:28px;line-height:1.22;font-weight:700;letter-spacing:-0.03em;color:${EMAIL_BRAND.ink};">${esc(text)}</h1>`;
 }
 
 export function emailParagraph(text: string, opts?: { muted?: boolean; size?: "body" | "sm" }): string {
@@ -96,10 +99,10 @@ export function emailHtmlBlock(html: string): string {
 
 export function emailPrimaryButton(label: string, url: string): string {
   return `
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 28px 0;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0 28px 0;">
     <tr>
-      <td align="left" style="border-radius:${EMAIL_BRAND.radius};background-color:${EMAIL_BRAND.primary};">
-        <a href="${attr(url)}" target="_blank" style="display:inline-block;padding:14px 22px;font-family:${EMAIL_BRAND.fontSans};font-size:15px;font-weight:700;letter-spacing:-0.01em;line-height:1.2;color:${EMAIL_BRAND.primaryForeground};text-decoration:none;border-radius:${EMAIL_BRAND.radius};">
+      <td align="left" bgcolor="${EMAIL_BRAND.primary}" style="border-radius:${EMAIL_BRAND.radius};background-color:${EMAIL_BRAND.primary};">
+        <a href="${attr(url)}" target="_blank" style="display:inline-block;padding:15px 28px;font-family:${EMAIL_BRAND.fontSans};font-size:15px;font-weight:700;letter-spacing:-0.01em;line-height:1.2;color:${EMAIL_BRAND.primaryForeground};text-decoration:none;border-radius:${EMAIL_BRAND.radius};">
           ${esc(label)}
         </a>
       </td>
@@ -108,25 +111,34 @@ export function emailPrimaryButton(label: string, url: string): string {
 }
 
 export function emailSecondaryNote(text: string): string {
-  return `<p style="margin:0 0 20px 0;font-family:${EMAIL_BRAND.fontSans};font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">${esc(text)}</p>`;
+  return `<p style="margin:0 0 16px 0;font-family:${EMAIL_BRAND.fontSans};font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">${esc(text)}</p>`;
 }
 
+/**
+ * Booking / ticket facts — soft stone panel, quiet rows.
+ * Hierarchy for trust; not a tinted “status card.”
+ */
 export function emailDetails(rows: [string, string][]): string {
-  const cells = rows
-    .filter(([, v]) => String(v ?? "").trim())
-    .map(
-      ([label, value]) => `
+  const filtered = rows.filter(([, v]) => String(v ?? "").trim());
+  if (!filtered.length) return "";
+
+  const cells = filtered
+    .map(([label, value], i) => {
+      const isLast = i === filtered.length - 1;
+      const border = isLast ? "none" : `1px solid ${EMAIL_BRAND.border}`;
+      return `
       <tr>
-        <td style="padding:10px 0;border-bottom:1px solid ${EMAIL_BRAND.border};font-family:${EMAIL_BRAND.fontSans};font-size:13px;font-weight:600;color:${EMAIL_BRAND.muted};width:38%;vertical-align:top;">${esc(label)}</td>
-        <td style="padding:10px 0;border-bottom:1px solid ${EMAIL_BRAND.border};font-family:${EMAIL_BRAND.fontSans};font-size:14px;font-weight:500;color:${EMAIL_BRAND.ink};vertical-align:top;">${esc(value)}</td>
-      </tr>`,
-    )
+        <td style="padding:12px 0;border-bottom:${border};font-family:${EMAIL_BRAND.fontSans};font-size:13px;font-weight:500;color:${EMAIL_BRAND.muted};width:36%;vertical-align:top;">${esc(label)}</td>
+        <td style="padding:12px 0;border-bottom:${border};font-family:${EMAIL_BRAND.fontSans};font-size:14px;font-weight:600;color:${EMAIL_BRAND.ink};vertical-align:top;">${esc(value)}</td>
+      </tr>`;
+    })
     .join("");
-  if (!cells) return "";
+
   return `
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px 0;background-color:${EMAIL_BRAND.surfaceMuted};border:1px solid ${EMAIL_BRAND.border};border-radius:${EMAIL_BRAND.radiusLg};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 28px 0;border-collapse:separate;">
     <tr>
-      <td style="padding:4px 18px;">
+      <td width="3" bgcolor="${EMAIL_BRAND.primary}" style="width:3px;background-color:${EMAIL_BRAND.primary};border-radius:3px 0 0 3px;font-size:0;line-height:0;">&nbsp;</td>
+      <td bgcolor="${EMAIL_BRAND.surfaceMuted}" style="padding:4px 20px;background-color:${EMAIL_BRAND.surfaceMuted};border-radius:0 ${EMAIL_BRAND.radiusLg} ${EMAIL_BRAND.radiusLg} 0;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${cells}</table>
       </td>
     </tr>
@@ -139,9 +151,9 @@ export function emailSupportBlock(language: EmailLanguage, supportEmail: string,
     ? ` · ${esc(supportHours.trim())}`
     : "";
   return `
-  <p style="margin:28px 0 0 0;font-family:${EMAIL_BRAND.fontSans};font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
+  <p style="margin:32px 0 0 0;font-family:${EMAIL_BRAND.fontSans};font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
     ${esc(label)}
-    <a href="mailto:${attr(supportEmail)}" style="color:${EMAIL_BRAND.primary};text-decoration:underline;">${esc(supportEmail)}</a>${hours}
+    <a href="mailto:${attr(supportEmail)}" style="color:${EMAIL_BRAND.primary};text-decoration:none;font-weight:600;border-bottom:1px solid ${EMAIL_BRAND.primary};">${esc(supportEmail)}</a>${hours}
   </p>`;
 }
 
@@ -163,8 +175,8 @@ export function emailFooter(opts: {
 
   return `
   <tr>
-    <td style="padding:32px 0 0 0;border-top:1px solid ${EMAIL_BRAND.border};">
-      <p style="margin:0 0 6px 0;font-family:${EMAIL_BRAND.fontSans};font-size:12px;font-weight:600;letter-spacing:0.04em;color:${EMAIL_BRAND.ink};">Premiere Services</p>
+    <td style="padding:28px 8px 0 8px;">
+      <p style="margin:0 0 8px 0;font-family:${EMAIL_BRAND.fontSerif};font-size:16px;line-height:1.2;font-weight:400;color:${EMAIL_BRAND.ink};">Première <span style="font-family:${EMAIL_BRAND.fontSans};font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:${EMAIL_BRAND.mutedSoft};vertical-align:middle;">Services</span></p>
       <p style="margin:0;font-family:${EMAIL_BRAND.fontSans};font-size:12px;line-height:1.7;color:${EMAIL_BRAND.mutedSoft};">
         <a href="mailto:support@premiereservices.ca" style="color:${EMAIL_BRAND.mutedSoft};text-decoration:underline;">support@premiereservices.ca</a>
         &nbsp;·&nbsp;
@@ -173,16 +185,16 @@ export function emailFooter(opts: {
         <a href="${attr(opts.privacyUrl)}" style="color:${EMAIL_BRAND.mutedSoft};text-decoration:underline;">${privacy}</a>
         ${policy}
       </p>
-      <p style="margin:12px 0 0 0;font-family:${EMAIL_BRAND.fontSans};font-size:11px;line-height:1.5;color:${EMAIL_BRAND.mutedSoft};">
-        ${opts.language === "fr" ? "Canada · Courriel automatisé" : "Canada · Automated message"}
+      <p style="margin:14px 0 0 0;font-family:${EMAIL_BRAND.fontSans};font-size:11px;line-height:1.5;color:${EMAIL_BRAND.mutedSoft};">
+        ${opts.language === "fr" ? "Canada" : "Canada"}
       </p>
     </td>
   </tr>`;
 }
 
 /**
- * Full HTML document shell — editorial, not a heavy SaaS card.
- * Warm page background, open content column, quiet footer.
+ * Full HTML document — warm page, soft letter panel, quiet footer.
+ * One composition: brand → purpose → action → help → legal.
  */
 export function emailShell(opts: EmailShellOptions & { siteUrl: string }): string {
   const supportEmail = opts.supportEmail ?? EMAIL_BRAND.support;
@@ -204,7 +216,8 @@ export function emailShell(opts: EmailShellOptions & { siteUrl: string }): strin
     img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
     a { color: ${EMAIL_BRAND.primary}; }
     @media only screen and (max-width: 620px) {
-      .ps-shell { padding: 24px 16px !important; }
+      .ps-outer { padding: 24px 12px !important; }
+      .ps-letter { padding: 32px 22px !important; }
       .ps-title { font-size: 24px !important; }
     }
   </style>
@@ -216,15 +229,21 @@ export function emailShell(opts: EmailShellOptions & { siteUrl: string }): strin
   </div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EMAIL_BRAND.pageBg};">
     <tr>
-      <td align="center" class="ps-shell" style="padding:40px 24px;">
+      <td align="center" class="ps-outer" style="padding:40px 20px 48px 20px;">
         <table role="presentation" width="${EMAIL_BRAND.width}" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${EMAIL_BRAND.width}px;margin:0 auto;">
-          ${emailHeader(opts.siteUrl)}
           <tr>
-            <td style="padding:0;">
-              ${eyebrow}
-              <div class="ps-title">${emailTitle(opts.title)}</div>
-              ${opts.bodyHtml}
-              ${emailSupportBlock(opts.language, supportEmail, opts.supportHours)}
+            <td class="ps-letter" bgcolor="${EMAIL_BRAND.surface}" style="padding:40px 40px 36px 40px;background-color:${EMAIL_BRAND.surface};border:1px solid ${EMAIL_BRAND.border};border-radius:${EMAIL_BRAND.radiusLg};">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                ${emailHeader(opts.siteUrl)}
+                <tr>
+                  <td style="padding:0;">
+                    ${eyebrow}
+                    <div class="ps-title">${emailTitle(opts.title)}</div>
+                    ${opts.bodyHtml}
+                    ${emailSupportBlock(opts.language, supportEmail, opts.supportHours)}
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           ${emailFooter({

@@ -12,7 +12,10 @@ import { ChatMessageContent } from "@/components/ChatMessageContent";
 
 const HISTORY_KEY = "premiere-support-chat-history";
 const ACTIVE_KEY = "premiere-support-chat-active";
+const FAB_DISMISSED_KEY = "premiere-help-fab-dismissed";
+const FAB_POS_KEY = "premiere-help-fab-pos";
 const MAX_HISTORY = 20;
+const FAB_SIZE = 56;
 
 type ChatThread = {
   id: string;
@@ -20,6 +23,8 @@ type ChatThread = {
   updatedAt: number;
   messages: SupportChatMessage[];
 };
+
+type FabPos = { x: number; y: number };
 
 function loadHistory(): ChatThread[] {
   try {
@@ -57,6 +62,63 @@ function saveActiveId(id: string | null) {
   }
 }
 
+function loadFabDismissed(): boolean {
+  try {
+    return localStorage.getItem(FAB_DISMISSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function saveFabDismissed(dismissed: boolean) {
+  try {
+    if (dismissed) localStorage.setItem(FAB_DISMISSED_KEY, "1");
+    else localStorage.removeItem(FAB_DISMISSED_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function defaultFabPos(): FabPos {
+  if (typeof window === "undefined") return { x: 20, y: 20 };
+  const margin = 20;
+  return {
+    x: Math.max(margin, window.innerWidth - FAB_SIZE - margin),
+    y: Math.max(margin, window.innerHeight - FAB_SIZE - margin),
+  };
+}
+
+function loadFabPos(): FabPos {
+  try {
+    const raw = localStorage.getItem(FAB_POS_KEY);
+    if (!raw) return defaultFabPos();
+    const parsed = JSON.parse(raw) as FabPos;
+    if (typeof parsed?.x === "number" && typeof parsed?.y === "number") return clampFabPos(parsed);
+  } catch {
+    /* ignore */
+  }
+  return defaultFabPos();
+}
+
+function saveFabPos(pos: FabPos) {
+  try {
+    localStorage.setItem(FAB_POS_KEY, JSON.stringify(clampFabPos(pos)));
+  } catch {
+    /* ignore */
+  }
+}
+
+function clampFabPos(pos: FabPos): FabPos {
+  if (typeof window === "undefined") return pos;
+  const margin = 8;
+  const maxX = Math.max(margin, window.innerWidth - FAB_SIZE - margin);
+  const maxY = Math.max(margin, window.innerHeight - FAB_SIZE - margin);
+  return {
+    x: Math.min(maxX, Math.max(margin, pos.x)),
+    y: Math.min(maxY, Math.max(margin, pos.y)),
+  };
+}
+
 function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
@@ -77,13 +139,34 @@ function TypingDots({ className }: { className?: string }) {
   );
 }
 
+function useIsPhone() {
+  const [isPhone, setIsPhone] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px), (pointer: coarse) and (max-width: 1024px)");
+    const sync = () => setIsPhone(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return isPhone;
+}
+
 export default function HelpFab() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const reduced = usePrefersReducedMotion();
+  const isPhone = useIsPhone();
   const panelId = useId();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+    moved: boolean;
+  } | null>(null);
 
   const greeting = t.support.aiGreeting;
 
@@ -99,6 +182,9 @@ export default function HelpFab() {
   });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fabDismissed, setFabDismissed] = useState(() => loadFabDismissed());
+  const [fabPos, setFabPos] = useState<FabPos>(() => loadFabPos());
+  const [showFabControls, setShowFabControls] = useState(false);
 
   useEffect(() => {
     setMessages((prev) => {
@@ -122,6 +208,16 @@ export default function HelpFab() {
       return () => window.clearTimeout(tmr);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!isPhone) {
+      setShowFabControls(false);
+      return;
+    }
+    const onResize = () => setFabPos((p) => clampFabPos(p));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [isPhone]);
 
   const persistThread = useCallback(
     (nextMessages: SupportChatMessage[], threadId: string | null) => {
@@ -191,7 +287,64 @@ export default function HelpFab() {
     setLoading(false);
   };
 
-  const fabPos =
+  const dismissFab = () => {
+    setFabDismissed(true);
+    saveFabDismissed(true);
+    setShowFabControls(false);
+    setOpen(false);
+  };
+
+  const onFabPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!isPhone) return;
+    dragRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: fabPos.x,
+      originY: fabPos.y,
+      moved: false,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onFabPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    if (Math.hypot(dx, dy) > 8) drag.moved = true;
+    if (!drag.moved) return;
+    const next = clampFabPos({ x: drag.originX + dx, y: drag.originY + dy });
+    setFabPos(next);
+  };
+
+  const onFabPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    dragRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    if (drag.moved) {
+      setFabPos((p) => {
+        const next = clampFabPos(p);
+        saveFabPos(next);
+        return next;
+      });
+      setShowFabControls(true);
+      return;
+    }
+    if (showFabControls) {
+      setShowFabControls(false);
+      setOpen(true);
+      return;
+    }
+    setShowFabControls(true);
+  };
+
+  const fabPosClass =
     "fixed z-[60] bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-[max(1.25rem,env(safe-area-inset-right))]";
   const panelPos =
     "fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))]";
@@ -203,41 +356,65 @@ export default function HelpFab() {
     ? { duration: 0 }
     : { duration: 0.28, ease: MOTION.ease };
 
+  const showFab = !open && !(isPhone && fabDismissed);
+
   return (
     <div className="contents">
       <AnimatePresence mode="popLayout" initial={false}>
-        {!open && (
-          <motion.button
-            key="help-fab"
-            type="button"
-            onClick={() => setOpen(true)}
-            aria-label={t.common.helpFabLabel}
-            aria-expanded={false}
-            aria-controls={panelId}
-            className={cn(
-              fabPos,
-              "flex h-14 w-14 items-center justify-center rounded-full",
-              "bg-primary text-primary-foreground shadow-lg shadow-black/30",
-              "border border-white/10",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            )}
+        {showFab && (
+          <motion.div
+            key="help-fab-wrap"
+            className={cn(!isPhone && fabPosClass)}
+            style={
+              isPhone
+                ? { position: "fixed", zIndex: 60, left: fabPos.x, top: fabPos.y, touchAction: "none" }
+                : undefined
+            }
             initial={reduced ? false : { opacity: 0, scale: 0.72, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={reduced ? undefined : { opacity: 0, scale: 0.75, y: 10 }}
             transition={fabTransition}
-            whileHover={reduced ? undefined : { scale: 1.06 }}
-            whileTap={reduced ? undefined : { scale: 0.94 }}
           >
-            <HelpCircle className="h-6 w-6" aria-hidden />
-          </motion.button>
+            {isPhone && showFabControls && (
+              <button
+                type="button"
+                onClick={dismissFab}
+                aria-label={t.common.helpFabDismissAria}
+                className="absolute -right-1 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-background shadow-md"
+              >
+                <X className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            )}
+            <motion.button
+              type="button"
+              onClick={() => {
+                if (isPhone) return;
+                setOpen(true);
+              }}
+              onPointerDown={onFabPointerDown}
+              onPointerMove={onFabPointerMove}
+              onPointerUp={onFabPointerUp}
+              onPointerCancel={onFabPointerUp}
+              aria-label={t.common.helpFabLabel}
+              aria-expanded={false}
+              aria-controls={panelId}
+              className={cn(
+                "flex h-14 w-14 items-center justify-center rounded-full",
+                "bg-primary text-primary-foreground shadow-lg shadow-black/30",
+                "border border-white/10",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                isPhone && "select-none"
+              )}
+              whileHover={!isPhone && !reduced ? { scale: 1.06 } : undefined}
+              whileTap={!isPhone && !reduced ? { scale: 0.94 } : undefined}
+            >
+              <HelpCircle className="h-6 w-6" aria-hidden />
+            </motion.button>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      <AnimatePresence
-        onExitComplete={() => {
-          /* keep history closed after panel leaves */
-        }}
-      >
+      <AnimatePresence>
         {open && (
           <motion.div
             key="help-panel"

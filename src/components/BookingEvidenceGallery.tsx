@@ -62,7 +62,7 @@ export default function BookingEvidenceGallery({ bookingId }: { bookingId: strin
   }
 
   if (items.length === 0) {
-    return <p className="text-sm text-gray-700 dark:text-gray-300">{d.evidenceGalleryEmpty}</p>;
+    return null;
   }
 
   return (

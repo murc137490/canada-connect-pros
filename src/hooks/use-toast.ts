@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
+import { sanitizeToastContent } from "@/lib/userFacingError";
 
 const TOAST_LIMIT = 1;
 const TOAST_REMOVE_DELAY = 1000000;
@@ -136,18 +137,30 @@ type Toast = Omit<ToasterToast, "id">;
 
 function toast({ ...props }: Toast) {
   const id = genId();
+  const safe = sanitizeToastContent({
+    title: props.title,
+    description: props.description,
+    variant: props.variant,
+  });
 
-  const update = (props: ToasterToast) =>
+  const update = (next: ToasterToast) => {
+    const nextSafe = sanitizeToastContent({
+      title: next.title,
+      description: next.description,
+      variant: next.variant ?? props.variant,
+    });
     dispatch({
       type: "UPDATE_TOAST",
-      toast: { ...props, id },
+      toast: { ...next, ...nextSafe, id },
     });
+  };
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id });
 
   dispatch({
     type: "ADD_TOAST",
     toast: {
       ...props,
+      ...safe,
       id,
       open: true,
       onOpenChange: (open) => {

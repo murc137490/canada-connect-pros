@@ -3,21 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from "lucide-react";
 import BookingEvidenceGallery from "@/components/BookingEvidenceGallery";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   VALID_DISPUTE_CATEGORIES,
-  INVALID_DISPUTE_EXAMPLES,
   type DisputeCategoryId,
 } from "@/lib/disputeCategories";
 import { MIN_CLAIM_REPORT_IMAGES } from "@/lib/jobRequestRules";
+import { toUserFacingMessage } from "@/lib/userFacingError";
 
 const EVIDENCE_BUCKET = "booking-evidence";
 
@@ -64,24 +62,6 @@ export default function BookingClaimDialog({
     () => (bookingId ? (d.reportDialogTitle ?? "Report an issue") : (d.reportHelpDialogTitle ?? "Help / Claim")),
     [bookingId, d.reportDialogTitle, d.reportHelpDialogTitle]
   );
-
-  const statusLine = useMemo(() => {
-    if (!bookingStatusCode) return null;
-    const code = bookingStatusCode;
-    const label =
-      code === "pending"
-        ? d.bookingStatusPending
-        : code === "accepted"
-          ? d.bookingStatusAccepted
-          : code === "completed"
-            ? d.bookingStatusCompleted
-            : code === "declined"
-              ? d.bookingStatusDeclined
-              : code === "cancelled"
-                ? d.bookingStatusCancelled
-                : code;
-    return (d.reportBookingStatusLine ?? "Current booking status: {{status}}").replace("{{status}}", String(label ?? ""));
-  }, [bookingStatusCode, d]);
 
   const onPickClaimImages = (picked: FileList | null) => {
     const next = Array.from(picked ?? []).filter((f) => f.type.startsWith("image/"));
@@ -194,7 +174,7 @@ export default function BookingClaimDialog({
         insertError = retry.error;
       }
       if (insertError || !saved) {
-        throw new Error(CLAIM_SAVE);
+        throw new Error(`${CLAIM_SAVE}:${insertError?.message ?? "unknown"}`);
       }
 
       const { data: fnData, error: fnError } = await supabase.functions.invoke<{
@@ -254,31 +234,28 @@ export default function BookingClaimDialog({
       setClaimImages([]);
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e);
-      if (raw === CLAIM_SAVE) {
-        toast({
-          title: d.claimSubmitFailedTitle ?? "Could not submit report",
-          description: d.claimSaveFailed ?? "Could not save your report.",
-          variant: "destructive",
-        });
       } else if (raw === CLAIM_BUCKET) {
         toast({
           title: d.claimSubmitFailedTitle ?? "Could not submit report",
-          description: d.claimUploadBucketError,
+          description: toUserFacingMessage(null),
           variant: "destructive",
         });
       } else if (raw.startsWith(CLAIM_UPLOAD_PREFIX)) {
-        const msg = raw.slice(CLAIM_UPLOAD_PREFIX.length);
         toast({
           title: d.claimSubmitFailedTitle ?? "Could not submit report",
-          description: (d.claimUploadFailed ?? "Photo upload failed: {{message}}").replace("{{message}}", msg),
+          description: toUserFacingMessage(null),
+          variant: "destructive",
+        });
+      } else if (raw === CLAIM_SAVE || raw.startsWith(`${CLAIM_SAVE}:`)) {
+        toast({
+          title: d.claimSubmitFailedTitle ?? "Could not submit report",
+          description: toUserFacingMessage(null),
           variant: "destructive",
         });
       } else {
-        const hint =
-          raw === "Failed to fetch" || raw.toLowerCase().includes("fetch") ? (d.claimSubmitFetchHint ?? "") : "";
         toast({
           title: d.claimSubmitFailedTitle ?? "Could not submit report",
-          description: `${raw}${hint}`,
+          description: toUserFacingMessage(null),
           variant: "destructive",
         });
       }
@@ -315,27 +292,13 @@ export default function BookingClaimDialog({
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription className="text-muted-foreground">
             {d.reportDialogDescription ??
-              "Choose a category, describe what happened, and add photos if helpful. Support will review your booking."}
-            {statusLine ? <span className="block mt-2 text-xs">{statusLine}</span> : null}
+              "We value your report and will get back to you within 24 hours."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 pb-2 sm:px-6">
-          <Alert className="border-muted-foreground/25 bg-muted/30">
-            <AlertTitle className="text-sm">{d.disputePolicyTitle ?? "Valid disputes only"}</AlertTitle>
-            <AlertDescription className="text-xs space-y-2">
-              <p>{d.disputePolicyIntro ?? "We review reports in these categories. Refunds are not guaranteed."}</p>
-              <p className="font-medium text-foreground">{d.disputePolicyNotCovered ?? "Not covered:"}</p>
-              <ul className="list-disc pl-4 space-y-0.5">
-                {INVALID_DISPUTE_EXAMPLES.map((key) => (
-                  <li key={key}>{(d as Record<string, string | undefined>)[key] ?? key}</li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-
           <div className="space-y-2">
-            <Label className="text-foreground">{d.disputeCategoryLabel ?? "What happened? (choose one)"}</Label>
+            <Label className="text-foreground">{d.disputeCategoryLabel ?? "What happened?"}</Label>
             <RadioGroup
               value={disputeCategory}
               onValueChange={(v) => setDisputeCategory(v as DisputeCategoryId)}
@@ -380,20 +343,29 @@ export default function BookingClaimDialog({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground" htmlFor="claim-images">
-              {(d.claimAttachPicturesRequiredLabel ?? "Attach pictures (required, at least {{min}}, up to {{max}})")
-                .replace("{{min}}", String(MIN_CLAIM_REPORT_IMAGES))
-                .replace("{{max}}", String(MAX_CLAIM_IMAGES))}
-            </label>
-            <Input
+            <input
               id="claim-images"
               type="file"
               accept="image/*"
               multiple
-              onChange={(e) => onPickClaimImages(e.target.files)}
-              disabled={submitting || !bookingId}
-              className="cursor-pointer text-foreground"
+              onChange={(e) => {
+                onPickClaimImages(e.target.files);
+                e.target.value = "";
+              }}
+              disabled={submitting || !bookingId || claimImages.length >= MAX_CLAIM_IMAGES}
+              className="sr-only"
             />
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-start font-medium"
+              disabled={submitting || !bookingId || claimImages.length >= MAX_CLAIM_IMAGES}
+              onClick={() => document.getElementById("claim-images")?.click()}
+            >
+              {(d.claimAttachPicturesCounter ?? "Attach pictures {{count}}/{{min}}")
+                .replace("{{count}}", String(Math.min(claimImages.length, MIN_CLAIM_REPORT_IMAGES)))
+                .replace("{{min}}", String(MIN_CLAIM_REPORT_IMAGES))}
+            </Button>
             {claimImages.length > 0 && (
               <div className="flex gap-2 flex-wrap">
                 {claimImages.map((f, i) => {

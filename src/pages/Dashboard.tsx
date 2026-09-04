@@ -180,7 +180,7 @@ import {
 } from "@/lib/proTierFeatures";
 import { formatProResponseDuration } from "@/lib/bookingResponseTime";
 import { rpcAcknowledgeAllBookingNotifications } from "@/lib/bookingNotifications";
-import { isPlatformAdminEmail } from "@/lib/platformAdmin";
+import { isPlatformAdminEmail, isSuperAdminEmail } from "@/lib/platformAdmin";
 import { isBirthdayAtLeastMinAge, maxBirthdayForMinAge } from "@/lib/birthday";
 import { CANADIAN_POSTAL_PLACEHOLDER } from "@/lib/canadianPostal";
 import { EM_DASH, HIDDEN_COUPON_MASK } from "@/lib/typography";
@@ -190,6 +190,8 @@ import { formatBookingTimeRange } from "@/lib/bookingTimeRange";
 import { referralInvite, type ReferralInvite } from "@/lib/referralInvite";
 import { errorMessage } from "@/lib/errorMessage";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
+import AdminStaffManager from "@/components/admin/AdminStaffManager";
+import AdminMemberIdGate from "@/components/admin/AdminMemberIdGate";
 import { getProPublicContactBlacklistReasons } from "@/lib/proPublicContactBlacklist";
 import SquareBookingPayment from "@/components/SquareBookingPayment";
 import ProProfileApprovalDiff from "@/components/admin/ProProfileApprovalDiff";
@@ -428,17 +430,29 @@ export default function Dashboard() {
     booking_id_verification_status?: string | null;
     is_platform_admin?: boolean | null;
   } | null>(null);
-  const { isPlatformAdmin: isAdmin, ready: platformAdminReady, isEnvListedAdmin } = usePlatformAdmin();
+  const { isPlatformAdmin: isAdmin, ready: platformAdminReady, isEnvListedAdmin, isSuperAdmin } = usePlatformAdmin();
   /** True only after profile sync - gates privileged data loads. */
   const isMonitorAdmin = isAdmin && platformAdminReady;
   /**
-   * Immediate admin chrome for allowlisted emails so the dock never flashes
-   * bookings / reviews / invoices / favorites before admin tools load.
+   * Admin chrome: allowlisted / super emails immediately, confirmed platform admin,
+   * or profile flag from DB (covers Google sessions before allowlist hydrates).
+   * Never show client/pro dock for these accounts.
    */
-  const isAdminDashboardShell = isEnvListedAdmin || isMonitorAdmin;
+  const isAdminDashboardShell =
+    isSuperAdmin ||
+    isEnvListedAdmin ||
+    isMonitorAdmin ||
+    isPlatformAdminEmail(user?.email) ||
+    isSuperAdminEmail(user?.email) ||
+    profile?.is_platform_admin === true;
+
+  /** Slim My account: no phone / postal / address / deletion / ID verification. */
+  const isAdminAccountView = isAdminDashboardShell;
   /** Force admin tab on first paint for allowlisted admins (avoids empty bookings flash). */
   const shellTab =
-    isAdminDashboardShell && activeTab !== "account" && activeTab !== "admin" ? "admin" : activeTab;
+    isAdminDashboardShell && activeTab !== "account" && activeTab !== "admin" && activeTab !== "staff"
+      ? "admin"
+      : activeTab;
   const { resolvedTheme } = useTheme();
   const previewSiteTheme = resolvedTheme === "dark" ? "dark" : "light";
   const { items: whatsNewItems, refresh: refreshWhatsNew } = useWhatsNew();
@@ -843,7 +857,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (isAdminDashboardShell) {
       const tab = searchParams.get("tab");
-      if (tab === "account" || tab === "admin") {
+      if (tab === "account" || tab === "admin" || (tab === "staff" && isSuperAdmin)) {
         setActiveTab(tab);
         return;
       }
@@ -859,7 +873,7 @@ export default function Dashboard() {
     }
     if (tab === "pro" && !proProfile?.is_verified) return;
     setActiveTab(tab);
-  }, [searchParams, isAdmin, isAdminDashboardShell, platformAdminReady, proProfile?.is_verified, setDashboardTab]);
+  }, [searchParams, isAdmin, isAdminDashboardShell, platformAdminReady, proProfile?.is_verified, setDashboardTab, isSuperAdmin]);
 
   useEffect(() => {
     if (searchParams.get("tab") !== "bookings") return;
@@ -894,6 +908,17 @@ export default function Dashboard() {
           onClick: () => navigate("/admin/job-requests"),
           className: "",
         },
+        ...(isSuperAdmin
+          ? [
+              {
+                id: "staff",
+                icon: <ShieldCheck size={20} />,
+                label: locale === "fr" ? "Admins" : "Admins",
+                onClick: () => setDashboardTab("staff"),
+                className: shellTab === "staff" ? "dock-item-active" : "",
+              },
+            ]
+          : []),
         {
           id: "account",
           icon: <User size={20} />,
@@ -954,6 +979,7 @@ export default function Dashboard() {
     ];
   }, [
     isAdminDashboardShell,
+    isSuperAdmin,
     activeTab,
     shellTab,
     t.dashboard,
@@ -961,6 +987,7 @@ export default function Dashboard() {
     showProDockIcon,
     notificationCount,
     navigate,
+    locale,
   ]);
 
   useEffect(() => {
@@ -3017,7 +3044,7 @@ export default function Dashboard() {
   const showReferralFriendAside = Boolean(
     proProfile?.is_verified && proProfile?.referral_invite_panel_enabled !== false && !isAdmin,
   );
-  const showAdminAside = Boolean(isAdmin && platformAdminReady);
+  const showAdminAside = Boolean(isAdminDashboardShell);
 
   const adminFilteredPros = useMemo(() => {
     const q = adminProMemberFilter.trim();
@@ -3272,6 +3299,38 @@ export default function Dashboard() {
         return;
       }
       const birthday = birthdayRaw;
+      if (isAdminDashboardShell) {
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+            full_name: accountForm.full_name.trim() || null,
+            birthday,
+            email_language: accountForm.email_language,
+          })
+          .eq("user_id", user.id);
+        if (error) throw error;
+        const savedName = accountForm.full_name.trim();
+        await supabase.auth.updateUser({ data: { full_name: savedName || null } }).catch(() => {});
+        try {
+          window.dispatchEvent(new CustomEvent("premiere:profile-updated", { detail: { full_name: savedName } }));
+        } catch {
+          /* ignore */
+        }
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                full_name: savedName || null,
+                birthday,
+                email_language: accountForm.email_language,
+              }
+            : prev,
+        );
+        setAccountForm((prev) => ({ ...prev, birthday: birthday ?? "" }));
+        toast({ title: t.dashboard.accountSaved ?? "Saved" });
+        setAccountSaving(false);
+        return;
+      }
       const postalNorm = normalizeCanadianPostal(accountForm.postal_code);
       const addressSave = proProfile?.id
         ? (proProfile.business_address?.trim() || accountForm.address.trim() || null)
@@ -3954,6 +4013,7 @@ export default function Dashboard() {
 
   return (
     <Layout>
+      <AdminMemberIdGate>
       <AlertDialog open={referralDismissDialogOpen} onOpenChange={setReferralDismissDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -3988,6 +4048,11 @@ export default function Dashboard() {
             <Button type="button" variant="outline" className="justify-start" onClick={() => setDashboardTab("admin")}>
               {t.dashboard.admin ?? "Admin"}
             </Button>
+            {isSuperAdmin ? (
+              <Button type="button" variant="outline" className="justify-start" onClick={() => setDashboardTab("staff")}>
+                {locale === "fr" ? "Comptes admins" : "Admin accounts"}
+              </Button>
+            ) : null}
             <Button type="button" variant="outline" className="justify-start" asChild>
               <Link to="/admin/trial-tokens">{t.dashboard.adminTrialLinks ?? "Trial links"}</Link>
             </Button>
@@ -5157,6 +5222,8 @@ export default function Dashboard() {
                 <Label htmlFor="acc-name">{t.dashboard.accountName}</Label>
                 <Input id="acc-name" value={accountForm.full_name} onChange={(e) => setAccountForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Ryan Smith" />
               </div>
+              {!isAdminAccountView ? (
+                <>
               <div className="space-y-2">
                 <Label htmlFor="acc-phone">{t.dashboard.accountPhone}</Label>
                 <Input
@@ -5207,6 +5274,8 @@ export default function Dashboard() {
                   ) : null}
                 </div>
               )}
+                </>
+              ) : null}
               <div className="space-y-2">
                 <Label>{t.dashboard.accountEmail}</Label>
                 <Input value={user.email ?? ""} readOnly className="bg-muted" />
@@ -5280,6 +5349,7 @@ export default function Dashboard() {
                 {t.dashboard.saveAccount}
               </Button>
             </form>
+            {!isAdminAccountView ? (
             <div className="rounded-xl border border-destructive/30 bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-3">
               <h3 className="font-heading font-semibold text-foreground">
                 {locale === "fr" ? "Demande de suppression de compte" : "Account deletion request"}
@@ -5324,7 +5394,8 @@ export default function Dashboard() {
                 {locale === "fr" ? "Demander la suppression" : "Request deletion"}
               </Button>
             </div>
-            {proProfile ? (
+            ) : null}
+            {proProfile && !isAdminDashboardShell ? (
               <div className="rounded-xl border bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-4" data-tour="account-cancel-policy">
                 <h3 className="font-heading font-semibold text-foreground">
                   {locale === "fr" ? "Politique d’annulation (clients)" : "Cancellation policy (clients)"}
@@ -5419,6 +5490,7 @@ export default function Dashboard() {
                 </Button>
               </div>
             ) : null}
+            {!isAdminAccountView ? (
             <div className="rounded-xl border bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-4" data-tour="account-id-verification">
               <button
                 type="button"
@@ -5561,6 +5633,7 @@ export default function Dashboard() {
                 </div>
               ) : null}
             </div>
+            ) : null}
             {proProfile?.is_verified && isPaidSubscriptionPlanId(proSubscriptionPlanId) && (
               <div className={`max-w-lg w-full mx-auto rounded-xl p-[2px] ${PLAN_TIER_BORDER_CLASS[currentPlanTheme]}`}>
                 <div className="rounded-[calc(0.75rem-2px)] border border-border/70 bg-card p-6 md:p-8">
@@ -6273,6 +6346,12 @@ export default function Dashboard() {
           </TabsContent>
           </>
           ) : null}
+
+          {isAdminDashboardShell && isSuperAdmin && (
+            <TabsContent value="staff" className="space-y-4">
+              <AdminStaffManager />
+            </TabsContent>
+          )}
 
           {isAdminDashboardShell && (
             <TabsContent value="admin" className="space-y-4">
@@ -7359,6 +7438,7 @@ export default function Dashboard() {
           }}
         />
       ) : null}
+      </AdminMemberIdGate>
     </Layout>
   );
 }

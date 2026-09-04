@@ -16,6 +16,7 @@ import { shouldShowJoinPros, useActiveVerifiedPro } from "@/hooks/useActiveVerif
 import { getServiceName } from "@/i18n/serviceTranslations";
 import { FOOTER_POPULAR_SERVICE_FALLBACK } from "@/lib/footerPopularServices";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
+import { isSuperAdminEmail } from "@/lib/platformAdmin";
 import WhatsNewMenu from "@/components/WhatsNewMenu";
 import { useWhatsNew } from "@/contexts/WhatsNewContext";
 import { MOTION } from "@/motion/types";
@@ -164,7 +165,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const fullName =
     (profileFullName || (user?.user_metadata?.full_name as string | undefined) || "").trim() || "";
-  const dashboardLabel = fullName ? fullName.split(/\s+/)[0] || t.nav.dashboardShort : t.nav.dashboardShort;
+  const dashboardLabel = isPlatformAdmin
+    ? (locale === "fr" ? "Admin" : "Admin")
+    : fullName
+      ? fullName.split(/\s+/)[0] || t.nav.dashboardShort
+      : t.nav.dashboardShort;
   const isProProfilePage = /^\/pro\/[^/]+$/.test(location.pathname);
 
   const handleSignOut = async () => {
@@ -182,6 +187,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const menuItems = isPlatformAdmin
     ? [
         { label: t.dashboard.admin, link: "/dashboard?tab=admin", emoji: "🛡️", show: true },
+        {
+          label: locale === "fr" ? "Comptes admins" : "Admin accounts",
+          link: "/dashboard?tab=staff",
+          emoji: "👥",
+          show: isSuperAdminEmail(user?.email),
+        },
         { label: t.dashboard.myAccount, link: "/dashboard?tab=account", emoji: "👤", show: true },
       ]
     : [
@@ -260,9 +271,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {user ? (
               <WhatsNewMenu items={whatsNewItems} variant="desktop" className="hidden sm:flex shrink-0" />
             ) : null}
+            {!isPlatformAdmin ? (
             <Button size="sm" className="hidden h-8 px-3 text-[13px] font-semibold md:inline-flex" asChild>
               <Link to="/make-request">{t.nav.publishRequest}</Link>
             </Button>
+            ) : null}
             {user ? (
               <UserMenuDropdown
                 triggerLabel={dashboardLabel}

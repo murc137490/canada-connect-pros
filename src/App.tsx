@@ -39,7 +39,9 @@ import ProOnboardingStart from "./pages/ProOnboardingStart";
 import ProOnboardingTier from "./pages/ProOnboardingTier";
 import ApplePayHandoffPay from "./pages/ApplePayHandoffPay";
 import AuthHashErrorToast from "@/components/AuthHashErrorToast";
+import HashScroll from "@/components/HashScroll";
 import MonitorAdminGuard from "@/components/MonitorAdminGuard";
+import AdminMemberIdGate from "@/components/admin/AdminMemberIdGate";
 import AdminAcceptPros from "./pages/AdminAcceptPros";
 import PrivateNoIndex from "@/components/PrivateNoIndex";
 
@@ -68,6 +70,7 @@ const App = () => (
           <LanguageProvider>
             <AuthProvider>
             <AuthHashErrorToast />
+            <HashScroll />
             <NotificationProvider>
             <WhatsNewProvider>
             <Routes>
@@ -88,10 +91,10 @@ const App = () => (
               <Route path="/pro-onboarding/start" element={<MonitorAdminGuard><ProOnboardingStart /></MonitorAdminGuard>} />
               <Route path="/pro-onboarding/tier" element={<MonitorAdminGuard><ProOnboardingTier /></MonitorAdminGuard>} />
               <Route path="/dashboard" element={<><PrivateNoIndex /><Dashboard /></>} />
-              <Route path="/admin/accept-pros" element={<><PrivateNoIndex /><AdminAcceptPros /></>} />
-              <Route path="/admin/issue-reports" element={<><PrivateNoIndex /><AdminIssueReports /></>} />
-              <Route path="/admin/job-requests" element={<><PrivateNoIndex /><AdminJobRequests /></>} />
-              <Route path="/admin/trial-tokens" element={<><PrivateNoIndex /><AdminTrialTokens /></>} />
+              <Route path="/admin/accept-pros" element={<><PrivateNoIndex /><AdminMemberIdGate><AdminAcceptPros /></AdminMemberIdGate></>} />
+              <Route path="/admin/issue-reports" element={<><PrivateNoIndex /><AdminMemberIdGate><AdminIssueReports /></AdminMemberIdGate></>} />
+              <Route path="/admin/job-requests" element={<><PrivateNoIndex /><AdminMemberIdGate><AdminJobRequests /></AdminMemberIdGate></>} />
+              <Route path="/admin/trial-tokens" element={<><PrivateNoIndex /><AdminMemberIdGate><AdminTrialTokens /></AdminMemberIdGate></>} />
               <Route path="/make-request" element={<MonitorAdminGuard><MakeRequest /></MonitorAdminGuard>} />
               <Route path="/admin" element={<Navigate to="/dashboard?tab=admin" replace />} />
               <Route path="/support" element={<Support />} />

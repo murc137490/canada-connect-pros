@@ -150,9 +150,36 @@ async function geminiEmbed(googleKey: string, inputs: string | string[]): Promis
   return out;
 }
 
-async function embedTexts(opts: { googleKey?: string; hfKey?: string }, inputs: string | string[]): Promise<number[][]> {
-  if (opts.googleKey) return geminiEmbed(opts.googleKey, inputs);
-  if (opts.hfKey) return hfEmbed(opts.hfKey, inputs);
+function isQuotaOrUnavailable(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /\b(429|403|quota|rate.?limit|RESOURCE_EXHAUSTED|unavailable)\b/i.test(msg);
+}
+
+/**
+ * Prefer Gemini when configured; on quota/errors fall back to Hugging Face.
+ * Returns provider so catalog cache stays dimension-compatible (768 vs 384).
+ */
+async function embedTexts(
+  opts: { googleKey?: string; hfKey?: string },
+  inputs: string | string[],
+  forceProvider?: "gemini" | "hf",
+): Promise<{ vecs: number[][]; provider: "gemini" | "hf" }> {
+  const wantGemini = forceProvider !== "hf" && Boolean(opts.googleKey);
+  const wantHf = forceProvider !== "gemini" && Boolean(opts.hfKey);
+
+  if (wantGemini && opts.googleKey) {
+    try {
+      return { vecs: await geminiEmbed(opts.googleKey, inputs), provider: "gemini" };
+    } catch (err) {
+      if (!wantHf || !opts.hfKey) throw err;
+      console.warn("search-suggestions: Gemini failed, falling back to HF:", err instanceof Error ? err.message : err);
+    }
+  }
+
+  if (wantHf && opts.hfKey) {
+    return { vecs: await hfEmbed(opts.hfKey, inputs), provider: "hf" };
+  }
+
   throw new Error("No embedding provider configured");
 }
 
@@ -224,6 +251,15 @@ function aliasBoost(query: string, record: ServiceRecordForAI): number {
   if (/\b(roof|toiture|shingle|gutter|attic|leak)\b/i.test(q) && /roof/i.test(record.slug)) bonus += 0.18;
   if (/\b(deck|patio|terrasse|backyard|balcony)\b/i.test(q) && /deck|patio/i.test(record.slug)) bonus += 0.18;
   if (/\b(fridge|freezer|réfrig|doesn'?t cool|not cooling|broken fridge)\b/i.test(q) && /refrigerator|appliance/i.test(record.slug)) bonus += 0.15;
+  if (
+    /\b(faucet|tap|sink|plumb|toilet|drain|pipe|robinet|évier|plomberie|fuite|toilette)\b/i.test(q) &&
+    /plumb|faucet|drain|pipe|toilet|sink/i.test(`${record.slug} ${record.embedText} ${record.name}`)
+  ) {
+    bonus += 0.22;
+  }
+  if (/\b(leak|fuite|leaking)\b/i.test(q) && /plumb|roof|pipe|faucet|drain/i.test(`${record.slug} ${record.embedText}`)) {
+    bonus += 0.1;
+  }
   return bonus;
 }
 
@@ -318,52 +354,112 @@ function recordsFromBody(serviceRecords: ServiceRecordForAI[] | undefined): Serv
   }));
 }
 
+function lexicalOverlap(query: string, record: ServiceRecordForAI): number {
+  const tokens = query
+    .toLowerCase()
+    .split(/[^a-z0-9àâäéèêëïîôùûüç]+/i)
+    .filter((t) => t.length >= 3);
+  if (!tokens.length) return 0;
+  const hay = `${record.name} ${record.embedText} ${record.slug} ${record.categoryName}`.toLowerCase();
+  let hits = 0;
+  for (const t of tokens) {
+    if (hay.includes(t)) hits += 1;
+  }
+  return hits / tokens.length;
+}
+
+/** No-API fallback when Gemini quota is exhausted and HF is unavailable. */
+function lexicalTopMatches(query: string, records: ServiceRecordForAI[], topK: number) {
+  const scored = records.map((rec, index) => {
+    const cosine = 0;
+    const score =
+      keywordBoost(query, rec) + aliasBoost(query, rec) + lexicalOverlap(query, rec) * 0.45;
+    return { index, score, cosine };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored.filter((r) => r.score > 0).slice(0, topK);
+}
+
 /** Warm cache: batch embed all service strings. */
 async function ensureCatalogEmbeddings(
   keys: { googleKey?: string; hfKey?: string },
-  records: ServiceRecordForAI[]
-): Promise<void> {
-  const provider: "gemini" | "hf" = keys.googleKey ? "gemini" : "hf";
-  const h = `${provider}:${hashCatalog(records)}`;
-  if (catalogCache && catalogCache.hash === h && catalogCache.vectors.length === records.length && catalogCache.provider === provider) {
-    return;
+  records: ServiceRecordForAI[],
+  forceProvider?: "gemini" | "hf",
+): Promise<"gemini" | "hf" | null> {
+  const preferred: "gemini" | "hf" | null = forceProvider
+    ?? (keys.googleKey ? "gemini" : keys.hfKey ? "hf" : null);
+  if (!preferred) return null;
+
+  const tryProviders: Array<"gemini" | "hf"> =
+    preferred === "gemini" && keys.hfKey ? ["gemini", "hf"] : preferred === "hf" ? ["hf"] : keys.googleKey ? ["gemini"] : [];
+
+  let lastErr: unknown = null;
+  for (const provider of tryProviders) {
+    if (provider === "gemini" && !keys.googleKey) continue;
+    if (provider === "hf" && !keys.hfKey) continue;
+    const h = `${provider}:${hashCatalog(records)}`;
+    if (
+      catalogCache &&
+      catalogCache.hash === h &&
+      catalogCache.vectors.length === records.length &&
+      catalogCache.provider === provider
+    ) {
+      return provider;
+    }
+    try {
+      const texts = records.map((r) => r.embedText);
+      const CHUNK = 32;
+      const allVecs: number[][] = [];
+      for (let i = 0; i < texts.length; i += CHUNK) {
+        const chunk = texts.slice(i, i + CHUNK);
+        const { vecs } = await embedTexts(keys, chunk, provider);
+        for (const v of vecs) allVecs.push(l2normalize(v));
+      }
+      catalogCache = { hash: h, records, vectors: allVecs, provider };
+      return provider;
+    } catch (err) {
+      lastErr = err;
+      console.warn(`search-suggestions: catalog embed via ${provider} failed:`, err instanceof Error ? err.message : err);
+      if (provider === "gemini" && isQuotaOrUnavailable(err)) continue;
+      if (provider === "gemini") continue;
+    }
   }
-
-  const texts = records.map((r) => r.embedText);
-  const CHUNK = 32;
-  const allVecs: number[][] = [];
-
-  for (let i = 0; i < texts.length; i += CHUNK) {
-    const chunk = texts.slice(i, i + CHUNK);
-    const vecs = await embedTexts(keys, chunk);
-    for (const v of vecs) allVecs.push(l2normalize(v));
-  }
-
-  catalogCache = { hash: h, records, vectors: allVecs, provider };
+  if (lastErr) console.error("search-suggestions: all catalog embedding providers failed", lastErr);
+  return null;
 }
 
 async function ensureProOfferEmbeddings(
   keys: { googleKey?: string; hfKey?: string },
-  records: ServiceRecordForAI[]
+  records: ServiceRecordForAI[],
+  forceProvider?: "gemini" | "hf",
 ): Promise<void> {
   if (records.length === 0) {
     proOfferCache = null;
     return;
   }
-  const provider: "gemini" | "hf" = keys.googleKey ? "gemini" : "hf";
+  const provider = forceProvider ?? (keys.googleKey ? "gemini" : "hf");
+  if ((provider === "gemini" && !keys.googleKey) || (provider === "hf" && !keys.hfKey)) {
+    proOfferCache = null;
+    return;
+  }
   const h = `pro:${provider}:${hashCatalog(records)}`;
   if (proOfferCache && proOfferCache.hash === h && proOfferCache.vectors.length === records.length && proOfferCache.provider === provider) {
     return;
   }
-  const texts = records.map((r) => r.embedText);
-  const CHUNK = 32;
-  const allVecs: number[][] = [];
-  for (let i = 0; i < texts.length; i += CHUNK) {
-    const chunk = texts.slice(i, i + CHUNK);
-    const vecs = await embedTexts(keys, chunk);
-    for (const v of vecs) allVecs.push(l2normalize(v));
+  try {
+    const texts = records.map((r) => r.embedText);
+    const CHUNK = 32;
+    const allVecs: number[][] = [];
+    for (let i = 0; i < texts.length; i += CHUNK) {
+      const chunk = texts.slice(i, i + CHUNK);
+      const { vecs } = await embedTexts(keys, chunk, provider);
+      for (const v of vecs) allVecs.push(l2normalize(v));
+    }
+    proOfferCache = { hash: h, records, vectors: allVecs, provider };
+  } catch (err) {
+    console.warn("search-suggestions: pro-offer embeddings failed:", err instanceof Error ? err.message : err);
+    proOfferCache = null;
   }
-  proOfferCache = { hash: h, records, vectors: allVecs, provider };
 }
 
 function topMatches(
@@ -417,9 +513,60 @@ Deno.serve(async (req: Request) => {
 
     const googleKey = Deno.env.get("GOOGLE_GENERATIVE_AI_API_KEY")?.trim() || "";
     const hfKey = Deno.env.get("HUGGINGFACE_API_KEY")?.trim() || "";
-    if (!googleKey && !hfKey) {
+    // Embedding keys preferred; lexical ranking still works without them.
+
+    const keys = { googleKey: googleKey || undefined, hfKey: hfKey || undefined };
+
+    const catalogRecords = recordsFromBody(body.serviceRecords);
+    let provider = googleKey || hfKey ? await ensureCatalogEmbeddings(keys, catalogRecords) : null;
+
+    let top: { index: number; score: number; cosine: number }[] = [];
+    let usedEmbedding = false;
+    let queryVec: number[] | null = null;
+
+    if (provider && catalogCache && catalogCache.vectors.length === catalogRecords.length) {
+      try {
+        const embedded = await embedTexts(keys, query, provider);
+        if (embedded.provider !== provider) {
+          provider = await ensureCatalogEmbeddings(keys, catalogRecords, embedded.provider);
+        }
+        if (provider && catalogCache && catalogCache.provider === provider) {
+          queryVec = l2normalize(embedded.vecs[0]!);
+          top = topMatches(query, queryVec, catalogRecords, catalogCache.vectors, 12);
+          usedEmbedding = true;
+        }
+      } catch (err) {
+        console.warn(
+          "search-suggestions: query embed failed, trying HF/lexical:",
+          err instanceof Error ? err.message : err,
+        );
+        if (provider === "gemini" && keys.hfKey) {
+          try {
+            provider = await ensureCatalogEmbeddings(keys, catalogRecords, "hf");
+            if (provider === "hf" && catalogCache) {
+              const embedded = await embedTexts(keys, query, "hf");
+              queryVec = l2normalize(embedded.vecs[0]!);
+              top = topMatches(query, queryVec, catalogRecords, catalogCache.vectors, 12);
+              usedEmbedding = true;
+            }
+          } catch (err2) {
+            console.warn(
+              "search-suggestions: HF fallback failed:",
+              err2 instanceof Error ? err2.message : err2,
+            );
+          }
+        }
+      }
+    }
+
+    if (!top.length) {
+      top = lexicalTopMatches(query, catalogRecords, 12);
+      usedEmbedding = false;
+      queryVec = null;
+    }
+
+    if (!top.length || !catalogRecords[top[0]!.index]) {
       return jsonResponse({
-        error: "No embedding provider configured (set GOOGLE_GENERATIVE_AI_API_KEY or HUGGINGFACE_API_KEY)",
         suggestions: [],
         summary: null,
         followUpQuestions: [],
@@ -428,26 +575,13 @@ Deno.serve(async (req: Request) => {
         topThree: [],
         topFour: [],
         followUpMatches: [],
-      }, 503);
+        error: "No matching services for that query",
+      });
     }
 
-    const keys = { googleKey: googleKey || undefined, hfKey: hfKey || undefined };
-
-    const catalogRecords = recordsFromBody(body.serviceRecords);
-    await ensureCatalogEmbeddings(keys, catalogRecords);
-
-    if (!catalogCache || catalogCache.vectors.length !== catalogRecords.length) {
-      throw new Error("Catalog embedding cache failed");
-    }
-
-    // Exactly ONE embedding call per user query (efficient path).
-    const [queryVecRaw] = await embedTexts(keys, query);
-    const queryVec = l2normalize(queryVecRaw);
-
-    const top = topMatches(query, queryVec, catalogRecords, catalogCache.vectors, 12);
-    const bestIdx = top[0]?.index ?? 0;
-    const best = catalogRecords[bestIdx];
-    const bestScore = top[0]?.cosine ?? 0;
+    const bestIdx = top[0]!.index;
+    const best = catalogRecords[bestIdx]!;
+    const bestScore = top[0]!.cosine || top[0]!.score;
 
     /** Ranked names — legacy chips (hero may ignore in favor of best + 3 follow-ups). */
     const suggestionNames = top
@@ -489,8 +623,8 @@ Deno.serve(async (req: Request) => {
     let followUpMatches: MatchRow[] = [];
     const bestNameLower = (best.name ?? "").trim().toLowerCase();
 
-    if (proRecords.length > 0) {
-      await ensureProOfferEmbeddings(keys, proRecords);
+    if (usedEmbedding && queryVec && proRecords.length > 0 && provider) {
+      await ensureProOfferEmbeddings(keys, proRecords, provider);
       if (proOfferCache && proOfferCache.vectors.length === proRecords.length) {
         const proTop = topMatches(query, queryVec, proRecords, proOfferCache.vectors, 24);
         const seen = new Set<string>();
@@ -546,14 +680,14 @@ Deno.serve(async (req: Request) => {
       topFour,
       followUpMatches,
       confidence: bestScore,
-      _embedding: true,
+      _embedding: usedEmbedding,
+      _provider: usedEmbedding ? provider : "lexical",
     });
   } catch (error) {
-    const errMsg = error instanceof Error ? error.message : String(error);
     console.error("search-suggestions:", error);
     return jsonResponse(
       {
-        error: errMsg,
+        error: "Suggestions temporarily unavailable. Please refresh or contact support.",
         suggestions: [],
         summary: null,
         followUpQuestions: [],

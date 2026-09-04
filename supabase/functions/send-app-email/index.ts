@@ -190,9 +190,15 @@ async function loadBookingContext(adminClient: ReturnType<typeof createClient>, 
       payment_status: overrides.payment_status ?? payment?.status ?? "",
       booking_status: booking.status,
       cancellation_reason: overrides.cancellation_reason ?? booking.decline_reason ?? "",
-      reminder_window: overrides.reminder_window ?? "soon",
-      manage_booking_url: overrides.manage_booking_url ?? `${SITE_URL}/dashboard?tab=bookings`,
-      admin_booking_url: overrides.admin_booking_url ?? `${SITE_URL}/dashboard?tab=admin`,
+      reminder_window:
+        overrides.reminder_window ??
+        reminderWindowLabel(booking.preferred_date ?? booking.created_at, clientLanguage),
+      manage_booking_url:
+        overrides.manage_booking_url ??
+        `${SITE_URL}/dashboard?tab=bookings&booking=${encodeURIComponent(booking.id)}`,
+      admin_booking_url:
+        overrides.admin_booking_url ??
+        `${SITE_URL}/dashboard?tab=admin&booking=${encodeURIComponent(booking.id)}`,
       support_hours: clientLanguage === "fr" ? SUPPORT_HOURS_FR : SUPPORT_HOURS_EN,
       terms_url: overrides.terms_url ?? `${SITE_URL}/terms`,
       privacy_url: overrides.privacy_url ?? `${SITE_URL}/privacy`,
@@ -568,8 +574,9 @@ const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
         emailParagraph("Hi{{name_suffix}}, we received a request to reset the password for {{email}}.") +
         emailParagraph("Use the button below to choose a new password.") +
         cta("Reset password", "{{reset_url}}") +
-        emailSecondaryNote("This link expires in {{expires_in}}. If you didn’t ask for a reset, you can ignore this email — your password won’t change.") +
-        emailSecondaryNote("For your security, never share this link with anyone."),
+        emailSecondaryNote(
+          "This link expires in {{expires_in}}. If you didn’t ask for a reset, ignore this email — your password won’t change. Never share the link.",
+        ),
     },
     fr: {
       subject: "Réinitialisez votre mot de passe Premiere Services",
@@ -580,8 +587,9 @@ const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
         emailParagraph("Bonjour{{name_suffix}}, nous avons reçu une demande de réinitialisation pour {{email}}.") +
         emailParagraph("Utilisez le bouton ci-dessous pour choisir un nouveau mot de passe.") +
         cta("Réinitialiser le mot de passe", "{{reset_url}}") +
-        emailSecondaryNote("Ce lien expire dans {{expires_in}}. Si vous n’avez pas fait cette demande, ignorez ce courriel — votre mot de passe ne changera pas.") +
-        emailSecondaryNote("Pour votre sécurité, ne partagez jamais ce lien."),
+        emailSecondaryNote(
+          "Ce lien expire dans {{expires_in}}. Si vous n’avez pas fait cette demande, ignorez ce courriel — votre mot de passe ne changera pas. Ne partagez jamais ce lien.",
+        ),
     },
   },
   auth_magic_link: {
@@ -593,8 +601,9 @@ const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
       body:
         emailParagraph("Use the secure button below to access your Premiere Services account. No password needed for this step.") +
         cta("Sign in securely", "{{magic_link_url}}") +
-        emailSecondaryNote("This link expires in {{expires_in}}. If you didn’t request it, you can safely ignore this email.") +
-        emailSecondaryNote("For your security, don’t forward this email."),
+        emailSecondaryNote(
+          "This link expires in {{expires_in}}. If you didn’t request it, you can safely ignore this email. Don’t forward it.",
+        ),
     },
     fr: {
       subject: "Votre lien de connexion Premiere Services",
@@ -604,8 +613,9 @@ const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
       body:
         emailParagraph("Utilisez le bouton sécurisé ci-dessous pour accéder à votre compte Premiere Services. Aucun mot de passe n’est requis pour cette étape.") +
         cta("Se connecter en toute sécurité", "{{magic_link_url}}") +
-        emailSecondaryNote("Ce lien expire dans {{expires_in}}. Si vous ne l’avez pas demandé, ignorez ce courriel.") +
-        emailSecondaryNote("Pour votre sécurité, ne transférez pas ce courriel."),
+        emailSecondaryNote(
+          "Ce lien expire dans {{expires_in}}. Si vous ne l’avez pas demandé, ignorez ce courriel. Ne le transférez pas.",
+        ),
     },
   },
 };
@@ -698,6 +708,31 @@ function formatTime(value: string | null | undefined, language: Language) {
 function formatMoney(amountCents: number | null | undefined, currency: string) {
   if (typeof amountCents !== "number") return "";
   return new Intl.NumberFormat("en-CA", { style: "currency", currency: currency || "CAD" }).format(amountCents / 100);
+}
+
+/** Human reminder window for {{reminder_window}} (e.g. "tomorrow", "soon"). */
+function reminderWindowLabel(preferredDate: string | null | undefined, language: Language): string {
+  const soon = language === "fr" ? "bientôt" : "soon";
+  if (!preferredDate) return soon;
+  const raw = preferredDate.length <= 10 ? `${preferredDate}T12:00:00` : preferredDate;
+  const when = new Date(raw);
+  if (Number.isNaN(when.getTime())) return soon;
+
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startWhen = new Date(when.getFullYear(), when.getMonth(), when.getDate());
+  const dayDiff = Math.round((startWhen.getTime() - startToday.getTime()) / 86_400_000);
+
+  if (language === "fr") {
+    if (dayDiff <= 0) return "aujourd’hui";
+    if (dayDiff === 1) return "demain";
+    if (dayDiff <= 7) return `dans ${dayDiff} jours`;
+    return soon;
+  }
+  if (dayDiff <= 0) return "today";
+  if (dayDiff === 1) return "tomorrow";
+  if (dayDiff <= 7) return `in ${dayDiff} days`;
+  return soon;
 }
 
 function escapeHtml(value: string) {

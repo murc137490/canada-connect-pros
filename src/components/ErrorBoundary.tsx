@@ -29,19 +29,19 @@ function readLocale(): "en" | "fr" {
 const COPY = {
   en: {
     title: "Something went wrong",
-    body: "This page hit an unexpected error. You can try again, go home, or reach our support team — FAQ, email, and phone are on the Support page.",
-    tryAgain: "Try again",
+    body: "Please refresh the page. If it continues, visit Support or email support — we never show technical details here.",
+    tryAgain: "Refresh",
     goHome: "Go home",
-    getHelp: "Get help on Support",
+    getHelp: "Go to Support",
     email: "Email",
     phone: "Phone",
   },
   fr: {
     title: "Une erreur est survenue",
-    body: "Cette page a rencontré une erreur inattendue. Vous pouvez réessayer, retourner à l’accueil, ou joindre notre équipe — FAQ, courriel et téléphone sont sur la page Aide.",
-    tryAgain: "Réessayer",
+    body: "Veuillez actualiser la page. Si le problème continue, ouvrez Aide ou écrivez au soutien — aucun détail technique n’est affiché ici.",
+    tryAgain: "Actualiser",
     goHome: "Accueil",
-    getHelp: "Obtenir de l’aide",
+    getHelp: "Aller à l’aide",
     email: "Courriel",
     phone: "Téléphone",
   },
@@ -180,8 +180,8 @@ export default class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("App error:", error, info.componentStack);
+  componentDidCatch(_error: Error, _info: ErrorInfo) {
+    // Never log stacks or internals to the production console.
   }
 
   render() {

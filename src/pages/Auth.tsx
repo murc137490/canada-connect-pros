@@ -14,6 +14,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { getPublicSiteOrigin } from "@/lib/authSiteUrl";
 import { isAuthEmailDeliveryError } from "@/lib/authEmailDeliveryError";
 import { formatCanadianPhone, phoneDigits } from "@/lib/canadianPhone";
+import { canUsePlatformAdminTools, isPlatformAdminEmail, isSuperAdminEmail } from "@/lib/platformAdmin";
+import {
+  clearAdminMemberVerification,
+  normalizeMemberIdInput,
+  setAdminMemberVerified,
+} from "@/lib/adminMemberGate";
+
+const ADMIN_DASHBOARD_PATH = "/dashboard?tab=admin";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -24,6 +32,7 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [memberId, setMemberId] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [emailLanguage, setEmailLanguage] = useState<"en" | "fr">("en");
@@ -31,7 +40,7 @@ export default function Auth() {
   const [resetLoading, setResetLoading] = useState(false);
   const [emailAlreadyExists, setEmailAlreadyExists] = useState(false);
   const [nameTaken, setNameTaken] = useState(false);
-  const { signIn, signUp, signInWithGoogle, user, loading: authLoading } = useAuth();
+  const { signIn, signUp, signInWithGoogle, signOut, user, loading: authLoading } = useAuth();
   const { t, locale } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -43,10 +52,13 @@ export default function Auth() {
   }, [searchParams]);
 
   // After Google OAuth (or if already signed in), land on the intended page.
+  // Skip while a password login is in flight so admin Member ID checks can finish.
   useEffect(() => {
-    if (authLoading || !user) return;
-    navigate(redirect, { replace: true });
-  }, [authLoading, user, redirect, navigate]);
+    if (authLoading || !user || loading) return;
+    const adminDest =
+      isPlatformAdminEmail(user.email) || isSuperAdminEmail(user.email) ? ADMIN_DASHBOARD_PATH : null;
+    navigate(adminDest ?? redirect, { replace: true });
+  }, [authLoading, user, redirect, navigate, loading]);
 
   const buildAuthPath = useCallback(
     (nextMode: "login" | "signup") => {
@@ -103,8 +115,45 @@ export default function Auth() {
         toast({ title: t.auth.toastCreated });
       } else {
         await signIn(email.trim(), password);
+        const {
+          data: { user: signedIn },
+        } = await supabase.auth.getUser();
+        if (signedIn?.id) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("is_platform_admin, public_user_number")
+            .eq("user_id", signedIn.id)
+            .maybeSingle();
+          const isAdmin = canUsePlatformAdminTools(signedIn.email, prof?.is_platform_admin === true);
+          if (isAdmin) {
+            // Super admin never needs Member ID; staff admins must enter theirs.
+            if (!isSuperAdminEmail(signedIn.email)) {
+              const expected = String(prof?.public_user_number ?? "").trim();
+              const entered = normalizeMemberIdInput(memberId);
+              if (!/^[0-9]{6}$/.test(entered) || entered !== expected) {
+                clearAdminMemberVerification();
+                await signOut();
+                toast({
+                  title: t.auth.toastError,
+                  description:
+                    locale === "fr"
+                      ? "Les comptes admin exigent le Member ID à 6 chiffres correct."
+                      : "Admin accounts require the correct 6-digit Member ID.",
+                  variant: "destructive",
+                });
+                setLoading(false);
+                return;
+              }
+              setAdminMemberVerified(signedIn.id, expected);
+            }
+            toast({ title: t.auth.toastWelcome });
+            navigate(ADMIN_DASHBOARD_PATH, { replace: true });
+            setLoading(false);
+            return;
+          }
+        }
         toast({ title: t.auth.toastWelcome });
-        navigate(redirect);
+        navigate(redirect, { replace: true });
       }
     } catch (err: unknown) {
       const msg = (err as Error).message ?? "";
@@ -361,6 +410,28 @@ export default function Auth() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
+              </div>
+            )}
+            {mode === "login" && (
+              <div className="space-y-2">
+                <Label htmlFor="memberId" className="text-foreground dark:text-white">
+                  Member ID
+                </Label>
+                <Input
+                  id="memberId"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  placeholder="000000"
+                  className="mt-1.5 font-mono tracking-widest text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-white/60 bg-background dark:bg-card"
+                  value={memberId}
+                  onChange={(e) => setMemberId(normalizeMemberIdInput(e.target.value))}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {locale === "fr"
+                    ? "Obligatoire pour les comptes admin staff (pas le super admin)."
+                    : "Required for staff admin accounts (not the super admin)."}
+                </p>
               </div>
             )}
             <div className="space-y-2">
