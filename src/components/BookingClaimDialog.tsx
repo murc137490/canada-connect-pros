@@ -234,7 +234,7 @@ export default function BookingClaimDialog({
       setClaimImages([]);
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e);
-      } else if (raw === CLAIM_BUCKET) {
+      if (raw === CLAIM_BUCKET) {
         toast({
           title: d.claimSubmitFailedTitle ?? "Could not submit report",
           description: toUserFacingMessage(null),
