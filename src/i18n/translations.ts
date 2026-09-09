@@ -1245,6 +1245,10 @@ export const translations = {
       /** Calendar header row, Sun–Sat (matches getDay() order). */
       calendarWeekdayShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const,
       availableOnThisDay: "Available on this day",
+      pastDayNotesOnlyHint: "Past day — notes only",
+      pastDayNoteLabel: "Note for this day (optional)",
+      pastDayNotePlaceholder: "e.g. Completed job notes, reminder…",
+      dayBreakdownDayNote: "Note: {{note}}",
       scheduleBlockedHoursTitle: "Blocked hours on this day",
       scheduleBlockedHoursHint:
         "Clients cannot start a booking during these ranges (within your working hours for this day). Save schedule below to apply on your public page.",
@@ -3070,6 +3074,10 @@ export const translations = {
       ] as const,
       calendarWeekdayShort: ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"] as const,
       availableOnThisDay: "Disponible ce jour",
+      pastDayNotesOnlyHint: "Jour passé — notes seulement",
+      pastDayNoteLabel: "Note pour ce jour (facultatif)",
+      pastDayNotePlaceholder: "ex. Notes de job terminé, rappel…",
+      dayBreakdownDayNote: "Note : {{note}}",
       scheduleBlockedHoursTitle: "Heures bloquées ce jour",
       scheduleBlockedHoursHint:
         "Les clients ne peuvent pas commencer une réservation pendant ces plages (dans vos heures de travail ce jour-là). Enregistrez l’horaire ci-dessous pour l’appliquer sur votre page publique.",

@@ -23,6 +23,7 @@ export type DayBreakdownSegment =
   | { kind: "window"; mode: "weekly" | "override"; start: string; end: string }
   | { kind: "blocked_day"; note?: string }
   | { kind: "unavailable_slot"; start: string; end: string; note?: string }
+  | { kind: "day_note"; note: string }
   | { kind: "booking"; label: string; start: string; end: string; status?: string }
   | { kind: "free"; start: string; end: string };
 
@@ -56,6 +57,12 @@ export function buildDayBreakdownSegments(args: {
     out.push({ kind: "window", mode: "override", start: OVERRIDE_START, end: OVERRIDE_END });
   } else if (!day.available || !isAvailableByWeekday) {
     out.push({ kind: "template_off" });
+    const note = getUnavailableNote(unavailableEntry);
+    if (isWholeDayUnavailable(unavailableEntry)) {
+      out.push({ kind: "blocked_day", note });
+    } else if (note && getUnavailableSlots(unavailableEntry).length === 0) {
+      out.push({ kind: "day_note", note });
+    }
     return out;
   } else {
     winStart = parseHHMM(day.start);
@@ -74,7 +81,12 @@ export function buildDayBreakdownSegments(args: {
     return out;
   }
 
-  for (const slot of getUnavailableSlots(unavailableEntry)) {
+  const slots = getUnavailableSlots(unavailableEntry);
+  if (note && slots.length === 0) {
+    out.push({ kind: "day_note", note });
+  }
+
+  for (const slot of slots) {
     const a = parseHHMM(slot.start);
     const b = parseHHMM(slot.end);
     if (a == null || b == null || b <= a) continue;

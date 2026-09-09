@@ -180,6 +180,8 @@ function formatBreakdownLine(
         .replace("{{end}}", seg.end);
     case "blocked_day":
       return (d?.dayBreakdownBlockedDay ?? "Unavailable (whole day)") + (seg.note ? ` - ${seg.note}` : "");
+    case "day_note":
+      return (d?.dayBreakdownDayNote ?? "Note: {{note}}").replace("{{note}}", seg.note);
     case "unavailable_slot":
       return (
         (d?.dayBreakdownBlockedSlot ?? "Blocked {{start}}–{{end}}").replace("{{start}}", seg.start).replace("{{end}}", seg.end) +
@@ -193,6 +195,18 @@ function formatBreakdownLine(
     default:
       return "";
   }
+}
+
+function todayDateStrLocal(): string {
+  const n = new Date();
+  const y = n.getFullYear();
+  const m = String(n.getMonth() + 1).padStart(2, "0");
+  const d = String(n.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function isPastDateStr(dateStr: string): boolean {
+  return dateStr < todayDateStrLocal();
 }
 
 export default function ProScheduleEditor({
@@ -237,6 +251,7 @@ export default function ProScheduleEditor({
   };
 
   const isOverride = selectedDateStr ? availableDateOverrides.includes(selectedDateStr) : false;
+  const selectedIsPast = selectedDateStr ? isPastDateStr(selectedDateStr) : false;
   const selectedEntry = selectedDateStr ? (unavailableDates[selectedDateStr] as UnavailableDayStored | undefined) : undefined;
   const wholeDayOff = selectedDateStr ? isWholeDayUnavailable(selectedEntry) : false;
   const dayIsAvailable = selectedDateStr
@@ -247,16 +262,16 @@ export default function ProScheduleEditor({
   const blockedSlotsForDay = selectedDateStr ? getUnavailableSlots(selectedEntry) : [];
 
   const weeklyWindowForSelected = useMemo(() => {
-    if (!selectedDateStr) return null;
+    if (!selectedDateStr || selectedIsPast) return null;
     if (isOverride) return { start: "09:00", end: "17:00" };
     if (!selectedDateAvailableByWeekday) return null;
     const wk = weekdayKeyFromDateStr(selectedDateStr);
     const d = weekly[wk];
     if (!d.available) return null;
     return { start: d.start, end: d.end };
-  }, [selectedDateStr, isOverride, weekly, selectedDateAvailableByWeekday]);
+  }, [selectedDateStr, selectedIsPast, isOverride, weekly, selectedDateAvailableByWeekday]);
 
-  const canEditDayBlocks = !!selectedDateStr && !!weeklyWindowForSelected && !wholeDayOff;
+  const canEditDayBlocks = !!selectedDateStr && !selectedIsPast && !!weeklyWindowForSelected && !wholeDayOff;
 
   const blockedSlotsOverlap = useMemo(() => slotsOverlapPairwise(blockedSlotsForDay), [blockedSlotsForDay]);
 
@@ -296,7 +311,7 @@ export default function ProScheduleEditor({
   }, [selectedDateStr, weeklyWindowForSelected, blockedSlotsKey, commitSlots, blockedSlotsForDay.length]);
 
   const persistUnavailableNote = () => {
-    if (!selectedDateStr || !wholeDayOff) return;
+    if (!selectedDateStr || !wholeDayOff || selectedIsPast) return;
     const note = localUnavailableNote.trim();
     const cur = unavailableDates[selectedDateStr] as UnavailableDayStored | undefined;
     let nextVal: UnavailableDayStored;
@@ -321,13 +336,62 @@ export default function ProScheduleEditor({
     onUnavailableDatesChange({ ...unavailableDates, [selectedDateStr]: nextVal });
   };
 
+  /** Past days: notes only — never toggle available/unavailable or blocked hours. */
+  const persistPastDayNote = () => {
+    if (!selectedDateStr || !selectedIsPast) return;
+    const note = localUnavailableNote.trim();
+    const cur = unavailableDates[selectedDateStr] as UnavailableDayStored | undefined;
+    const next = { ...unavailableDates };
+
+    if (!note) {
+      if (!cur) return;
+      if (cur === true) return;
+      if (Array.isArray(cur)) {
+        next[selectedDateStr] = cur;
+      } else if (cur && typeof cur === "object") {
+        const o = cur as { wholeDay?: boolean; slots?: UnavailableTimeSlot[]; note?: string };
+        if (o.wholeDay === true) {
+          next[selectedDateStr] = true;
+        } else if (o.slots && o.slots.length > 0) {
+          next[selectedDateStr] = o.slots;
+        } else {
+          delete next[selectedDateStr];
+        }
+      } else {
+        delete next[selectedDateStr];
+      }
+      onUnavailableDatesChange(next);
+      return;
+    }
+
+    if (!cur) {
+      next[selectedDateStr] = { note, wholeDay: false };
+    } else if (cur === true) {
+      next[selectedDateStr] = { wholeDay: true, note };
+    } else if (Array.isArray(cur)) {
+      next[selectedDateStr] = { slots: cur, note };
+    } else if (typeof cur === "object") {
+      const o = cur as { wholeDay?: boolean; slots?: UnavailableTimeSlot[] };
+      if (isWholeDayUnavailable(cur)) {
+        next[selectedDateStr] = { wholeDay: true, note };
+      } else if (o.slots && o.slots.length > 0) {
+        next[selectedDateStr] = { slots: o.slots, note };
+      } else {
+        next[selectedDateStr] = { note, wholeDay: false };
+      }
+    } else {
+      next[selectedDateStr] = { note, wholeDay: false };
+    }
+    onUnavailableDatesChange(next);
+  };
+
   const persistSlotClientNote = () => {
-    if (!selectedDateStr || wholeDayOff || blockedSlotsForDay.length === 0) return;
+    if (!selectedDateStr || selectedIsPast || wholeDayOff || blockedSlotsForDay.length === 0) return;
     commitSlots(blockedSlotsForDay);
   };
 
   const markSelectedDateUnavailable = () => {
-    if (!selectedDateStr) return;
+    if (!selectedDateStr || selectedIsPast) return;
     const note = localUnavailableNote.trim();
     onUnavailableDatesChange({
       ...unavailableDates,
@@ -337,7 +401,7 @@ export default function ProScheduleEditor({
   };
 
   const markSelectedDateAvailable = () => {
-    if (!selectedDateStr) return;
+    if (!selectedDateStr || selectedIsPast) return;
     const cur = unavailableDates[selectedDateStr] as UnavailableDayStored | undefined;
     const nextUnavailable = { ...unavailableDates };
 
@@ -452,27 +516,51 @@ export default function ProScheduleEditor({
         {selectedDateStr && (
           <div className="mt-3 p-3 rounded-lg border border-border bg-muted/30 flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium text-foreground">{selectedDateStr}</span>
-            <span className="text-muted-foreground"> - </span>
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={dayIsAvailable}
-                onChange={(e) => {
-                  if (e.target.checked) markSelectedDateAvailable();
-                  else markSelectedDateUnavailable();
-                }}
-              />
-              <span className="text-sm font-medium">
-                {t.dashboard?.availableOnThisDay ?? "Available on this day"}
+            {!selectedIsPast ? (
+              <>
+                <span className="text-muted-foreground"> - </span>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={dayIsAvailable}
+                    onChange={(e) => {
+                      if (e.target.checked) markSelectedDateAvailable();
+                      else markSelectedDateUnavailable();
+                    }}
+                  />
+                  <span className="text-sm font-medium">
+                    {t.dashboard?.availableOnThisDay ?? "Available on this day"}
+                  </span>
+                </label>
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                {t.dashboard?.pastDayNotesOnlyHint ?? "Past day — notes only"}
               </span>
-            </label>
+            )}
             <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedDateStr(null)}>
               {t.common?.cancel ?? "Cancel"}
             </Button>
           </div>
         )}
 
-        {selectedDateStr && wholeDayOff ? (
+        {selectedDateStr && selectedIsPast ? (
+          <div className="mt-3 space-y-1.5 max-w-md">
+            <Label className="text-xs text-muted-foreground">
+              {t.dashboard?.pastDayNoteLabel ?? "Note for this day (optional)"}
+            </Label>
+            <Textarea
+              value={localUnavailableNote}
+              onChange={(e) => setLocalUnavailableNote(e.target.value)}
+              onBlur={() => persistPastDayNote()}
+              placeholder={t.dashboard?.pastDayNotePlaceholder ?? "e.g. Completed job notes, reminder…"}
+              rows={3}
+              className="text-sm resize-none"
+            />
+          </div>
+        ) : null}
+
+        {selectedDateStr && !selectedIsPast && wholeDayOff ? (
           <div className="mt-3 space-y-1.5 max-w-md">
             <Label className="text-xs text-muted-foreground">
               {t.dashboard?.unavailableDayNoteLabel ?? "Reason for blocking this day (optional)"}

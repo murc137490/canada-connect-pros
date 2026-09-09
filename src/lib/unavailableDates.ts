@@ -15,8 +15,10 @@ export type UnavailableDatesMap = Record<string, UnavailableDayStored>;
 export function isWholeDayUnavailable(val: UnavailableDayStored | undefined): boolean {
   if (val === true) return true;
   if (val && typeof val === "object" && !Array.isArray(val)) {
-    const o = val as { wholeDay?: boolean; slots?: UnavailableTimeSlot[] };
-    if (o.wholeDay) return true;
+    const o = val as { wholeDay?: boolean; slots?: UnavailableTimeSlot[]; note?: string };
+    if (o.wholeDay === true) return true;
+    if (o.wholeDay === false) return false;
+    // Legacy: note-only object (no wholeDay flag, no slots) meant a blocked day
     if (o.note?.trim() && !o.slots?.length) return true;
   }
   return false;
