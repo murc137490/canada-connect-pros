@@ -103,8 +103,8 @@ export default function ProCard({ pro, className, highlight, isFavorite, onFavor
         <div className="flex items-center gap-3 mt-2 flex-wrap">
           <div className="flex items-center gap-1">
             <StarRating rating={pro.avgRating} size={14} />
-            <span className="text-xs text-muted-foreground">
-              ({pro.reviewCount})
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {pro.reviewCount}
             </span>
           </div>
 
