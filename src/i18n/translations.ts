@@ -645,6 +645,8 @@ export const translations = {
       bookingAddressInvoiceHint:
         "Add your full service address under Dashboard → My account so your receipt shows the place of service (Quebec).",
       securePayment: "Secure payment",
+      cardNote: "Payment is processed securely by card.",
+      cardPaymentPlaceholder: "Pay securely by credit card. Card fields appear here when payment is available.",
       stripeNote: "Payment is processed securely by card.",
       stripePaymentPlaceholder: "Pay securely by credit card. Card fields appear here when payment is available.",
       checkoutPaymentMethodsViaSquare: "Card, Apple Pay, or Google Pay",
@@ -1537,7 +1539,6 @@ export const translations = {
       yearsExperience: "Years experience",
       phone: "Phone",
       website: "Website",
-      priceRange: "Price range",
       serviceAt: "Service at",
       workspaceOnly: "Workspace only",
       travelsToClient: "Travels to client",
@@ -2464,6 +2465,8 @@ export const translations = {
       bookingAddressInvoiceHint:
         "Ajoutez votre adresse complète sous Tableau de bord → Mon compte pour que le reçu indique le lieu de la prestation (Québec).",
       securePayment: "Paiement sécurisé",
+      cardNote: "Le paiement est traité de manière sécurisée par carte.",
+      cardPaymentPlaceholder: "Payez en toute sécurité par carte. Les champs de carte apparaissent ici lorsque le paiement est disponible.",
       stripeNote: "Le paiement est traité de manière sécurisée par carte.",
       stripePaymentPlaceholder: "Payez en toute sécurité par carte. Les champs de carte apparaissent ici lorsque le paiement est disponible.",
       checkoutPaymentMethodsViaSquare: "Carte, Apple Pay ou Google Pay",
@@ -3363,7 +3366,6 @@ export const translations = {
       yearsExperience: "Années d'expérience",
       phone: "Téléphone",
       website: "Site web",
-      priceRange: "Fourchette de prix",
       serviceAt: "Prestation",
       workspaceOnly: "Sur place uniquement",
       travelsToClient: "Se déplace chez le client",

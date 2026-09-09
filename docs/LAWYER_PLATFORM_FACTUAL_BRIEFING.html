@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Première Services — Lawyer-Ready Factual Platform Description</title>
+  <style>
+    :root {
+      --primary: #0f172a;
+      --primary-light: #1e293b;
+      --accent: #2563eb;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --bg: #ffffff;
+      --card-bg: #f8fafc;
+      --border: #e2e8f0;
+      --table-header-bg: #f1f5f9;
+      --code-bg: #f1f5f9;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+      background: #f1f5f9;
+      padding: 40px 20px;
+    }
+
+    .document-wrapper {
+      max-width: 960px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 60px 70px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      border: 1px solid var(--border);
+    }
+
+    /* Header & Letterhead */
+    .memo-header {
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+
+    .memo-badge {
+      display: inline-block;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #bfdbfe;
+      margin-bottom: 12px;
+    }
+
+    .memo-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.25;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .memo-subtitle {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .memo-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px 20px;
+      font-size: 13px;
+    }
+
+    .memo-meta-item strong {
+      color: var(--primary);
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+
+    /* Headings */
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-top: 40px;
+      margin-bottom: 16px;
+      border-bottom: 1.5px solid var(--border);
+      padding-bottom: 8px;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary-light);
+      margin-top: 28px;
+      margin-bottom: 12px;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h3 {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: #334155;
+      margin-top: 20px;
+      margin-bottom: 8px;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h4 {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #475569;
+      margin-top: 16px;
+      margin-bottom: 6px;
+    }
+
+    p {
+      margin-bottom: 14px;
+    }
+
+    /* Lists */
+    ul, ol {
+      margin-top: 6px;
+      margin-bottom: 16px;
+      padding-left: 26px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    li strong {
+      color: var(--primary);
+    }
+
+    /* Tables */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 14px;
+      margin-bottom: 22px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--table-header-bg);
+      color: var(--primary);
+      font-weight: 700;
+      padding: 10px 14px;
+      border-bottom: 1.5px solid var(--border);
+      font-size: 12px;
+      letter-spacing: 0.02em;
+    }
+
+    td {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:nth-child(even) td {
+      background: #fafbfc;
+    }
+
+    /* Code */
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11.5px;
+      background: var(--code-bg);
+      color: #0f172a;
+      padding: 2px 5px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+
+    pre {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 14px 18px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-top: 10px;
+      margin-bottom: 18px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      border: none;
+    }
+
+    blockquote {
+      border-left: 4px solid var(--accent);
+      background: #f8fafc;
+      padding: 10px 16px;
+      margin: 14px 0;
+      border-radius: 0 6px 6px 0;
+      color: #334155;
+      font-size: 13.5px;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 32px 0;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* Print Styles for PDF Generation */
+    @media print {
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        color: #000000 !important;
+        font-size: 11pt !important;
+      }
+
+      .document-wrapper {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+
+      @page {
+        margin: 20mm 15mm 20mm 15mm;
+        size: letter portrait;
+      }
+
+      h1, h2, h3 {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+
+      .table-container, table, tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      pre, blockquote {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="document-wrapper">
+    <div class="memo-header">
+      <div class="memo-badge">Technical Briefing for Legal Counsel</div>
+      <div class="memo-title">Première Services — Comprehensive Factual Platform Audit</div>
+      <div class="memo-subtitle">Technical Architecture, User Flows, Marketplace Mechanics, Data Inventory & Regulatory Touchpoints</div>
+      <div class="memo-meta-grid">
+        <div class="memo-meta-item">
+          <strong>Subject Entity</strong>
+          Première Services (premiereservices.ca)
+        </div>
+        <div class="memo-meta-item">
+          <strong>Document Purpose</strong>
+          Save legal fees during ToS / Privacy / Regulatory review
+        </div>
+        <div class="memo-meta-item">
+          <strong>Audit Date</strong>
+          September 2026 (Codebase & Live Schema)
+        </div>
+        <div class="memo-meta-item">
+          <strong>Reviewing Counsel</strong>
+          Quebec Bar / Commercial & Regulatory Practice
+        </div>
+      </div>
+    </div>
+
+    <h1>Première Services — Lawyer-Ready Factual Platform Description</h1>
+<p><strong>Document purpose:</strong> Save counsel time by describing how the website/application <strong>currently works</strong>, based on inspection of the repository and live Supabase schema.</p>
+<p><strong>Not legal advice.</strong> No assumptions presented as facts. Gaps are listed in Section 20.</p>
+<p><strong>Primary technical sources (non-exhaustive):</strong></p>
+<p><code>src/</code>, <code>supabase/migrations/</code>, <code>supabase/functions/</code>, <code>src/config/legalConfig.ts</code>, <code>src/content/termsContent.ts</code>, <code>src/content/privacyContent.ts</code>, <code>src/content/cookieContent.ts</code>, <code>src/data/services.ts</code>, <code>docs/PAYMENT_FLOW.md</code>, live Postgres <code>public</code> schema (queried via project tools).</p>
+<p><strong>As-of:</strong> Inspection performed September 2026 against the Première Services codebase and linked Supabase project.</p>
+<p>---</p>
+<h2>1. Executive Summary</h2>
+<p>Première Services is a bilingual (English/French) Canadian home-services marketplace web application. Stack observed in code:</p>
+<div class="table-container"><table><thead><tr>
+<th>Layer</th>
+<th>Technology (as used)</th>
+</tr></thead><tbody>
+<tr>
+<td>Frontend</td>
+<td>React + Vite (<code>src/</code>, <code>vercel.json</code>)</td>
+</tr>
+<tr>
+<td>Auth / DB / Storage / Edge</td>
+<td>Supabase (<code>@supabase/supabase-js</code>, <code>supabase/</code>)</td>
+</tr>
+<tr>
+<td>Hosting</td>
+<td>Vercel patterns (<code>vercel.json</code>; production domain previously attached to Vercel project <code>premier-servic</code>)</td>
+</tr>
+<tr>
+<td>Service payments</td>
+<td>Square Web Payments SDK + Edge Functions (<code>square-create-payment</code>, <code>square-finalize-payment</code>, Connect OAuth)</td>
+</tr>
+<tr>
+<td>Pro plan payments</td>
+<td>Separate Square checkout on platform credentials (<code>pro-plan-checkout</code>, <code>trial-checkout</code>)</td>
+</tr>
+<tr>
+<td>Email</td>
+<td>Resend API from several Edge Functions</td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>Twilio Messages API via <code>booking-sms-notify</code> (optional if secrets present)</td>
+</tr>
+<tr>
+<td>Maps / address</td>
+<td>Google Places (client), Google Maps / geocoder.ca / Photon / Zippopotam (Edge <code>geocode</code>)</td>
+</tr>
+<tr>
+<td>AI</td>
+<td>Google Gemini + Hugging Face fallbacks (<code>ai-chat-hf</code>, <code>search-suggestions</code>)</td>
+</tr>
+</tbody></table></div>
+<p><strong>Core product flows:</strong></p>
+<ol>
+<li><strong>Clients</strong> register, search services by category/postal, view verified pros, post job requests and receive quotes, and/or book a pro directly on a profile page with Square payment (often authorize-then-capture).</li>
+<li><strong>Professionals (“Pros”)</strong> create a business profile, upload documents, await admin verification (<code>is_verified</code>), subscribe to paid plans (Starter / Growth / Pro), connect Square, receive bookings/quotes, accept/decline/complete bookings.</li>
+<li><strong>Platform admins</strong> approve/decline pros, view claims/job requests/trials, and (super admin) manage staff admins.</li>
+</ol>
+<p><strong>Payment characterization (technical only):</strong> Code and docs instruct <strong>not</strong> to call the model “escrow.” Funds move through Square (seller Connect account or platform merchant). See Section 6.</p>
+<p>---</p>
+<h2>2. User Roles</h2>
+<div class="table-container"><table><thead><tr>
+<th>Role</th>
+<th>How identified in code</th>
+<th>Typical capabilities</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Unauthenticated visitor</strong></td>
+<td>No Supabase session</td>
+<td>Browse services, categories, public pro pages (verified pros), legal pages</td>
+</tr>
+<tr>
+<td><strong>Client (authenticated user)</strong></td>
+<td><code>auth.users</code> + <code>profiles</code> row; may have no <code>pro_profiles</code></td>
+<td>Book, pay, post jobs, favorites, reviews, claims, account settings</td>
+</tr>
+<tr>
+<td><strong>Pro (professional)</strong></td>
+<td>Row in <code>pro_profiles</code> for <code>user_id</code>; public listing requires <code>is_verified = true</code></td>
+<td>Profile, services, bookings, quotes, Square, subscription tier features</td>
+</tr>
+<tr>
+<td><strong>Platform admin / moderator</strong></td>
+<td>Email on allowlist (<code>admin1@…</code>–<code>admin5@…</code>, <code>murc137490@gmail.com</code>) and/or <code>profiles.is_platform_admin</code>; helpers <code>auth_is_platform_moderator()</code>, <code>auth_is_super_admin()</code></td>
+<td>Admin dashboard tools, approve pros, claims, job request moderation</td>
+</tr>
+<tr>
+<td><strong>Super admin</strong></td>
+<td>Email equals <code>murc137490@gmail.com</code> (<code>auth_is_super_admin()</code>); <code>SUPER_ADMIN_EMAIL</code> in <code>src/lib/platformAdminAllowlist.ts</code></td>
+<td>Create/revoke staff admins (<code>manage-platform-admins</code>, <code>platform_admin_staff</code>)</td>
+</tr>
+</tbody></table></div>
+<p>Same person can be both client and pro (same auth user; separate <code>pro_profiles</code> row).</p>
+<p>---</p>
+<h2>3. Client Functionality</h2>
+<h3>3.1 Account create / login / logout / reset</h3>
+<div class="table-container"><table><thead><tr>
+<th>Action</th>
+<th>Behavior</th>
+<th>Sources</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Sign up (email)</strong></td>
+<td>Requires full name, email, <strong>10-digit Canadian phone</strong>, password, preferred email language EN/FR; optional referral code. Calls <code>supabase.auth.signUp</code> with metadata. Phone written to <code>profiles</code> after signup if user id exists. Links to <code>/terms</code> and <code>/privacy</code> (no <code>legal_document_acceptances</code> insert on signup found).</td>
+<td><code>src/pages/Auth.tsx</code>, <code>src/contexts/AuthContext.tsx</code></td>
+</tr>
+<tr>
+<td><strong>Sign up / login (Google)</strong></td>
+<td><code>signInWithOAuth({ provider: "google" })</code> → <code>/auth/callback</code> PKCE exchange</td>
+<td><code>AuthContext.tsx</code>, <code>AuthCallback.tsx</code></td>
+</tr>
+<tr>
+<td><strong>Login (email/password)</strong></td>
+<td>Email or name → password; staff admins (not super admin) must enter 6-digit Member ID matching <code>profiles.public_user_number</code></td>
+<td><code>Auth.tsx</code>, <code>adminMemberGate.ts</code></td>
+</tr>
+<tr>
+<td><strong>Logout</strong></td>
+<td><code>supabase.auth.signOut()</code>; clears admin member-ID session flag</td>
+<td><code>AuthContext.tsx</code>, <code>Layout.tsx</code></td>
+</tr>
+<tr>
+<td><strong>Email verification</strong></td>
+<td>Supabase Auth confirmation; templates exist under <code>supabase/email-templates/</code> and <code>send-app-email</code> types <code>auth_*</code>. <strong>No in-app invoke of <code>send-app-email</code> found under <code>src/</code>.</strong> Actual Auth email delivery depends on Supabase Auth / Resend project configuration (see Section 20).</td>
+<td>Templates + docs</td>
+</tr>
+<tr>
+<td><strong>Phone verification (OTP)</strong></td>
+<td>Edge <code>twilio-verify</code> exists. <strong>No frontend caller found under <code>src/</code>.</strong></td>
+<td><code>supabase/functions/twilio-verify/</code></td>
+</tr>
+<tr>
+<td><strong>Password reset</strong></td>
+<td><code>supabase.auth.resetPasswordForEmail</code> → <code>/reset-password</code></td>
+<td><code>Auth.tsx</code>, <code>ResetPassword.tsx</code></td>
+</tr>
+</tbody></table></div>
+<h3>3.2 Profile edit</h3>
+<p>Dashboard <strong>My account</strong> (<code>Dashboard.tsx</code> tab <code>account</code>): editable <code>full_name</code>, <code>phone</code>, <code>postal_code</code>, <code>address</code> (Google Places when API key set), <code>email_language</code>, <code>birthday</code> (once set, date input disabled). Email read-only from Auth. Avatar via <code>uploadProfileAvatar</code> → storage <code>pro-photos</code>. Displays <code>public_user_number</code> (Member ID).</p>
+<p><strong>Admin accounts</strong> (platform admin shell): phone / postal / address / deletion request / booking ID verification UI hidden; name, email, language, birthday, Member ID remain.</p>
+<h3>3.3 Account deletion</h3>
+<p>User may insert into <code>account_deletion_requests</code> (<code>status: pending</code>, <code>retain_financial: true</code>, <code>retain_audit: true</code>). <strong>No automated deletion of Auth user, bookings, or payments found.</strong> Copy marks retention as LEGAL_REVIEW_REQUIRED. Config knob <code>accountDeletionGraceDays: 30</code> in <code>legalConfig.ts</code> is <strong>not</strong> identified as enforced deletion logic.</p>
+<h3>3.4 Search / browse / select pro</h3>
+<ul>
+<li>Categories/services from <code>src/data/services.ts</code>.</li>
+<li>Postal geocode (<code>geocode</code> Edge + client helpers).</li>
+<li>Pro list/search filters <strong>verified</strong> pros (<code>is_verified</code>).</li>
+<li>AI-assisted search suggestions: <code>search-suggestions</code> (Gemini → Hugging Face → lexical).</li>
+<li>Favorites: <code>client_saved_pros</code>.</li>
+</ul>
+<h3>3.5 Job request → quotes</h3>
+<ol>
+<li>Client submits <code>job_requests</code> (<code>MakeRequest.tsx</code>) with description, category, location, photos (<code>job-request-photos</code> bucket), scheduling fields.</li>
+<li>Status default <code>open</code>.</li>
+<li>Pros insert <code>job_quotes</code> (price, message, optional proposed date).</li>
+<li>Client accepts quote: <strong>must pay via Square (capture)</strong> then <code>job_quotes.status = accepted</code>.</li>
+<li>Client may decline quote → <code>declined</code>.</li>
+<li><strong>Accept handler does not insert a <code>bookings</code> row</strong> (fact from <code>Dashboard.tsx</code> quote accept flow).</li>
+<li>Job requests older than 7 days can be purged (<code>purge_job_requests_older_than_seven_days</code> / <code>purgeStaleJobRequests.ts</code>).</li>
+</ol>
+<h3>3.6 Direct book on pro profile</h3>
+<p>On <code>/pros/:proId</code> (<code>ProProfilePage.tsx</code>):</p>
+<ol>
+<li>Select service / schedule / location.</li>
+<li>Accept <strong>client booking terms</strong> (<code>TermsAcceptance</code> → <code>legal_document_acceptances</code> with <code>client_booking_terms</code>).</li>
+<li>Acknowledge cancel policy (checkbox; snapshots stored on booking).</li>
+<li>Phone required.</li>
+<li>Optional client booking ID verification upload (<code>client-booking-verification</code> bucket).</li>
+<li>Square payment with <strong><code>authorizeOnly</code></strong> (card authorization, not immediate capture) via <code>BookingRequestConfirm</code> / <code>SquareBookingPayment</code> → <code>square-create-payment</code>.</li>
+<li>Insert <code>bookings</code> with <code>status: pending</code> + invoice/cancel snapshots.</li>
+<li>SMS confirmation may fire via <code>booking-sms-notify</code> if Twilio configured.</li>
+</ol>
+<h3>3.7 Pay / cancel / refund / claim / review / photos / notifications</h3>
+<div class="table-container"><table><thead><tr>
+<th>Topic</th>
+<th>Client-side fact</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Pay after accept</strong></td>
+<td>If accepted without payment row: “Pay now” dialogs → capture</td>
+</tr>
+<tr>
+<td><strong>Cancel booking in app</strong></td>
+<td>Cancel <strong>policy</strong> disclosed/acked; <strong>no client UI found that sets <code>bookings.status</code> to <code>cancelled</code></strong>.</td>
+</tr>
+<tr>
+<td><strong>Refund</strong></td>
+<td>Via claim workflow / admin resolution string; <strong>no automated Square Refunds API</strong> found</td>
+</tr>
+<tr>
+<td><strong>Report / claim</strong></td>
+<td><code>BookingClaimDialog</code> → <code>booking_claim_requests</code> + evidence in private <code>booking-evidence</code>; emails via <code>send-booking-claim-email</code></td>
+</tr>
+<tr>
+<td><strong>Communicate with Pro</strong></td>
+<td>No general in-app messaging table found. Contact via booking/phone/email fields and support AI route</td>
+</tr>
+<tr>
+<td><strong>Review</strong></td>
+<td>After booking relationship: <code>reviews</code> (+ photos). Blind until mutual (<code>reviewBlind.ts</code>). One per pair</td>
+</tr>
+<tr>
+<td><strong>Notifications</strong></td>
+<td>In-app unread flags on bookings; Whats New announcements; emails (claim/decline/referral); SMS booking notify</td>
+</tr>
+</tbody></table></div>
+<p>---</p>
+<h2>4. Pro Functionality</h2>
+<h3>4.1 Create business profile</h3>
+<p><code>ProProfileEditorDialog</code> / join-pros / create-pro-account flows:</p>
+<ul>
+<li>Business name, bio, location, phone, website, years experience, prices, services (<code>pro_services</code>), photos (<code>pro-photos</code>), tags, aesthetic, availability calendars, cancel policies, workspace/travel modes, billing fields (<code>legal_business_name</code>, <code>business_address</code>, GST/QST numbers).</li>
+<li><strong>Required on create:</strong> personal photo + ID document stored under <code>pro-photos</code> private paths (<code>personal_photo_url</code>, <code>id_document_url</code>).</li>
+<li>Accepts <strong>professional agreement</strong> via <code>TermsAcceptance</code> → <code>legal_document_acceptances</code>.</li>
+<li>Starts <strong><code>is_verified = false</code></strong> until admin approval.</li>
+</ul>
+<h3>4.2 Verification / licences</h3>
+<div class="table-container"><table><thead><tr>
+<th>Item</th>
+<th>Fact</th>
+</tr></thead><tbody>
+<tr>
+<td>Admin sets <code>is_verified = true</code></td>
+<td><code>accept-pro</code> Edge Function / Dashboard admin</td>
+</tr>
+<tr>
+<td>Public listing</td>
+<td>Search/list requires verified</td>
+</tr>
+<tr>
+<td>Badge</td>
+<td>“Verified” UI + disclaimer in <code>legalConfig</code> / i18n (not warranty)</td>
+</tr>
+<tr>
+<td><code>pro_licenses</code> table</td>
+<td>Exists; displayed on credentials tab. <strong>No insert UI found in pro editor in this audit</strong></td>
+</tr>
+<tr>
+<td>Insurance certificates</td>
+<td><strong>Not identified as a dedicated upload/field in this audit</strong> beyond general docs</td>
+</tr>
+</tbody></table></div>
+<h3>4.3 Services / pricing / quotes / bookings</h3>
+<ul>
+<li>CRUD-ish services in Dashboard (tier-gated features via subscription).</li>
+<li>Receive open job requests; submit quotes.</li>
+<li>Incoming bookings: see client <code>full_name</code>, <code>phone</code>, booking ID verification <strong>status</strong> (and historically storage path access—see security section).</li>
+<li>Accept → capture Square auth; Decline → void + <code>send-booking-declined-email</code>.</li>
+<li>Mark <strong>completed</strong>.</li>
+<li>Pro reviews of clients: <code>client_reviews</code>.</li>
+<li>Pro reply to client reviews: <code>review_responses</code>.</li>
+</ul>
+<h3>4.4 Payments / payouts / plans</h3>
+<ul>
+<li>Connect Square OAuth → <code>pro_square_tokens</code> + <code>square_location_id</code>.</li>
+<li>Service charges on seller account when Connect active (+ <code>app_fee_money</code>).</li>
+<li>Subscriptions: Starter / Growth / Pro via <code>pro-plan-checkout</code>; trials via <code>trial-checkout</code>; cancellations recorded in <code>pro_plan_cancellations</code>.</li>
+<li><strong>Payout timing to Pro bank account:</strong> Not controlled in Première code; Square seller settlement. Not determinable from codebase beyond that.</li>
+</ul>
+<h3>4.5 What Pro sees about Client vs Client about Pro</h3>
+<p><strong>Pro can see about client (from booking/dashboard code):</strong></p>
+<p><code>full_name</code>, <code>phone</code>, booking schedule/service, invoice-related booking fields, booking ID verification status (and photo path fields selected in queries). Address/postal may appear on job requests the pro quotes.</p>
+<p><strong>Client can see about pro (public profile):</strong></p>
+<p>Business name, bio, location/radius modes, services/prices, photos, reviews (subject to blind rules), verified badge, licenses if present, contact fields as displayed (public phone/website may be restricted by blacklist helpers).</p>
+<p><strong>Client generally cannot see:</strong> Pro private ID/selfie documents (admin/moderator storage policies), Square tokens, other clients’ PII.</p>
+<p>---</p>
+<h2>5. Booking Lifecycle</h2>
+<h3>5.1 Actual <code>bookings.status</code> values (DB)</h3>
+<p>From migration <code>20260511120000_booking_growth_bundles_notifications.sql</code> and app usage:</p>
+<p><code>pending</code> | <code>accepted</code> | <code>completed</code> | <code>cancelled</code> | <code>declined</code></p>
+<h3>5.2 Implemented transitions</h3>
+<div class="table-container"><table><thead><tr>
+<th>Transition</th>
+<th>Who</th>
+<th>Conditions / side effects</th>
+<th>Sources</th>
+</tr></thead><tbody>
+<tr>
+<td>→ <code>pending</code></td>
+<td>Client</td>
+<td>After Square <strong>authorization</strong>; booking insert</td>
+<td><code>ProProfilePage.tsx</code>, <code>BookingRequestConfirm.tsx</code></td>
+</tr>
+<tr>
+<td><code>pending</code> → <code>accepted</code></td>
+<td>Pro</td>
+<td>Capture via <code>square-finalize-payment</code> <code>complete</code></td>
+<td><code>Dashboard.tsx</code> <code>handleApproveBooking</code></td>
+</tr>
+<tr>
+<td><code>pending</code> → <code>declined</code></td>
+<td>Pro</td>
+<td>Void via <code>cancel</code>; decline email</td>
+<td><code>handleDeclineBooking</code></td>
+</tr>
+<tr>
+<td><code>accepted</code> → <code>completed</code></td>
+<td>Pro</td>
+<td>Mark complete</td>
+<td><code>handleMarkBookingComplete</code></td>
+</tr>
+<tr>
+<td>→ <code>cancelled</code></td>
+<td>DB allows</td>
+<td><strong>No production UI write to <code>cancelled</code> found</strong></td>
+<td>—</td>
+</tr>
+</tbody></table></div>
+<p><strong>Not found as booking statuses:</strong> REQUESTED, QUOTE, PAYMENT, CONFIRMED, SCHEDULED, PROVIDER_ARRIVED, SERVICE_IN_PROGRESS, DISPUTE_WINDOW, PAYOUT_RELEASED.</p>
+<p>Quote lifecycle is separate (<code>job_quotes</code>: <code>pending</code> / <code>accepted</code> / <code>declined</code>).</p>
+<h3>5.3 Scenario matrix (software behavior)</h3>
+<div class="table-container"><table><thead><tr>
+<th>Scenario</th>
+<th>What code does</th>
+</tr></thead><tbody>
+<tr>
+<td>Client cancel</td>
+<td>Policy disclosed; <strong>no automated status/fee charge path found</strong></td>
+</tr>
+<tr>
+<td>Pro cancel</td>
+<td>Decline path voids auth; decline email</td>
+</tr>
+<tr>
+<td>Pro no-show</td>
+<td><strong>No dedicated status/automation found</strong></td>
+</tr>
+<tr>
+<td>Incomplete / poor service</td>
+<td>Client claim categories → admin resolution</td>
+</tr>
+<tr>
+<td>Dispute</td>
+<td><code>booking_claim_requests</code> + emails; admin sets <code>admin_resolution</code></td>
+</tr>
+<tr>
+<td>Payment fail</td>
+<td>Square error surfaced; booking may not complete authorize path</td>
+</tr>
+<tr>
+<td>Refund</td>
+<td>Admin marks resolution; <strong>no Square refund API call found</strong></td>
+</tr>
+<tr>
+<td>Auth void</td>
+<td>Decline or finalize <code>cancel</code> on uncaptured payment</td>
+</tr>
+</tbody></table></div>
+<p>---</p>
+<h2>6. Payment Architecture</h2>
+<h3>6.1 Processors</h3>
+<ul>
+<li><strong>Sole processor: Square.</strong> Live booking, quotes, and subscriptions run exclusively through Square (Connect + authorize/capture).</li>
+<li><strong>Stripe removed:</strong> Legacy orphan Stripe packages (<code>@stripe/stripe-js</code>, <code>@stripe/react-stripe-js</code>), component (<code>StripeBookingPayment.tsx</code>), and Edge function (<code>create-payment-intent</code>) were completely removed from the codebase in September 2026 to ensure zero dual-processor ambiguity.</li>
+</ul>
+<h3>6.2 Booking charge mechanics</h3>
+<ol>
+<li>Client tokenizes card/wallet in browser (Square Web Payments SDK).</li>
+<li>Edge <code>square-create-payment</code> creates payment.</li>
+<li>If pro has Connect tokens + location: charge on <strong>pro seller</strong>; <code>app_fee_money</code> ≈ <strong>2.1%</strong> of service subtotal (<code>SQUARE_CONNECT_APP_FEE_RATE</code>).</li>
+<li>Else: charge on <strong>platform</strong> Square merchant (no <code>app_fee_money</code>).</li>
+<li>Profile booking uses <strong>authorize-only</strong> then capture/void on accept/decline.</li>
+<li>Other paths capture immediately (pay-now, quote accept, plans).</li>
+</ol>
+<h3>6.3 Amounts (customer-facing invoice math)</h3>
+<p>Implemented in <code>src/lib/bookingInvoiceAmounts.ts</code> + <code>legalConfig.ts</code>:</p>
+<ul>
+<li>Service subtotal</li>
+<li>GST <strong>5%</strong> on subtotal</li>
+<li>QST <strong>9.975%</strong> on (subtotal + GST)</li>
+<li>Platform/processing line <strong>5%</strong> of service subtotal (<code>PLATFORM_FEE_RATE</code>)</li>
+<li>Total charged to client</li>
+</ul>
+<p><strong>Internal</strong> Connect application fee default <strong>2.1%</strong> of service subtotal is separate from the 5% line shown to users.</p>
+<h3>6.4 Stored payment data</h3>
+<p>Table <strong><code>payments</code></strong>: <code>square_payment_id</code>, <code>idempotency_key</code>, <code>amount_cents</code>, <code>currency</code> (CAD), <code>status</code>, <code>booking_id</code>, <code>pro_profile_id</code>, <code>client_id</code>, <code>card_brand</code>, <code>card_last_4</code>, <code>created_at</code>.</p>
+<p>Also: <code>bookings.invoice_snapshot</code> (jsonb), <code>apple_pay_handoffs</code>, <code>pro_square_tokens</code> (access/refresh tokens—server-side).</p>
+<p><strong>Full PAN / CVV:</strong> Not stored by Première app code; handled by Square.</p>
+<h3>6.5 Escrow</h3>
+<p>Docs and Terms explicitly state the platform does <strong>not</strong> operate traditional escrow merely by using Square. Authorize/capture is Square authorization, not an escrow product in code.</p>
+<h3>6.6 Subscriptions</h3>
+<p>Plans <code>starter</code> / <code>growth</code> / <code>pro</code> (and <code>hold</code>). Prices in checkout Edge Function (defaults documented as CAD cents 2000 / 2700 / 3200). Stored in <code>pro_subscriptions</code> / <code>subscription_plans</code>. Cancellation creates <code>pro_plan_cancellations</code> rows.</p>
+<p>---</p>
+<h2>7. Refunds / Cancellations / Disputes</h2>
+<div class="table-container"><table><thead><tr>
+<th>Mechanism</th>
+<th>Implementation</th>
+</tr></thead><tbody>
+<tr>
+<td>Cancel policies</td>
+<td><code>free</code> / <code>late_fee</code> (&lt;24h fee 25/50/75%) / <code>no_cancel</code>; snapshotted on booking; UI acknowledgment</td>
+</tr>
+<tr>
+<td>Automated cancel fee charge</td>
+<td><strong>Not found</strong></td>
+</tr>
+<tr>
+<td>Claims</td>
+<td>Categories → <code>claim_type</code> + <code>dispute_category</code>; evidence private bucket; Resend emails</td>
+</tr>
+<tr>
+<td>Admin resolution</td>
+<td><code>refunded</code> \</td>
+<td><code>job_redone</code> \</td>
+<td><code>resolved</code> (+ workflow fields); <strong>manual</strong> relative to Square</td>
+</tr>
+<tr>
+<td>Chargebacks</td>
+<td><strong>Not implemented in app code</strong>; would be Square/processor side</td>
+</tr>
+<tr>
+<td>Payout already released</td>
+<td><strong>Not modeled</strong> in app; Square settlement timing</td>
+</tr>
+</tbody></table></div>
+<p>---</p>
+<h2>8–10. Data Collection, Storage, Access</h2>
+<h3>8.1 Inventory (selected categories)</h3>
+<div class="table-container"><table><thead><tr>
+<th>Data</th>
+<th>Purpose (from product use)</th>
+<th>Provider</th>
+<th>Access</th>
+<th>Storage</th>
+<th>Processor</th>
+</tr></thead><tbody>
+<tr>
+<td>Email, password hash</td>
+<td>Auth</td>
+<td>User / Auth</td>
+<td>Self; admins via tools</td>
+<td>Supabase Auth</td>
+<td>Supabase</td>
+</tr>
+<tr>
+<td><code>full_name</code>, phone, address, postal, birthday, avatar, email_language</td>
+<td>Profile / booking contact</td>
+<td>User</td>
+<td>Self; booking counterparty/admin as coded</td>
+<td><code>profiles</code></td>
+<td>Supabase</td>
+</tr>
+<tr>
+<td><code>public_user_number</code></td>
+<td>Public member ID</td>
+<td>System</td>
+<td>Visible on account</td>
+<td><code>profiles</code></td>
+<td>Supabase</td>
+</tr>
+<tr>
+<td>Client ID verification image</td>
+<td>Booking ID check</td>
+<td>Client</td>
+<td>Self; policies historically allowed booking pros to read</td>
+<td><code>client-booking-verification</code> + path on profile</td>
+<td>Supabase Storage</td>
+</tr>
+<tr>
+<td>Pro business profile + private ID/selfie</td>
+<td>Application / verification</td>
+<td>Pro</td>
+<td>Self; moderators</td>
+<td><code>pro_profiles</code> + <code>pro-photos</code></td>
+<td>Supabase</td>
+</tr>
+<tr>
+<td>Bookings, invoices snapshots</td>
+<td>Marketplace ops</td>
+<td>Client/Pro</td>
+<td>Parties + admins</td>
+<td><code>bookings</code></td>
+<td>Supabase</td>
+</tr>
+<tr>
+<td>Payments metadata</td>
+<td>Payment audit</td>
+<td>Square + system</td>
+<td>Pro/client/admin as RLS</td>
+<td><code>payments</code></td>
+<td>Square + Supabase</td>
+</tr>
+<tr>
+<td>Square tokens</td>
+<td>Connect charging</td>
+<td>OAuth</td>
+<td>Service role / Edge</td>
+<td><code>pro_square_tokens</code></td>
+<td>Supabase (secrets)</td>
+</tr>
+<tr>
+<td>Job requests/quotes/photos</td>
+<td>Lead marketplace</td>
+<td>Client/Pro</td>
+<td>As RLS</td>
+<td>tables + <code>job-request-photos</code></td>
+<td>Supabase</td>
+</tr>
+<tr>
+<td>Reviews / photos / responses</td>
+<td>Reputation</td>
+<td>Users</td>
+<td>Public select; writers own</td>
+<td><code>reviews*</code> / <code>client_reviews</code></td>
+<td>Supabase</td>
+</tr>
+<tr>
+<td>Claims + evidence</td>
+<td>Disputes</td>
+<td>Client</td>
+<td>Client/admin; evidence private</td>
+<td><code>booking_claim_requests</code>, <code>booking-evidence</code></td>
+<td>Supabase + Resend</td>
+</tr>
+<tr>
+<td>Legal acceptances</td>
+<td>Proof of assent</td>
+<td>User</td>
+<td>Self</td>
+<td><code>legal_document_acceptances</code></td>
+<td>Supabase</td>
+</tr>
+<tr>
+<td>Cookie preferences</td>
+<td>Consent</td>
+<td>User</td>
+<td>Browser</td>
+<td>localStorage (<code>cookieConsent.ts</code>)</td>
+<td>Client device</td>
+</tr>
+<tr>
+<td>Account deletion request</td>
+<td>Offboarding request</td>
+<td>User</td>
+<td>Self</td>
+<td><code>account_deletion_requests</code></td>
+<td>Supabase</td>
+</tr>
+<tr>
+<td>Admin staff HR fields</td>
+<td>Staff management</td>
+<td>Super admin</td>
+<td>Super admin</td>
+<td><code>platform_admin_staff</code></td>
+<td>Supabase</td>
+</tr>
+<tr>
+<td>Audit events</td>
+<td>Admin actions</td>
+<td>System</td>
+<td>Super admin</td>
+<td><code>platform_admin_audit_events</code></td>
+<td>Supabase</td>
+</tr>
+</tbody></table></div>
+<p><strong>Retention/deletion:</strong> Automated job-request purge after 7 days. Account deletion is a <strong>request row</strong> with financial/audit retain flags default true. ID verification / claim evidence retention days in <code>legalConfig</code> are <code>null</code>. Otherwise: <strong>Not identified in the codebase.</strong></p>
+<p><strong>Cross-border:</strong> Supabase/Vercel/Square/Resend/Google/Twilio are third-party processors; <strong>exact physical region of production data not determinable from app source alone</strong> (see Section 20).</p>
+<h3>10.1 RLS highlights</h3>
+<ul>
+<li>Many tables: own-row policies; bookings SELECT for client OR owning pro OR platform admin.</li>
+<li>Public SELECT on pro profiles and reviews.</li>
+<li>Some sensitive tables have RLS enabled with <strong>no</strong> authenticated policies (service-role only), e.g. <code>pro_square_tokens</code>, <code>privacy_security_incidents</code>, <code>platform_admin_config</code> (as reported from live policies).</li>
+<li><code>profiles</code> SELECT policy includes broad “Anyone can view profiles” (<code>qual true</code>) — personal fields may be readable more widely than product UI suggests; <strong>counsel should review</strong>.</li>
+</ul>
+<p>---</p>
+<h2>11. Third-Party Services</h2>
+<div class="table-container"><table><thead><tr>
+<th>Service</th>
+<th>Status</th>
+<th>What is sent (high level)</th>
+</tr></thead><tbody>
+<tr>
+<td>Supabase</td>
+<td><strong>Used</strong></td>
+<td>Auth, DB, Storage, Edge runtime</td>
+</tr>
+<tr>
+<td>Vercel</td>
+<td><strong>Used</strong> (hosting)</td>
+<td>Static/app assets, build env</td>
+</tr>
+<tr>
+<td>Square</td>
+<td><strong>Used</strong></td>
+<td>Payment tokens, charges, OAuth, Apple Pay domain</td>
+</tr>
+<tr>
+<td>Resend</td>
+<td><strong>Used</strong></td>
+<td>Transactional emails (claims, declines, referrals, admin emails, <code>send-app-email</code> capability)</td>
+</tr>
+<tr>
+<td>Google OAuth</td>
+<td><strong>Used</strong></td>
+<td>Identity for login</td>
+</tr>
+<tr>
+<td>Google Places/Maps</td>
+<td><strong>Used</strong> when keys set</td>
+<td>Address autocomplete / geocode</td>
+</tr>
+<tr>
+<td>Gemini / Hugging Face</td>
+<td><strong>Used</strong> in Edge AI/search</td>
+<td>Prompt/search text (no guarantee of PII filtering beyond app prompts)</td>
+</tr>
+<tr>
+<td>Twilio SMS</td>
+<td><strong>Used</strong> if secrets set</td>
+<td>Booking SMS to phone numbers</td>
+</tr>
+<tr>
+<td>Twilio Verify</td>
+<td>Present in Edge; <strong>unused by frontend</strong> found</td>
+</tr>
+<tr>
+<td>Stripe</td>
+<td><strong>Removed</strong></td>
+<td>Previously had unused prototype files; packages and code completely removed in September 2026</td>
+</tr>
+<tr>
+<td>geocoder.ca / Photon / Zippopotam</td>
+<td>Used by <code>geocode</code> Edge</td>
+<td>Postal/location queries</td>
+</tr>
+<tr>
+<td>Analytics SDKs (GA, etc.)</td>
+<td><strong>Not found</strong> in <code>package.json</code> / <code>src</code></td>
+<td>Cookie UI has analytics <strong>category</strong> only</td>
+</tr>
+</tbody></table></div>
+<p>---</p>
+<h2>12. Privacy / Security Implementation (descriptive)</h2>
+<ul>
+<li>Auth: Supabase email/password + Google OAuth; JWT to Edge Functions.</li>
+<li>Authorization: RLS + <code>auth_is_platform_moderator</code> / <code>auth_is_super_admin</code> + client allowlists.</li>
+<li>Admin Member ID gate for staff (not super admin).</li>
+<li>Storage: mix of public (<code>pro-photos</code>, <code>review-photos</code>, <code>job-request-photos</code>, <code>pro-public</code>) and private (<code>booking-evidence</code>, <code>client-booking-verification</code>) buckets.</li>
+<li>Signed URL TTL config: <code>signedUrlTtlSeconds: 300</code> in <code>legalConfig</code>.</li>
+<li>Password reset via Supabase.</li>
+<li><code>privacy_security_incidents</code> table exists; <strong>no authenticated write UI found</strong>.</li>
+<li>Backups / encryption-at-rest: <strong>provider-managed; not described in app code</strong>.</li>
+<li>Error logging: client diagnostics silencing helpers; Edge logs via Supabase—<strong>not a full SIEM</strong>.</li>
+</ul>
+<p>This section describes mechanisms present; it does <strong>not</strong> assert overall “security adequacy.”</p>
+<p>---</p>
+<h2>13. Reviews</h2>
+<div class="table-container"><table><thead><tr>
+<th>Rule</th>
+<th>Fact</th>
+</tr></thead><tbody>
+<tr>
+<td>Who</td>
+<td>Client reviews pro (<code>reviews</code>); pro reviews client (<code>client_reviews</code>)</td>
+</tr>
+<tr>
+<td>When</td>
+<td>After booking relationship; UI gates</td>
+</tr>
+<tr>
+<td>Edit</td>
+<td>RLS allows; <strong>no edit UI found</strong>; copy says definitive</td>
+</tr>
+<tr>
+<td>Delete</td>
+<td>RLS allows; locks prevent re-submit; <strong>no delete UI call found under <code>src/</code></strong></td>
+</tr>
+<tr>
+<td>Pro response</td>
+<td><code>review_responses</code></td>
+</tr>
+<tr>
+<td>Blind</td>
+<td>Content blurred until both sides posted</td>
+</tr>
+<tr>
+<td>Moderation</td>
+<td><strong>No review moderation admin tool found</strong></td>
+</tr>
+<tr>
+<td>Photos</td>
+<td>Supported</td>
+</tr>
+<tr>
+<td>Public</td>
+<td>SELECT policies allow public read of reviews</td>
+</tr>
+<tr>
+<td>Ranking</td>
+<td>Ratings used in display/rank helpers (<code>get_pro_avg_rating</code> etc.)</td>
+</tr>
+</tbody></table></div>
+<p>---</p>
+<h2>14. Verification / Licensing</h2>
+<div class="table-container"><table><thead><tr>
+<th>Item</th>
+<th>Technically enforced</th>
+<th>Merely displayed / claimed</th>
+</tr></thead><tbody>
+<tr>
+<td>Admin <code>is_verified</code></td>
+<td>Yes — listing/search filters</td>
+<td>Badge with disclaimer</td>
+</tr>
+<tr>
+<td>Pro ID + selfie upload</td>
+<td>Required in create UI</td>
+<td>Admin visually reviews</td>
+</tr>
+<tr>
+<td>RBQ / licence numbers</td>
+<td>Table exists</td>
+<td>Display if present; no automated regulator API found</td>
+</tr>
+<tr>
+<td>Client ID for booking</td>
+<td>Upload + status fields</td>
+<td>Pro sees status; not a government e-KYC integration found</td>
+</tr>
+<tr>
+<td>Insurance</td>
+<td>—</td>
+<td><strong>Not found as structured enforced field</strong></td>
+</tr>
+</tbody></table></div>
+<p>---</p>
+<h2>15. Communications</h2>
+<div class="table-container"><table><thead><tr>
+<th>Channel</th>
+<th>Trigger examples</th>
+<th>Provider</th>
+</tr></thead><tbody>
+<tr>
+<td>Resend email</td>
+<td>Claim submitted; booking declined; referral invite; decline/remove pro; <code>send-app-email</code> template types (booking_<em>, support_</em>, auth_*)</td>
+<td>Resend</td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>Booking confirmation/reminder from profile book</td>
+<td>Twilio (if configured)</td>
+</tr>
+<tr>
+<td>In-app</td>
+<td>Booking unread flags; Whats New; toasts</td>
+<td>App / Supabase</td>
+</tr>
+<tr>
+<td>Cookie banner</td>
+<td>First visit preferences</td>
+<td>localStorage</td>
+</tr>
+<tr>
+<td>Marketing email/SMS campaigns</td>
+<td><strong>No dedicated marketing campaign system found</strong></td>
+<td>—</td>
+</tr>
+</tbody></table></div>
+<p>---</p>
+<h2>16. Administrator Functionality</h2>
+<p>Observed admin capabilities:</p>
+<ul>
+<li>Approve / decline / remove pros; review ID/selfie and application diffs</li>
+<li>View subscriptions/payment enrollment when reviewing applicants</li>
+<li>Admin job requests moderation (strikes/notices)</li>
+<li>Issue reports / claims review and resolution fields</li>
+<li>Trial token management</li>
+<li>Whats New announcements</li>
+<li>Platform admin shell dashboard (accept pros, shortcuts)</li>
+<li>Super admin: create/revoke staff with Member IDs, HR fields, audit events</li>
+<li>Staff admin login requires Member ID; super admin exempt</li>
+</ul>
+<p><strong>Not found as automated admin tools:</strong> issuing Square refunds, editing arbitrary bookings’ financial capture, full user soft-delete execution beyond deletion <strong>requests</strong>.</p>
+<p>---</p>
+<h2>17. Complete Service Inventory</h2>
+<p>Source: <code>src/data/services.ts</code> (catalog). Hierarchy abbreviated here; full list matches audit extraction:</p>
+<ul>
+<li><strong>Home Improvement</strong> — remodel, plumbing, electrical, HVAC, roofing, windows/doors, flooring, painting, appliances</li>
+<li><strong>Outdoor & Seasonal</strong> — snow, lawn, landscaping, trees, driveway, deck/patio</li>
+<li><strong>Cleaning</strong> — house, deep, move-in/out, carpet, window, commercial, pressure washing</li>
+<li><strong>Business Services</strong> — accountant, tax, bookkeeping, web, SEO, marketing, IT</li>
+<li><strong>Events & Entertainment</strong> — photo/video, DJ, catering, planning, entertainer</li>
+<li><strong>Lessons & Tutoring</strong> — math, French, English, music, driving</li>
+<li><strong>Pets</strong> — walking, sitting, grooming, training</li>
+<li><strong>Wellness</strong> — trainer, massage, counselling, nutritionist</li>
+<li><strong>Moving & Storage</strong> — local/long-distance moving, furniture assembly, TV mount, appliance install</li>
+<li><strong>Home Security & Inspection</strong> — home inspection, pest, locksmith, security systems, property management</li>
+</ul>
+<p>No migration seeds the full catalog into a services table for production listing; pros attach catalog slugs via <code>pro_services</code>.</p>
+<p>---</p>
+<h2>18. Existing Legal Documents</h2>
+<div class="table-container"><table><thead><tr>
+<th>Document</th>
+<th>Route / placement</th>
+<th>EN/FR</th>
+<th>Affirmative acceptance recorded?</th>
+</tr></thead><tbody>
+<tr>
+<td>Website Terms of Service</td>
+<td><code>/terms</code> (<code>TermsOfService.tsx</code> + <code>termsContent.ts</code>)</td>
+<td>Yes</td>
+<td><strong>No</strong> <code>legal_document_acceptances</code> for <code>website_terms</code> found</td>
+</tr>
+<tr>
+<td>Provider / professional agreement text</td>
+<td>Sections on <code>/terms</code>; summary in pro editor</td>
+<td>Yes</td>
+<td><strong>Yes</strong> — <code>professional_agreement</code> via <code>TermsAcceptance</code></td>
+</tr>
+<tr>
+<td>Client booking terms</td>
+<td>Summary in booking UI; link to <code>/terms</code></td>
+<td>Yes</td>
+<td><strong>Yes</strong> — <code>client_booking_terms</code></td>
+</tr>
+<tr>
+<td>Privacy Policy</td>
+<td><code>/privacy</code> (+ redirects)</td>
+<td>Yes</td>
+<td><strong>No</strong> recorded acceptance found</td>
+</tr>
+<tr>
+<td>Cookie Policy</td>
+<td><code>/cookies</code> (+ redirects)</td>
+<td>Yes</td>
+<td>Preferences in <strong>localStorage</strong>, not legal_acceptances table</td>
+</tr>
+<tr>
+<td>Cancellation policy framework</td>
+<td>Config key + booking cancel checkbox</td>
+<td>Partial</td>
+<td>Cancel ack timestamp on booking; framework key not logged as legal_acceptances</td>
+</tr>
+</tbody></table></div>
+<p>Versions/hashes: draft strings in <code>legalConfig.ts</code> (<code>2026-03-draft</code>, <code>2026-08-draft</code>). Pages may also show content-level “last updated” constants.</p>
+<p>---</p>
+<h2>19. Facts Requiring Legal Review</h2>
+<p><em>(Factual features for counsel to examine — not conclusions of legality.)</em></p>
+<ol>
+<li><strong>Marketplace vs merchant model</strong> — Connect seller charges vs platform merchant charges coexist.</li>
+<li><strong>Authorize/capture timing</strong> vs customer expectations of when money is taken.</li>
+<li><strong>5% customer fee line</strong> vs <strong>2.1% app_fee_money</strong> vs Square processing costs.</li>
+<li><strong>GST/QST computation</strong> on invoices and who remits tax.</li>
+<li><strong>Absence of automated refunds</strong> while UI/admin can mark “refunded.”</li>
+<li><strong>Cancel policies disclosed but not auto-enforced</strong> in status/fee charging.</li>
+<li><strong>Job quote accept creates payment without <code>bookings</code> row.</strong></li>
+<li><strong>Account deletion is request-only</strong> with default retain financial/audit.</li>
+<li><strong>Broad profiles SELECT RLS (<code>true</code>)</strong> vs privacy expectations.</li>
+<li><strong>Client ID images</strong> and pro access policies historically/currently.</li>
+<li><strong>Pro ID/selfie storage</strong> and admin access.</li>
+<li><strong>Cross-border processors</strong> (US-based vendors likely).</li>
+<li><strong>Google/Gemini/HF</strong> processing of user search/chat text.</li>
+<li><strong>SMS</strong> without Twilio Verify wired to signup.</li>
+<li><strong>Cookie analytics category</strong> without analytics SDK.</li>
+<li><strong>French-language</strong> presentation and contract language.</li>
+<li><strong>Age</strong> — birthday min-age helpers exist; signup does not clearly collect DOB at Auth.</li>
+<li><strong>Verified badge disclaimer</strong> vs consumer reliance.</li>
+<li><strong>Reviews</strong> public + blind mutual + limited moderation tooling.</li>
+<li><strong>Electronic assent</strong> only for booking/pro summaries, not full website terms/privacy.</li>
+<li><strong>Admin power</strong> over personal data and approvals.</li>
+<li><strong>Regulated professions</strong> listed (electrical, plumbing, counselling, etc.) without automated licence validation.</li>
+<li><strong>“Not escrow”</strong> statements vs authorize-hold UX.</li>
+<li><strong>Apple Pay / Google Pay</strong> wallet flows and handoff QR.</li>
+<li><strong>Referral/trial</strong> incentives and payment method collection on trials.</li>
+</ol>
+<p>---</p>
+<h2>20. Information Not Determinable From the Codebase</h2>
+<ul>
+<li>Legal entity name, directors, registered address, Quebec enterprise number</li>
+<li>Insurance coverage (platform or pros) actually purchased</li>
+<li>Contracts between Première and Square/Resend/Twilio/Google/Vercel/Supabase (commercial terms)</li>
+<li>Actual production Supabase/Vercel <strong>region</strong> and subprocessors list in force</li>
+<li>Whether Auth confirmation emails are currently delivered via Resend vs Supabase SMTP in production</li>
+<li>Manual back-office procedures (how admins decide refunds, how long they keep evidence)</li>
+<li>Tax registration and remittance practices</li>
+<li>Whether DNS/CDN (Cloudflare observed on responses) stores logs and where</li>
+<li>Intended future features not implemented</li>
+<li>Real-world frequency of Connect vs legacy platform charging</li>
+<li>Employee/contractor agreements for platform admins</li>
+<li>Penetration test / SOC reports</li>
+<li>Exact card data flows inside Square’s systems beyond API usage</li>
+</ul>
+<p>---</p>
+<h2>Appendix A — Key file index</h2>
+<div class="table-container"><table><thead><tr>
+<th>Topic</th>
+<th>Paths</th>
+</tr></thead><tbody>
+<tr>
+<td>Roles / admin</td>
+<td><code>src/lib/platformAdminAllowlist.ts</code>, <code>src/hooks/usePlatformAdmin.ts</code>, <code>supabase/migrations/20260904010000_super_admin_staff.sql</code></td>
+</tr>
+<tr>
+<td>Auth</td>
+<td><code>src/contexts/AuthContext.tsx</code>, <code>src/pages/Auth.tsx</code>, <code>AuthCallback.tsx</code></td>
+</tr>
+<tr>
+<td>Booking UI</td>
+<td><code>src/pages/ProProfilePage.tsx</code>, <code>Dashboard.tsx</code></td>
+</tr>
+<tr>
+<td>Payments</td>
+<td><code>supabase/functions/square-create-payment</code>, <code>square-finalize-payment</code>, <code>src/components/SquareBookingPayment.tsx</code>, <code>docs/PAYMENT_FLOW.md</code></td>
+</tr>
+<tr>
+<td>Fees/tax</td>
+<td><code>src/config/legalConfig.ts</code>, <code>src/lib/bookingInvoiceAmounts.ts</code></td>
+</tr>
+<tr>
+<td>Claims</td>
+<td><code>BookingClaimDialog.tsx</code>, <code>src/lib/disputeCategories.ts</code>, <code>send-booking-claim-email</code></td>
+</tr>
+<tr>
+<td>Legal content</td>
+<td><code>src/content/termsContent.ts</code>, <code>privacyContent.ts</code>, <code>cookieContent.ts</code>, <code>TermsAcceptance.tsx</code>, <code>legalAcceptance.ts</code></td>
+</tr>
+<tr>
+<td>Services catalog</td>
+<td><code>src/data/services.ts</code></td>
+</tr>
+<tr>
+<td>Types (partial)</td>
+<td><code>src/integrations/supabase/types.ts</code> (<strong>incomplete vs live schema</strong>)</td>
+</tr>
+</tbody></table></div>
+<p>---</p>
+<p><em>End of factual briefing. Counsel should verify production configuration (secrets, Auth email provider, live RLS) against this map; configuration can differ from repository defaults.</em></p>
+
+  </div>
+</body>
+</html>

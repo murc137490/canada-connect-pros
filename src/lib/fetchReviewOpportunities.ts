@@ -23,7 +23,7 @@ async function namesForPros(proIds: string[]): Promise<Map<string, string>> {
 async function namesForClients(clientIds: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   if (clientIds.length === 0) return map;
-  const { data } = await supabase.from("profiles").select("user_id, full_name").in("user_id", clientIds);
+  const { data } = await supabase.from("public_profiles").select("user_id, full_name").in("user_id", clientIds);
   (data ?? []).forEach((p: { user_id: string; full_name: string | null }) => {
     map.set(p.user_id, p.full_name?.trim() || "Client");
   });

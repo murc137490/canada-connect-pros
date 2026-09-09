@@ -1,8 +1,5 @@
 project_id = "qjiwudwzhkdekxkscuuk"
 
-[functions.chat]
-verify_jwt = false
-
 [functions.verify-rbq-license]
 verify_jwt = false
 
@@ -37,6 +34,9 @@ verify_jwt = false
 # Uses in-function auth or x-email-pipeline-secret so it can be called by app sessions,
 # scheduled reminders, database webhooks, or server-side automations.
 [functions.send-app-email]
+verify_jwt = false
+
+[functions.account-deletion]
 verify_jwt = false
 
 # Uses in-function auth because the Dashboard sends the current session token manually.

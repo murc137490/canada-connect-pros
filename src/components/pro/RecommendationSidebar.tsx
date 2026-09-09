@@ -70,7 +70,7 @@ export default function RecommendationSidebar({
           imageUrl = primaryPhoto.url;
         } else {
           const { data: profile } = await supabase
-            .from("profiles")
+            .from("public_profiles")
             .select("avatar_url")
             .eq("user_id", pro.user_id)
             .single();

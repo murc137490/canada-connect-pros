@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { isDemoAccount } from "@/lib/demoAccount";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LiquidButton } from "@/components/ui/liquid-button";
@@ -28,6 +29,7 @@ import {
   CheckCircle,
   ShieldCheck,
   Shield,
+  Sparkles,
   ArrowRight,
   Plus,
   Pencil,
@@ -53,7 +55,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
@@ -191,6 +193,7 @@ import { referralInvite, type ReferralInvite } from "@/lib/referralInvite";
 import { errorMessage } from "@/lib/errorMessage";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import AdminStaffManager from "@/components/admin/AdminStaffManager";
+import AdminAccountDeletions from "@/components/admin/AdminAccountDeletions";
 import AdminMemberIdGate from "@/components/admin/AdminMemberIdGate";
 import { getProPublicContactBlacklistReasons } from "@/lib/proPublicContactBlacklist";
 import SquareBookingPayment from "@/components/SquareBookingPayment";
@@ -379,7 +382,7 @@ async function fetchJobRequestsForClient(userId: string) {
 }
 
 export default function Dashboard() {
-  const { user, session } = useAuth();
+  const { user, session, signOut } = useAuth();
   const { t, locale } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -475,6 +478,15 @@ export default function Dashboard() {
   const [bookingCancelPolicy, setBookingCancelPolicy] = useState<"free" | "late_fee" | "no_cancel">("late_fee");
   const [bookingCancelFeePercent, setBookingCancelFeePercent] = useState<25 | 50 | 75>(50);
   const [bookingCancelPolicySaving, setBookingCancelPolicySaving] = useState(false);
+  const [deletionRequest, setDeletionRequest] = useState<{
+    id: string;
+    status: string;
+    requested_at: string;
+    confirmed_at?: string | null;
+    scheduled_delete_at?: string | null;
+  } | null>(null);
+  const [deletionLoading, setDeletionLoading] = useState(false);
+  const [deletionConfirmOpen, setDeletionConfirmOpen] = useState(false);
   const [proProfile, setProProfile] = useState<{
     id: string;
     business_name: string;
@@ -1689,6 +1701,136 @@ export default function Dashboard() {
       }
     })();
   }, [user]);
+
+  const loadDeletionStatus = useCallback(async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from("account_deletion_requests" as "profiles")
+      .select("id, status, requested_at, confirmed_at, scheduled_delete_at")
+      .eq("user_id", user.id)
+      .in("status", ["pending_confirmation", "pending", "confirmed"])
+      .order("requested_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setDeletionRequest((data as unknown as typeof deletionRequest) ?? null);
+  }, [user?.id]);
+
+  useEffect(() => {
+    void loadDeletionStatus();
+  }, [loadDeletionStatus]);
+
+  const handleRequestDeletion = async () => {
+    if (!user?.id) return;
+    setDeletionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("account-deletion", {
+        body: { action: "request", reason: "user_dashboard_request" },
+      });
+      if (error || !data?.ok) {
+        toast({
+          title: t.auth.toastError,
+          description: error?.message || data?.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: locale === "fr" ? "Courriel envoyé" : "Email sent",
+          description:
+            locale === "fr"
+              ? "Un lien de confirmation a été envoyé à votre adresse courriel. Veuillez cliquer dessus dans les 24h."
+              : "A confirmation link has been sent to your email. Please click it within 24 hours.",
+        });
+        setDeletionConfirmOpen(false);
+        void loadDeletionStatus();
+      }
+    } catch (err: unknown) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Request failed",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletionLoading(false);
+    }
+  };
+
+  const handleCancelDeletion = async () => {
+    if (!user?.id) return;
+    setDeletionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("account-deletion", {
+        body: { action: "cancel" },
+      });
+      if (error || !data?.ok) {
+        toast({
+          title: "Error",
+          description: error?.message || data?.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: locale === "fr" ? "Demande annulée" : "Request cancelled",
+          description:
+            locale === "fr"
+              ? "La demande de suppression de compte a été annulée."
+              : "Your account deletion request has been cancelled.",
+        });
+        void loadDeletionStatus();
+      }
+    } catch (err: unknown) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Cancel failed",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletionLoading(false);
+    }
+  };
+
+  const handleExecuteDeletion = async () => {
+    if (!user?.id) return;
+    if (
+      !window.confirm(
+        locale === "fr"
+          ? "Êtes-vous absolument sûr de vouloir purger définitivement votre compte maintenant ? Cette action est irréversible."
+          : "Are you absolutely sure you want to permanently delete your account now? This cannot be undone."
+      )
+    ) {
+      return;
+    }
+    setDeletionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("account-deletion", {
+        body: { action: "execute" },
+      });
+      if (error || !data?.ok) {
+        toast({
+          title: "Error",
+          description: error?.message || data?.error,
+          variant: "destructive",
+        });
+        setDeletionLoading(false);
+      } else {
+        toast({
+          title: locale === "fr" ? "Compte supprimé" : "Account deleted",
+          description:
+            locale === "fr"
+              ? "Toutes vos données ont été définitivement purgées."
+              : "All your data has been permanently deleted.",
+        });
+        await signOut?.();
+        navigate("/");
+      }
+    } catch (err: unknown) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Deletion failed",
+        variant: "destructive",
+      });
+      setDeletionLoading(false);
+    }
+  };
 
   useEffect(() => {
     const path = profile?.booking_id_verification_photo_path?.trim();
@@ -3141,6 +3283,9 @@ export default function Dashboard() {
   };
 
   const finalizeSquareBookingPayment = async (bookingId: string, action: "complete" | "cancel") => {
+    if (isDemoAccount(user?.email)) {
+      return;
+    }
     try {
       const { data, error } = await supabase.functions.invoke("square-finalize-payment", {
         body: { booking_id: bookingId, action },
@@ -4170,6 +4315,16 @@ export default function Dashboard() {
         <h1 className="font-heading text-3xl md:text-4xl font-extrabold text-foreground dark:text-white mb-3 md:mb-4 text-center">
           {t.dashboard.title}
         </h1>
+        {isDemoAccount(user?.email) && (
+          <div className="mb-4 flex justify-center">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30">
+              <Sparkles size={13} className="text-amber-500" />
+              {locale === "fr"
+                ? "Compte de Démonstration & Publicité (Transactions simulées sans frais réels)"
+                : "Advertising & Showcase Account (Simulated transactions with zero real charges)"}
+            </span>
+          </div>
+        )}
         {proProfile && !isAdminDashboardShell && user?.id ? (
           <div className="mb-6 md:mb-8 flex flex-wrap items-center justify-center gap-2">
             {segmentForTab(shellTab) ? (
@@ -5350,49 +5505,125 @@ export default function Dashboard() {
               </Button>
             </form>
             {!isAdminAccountView ? (
-            <div className="rounded-xl border border-destructive/30 bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-3">
-              <h3 className="font-heading font-semibold text-foreground">
-                {locale === "fr" ? "Demande de suppression de compte" : "Account deletion request"}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {locale === "fr"
-                  ? "Soumettez une demande. Certains dossiers (facturation, audit, sécurité) peuvent être conservés lorsque requis. LEGAL_REVIEW_REQUIRED pour les délais de rétention."
-                  : "Submit a request. Some records (billing, audit, security) may be retained where required. LEGAL_REVIEW_REQUIRED for retention periods."}
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                className="border-destructive/50 text-destructive"
-                onClick={() => {
-                  void (async () => {
-                    if (!user?.id) return;
-                    const { error } = await supabase.from("account_deletion_requests" as "profiles").insert({
-                      user_id: user.id,
-                      status: "pending",
-                      reason: "user_dashboard_request",
-                      retain_financial: true,
-                      retain_audit: true,
-                    } as never);
-                    if (error) {
-                      toast({
-                        title: t.auth.toastError,
-                        description: error.message,
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-                    toast({
-                      title: locale === "fr" ? "Demande envoyée" : "Request submitted",
-                      description:
-                        locale === "fr"
-                          ? "Nous traiterons votre demande. Vous pouvez aussi écrire à support@premiereservices.ca."
-                          : "We will process your request. You can also email support@premiereservices.ca.",
-                    });
-                  })();
-                }}
-              >
-                {locale === "fr" ? "Demander la suppression" : "Request deletion"}
-              </Button>
+            <div className="rounded-xl border border-destructive/30 bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-4">
+              <div className="flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-destructive" />
+                <h3 className="font-heading font-semibold text-foreground">
+                  {locale === "fr" ? "Suppression de compte (Loi 25)" : "Account Deletion (Law 25)"}
+                </h3>
+              </div>
+
+              {deletionRequest?.status === "pending_confirmation" ? (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-amber-500 font-semibold text-sm">
+                    <Clock className="w-4 h-4 shrink-0" />
+                    <span>
+                      {locale === "fr"
+                        ? "Courriel de confirmation envoyé"
+                        : "Confirmation email sent"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {locale === "fr"
+                      ? `Un courriel a été envoyé à ${user?.email}. Veuillez cliquer sur le lien dans le courriel pour confirmer votre demande et démarrer le délai de 24 heures avant suppression définitive.`
+                      : `An email was sent to ${user?.email}. Please click the link in that email to confirm your deletion and begin the 24-hour grace period before permanent purge.`}
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={deletionLoading}
+                      onClick={() => void handleRequestDeletion()}
+                      className="text-xs"
+                    >
+                      {locale === "fr" ? "Renvoyer le courriel" : "Resend email"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={deletionLoading}
+                      onClick={() => void handleCancelDeletion()}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      {locale === "fr" ? "Annuler la demande" : "Cancel request"}
+                    </Button>
+                  </div>
+                </div>
+              ) : deletionRequest?.status === "confirmed" ? (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-destructive font-semibold text-sm">
+                    <ShieldAlert className="w-4 h-4 shrink-0" />
+                    <span>
+                      {locale === "fr"
+                        ? "Suppression définitive programmée"
+                        : "Permanent deletion scheduled"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {locale === "fr" ? (
+                      <>
+                        Votre suppression est confirmée. Toutes vos données personnelles seront définitivement purgées{" "}
+                        {deletionRequest.scheduled_delete_at
+                          ? `le ${new Date(deletionRequest.scheduled_delete_at).toLocaleString("fr-CA")}`
+                          : "dans 24 heures"}
+                        .
+                      </>
+                    ) : (
+                      <>
+                        Your deletion is confirmed. All your personal data and files are scheduled for permanent purge{" "}
+                        {deletionRequest.scheduled_delete_at
+                          ? `on ${new Date(deletionRequest.scheduled_delete_at).toLocaleString("en-CA")}`
+                          : "in 24 hours"}
+                        .
+                      </>
+                    )}
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={deletionLoading}
+                      onClick={() => void handleCancelDeletion()}
+                      className="text-xs"
+                    >
+                      {locale === "fr" ? "Annuler la suppression" : "Cancel deletion"}
+                    </Button>
+                    {deletionRequest.scheduled_delete_at &&
+                    new Date() >= new Date(deletionRequest.scheduled_delete_at) ? (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        disabled={deletionLoading}
+                        onClick={() => void handleExecuteDeletion()}
+                        className="text-xs"
+                      >
+                        {deletionLoading && <Loader2 size={12} className="animate-spin mr-1" />}
+                        {locale === "fr" ? "Purger maintenant" : "Purge now"}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {locale === "fr"
+                      ? "Conformément à la Loi 25 du Québec, vous pouvez demander la suppression définitive de votre compte et de toutes vos données personnelles. Un courriel de confirmation vous sera envoyé, suivi d'un délai de 24 heures avant l'effacement permanent."
+                      : "In accordance with Quebec's Law 25, you may permanently delete your account and all associated personal data. A confirmation email will be sent to your inbox, followed by a 24-hour grace period before permanent erasure."}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                    onClick={() => setDeletionConfirmOpen(true)}
+                  >
+                    {locale === "fr" ? "Demander la suppression du compte" : "Request account deletion"}
+                  </Button>
+                </>
+              )}
             </div>
             ) : null}
             {proProfile && !isAdminDashboardShell ? (
@@ -6626,11 +6857,60 @@ export default function Dashboard() {
                   </Button>
                 </div>
               </div>
+              <div className="mt-8">
+                <AdminAccountDeletions />
+              </div>
               </>
               )}
             </TabsContent>
           )}
         </Tabs>
+
+        <Dialog open={deletionConfirmOpen} onOpenChange={setDeletionConfirmOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="w-5 h-5" />
+                {locale === "fr" ? "Supprimer votre compte ?" : "Delete your account?"}
+              </DialogTitle>
+              <DialogDescription className="text-sm leading-relaxed pt-2">
+                {locale === "fr" ? (
+                  <>
+                    Nous allons envoyer un lien de confirmation à votre adresse courriel (<strong>{user?.email}</strong>).
+                    <br /><br />
+                    Après avoir cliqué sur le lien, une période de <strong>24 heures</strong> s'écoulera avant que votre compte, votre profil et vos fichiers ne soient <strong>définitivement supprimés</strong> de nos serveurs.
+                  </>
+                ) : (
+                  <>
+                    We will send a confirmation link to your email address (<strong>{user?.email}</strong>).
+                    <br /><br />
+                    Once you click the link, your account will enter a <strong>24-hour grace period</strong> before your profile, files, and personal data are <strong>permanently purged</strong> from our servers.
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={deletionLoading}
+                onClick={() => setDeletionConfirmOpen(false)}
+              >
+                {locale === "fr" ? "Annuler" : "Cancel"}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={deletionLoading}
+                onClick={() => void handleRequestDeletion()}
+                className="gap-1.5"
+              >
+                {deletionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {locale === "fr" ? "Envoyer le courriel de confirmation" : "Send confirmation email"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
           <Dialog open={!!declineProUserId} onOpenChange={(open) => { if (!open) { setDeclineProUserId(null); setDeclineProReason(""); } }}>
             <DialogContent className="max-w-md">
@@ -6689,7 +6969,12 @@ export default function Dashboard() {
                           <div>
                             <p className="text-xs font-medium text-muted-foreground mb-1">{t.dashboard.idPicture ?? "ID document"}</p>
                             <AdminReviewPhoto
-                              bucket="pro-photos"
+                              bucket={
+                                String((reviewProData.profile as Record<string, unknown>).id_document_url || "").includes("pro-verification") ||
+                                !String((reviewProData.profile as Record<string, unknown>).id_document_url || "").startsWith("http")
+                                  ? "pro-verification"
+                                  : "pro-photos"
+                              }
                               url={(reviewProData.profile as Record<string, unknown>).id_document_url as string}
                               alt="ID"
                               className="rounded-lg border border-border max-h-64 w-48 object-contain bg-muted/30"
@@ -6700,7 +6985,12 @@ export default function Dashboard() {
                           <div>
                             <p className="text-xs font-medium text-muted-foreground mb-1">{t.dashboard.selfiePicture ?? "Selfie"}</p>
                             <AdminReviewPhoto
-                              bucket="pro-photos"
+                              bucket={
+                                String((reviewProData.profile as Record<string, unknown>).personal_photo_url || "").includes("pro-verification") ||
+                                !String((reviewProData.profile as Record<string, unknown>).personal_photo_url || "").startsWith("http")
+                                  ? "pro-verification"
+                                  : "pro-photos"
+                              }
                               url={(reviewProData.profile as Record<string, unknown>).personal_photo_url as string}
                               alt="Selfie"
                               className="rounded-lg border border-border max-h-64 w-48 object-cover"

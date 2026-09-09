@@ -38,6 +38,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ProOnboardingStart from "./pages/ProOnboardingStart";
 import ProOnboardingTier from "./pages/ProOnboardingTier";
 import ApplePayHandoffPay from "./pages/ApplePayHandoffPay";
+import ConfirmAccountDeletion from "./pages/ConfirmAccountDeletion";
 import AuthHashErrorToast from "@/components/AuthHashErrorToast";
 import HashScroll from "@/components/HashScroll";
 import MonitorAdminGuard from "@/components/MonitorAdminGuard";
@@ -107,6 +108,7 @@ const App = () => (
               <Route path="/cookie-policy" element={<Navigate to="/cookies" replace />} />
               <Route path="/phone-preview" element={<><PrivateNoIndex /><PhonePreview /></>} />
               <Route path="/reset-password" element={<><PrivateNoIndex /><ResetPassword /></>} />
+              <Route path="/confirm-deletion" element={<><PrivateNoIndex /><ConfirmAccountDeletion /></>} />
               <Route path="/pay/apple-handoff/:handoffId" element={<><PrivateNoIndex /><ApplePayHandoffPay /></>} />
               <Route path="/auth" element={<><PrivateNoIndex /><Auth /></>} />
               <Route path="/auth/callback" element={<><PrivateNoIndex /><AuthCallback /></>} />

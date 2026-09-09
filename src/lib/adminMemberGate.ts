@@ -26,6 +26,15 @@ export function isAdminMemberVerified(userId: string, memberId: string): boolean
   }
 }
 
+export function isUserSessionAdminVerified(userId: string): boolean {
+  try {
+    const v = sessionStorage.getItem(KEY);
+    return typeof v === "string" && v.startsWith(`${userId}:`) && /^[0-9]{6}$/.test(v.slice(userId.length + 1));
+  } catch {
+    return false;
+  }
+}
+
 export function normalizeMemberIdInput(raw: string): string {
   return raw.replace(/\D/g, "").slice(0, 6);
 }

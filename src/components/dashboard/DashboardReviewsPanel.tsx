@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { ChevronDown, Loader2, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -110,7 +110,8 @@ function ReviewCard({
     <li className="rounded-lg border border-border/60 bg-muted/20 p-3 text-sm space-y-2">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         {blurred ? (
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-md">
+            <Lock className="w-3.5 h-3.5 shrink-0" />
             {t.reviews?.hiddenUntilYouReview ?? "Hidden until you review"}
           </span>
         ) : (
@@ -121,10 +122,14 @@ function ReviewCard({
         </span>
       </div>
       <p className="font-medium text-foreground">{subtitle}</p>
-      {blurred && blurMessage ? (
+      {blurred ? (
         <BlurredReviewContent
           blurred
-          message={blurMessage}
+          message={
+            blurMessage ||
+            t.dashboard.reviewsPendingHint ||
+            "When a booking is marked completed, both sides can leave one review. You cannot read the other person's review until you submit yours."
+          }
           ctaLabel={blurCtaLabel}
           ctaHref={onBlurCtaClick ? undefined : blurCtaHref}
           onCtaClick={onBlurCtaClick}
@@ -136,7 +141,7 @@ function ReviewCard({
       ) : (
         body
       )}
-      {reply ? (
+      {reply && !blurred ? (
         <div className="ml-3 border-l-2 border-primary/30 pl-3 pt-2 space-y-1">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             {t.dashboard.reviewsYourReply ?? "Your review"}
@@ -246,7 +251,7 @@ export default function DashboardReviewsPanel({
             .order("created_at", { ascending: false }),
           supabase
             .from("reviews")
-            .select("id, rating, title, content, created_at, reviewer_id")
+            .select("id, rating, title, content, created_at, reviewer_id, booking_id")
             .eq("pro_profile_id", proProfileId)
             .order("created_at", { ascending: false }),
           supabase.from("client_reviews").select("client_id, pro_profile_id").eq("pro_profile_id", proProfileId),
@@ -296,7 +301,7 @@ export default function DashboardReviewsPanel({
       const allProfileIds = [...new Set([...clientIds, ...reviewerIds])];
       const personNames = new Map<string, string>();
       if (allProfileIds.length > 0) {
-        const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", allProfileIds);
+        const { data: profiles } = await supabase.from("public_profiles").select("user_id, full_name").in("user_id", allProfileIds);
         (profiles ?? []).forEach((p: { user_id: string; full_name: string | null }) => {
           personNames.set(p.user_id, p.full_name ?? "");
         });
@@ -355,7 +360,10 @@ export default function DashboardReviewsPanel({
             reviewer_id: r.reviewer_id,
             reviewer_name: personNames.get(r.reviewer_id) || null,
             blurred,
-            reviewBookingId: bookingByClient.get(r.reviewer_id) ?? null,
+            reviewBookingId:
+              (r as { booking_id?: string | null }).booking_id ??
+              bookingByClient.get(r.reviewer_id) ??
+              null,
           };
         }),
       );
@@ -385,15 +393,43 @@ export default function DashboardReviewsPanel({
     );
   }
 
-  const blurMsgPro = "";
-  const blurMsgClient = "";
-  const blurCta = t.reviews.leaveReview ?? "Leave a review";
-  const reviewClientCta = t.dashboard.reviewClient ?? "Review client";
   const pendingTitle = t.dashboard.reviewsPendingTitle ?? "Ready to review";
   const pendingHint =
     t.dashboard.reviewsPendingHint ??
-    "After a completed booking, both sides can leave one review. You cannot read the other person's review until you submit yours.";
+    "When a booking is marked completed, both sides can leave one review. You cannot read the other person's review until you submit yours.";
+  const blurMsg = pendingHint;
+  const blurCta = t.reviews.leaveReview ?? "Leave a review";
+  const reviewClientCta = t.dashboard.reviewClient ?? "Review client";
   const hasPending = pendingAsClient.length > 0 || pendingAsPro.length > 0;
+
+  const handleReviewClientClick = async (clientId: string, bookingId: string | null) => {
+    if (!onReviewClient) return;
+    if (bookingId) {
+      onReviewClient(bookingId, clientId);
+      return;
+    }
+    const opp = pendingAsPro.find((o) => o.clientId === clientId);
+    if (opp?.bookingId) {
+      onReviewClient(opp.bookingId, clientId);
+      return;
+    }
+    if (proProfileId) {
+      const { data: b } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("pro_profile_id", proProfileId)
+        .eq("client_id", clientId)
+        .eq("status", "completed")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (b?.id) {
+        onReviewClient(b.id, clientId);
+        return;
+      }
+    }
+    onReviewClient("", clientId);
+  };
 
   const givenToProsByProId = new Map(givenToPros.map((g) => [g.pro_profile_id, g]));
 
@@ -473,20 +509,22 @@ export default function DashboardReviewsPanel({
                     content={r.content}
                     date={r.created_at}
                     blurred={r.blurred}
-                    blurMessage={blurMsgClient}
-                    blurCtaLabel={reviewClientCta}
+                    blurMessage={blurMsg}
+                    blurCtaLabel={
+                      r.reviewer_name
+                        ? (t.dashboard.reviewsPendingProLine ?? "Review {{name}}").replace(
+                            "{{name}}",
+                            r.reviewer_name,
+                          )
+                        : reviewClientCta
+                    }
                     blurCtaHref={
                       r.blurred && !onReviewClient ? "/dashboard?tab=bookings" : undefined
                     }
                     onBlurCtaClick={
-                      r.blurred && onReviewClient && r.reviewBookingId
-                        ? () => onReviewClient(r.reviewBookingId!, r.reviewer_id)
-                        : r.blurred && onReviewClient
-                          ? () => {
-                              const opp = pendingAsPro.find((o) => o.clientId === r.reviewer_id);
-                              if (opp) onReviewClient(opp.bookingId, opp.clientId);
-                            }
-                          : undefined
+                      r.blurred && onReviewClient
+                        ? () => void handleReviewClientClick(r.reviewer_id, r.reviewBookingId)
+                        : undefined
                     }
                     blurMinHeightClass="min-h-[10rem]"
                     subtitle={r.reviewer_name ?? (t.dashboard.reviewFromClient ?? "Client")}
@@ -513,8 +551,15 @@ export default function DashboardReviewsPanel({
                       date={r.created_at}
                       photos={r.photo_urls}
                       blurred={r.blurred}
-                      blurMessage={blurMsgPro}
-                      blurCtaLabel={blurCta}
+                      blurMessage={blurMsg}
+                      blurCtaLabel={
+                        r.business_name
+                          ? (t.dashboard.reviewsPendingClientLine ?? "Review {{name}}").replace(
+                              "{{name}}",
+                              r.business_name,
+                            )
+                          : blurCta
+                      }
                       blurCtaHref={
                         r.blurred && !onReviewPro ? `/pros/${r.pro_profile_id}#reviews` : undefined
                       }
@@ -603,8 +648,15 @@ export default function DashboardReviewsPanel({
                     date={r.created_at}
                     photos={r.photo_urls}
                     blurred={r.blurred}
-                    blurMessage={blurMsgPro}
-                    blurCtaLabel={blurCta}
+                    blurMessage={blurMsg}
+                    blurCtaLabel={
+                      r.business_name
+                        ? (t.dashboard.reviewsPendingClientLine ?? "Review {{name}}").replace(
+                            "{{name}}",
+                            r.business_name,
+                          )
+                        : blurCta
+                    }
                     blurCtaHref={
                       r.blurred && !onReviewPro ? `/pros/${r.pro_profile_id}#reviews` : undefined
                     }

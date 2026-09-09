@@ -74,7 +74,7 @@ export async function searchProsByBusinessOrName(query: string, limit = 8): Prom
     const userIds = [...new Set(byBusiness.map((p) => p.user_id).filter(Boolean))] as string[];
     const nameByUser = new Map<string, string>();
     if (userIds.length > 0) {
-      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+      const { data: profiles } = await supabase.from("public_profiles").select("user_id, full_name").in("user_id", userIds);
       for (const row of profiles ?? []) {
         const uid = (row as { user_id: string }).user_id;
         const name = (row as { full_name?: string | null }).full_name?.trim();
@@ -88,7 +88,7 @@ export async function searchProsByBusinessOrName(query: string, limit = 8): Prom
   }
 
   const { data: profileHits } = await supabase
-    .from("profiles")
+    .from("public_profiles")
     .select("user_id, full_name")
     .ilike("full_name", pattern)
     .limit(limit);

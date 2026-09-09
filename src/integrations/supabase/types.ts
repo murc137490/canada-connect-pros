@@ -672,7 +672,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          user_id: string
+          full_name: string | null
+          avatar_url: string | null
+          public_user_number: string | null
+        }
+        Insert: {
+          user_id?: string
+          full_name?: string | null
+          avatar_url?: string | null
+          public_user_number?: string | null
+        }
+        Update: {
+          user_id?: string
+          full_name?: string | null
+          avatar_url?: string | null
+          public_user_number?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_proration: {

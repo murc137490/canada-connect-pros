@@ -38,6 +38,7 @@ import { buildClientInvoiceContactBlock } from "@/lib/clientInvoiceContactBlock"
 import type { AvailabilityState } from "@/components/WeekdayAvailability";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
+import { isDemoAccount, isDemoProProfile } from "@/lib/demoAccount";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -706,7 +707,7 @@ export default function ProProfilePage() {
 
       // Parallel fetches (services loaded with display_name fallback if column missing)
       const [profileRes, photosRes, licensesRes, ratingRes, bookingsRes] = await Promise.all([
-        supabase.from("profiles").select("full_name, avatar_url").eq("user_id", proData.user_id).single(),
+        supabase.from("public_profiles").select("full_name, avatar_url").eq("user_id", proData.user_id).single(),
         supabase.from("pro_photos").select("id, url, caption, is_primary").eq("pro_profile_id", proId).order("is_primary", { ascending: false }),
         supabase.from("pro_licenses").select("license_number, license_type, is_verified").eq("pro_profile_id", proId),
         supabase.rpc("get_pro_avg_rating", { p_pro_profile_id: proId }),
@@ -1013,6 +1014,13 @@ export default function ProProfilePage() {
                       style={featuredLook ? { backgroundColor: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.35)" } : accentBgStyle || { backgroundColor: "hsl(var(--primary))" }}
                     >
                       <ShieldCheck size={12} /> {t.common?.verified ?? "Verified"}
+                    </span>
+                  )}
+                  {isDemoProProfile(pro) && (
+                    <span
+                      className="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-medium bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40"
+                    >
+                      <Sparkles size={12} /> {locale === "fr" ? "Profil Démo" : "Showcase Profile"}
                     </span>
                   )}
                 </div>
@@ -2413,7 +2421,7 @@ export default function ProProfilePage() {
                               variant: "destructive",
                             });
                           }
-                          if (data?.id) {
+                          if (data?.id && !isDemoAccount(user?.email) && !isDemoProProfile(pro)) {
                             void supabase.functions.invoke("booking-sms-notify", {
                               body: { booking_id: data.id, event: "confirmation" },
                             });
@@ -2445,7 +2453,7 @@ export default function ProProfilePage() {
                     ) : (
                       <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 flex items-center gap-3">
                         <CreditCard className="size-8 text-muted-foreground shrink-0" />
-                        <p className="text-sm text-muted-foreground">{t.terms.stripePaymentPlaceholder}</p>
+                        <p className="text-sm text-muted-foreground">{t.terms.cardPaymentPlaceholder ?? t.terms.stripePaymentPlaceholder}</p>
                         <Button asChild>
                           <Link
                             to={proId ? bookingCheckoutLoginPath(proId) : "/auth?mode=login"}

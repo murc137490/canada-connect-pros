@@ -19,43 +19,45 @@ export default function HomeProductShowcase() {
   return (
     <section className="section-pad bg-primary text-primary-foreground overflow-hidden">
       <div className="container-page">
-        <div className="grid items-center gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14 xl:gap-16">
-          <ScrollReveal y={32} amount={0.3} margin="-20% 0px">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
-              {t.index.showcaseEyebrow}
-            </p>
-            <h2 className="mt-4 font-display text-display-md tracking-tight text-white whitespace-pre-line">
-              {t.index.showcaseTitle}
-            </h2>
-            <p className="mt-4 max-w-sm text-[15px] text-white/65 leading-relaxed">
-              {t.index.showcaseSupport}
-            </p>
+        <ScrollReveal y={10} margin="-5% 0px" className="w-full">
+          <div className="grid items-center gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14 xl:gap-16">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
+                {t.index.showcaseEyebrow}
+              </p>
+              <h2 className="mt-4 font-display text-display-md tracking-tight text-white whitespace-pre-line">
+                {t.index.showcaseTitle}
+              </h2>
+              <p className="mt-4 max-w-sm text-[15px] text-white/65 leading-relaxed">
+                {t.index.showcaseSupport}
+              </p>
 
-            <ol className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-[13px] text-white/75">
-              {journey.map((label, i) => (
-                <li key={label} className="inline-flex items-center gap-1.5">
-                  <span className="font-semibold text-white/40 tabular-nums">{i + 1}.</span>
-                  <span>{label}</span>
-                </li>
-              ))}
-            </ol>
+              <ol className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-[13px] text-white/75">
+                {journey.map((label, i) => (
+                  <li key={label} className="inline-flex items-center gap-1.5">
+                    <span className="font-semibold text-white/40 tabular-nums">{i + 1}.</span>
+                    <span>{label}</span>
+                  </li>
+                ))}
+              </ol>
 
-            <Button
-              size="lg"
-              className="group mt-8 h-11 gap-2 bg-white text-primary hover:bg-white/92 px-6"
-              asChild
-            >
-              <Link to="/make-request">
-                {t.index.ctaPublish}
-                <ArrowRight className="cta-arrow h-4 w-4" />
-              </Link>
-            </Button>
-          </ScrollReveal>
+              <Button
+                size="lg"
+                className="group mt-8 h-11 gap-2 bg-white text-primary hover:bg-white/92 px-6"
+                asChild
+              >
+                <Link to="/make-request">
+                  {t.index.ctaPublish}
+                  <ArrowRight className="cta-arrow h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
 
-          <ScrollReveal y={36} delay={0.08} amount={0.3} margin="-20% 0px" className="w-full min-w-0">
-            <MarketplacePreview variant="dark" matchState="matched" />
-          </ScrollReveal>
-        </div>
+            <div className="w-full min-w-0">
+              <MarketplacePreview variant="dark" matchState="idle" />
+            </div>
+          </div>
+        </ScrollReveal>
       </div>
     </section>
   );

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Loader2, Shield } from "lucide-react";
 import { useAuth, NAME_TAKEN_MESSAGE, EMAIL_ALREADY_IN_USE_MESSAGE } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,7 @@ import { formatCanadianPhone, phoneDigits } from "@/lib/canadianPhone";
 import { canUsePlatformAdminTools, isPlatformAdminEmail, isSuperAdminEmail } from "@/lib/platformAdmin";
 import {
   clearAdminMemberVerification,
+  isUserSessionAdminVerified,
   normalizeMemberIdInput,
   setAdminMemberVerified,
 } from "@/lib/adminMemberGate";
@@ -32,7 +33,9 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [memberId, setMemberId] = useState("");
+  const [adminVerifyUser, setAdminVerifyUser] = useState<{ userId: string; expected: string } | null>(null);
+  const [verifyMemberIdInput, setVerifyMemberIdInput] = useState("");
+  const [verifyLoading, setVerifyLoading] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [emailLanguage, setEmailLanguage] = useState<"en" | "fr">("en");
@@ -51,14 +54,34 @@ export default function Auth() {
     setMode(modeFromUrl);
   }, [searchParams]);
 
-  // After Google OAuth (or if already signed in), land on the intended page.
-  // Skip while a password login is in flight so admin Member ID checks can finish.
+  // After login / OAuth (or if already signed in), land on the intended page.
+  // Wait if admin Member ID verification is needed on this page.
   useEffect(() => {
-    if (authLoading || !user || loading) return;
+    if (authLoading || !user || loading || adminVerifyUser) return;
+
+    const isStaffAdmin =
+      (isPlatformAdminEmail(user.email) || canUsePlatformAdminTools(user.email, true)) &&
+      !isSuperAdminEmail(user.email);
+
+    if (isStaffAdmin && !isUserSessionAdminVerified(user.id)) {
+      void (async () => {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("public_user_number")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        setAdminVerifyUser({
+          userId: user.id,
+          expected: String(prof?.public_user_number ?? "").trim(),
+        });
+      })();
+      return;
+    }
+
     const adminDest =
       isPlatformAdminEmail(user.email) || isSuperAdminEmail(user.email) ? ADMIN_DASHBOARD_PATH : null;
     navigate(adminDest ?? redirect, { replace: true });
-  }, [authLoading, user, redirect, navigate, loading]);
+  }, [authLoading, user, redirect, navigate, loading, adminVerifyUser]);
 
   const buildAuthPath = useCallback(
     (nextMode: "login" | "signup") => {
@@ -126,28 +149,19 @@ export default function Auth() {
             .maybeSingle();
           const isAdmin = canUsePlatformAdminTools(signedIn.email, prof?.is_platform_admin === true);
           if (isAdmin) {
-            // Super admin never needs Member ID; staff admins must enter theirs.
-            if (!isSuperAdminEmail(signedIn.email)) {
-              const expected = String(prof?.public_user_number ?? "").trim();
-              const entered = normalizeMemberIdInput(memberId);
-              if (!/^[0-9]{6}$/.test(entered) || entered !== expected) {
-                clearAdminMemberVerification();
-                await signOut();
-                toast({
-                  title: t.auth.toastError,
-                  description:
-                    locale === "fr"
-                      ? "Les comptes admin exigent le Member ID à 6 chiffres correct."
-                      : "Admin accounts require the correct 6-digit Member ID.",
-                  variant: "destructive",
-                });
-                setLoading(false);
-                return;
-              }
-              setAdminMemberVerified(signedIn.id, expected);
+            // Super admin never needs Member ID; staff admins must enter theirs after signing in.
+            if (isSuperAdminEmail(signedIn.email)) {
+              toast({ title: t.auth.toastWelcome });
+              navigate(ADMIN_DASHBOARD_PATH, { replace: true });
+              setLoading(false);
+              return;
             }
-            toast({ title: t.auth.toastWelcome });
-            navigate(ADMIN_DASHBOARD_PATH, { replace: true });
+            // Staff admin: prompt for 6-digit Member ID now
+            const expected = String(prof?.public_user_number ?? "").trim();
+            setAdminVerifyUser({
+              userId: signedIn.id,
+              expected,
+            });
             setLoading(false);
             return;
           }
@@ -173,6 +187,45 @@ export default function Auth() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAdminMemberIdSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminVerifyUser) return;
+    const entered = normalizeMemberIdInput(verifyMemberIdInput);
+    if (!/^[0-9]{6}$/.test(entered)) {
+      toast({
+        title: t.auth.toastError,
+        description: locale === "fr" ? "Entrez un Member ID à 6 chiffres." : "Enter a 6-digit Member ID.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setVerifyLoading(true);
+    if (!adminVerifyUser.expected || entered !== adminVerifyUser.expected) {
+      setVerifyLoading(false);
+      toast({
+        title: t.auth.toastError,
+        description:
+          locale === "fr"
+            ? "Le Member ID ne correspond pas."
+            : "Member ID did not match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAdminMemberVerified(adminVerifyUser.userId, adminVerifyUser.expected);
+    toast({ title: t.auth.toastWelcome });
+    setVerifyLoading(false);
+    navigate(ADMIN_DASHBOARD_PATH, { replace: true });
+  };
+
+  const handleCancelAdminVerify = async () => {
+    clearAdminMemberVerification();
+    setAdminVerifyUser(null);
+    setVerifyMemberIdInput("");
+    await signOut();
   };
 
   const setModeLogin = () => {
@@ -240,7 +293,67 @@ export default function Auth() {
         <div className="w-full max-w-md space-y-6 md:space-y-8">
           <MagicCard className="p-0">
             <Card className="border-none shadow-none bg-transparent">
-              <CardHeader className="space-y-1 pb-2">
+              {adminVerifyUser ? (
+                <>
+                  <CardHeader className="space-y-2 text-center pb-2">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-1">
+                      <Shield size={24} />
+                    </div>
+                    <CardTitle className="font-heading text-2xl font-bold">
+                      {locale === "fr" ? "Vérification Admin" : "Admin Verification"}
+                    </CardTitle>
+                    <CardDescription>
+                      {locale === "fr"
+                        ? "Entrez votre Member ID à 6 chiffres pour accéder aux outils d'administration."
+                        : "Enter your 6-digit Member ID to access administrative tools."}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-2">
+                    <form onSubmit={handleAdminMemberIdSubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="adminVerifyCode" className="text-center block text-foreground dark:text-white">
+                          Member ID
+                        </Label>
+                        <Input
+                          id="adminVerifyCode"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          maxLength={6}
+                          autoFocus
+                          placeholder="000000"
+                          className="font-mono tracking-widest text-center text-2xl h-12 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-white/60 bg-background dark:bg-card"
+                          value={verifyMemberIdInput}
+                          onChange={(e) => setVerifyMemberIdInput(normalizeMemberIdInput(e.target.value))}
+                          required
+                        />
+                      </div>
+
+                      <Button
+                        type="submit"
+                        className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 gap-2"
+                        size="lg"
+                        disabled={verifyLoading}
+                      >
+                        {verifyLoading ? <Loader2 size={16} className="animate-spin" /> : null}
+                        {locale === "fr" ? "Vérifier et continuer" : "Verify & Continue"}
+                        {!verifyLoading && <ArrowRight size={16} />}
+                      </Button>
+                    </form>
+                  </CardContent>
+                  <CardFooter className="flex flex-col gap-2 border-t border-border pt-4">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full text-xs text-muted-foreground hover:text-foreground"
+                      onClick={handleCancelAdminVerify}
+                    >
+                      {locale === "fr" ? "Annuler et se déconnecter" : "Cancel & Sign out"}
+                    </Button>
+                  </CardFooter>
+                </>
+              ) : (
+                <>
+                  <CardHeader className="space-y-1 pb-2">
                 <div className="flex rounded-lg border border-border bg-muted/30 p-1">
             <button
               type="button"
@@ -412,28 +525,6 @@ export default function Auth() {
                 />
               </div>
             )}
-            {mode === "login" && (
-              <div className="space-y-2">
-                <Label htmlFor="memberId" className="text-foreground dark:text-white">
-                  Member ID
-                </Label>
-                <Input
-                  id="memberId"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  placeholder="000000"
-                  className="mt-1.5 font-mono tracking-widest text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-white/60 bg-background dark:bg-card"
-                  value={memberId}
-                  onChange={(e) => setMemberId(normalizeMemberIdInput(e.target.value))}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {locale === "fr"
-                    ? "Obligatoire pour les comptes admin staff (pas le super admin)."
-                    : "Required for staff admin accounts (not the super admin)."}
-                </p>
-              </div>
-            )}
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="password" className="text-foreground dark:text-white">{t.auth.password}</Label>
@@ -575,6 +666,8 @@ export default function Auth() {
                   </p>
                 ) : null}
               </CardFooter>
+                </>
+              )}
             </Card>
           </MagicCard>
         </div>

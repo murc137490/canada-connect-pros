@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,7 @@ import StarBorder from "@/components/StarBorder";
 import GradientText from "@/components/GradientText";
 import { useToast } from "@/hooks/use-toast";
 import { filterAdvertiseableProIds } from "@/lib/filterAdvertiseablePros";
+import { isDemoAccount, isDemoProProfile } from "@/lib/demoAccount";
 
 export default function ProListPage() {
   const { categorySlug, serviceSlug } = useParams<{ categorySlug: string; serviceSlug: string }>();
@@ -22,6 +23,11 @@ export default function ProListPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isShowcaseUser =
+    isDemoAccount(user?.email) ||
+    searchParams.get("showcase") === "1" ||
+    searchParams.get("demo") === "1";
   const [pros, setPros] = useState<ProCardData[]>([]);
   const [topPicks, setTopPicks] = useState<ProCardData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,12 +69,18 @@ export default function ProListPage() {
 
       // Only advertise pros with an active paid plan (Starter / Growth / Pro).
       const advertiseable = await filterAdvertiseableProIds(proData.map((p) => p.id));
-      const listedPros = proData.filter((p) => advertiseable.has(p.id));
+      const filteredProData = proData.filter((p) => {
+        if (!isShowcaseUser && isDemoProProfile(p)) return false;
+        return true;
+      });
+      const listedPros = filteredProData.filter(
+        (p) => advertiseable.has(p.id) || (isShowcaseUser && isDemoProProfile(p))
+      );
 
       const enriched: ProCardData[] = [];
       for (const pro of listedPros) {
         const [profileRes, ratingRes, licenseRes, photosRes] = await Promise.all([
-          supabase.from("profiles").select("full_name").eq("user_id", pro.user_id).single(),
+          supabase.from("public_profiles").select("full_name").eq("user_id", pro.user_id).single(),
           supabase.rpc("get_pro_avg_rating", { p_pro_profile_id: pro.id }),
           supabase.from("pro_licenses").select("is_verified").eq("pro_profile_id", pro.id).eq("is_verified", true).limit(1),
           supabase.from("pro_photos").select("url, is_primary").eq("pro_profile_id", pro.id).order("is_primary", { ascending: false }).limit(1),

@@ -79,7 +79,7 @@ export async function fetchPendingReviewNotices(opts: {
     const clientIds = [...new Set(onProfile.map((r) => r.reviewer_id))];
     const clientNames = new Map<string, string>();
     if (clientIds.length > 0) {
-      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", clientIds);
+      const { data: profiles } = await supabase.from("public_profiles").select("user_id, full_name").in("user_id", clientIds);
       (profiles ?? []).forEach((p: { user_id: string; full_name: string | null }) => {
         clientNames.set(p.user_id, p.full_name?.trim() || "Client");
       });

@@ -15,6 +15,22 @@ export function storagePathFromUrl(bucket: string, urlOrPath: string): string {
   return trimmed.replace(/^\/+/, "");
 }
 
+/** Detects bucket from URL if present, otherwise uses defaultBucket. */
+export function detectBucketAndPath(defaultBucket: string, urlOrPath: string): { bucket: string; path: string } {
+  const trimmed = urlOrPath.trim();
+  const match = trimmed.match(/\/storage\/v1\/object\/(?:public|sign|authenticated)\/([^/]+)\/(.+)$/);
+  if (match) {
+    return {
+      bucket: match[1],
+      path: decodeURIComponent(match[2].split("?")[0]),
+    };
+  }
+  return {
+    bucket: defaultBucket,
+    path: storagePathFromUrl(defaultBucket, trimmed),
+  };
+}
+
 /** Signed URL for display (private buckets); falls back to public URL. */
 export async function resolveStorageDisplayUrl(
   bucket: string,
@@ -22,10 +38,10 @@ export async function resolveStorageDisplayUrl(
   expiresIn = 3600,
 ): Promise<string | null> {
   if (!urlOrPath?.trim()) return null;
-  const path = storagePathFromUrl(bucket, urlOrPath);
-  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn);
+  const target = detectBucketAndPath(bucket, urlOrPath);
+  const { data, error } = await supabase.storage.from(target.bucket).createSignedUrl(target.path, expiresIn);
   if (!error && data?.signedUrl) return data.signedUrl;
-  const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
+  const { data: pub } = supabase.storage.from(target.bucket).getPublicUrl(target.path);
   return pub.publicUrl;
 }
 

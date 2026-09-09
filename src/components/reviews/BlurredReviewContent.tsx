@@ -47,7 +47,6 @@ export default function BlurredReviewContent({
     <div className={cn("relative overflow-hidden rounded-xl border border-border/50", minHeightClass, className)}>
       <div className={cn("absolute inset-0 blur-[10px] select-none pointer-events-none", minHeightClass)} aria-hidden>
         <div className="p-3 opacity-70">
-          {children}
           <BlurPlaceholder />
         </div>
       </div>

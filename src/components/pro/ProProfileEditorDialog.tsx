@@ -61,6 +61,7 @@ import { getProPublicContactBlacklistReasons } from "@/lib/proPublicContactBlack
 import { cn } from "@/lib/utils";
 
 const STORAGE_BUCKET = "pro-photos";
+const VERIFICATION_BUCKET = "pro-verification";
 const MAX_BIO_WORDS = 300;
 const ACCEPT_IMAGES = "image/png,image/jpeg,image/jpg";
 
@@ -242,13 +243,17 @@ export function ProProfileEditorDialog({
     return t.createPro.languageLevelFluent;
   };
 
-  const uploadFile = async (path: string, file: File): Promise<string> => {
-    const { data, error } = await supabase.storage.from(STORAGE_BUCKET).upload(path, file, {
+  const uploadFile = async (path: string, file: File, bucket = STORAGE_BUCKET): Promise<string> => {
+    const { data, error } = await supabase.storage.from(bucket).upload(path, file, {
       contentType: file.type,
       upsert: true,
     });
     if (error) throw error;
-    const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(data.path);
+    if (bucket === VERIFICATION_BUCKET) {
+      // For private verification documents, return the clean storage path, not a public URL
+      return data.path;
+    }
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(data.path);
     return urlData.publicUrl;
   };
 
@@ -389,11 +394,11 @@ export function ProProfileEditorDialog({
       let idDocumentUrl: string | null = null;
       if (form.personalPhotoFile) {
         const path = `${user.id}/private/personal-${Date.now()}.${ext(form.personalPhotoFile)}`;
-        personalPhotoUrl = await uploadFile(path, form.personalPhotoFile);
+        personalPhotoUrl = await uploadFile(path, form.personalPhotoFile, VERIFICATION_BUCKET);
       }
       if (form.idDocumentFile) {
         const path = `${user.id}/private/id-${Date.now()}.${ext(form.idDocumentFile)}`;
-        idDocumentUrl = await uploadFile(path, form.idDocumentFile);
+        idDocumentUrl = await uploadFile(path, form.idDocumentFile, VERIFICATION_BUCKET);
       }
 
       const locationDisplay = serviceAreaValue.location || form.serviceAreas || null;

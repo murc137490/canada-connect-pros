@@ -13,7 +13,7 @@ export default function HomeHowItWorks() {
   const { t } = useLanguage();
   const reduced = usePrefersReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
-  const [activeStep, setActiveStep] = useState(reduced ? 3 : 0);
+  const [activeStep, setActiveStep] = useState(reduced ? 3 : 1);
 
   const steps = [
     { n: "01", title: t.index.step1, desc: t.index.step1Desc },
@@ -41,14 +41,14 @@ export default function HomeHowItWorks() {
       const rect = section.getBoundingClientRect();
       const vh = window.innerHeight || 1;
       // 0 when section top is near bottom of viewport; 1 when well into view
-      const start = vh * 0.88;
-      const end = vh * 0.28;
+      const start = vh * 0.92;
+      const end = vh * 0.20;
       const raw = (start - rect.top) / Math.max(start - end, 1);
       const p = Math.min(1, Math.max(0, raw));
       section.style.setProperty("--how-progress", p.toFixed(3));
 
       const step =
-        p < 0.12 ? 0 : p < 0.42 ? 1 : p < 0.72 ? 2 : 3;
+        p < 0.08 ? 1 : p < 0.45 ? 1 : p < 0.75 ? 2 : 3;
       if (step !== lastStep) {
         lastStep = step;
         setActiveStep(step);
@@ -89,7 +89,7 @@ export default function HomeHowItWorks() {
       style={{ ["--how-progress" as string]: reduced ? 1 : 0 }}
     >
       <div className="container-page">
-        <ScrollReveal y={28}>
+        <ScrollReveal y={14}>
           <h2 className="font-display text-display-md text-foreground whitespace-pre-line max-w-xl">
             {t.index.howTitle}
           </h2>
@@ -116,7 +116,7 @@ export default function HomeHowItWorks() {
             {steps.map((step, i) => {
               const on = activeStep > i;
               return (
-                <ScrollReveal key={step.n} y={26} delay={i * 0.06} amount={0.2}>
+                <ScrollReveal key={step.n} y={14} delay={i * 0.03}>
                   <li className="how-step relative flex gap-5 md:block md:gap-0">
                     <span
                       className={cn(
@@ -127,19 +127,14 @@ export default function HomeHowItWorks() {
                       <span
                         className={cn(
                           "md:font-display md:text-5xl lg:text-6xl md:leading-none transition-colors duration-300",
-                          on ? "md:text-primary/70" : "md:text-primary/20"
+                          on ? "md:text-primary/70" : "md:text-primary/30"
                         )}
                       >
                         {step.n}
                       </span>
                     </span>
 
-                    <div
-                      className={cn(
-                        "pb-10 md:pb-0 transition-opacity duration-300",
-                        on ? "opacity-100" : "opacity-50"
-                      )}
-                    >
+                    <div className="pb-10 md:pb-0">
                       <h3 className="font-heading text-lg md:text-xl font-bold tracking-tight text-foreground">
                         {step.title}
                       </h3>

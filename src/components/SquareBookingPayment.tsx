@@ -7,10 +7,13 @@ import {
   GooglePay,
   PaymentForm,
 } from "react-square-web-payments-sdk";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { resolveSquareWebConfig } from "@/lib/squareWebConfig";
+import { isDemoAccount, createDemoPaymentMeta } from "@/lib/demoAccount";
 import { PaymentProcessingOverlay } from "@/components/PaymentProcessingOverlay";
 import { GooglePayWalletSlot } from "@/components/GooglePayWalletSlot";
 
@@ -83,6 +86,8 @@ export default function SquareBookingPayment({
   onApplePayHandoffRequest,
 }: SquareBookingPaymentProps) {
   const { t, locale } = useLanguage();
+  const { user } = useAuth();
+  const isDemoMode = isDemoAccount(user?.email);
   const terms = t.terms;
   const plans = t.plans;
   const [loading, setLoading] = useState(false);
@@ -260,6 +265,43 @@ export default function SquareBookingPayment({
   }
 
   if (!applicationId || !locationIdForSdk) {
+    if (isDemoMode) {
+      return (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-foreground space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-400">
+              <Sparkles className="size-4" />
+              {locale === "fr" ? "Mode Démo / Publicité" : "Demo & Ad Showcase Mode"}
+            </span>
+            <span className="font-mono text-sm font-bold text-foreground">
+              ${amountStr} {currencyCode}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {locale === "fr"
+              ? "Compte de démonstration actif. Aucun compte Square réel requis. Cliquez ci-dessous pour simuler l'autorisation bancaire."
+              : "Demo account active. No real Square merchant needed. Click below to simulate instant card authorization."}
+          </p>
+          <Button
+            type="button"
+            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium gap-2 shadow"
+            onClick={() => {
+              const meta = createDemoPaymentMeta(amountCents);
+              onSuccess({
+                squarePaymentId: meta.squarePaymentId,
+                idempotencyKey: idempotencyKeyRef.current,
+                paymentMethodLabel: meta.paymentMethodLabel,
+              });
+            }}
+          >
+            <ShieldCheck className="size-4" />
+            {authorizeOnly
+              ? (locale === "fr" ? "Simuler l'autorisation de carte (Démo)" : "Simulate Card Hold (Demo)")
+              : (locale === "fr" ? "Simuler le paiement par carte (Démo)" : "Simulate Card Payment (Demo)")}
+          </Button>
+        </div>
+      );
+    }
     return (
       <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground space-y-3">
         {audience === "ops" ? (
@@ -303,6 +345,35 @@ export default function SquareBookingPayment({
           className="rounded-lg"
           label={locale === "fr" ? "Traitement…" : "Processing…"}
         />
+      )}
+      {isDemoMode && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
+              <Sparkles className="size-3.5" />
+              {locale === "fr" ? "Mode Démo / Publicité" : "Demo / Ad Walkthrough Mode"}
+            </span>
+            <span className="text-xs font-mono font-medium">${amountStr} {currencyCode}</span>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs gap-1.5 shadow"
+            onClick={() => {
+              const meta = createDemoPaymentMeta(amountCents);
+              onSuccess({
+                squarePaymentId: meta.squarePaymentId,
+                idempotencyKey: idempotencyKeyRef.current,
+                paymentMethodLabel: meta.paymentMethodLabel,
+              });
+            }}
+          >
+            <ShieldCheck className="size-3.5" />
+            {authorizeOnly
+              ? (locale === "fr" ? "1-Clic : Simuler l'autorisation (Démo)" : "1-Click: Simulate Card Hold (Demo)")
+              : (locale === "fr" ? "1-Clic : Simuler le paiement (Démo)" : "1-Click: Simulate Card Payment (Demo)")}
+          </Button>
+        </div>
       )}
       <PaymentForm
         applicationId={applicationId}

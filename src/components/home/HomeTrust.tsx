@@ -13,7 +13,7 @@ export default function HomeTrust() {
   return (
     <section className="section-pad">
       <div className="container-page">
-        <ScrollReveal y={28}>
+        <ScrollReveal y={14}>
           <div className="max-w-2xl md:max-w-none md:grid md:grid-cols-[0.9fr_1.1fr] md:gap-16 md:items-start">
             <h2 className="font-display text-display-md text-foreground max-w-[12ch]">
               {t.index.trustTitle}
@@ -26,7 +26,7 @@ export default function HomeTrust() {
 
         <ul className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0 lg:divide-x lg:divide-border">
           {items.map((item, i) => (
-            <ScrollReveal key={item.title} y={24} delay={i * 0.05} amount={0.2}>
+            <ScrollReveal key={item.title} y={14} delay={i * 0.02}>
               <li className="lg:px-8 first:lg:pl-0 last:lg:pr-0">
                 <h3 className="font-heading text-[15px] font-bold tracking-tight text-foreground">
                   {item.title}

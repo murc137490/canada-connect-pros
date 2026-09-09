@@ -17,7 +17,7 @@ export default function HomeProCta() {
     <section className="section-pad border-t border-border">
       <div className="container-page">
         <div className="grid gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:items-center lg:gap-20">
-          <ScrollReveal y={28}>
+          <ScrollReveal y={14}>
             <h2 className="font-display text-display-md text-foreground whitespace-pre-line max-w-[14ch]">
               {t.index.proSectionTitle}
             </h2>
@@ -32,7 +32,7 @@ export default function HomeProCta() {
             </Button>
           </ScrollReveal>
 
-          <ScrollReveal y={24} delay={0.06}>
+          <ScrollReveal y={14} delay={0.03}>
             <ul className="space-y-0 border-t border-border">
               {benefits.map((b) => (
                 <li

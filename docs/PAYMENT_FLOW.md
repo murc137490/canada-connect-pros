@@ -31,7 +31,7 @@ Customer (authenticated)
 - Apple Pay JS SDK is loaded from Apple’s CDN (`index.html`) for capability detection.
 - Square’s Web Payments SDK still documents **Safari-first** Apple Pay; it does **not** yet officially ship Apple’s native Chrome/Windows QR modal.
 - Première therefore shows a QR that opens the same Square Apple Pay checkout on the customer’s iPhone (iOS 18+ Camera / Safari).
-- **Stripe Express Checkout** (`paymentMethods.applePay: 'always'`) is the processor path that natively shows Apple’s QR on non-Safari desktops; live booking here stays on **Square** (Connect + authorize/capture). Orphan Stripe helpers remain in-repo but are not wired into booking UI.
+- Live booking runs exclusively on **Square** (Connect + authorize/capture). Legacy/orphan Stripe packages and helper code have been completely removed from the repository.
 
 Typical product timing: payment often occurs **after the professional accepts** the booking (not always at “Book”).
 

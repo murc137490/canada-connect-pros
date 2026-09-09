@@ -67,7 +67,7 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
     for (const r of reviewData) {
       // Get reviewer name
       const { data: profile } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("full_name")
         .eq("user_id", r.reviewer_id)
         .single();
@@ -264,10 +264,18 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
                     <BlurredReviewContent
                       blurred={blurredForViewer}
                       message={
+                        t.dashboard.reviewsPendingHint ??
                         t.reviews.blurredUntilYouReviewClient ??
-                        "Review this client to read their full review."
+                        "When a booking is marked completed, both sides can leave one review. You cannot read the other person's review until you submit yours."
                       }
-                      ctaLabel={t.dashboard.reviewClient ?? "Review client"}
+                      ctaLabel={
+                        review.reviewer_name
+                          ? (t.dashboard.reviewsPendingProLine ?? "Review {{name}}").replace(
+                              "{{name}}",
+                              review.reviewer_name,
+                            )
+                          : (t.dashboard.reviewClient ?? "Review client")
+                      }
                       ctaHref="/dashboard?tab=reviews"
                       minHeightClass="min-h-[8rem]"
                     >
