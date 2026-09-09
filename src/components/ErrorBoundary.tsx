@@ -1,4 +1,4 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, type CSSProperties, type ErrorInfo, type ReactNode } from "react";
 import { SUPPORT_EMAIL, SUPPORT_PHONE, SUPPORT_PHONE_TEL } from "@/config/legalConfig";
 
 interface Props {
@@ -26,10 +26,23 @@ function readLocale(): "en" | "fr" {
   return "en";
 }
 
+function readPrefersDark(): boolean {
+  try {
+    if (document.documentElement.classList.contains("dark")) return true;
+  } catch {
+    /* ignore */
+  }
+  try {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  } catch {
+    return false;
+  }
+}
+
 const COPY = {
   en: {
     title: "Something went wrong",
-    body: "Please refresh the page. If it continues, visit Support or email support — we never show technical details here.",
+    body: "Please refresh the page. If it continues, visit Support — we’re here to help.",
     tryAgain: "Refresh",
     goHome: "Go home",
     getHelp: "Go to Support",
@@ -38,7 +51,7 @@ const COPY = {
   },
   fr: {
     title: "Une erreur est survenue",
-    body: "",
+    body: "Actualisez la page. Si le problème continue, ouvrez Aide — nous sommes là.",
     tryAgain: "Actualiser",
     goHome: "Accueil",
     getHelp: "Aller à l’aide",
@@ -57,6 +70,33 @@ export function AppErrorScreen({
 }) {
   const locale = localeProp ?? readLocale();
   const c = COPY[locale];
+  const dark = readPrefersDark();
+
+  const navy = "#12233f";
+  const navyDeep = "#0b1628";
+  const amber = "#e8a317";
+  const paper = "#f7f3ec";
+  const ink = "#121a28";
+  const muted = dark ? "rgba(255,255,255,0.68)" : "rgba(18,26,40,0.62)";
+  const surface = dark ? "rgba(26,26,26,0.92)" : "rgba(255,255,255,0.94)";
+  const border = dark ? "rgba(255,255,255,0.12)" : "rgba(18,35,63,0.12)";
+  const text = dark ? "#f7f3ec" : ink;
+
+  const btnBase: CSSProperties = {
+    display: "block",
+    width: "100%",
+    padding: "12px 18px",
+    borderRadius: 10,
+    fontSize: "0.9375rem",
+    fontWeight: 600,
+    letterSpacing: "-0.01em",
+    textDecoration: "none",
+    textAlign: "center",
+    cursor: "pointer",
+    fontFamily: "Manrope, system-ui, sans-serif",
+    border: "none",
+    transition: "transform 0.15s ease, opacity 0.15s ease",
+  };
 
   return (
     <div
@@ -67,56 +107,115 @@ export function AppErrorScreen({
         alignItems: "center",
         justifyContent: "center",
         padding: 24,
-        background: "linear-gradient(165deg, #f0f7f4 0%, #e4efe9 45%, #dce8e2 100%)",
-        color: "#14201c",
-        fontFamily: 'ui-sans-serif, system-ui, "Segoe UI", sans-serif',
+        position: "relative",
+        overflow: "hidden",
+        color: text,
+        background: dark
+          ? `radial-gradient(1200px 700px at 12% -10%, rgba(55, 110, 200, 0.22), transparent 55%),
+             radial-gradient(900px 500px at 90% 110%, rgba(232, 163, 23, 0.12), transparent 50%),
+             linear-gradient(165deg, #0a0a0a 0%, ${navyDeep} 55%, #0a0a0a 100%)`
+          : `radial-gradient(1100px 640px at 8% -8%, rgba(18, 35, 63, 0.12), transparent 55%),
+             radial-gradient(900px 520px at 100% 100%, rgba(232, 163, 23, 0.16), transparent 48%),
+             linear-gradient(165deg, ${paper} 0%, #efe8dc 48%, #e7eef8 100%)`,
+        fontFamily: "Manrope, system-ui, -apple-system, sans-serif",
       }}
     >
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700;800&display=swap"
+      />
+
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage:
+            "radial-gradient(rgba(18,35,63,0.05) 1px, transparent 1px)",
+          backgroundSize: "22px 22px",
+          opacity: dark ? 0.35 : 0.55,
+          pointerEvents: "none",
+        }}
+      />
+
       <div
         style={{
+          position: "relative",
           width: "100%",
           maxWidth: 440,
-          borderRadius: 20,
-          border: "1px solid rgba(0, 122, 86, 0.18)",
-          background: "rgba(255,255,255,0.92)",
-          boxShadow: "0 18px 50px rgba(20, 40, 32, 0.08)",
-          padding: "28px 24px",
+          borderRadius: 18,
+          border: `1px solid ${border}`,
+          background: surface,
+          boxShadow: dark
+            ? "0 24px 60px rgba(0,0,0,0.45)"
+            : "0 20px 50px -18px rgba(18, 35, 63, 0.22), 0 8px 20px -10px rgba(18, 35, 63, 0.1)",
+          padding: "36px 28px 28px",
           textAlign: "center",
+          backdropFilter: "blur(18px)",
         }}
       >
+        <div
+          aria-hidden
+          style={{
+            width: 44,
+            height: 4,
+            borderRadius: 999,
+            margin: "0 auto 22px",
+            background: `linear-gradient(90deg, ${navy} 0%, ${amber} 100%)`,
+          }}
+        />
+
         <p
           style={{
-            margin: "0 0 8px",
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "#007A56",
+            margin: "0 0 10px",
+            fontFamily: "Instrument Serif, Georgia, serif",
+            fontSize: "1.65rem",
+            lineHeight: 1.15,
+            letterSpacing: "-0.02em",
+            color: dark ? "#f7f3ec" : navy,
           }}
         >
           Première Services
         </p>
-        <h1 style={{ fontSize: "1.35rem", fontWeight: 700, margin: "0 0 10px", lineHeight: 1.3 }}>{c.title}</h1>
-        {c.body ? (
-          <p style={{ fontSize: "0.9rem", color: "#3d524a", margin: "0 0 22px", lineHeight: 1.55 }}>{c.body}</p>
-        ) : (
-          <div style={{ marginBottom: 22 }} />
-        )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
+        <h1
+          style={{
+            fontFamily: "Instrument Serif, Georgia, serif",
+            fontSize: "1.45rem",
+            fontWeight: 400,
+            margin: "0 0 12px",
+            lineHeight: 1.25,
+            letterSpacing: "-0.01em",
+            color: text,
+          }}
+        >
+          {c.title}
+        </h1>
+
+        <p
+          style={{
+            fontSize: "0.9375rem",
+            color: muted,
+            margin: "0 0 26px",
+            lineHeight: 1.55,
+            maxWidth: "32ch",
+            marginLeft: "auto",
+            marginRight: "auto",
+          }}
+        >
+          {c.body}
+        </p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
           {onRetry ? (
             <button
               type="button"
               onClick={onRetry}
               style={{
-                padding: "11px 16px",
-                borderRadius: 10,
-                background: "#007A56",
-                color: "white",
-                border: "none",
-                fontSize: "0.9rem",
-                fontWeight: 600,
-                cursor: "pointer",
+                ...btnBase,
+                background: `linear-gradient(135deg, ${navy} 0%, #1a3d73 55%, #2a5a9e 100%)`,
+                color: "#fff",
+                boxShadow: "0 10px 24px -12px rgba(18, 35, 63, 0.65)",
               }}
             >
               {c.tryAgain}
@@ -125,14 +224,10 @@ export function AppErrorScreen({
           <a
             href="/support"
             style={{
-              display: "block",
-              padding: "11px 16px",
-              borderRadius: 10,
-              background: "#0f2744",
-              color: "white",
-              textDecoration: "none",
-              fontSize: "0.9rem",
-              fontWeight: 600,
+              ...btnBase,
+              background: dark ? "rgba(255,255,255,0.08)" : paper,
+              color: dark ? "#f7f3ec" : navy,
+              border: `1px solid ${border}`,
             }}
           >
             {c.getHelp}
@@ -140,15 +235,11 @@ export function AppErrorScreen({
           <a
             href="/"
             style={{
-              display: "block",
-              padding: "10px 16px",
-              borderRadius: 10,
+              ...btnBase,
               background: "transparent",
-              color: "#007A56",
-              textDecoration: "none",
-              fontSize: "0.875rem",
+              color: dark ? amber : navy,
+              border: `1px solid ${dark ? "rgba(232,163,23,0.35)" : "rgba(18,35,63,0.22)"}`,
               fontWeight: 600,
-              border: "1px solid rgba(0, 122, 86, 0.35)",
             }}
           >
             {c.goHome}
@@ -157,19 +248,28 @@ export function AppErrorScreen({
 
         <div
           style={{
-            borderTop: "1px solid rgba(0,0,0,0.06)",
+            borderTop: `1px solid ${border}`,
             paddingTop: 16,
             display: "grid",
-            gap: 8,
+            gap: 10,
             textAlign: "left",
-            fontSize: "0.8rem",
+            fontSize: "0.8125rem",
           }}
         >
-          <a href={`mailto:${SUPPORT_EMAIL}`} style={{ color: "#1a3a30", textDecoration: "none" }}>
-            <strong>{c.email}:</strong> {SUPPORT_EMAIL}
+          <a
+            href={`mailto:${SUPPORT_EMAIL}`}
+            style={{ color: text, textDecoration: "none", lineHeight: 1.4 }}
+          >
+            <span style={{ color: muted, display: "block", fontSize: "0.7rem", marginBottom: 2 }}>
+              {c.email}
+            </span>
+            {SUPPORT_EMAIL}
           </a>
-          <a href={SUPPORT_PHONE_TEL} style={{ color: "#1a3a30", textDecoration: "none" }}>
-            <strong>{c.phone}:</strong> {SUPPORT_PHONE}
+          <a href={SUPPORT_PHONE_TEL} style={{ color: text, textDecoration: "none", lineHeight: 1.4 }}>
+            <span style={{ color: muted, display: "block", fontSize: "0.7rem", marginBottom: 2 }}>
+              {c.phone}
+            </span>
+            {SUPPORT_PHONE}
           </a>
         </div>
       </div>
