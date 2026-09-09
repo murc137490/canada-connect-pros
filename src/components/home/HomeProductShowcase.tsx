@@ -19,7 +19,7 @@ export default function HomeProductShowcase() {
   return (
     <section className="section-pad bg-primary text-primary-foreground overflow-hidden">
       <div className="container-page">
-        <ScrollReveal y={10} margin="-5% 0px" className="w-full">
+        <ScrollReveal y={10} margin="-10% 0px" className="w-full">
           <div className="grid items-center gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14 xl:gap-16">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">

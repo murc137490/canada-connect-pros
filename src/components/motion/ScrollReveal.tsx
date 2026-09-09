@@ -29,13 +29,13 @@ export default function ScrollReveal({
   y = 10,
   once = false,
   amount = "some",
-  margin = "-5% 0px",
+  margin = "-10% 0px",
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, {
     once,
     amount,
-    margin: margin as "-5% 0px",
+    margin: margin as "-10% 0px",
   });
   const reduced = usePrefersReducedMotion();
 
