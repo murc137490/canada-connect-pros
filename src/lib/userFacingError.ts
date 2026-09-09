@@ -36,8 +36,8 @@ export const SAFE_USER_ERROR = {
   },
   fr: {
     title: "Une erreur est survenue",
-    description: `Veuillez actualiser la page. Si le problème continue, contactez le soutien à ${SUPPORT_EMAIL} ou ouvrez la page Aide.`,
-    short: "Actualisez la page ou contactez le soutien.",
+    description: `Contactez le soutien à ${SUPPORT_EMAIL} ou ouvrez la page Aide.`,
+    short: "Contactez le soutien.",
     supportCta: "Aller à l’aide",
   },
 } as const;

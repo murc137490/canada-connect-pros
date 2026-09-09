@@ -38,7 +38,7 @@ const COPY = {
   },
   fr: {
     title: "Une erreur est survenue",
-    body: "Veuillez actualiser la page. Si le problème continue, ouvrez Aide ou écrivez au soutien — aucun détail technique n’est affiché ici.",
+    body: "",
     tryAgain: "Actualiser",
     goHome: "Accueil",
     getHelp: "Aller à l’aide",
@@ -97,7 +97,11 @@ export function AppErrorScreen({
           Première Services
         </p>
         <h1 style={{ fontSize: "1.35rem", fontWeight: 700, margin: "0 0 10px", lineHeight: 1.3 }}>{c.title}</h1>
-        <p style={{ fontSize: "0.9rem", color: "#3d524a", margin: "0 0 22px", lineHeight: 1.55 }}>{c.body}</p>
+        {c.body ? (
+          <p style={{ fontSize: "0.9rem", color: "#3d524a", margin: "0 0 22px", lineHeight: 1.55 }}>{c.body}</p>
+        ) : (
+          <div style={{ marginBottom: 22 }} />
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
           {onRetry ? (

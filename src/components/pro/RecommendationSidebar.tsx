@@ -78,7 +78,7 @@ export default function RecommendationSidebar({
         }
 
         allItems.push({ ...pro, imageUrl: imageUrl || PLACEHOLDER_AVATAR });
-        avatarList.push({ imageUrl: imageUrl || PLACEHOLDER_AVATAR, profileUrl: `/pro/${pro.id}` });
+        avatarList.push({ imageUrl: imageUrl || PLACEHOLDER_AVATAR, profileUrl: `/pros/${pro.id}` });
       }
 
       setProfileCards(allItems.slice(0, 3));
@@ -115,7 +115,7 @@ export default function RecommendationSidebar({
         {profileCards.map((pro) => (
           <Link
             key={pro.id}
-            to={`/pro/${pro.id}`}
+            to={`/pros/${pro.id}`}
             className="flex items-center gap-3 rounded-lg border border-gray-200 bg-[#F7F7F7] dark:bg-muted/50 dark:border-gray-700 p-2.5 hover:bg-gray-100 dark:hover:bg-muted transition-colors"
           >
             <Avatar className="h-10 w-10 rounded-full shrink-0">

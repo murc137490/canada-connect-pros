@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Briefcase, Check,
-  Loader2, ShieldCheck, CalendarCheck, CreditCard, ChevronRight, ChevronDown, Share2, Info, X, Heart
+  Loader2, ShieldCheck, CalendarCheck, CreditCard, ChevronRight, ChevronDown, Share2, Info, X, Heart, Sparkles
 } from "lucide-react";
 import { serviceCategories } from "@/data/services";
 import { getCategoryName } from "@/i18n/constants";

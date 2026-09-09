@@ -5609,11 +5609,6 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {locale === "fr"
-                      ? "Conformément à la Loi 25 du Québec, vous pouvez demander la suppression définitive de votre compte et de toutes vos données personnelles. Un courriel de confirmation vous sera envoyé, suivi d'un délai de 24 heures avant l'effacement permanent."
-                      : "In accordance with Quebec's Law 25, you may permanently delete your account and all associated personal data. A confirmation email will be sent to your inbox, followed by a 24-hour grace period before permanent erasure."}
-                  </p>
                   <Button
                     type="button"
                     variant="outline"
@@ -6877,14 +6872,10 @@ export default function Dashboard() {
                 {locale === "fr" ? (
                   <>
                     Nous allons envoyer un lien de confirmation à votre adresse courriel (<strong>{user?.email}</strong>).
-                    <br /><br />
-                    Après avoir cliqué sur le lien, une période de <strong>24 heures</strong> s'écoulera avant que votre compte, votre profil et vos fichiers ne soient <strong>définitivement supprimés</strong> de nos serveurs.
                   </>
                 ) : (
                   <>
                     We will send a confirmation link to your email address (<strong>{user?.email}</strong>).
-                    <br /><br />
-                    Once you click the link, your account will enter a <strong>24-hour grace period</strong> before your profile, files, and personal data are <strong>permanently purged</strong> from our servers.
                   </>
                 )}
               </DialogDescription>
