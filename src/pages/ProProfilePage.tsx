@@ -1041,28 +1041,27 @@ export default function ProProfilePage() {
                   </div>
                 )}
                 <p className={cn("mt-1", featuredLook ? "text-white/85" : "text-neutral-800 dark:text-zinc-300")}>{fullName}</p>
-                <div className={cn("flex items-center gap-3 mt-2 flex-wrap", featuredLook ? "text-white" : "text-neutral-900 dark:text-zinc-200")}>
-                  <span className="inline-flex rounded-md border-2 border-amber-500 bg-white px-1.5 py-0.5 shadow-sm [&_svg]:text-amber-500">
-                    <StarRating rating={avgRating} size={16} emptyStarsLightSurface />
-                  </span>
-                  <span className={cn("text-sm", featuredLook ? "text-white/85" : "text-neutral-800 dark:text-zinc-400")}>
-                    ({reviewCount} {reviewCount === 1 ? (t.common?.review ?? "review") : (t.common?.reviews ?? "reviews")})
+                <div className={cn("flex items-center gap-2 mt-2 flex-wrap", featuredLook ? "text-white" : "text-neutral-900 dark:text-zinc-200")}>
+                  <StarRating rating={avgRating} size={18} />
+                  <span className={cn("text-sm tabular-nums", featuredLook ? "text-white/85" : "text-neutral-800 dark:text-zinc-400")}>
+                    {reviewCount}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-3">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className={cn(
-                      "gap-1.5 border-2",
-                      featuredLook
-                        ? "border-white/45 bg-white/15 text-white hover:bg-white/25 hover:text-white"
-                        : "border-neutral-900 bg-white text-neutral-950 hover:bg-neutral-100 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                    )}
+                  <button
+                    type="button"
                     onClick={handleShare}
+                    aria-label={t.common?.share ?? "Share"}
+                    title={t.common?.share ?? "Share"}
+                    className={cn(
+                      "inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+                      featuredLook
+                        ? "text-white/90 hover:bg-white/15 hover:text-white"
+                        : "text-neutral-800 hover:bg-neutral-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                    )}
                   >
-                    <Share2 size={16} /> {t.common?.share ?? "Share"}
-                  </Button>
+                    <Share2 size={18} strokeWidth={2} />
+                  </button>
                   {user?.id !== pro.user_id && (
                     <Button
                       type="button"

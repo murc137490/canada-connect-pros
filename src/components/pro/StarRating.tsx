@@ -8,10 +8,13 @@ interface StarRatingProps {
   interactive?: boolean;
   onRate?: (rating: number) => void;
   className?: string;
-  /** Empty stars: white fill + amber outline (use inside a white pill on dark headers). */
+  /** @deprecated Kept for call-site compat; stars are always bare (no light-surface pill). */
   emptyStarsLightSurface?: boolean;
 }
 
+/**
+ * Gauge-style stars: each star fills left→right by the fractional rating (e.g. 4.3 → four full + 30% of the fifth).
+ */
 export default function StarRating({
   rating,
   maxRating = 5,
@@ -19,43 +22,47 @@ export default function StarRating({
   interactive = false,
   onRate,
   className,
-  emptyStarsLightSurface = false,
 }: StarRatingProps) {
+  const clamped = Math.max(0, Math.min(maxRating, Number.isFinite(rating) ? rating : 0));
+
   return (
-    <div className={cn("flex items-center gap-0.5", className)}>
+    <div className={cn("inline-flex items-center gap-0.5", className)} aria-label={`${clamped} / ${maxRating}`}>
       {Array.from({ length: maxRating }, (_, i) => {
-        const filled = i < Math.floor(rating);
-        const halfFilled = !filled && i < rating;
+        const fill = Math.max(0, Math.min(1, clamped - i));
+        const pct = `${Math.round(fill * 1000) / 10}%`;
+
+        if (interactive) {
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onRate?.(i + 1)}
+              className="relative shrink-0 cursor-pointer transition-transform hover:scale-110"
+              aria-label={`${i + 1}`}
+            >
+              <Star size={size} className="fill-muted/40 text-muted-foreground/35" strokeWidth={1.5} />
+              <span
+                className="pointer-events-none absolute inset-0 overflow-hidden"
+                style={{ width: i < clamped ? "100%" : "0%" }}
+              >
+                <Star size={size} className="fill-amber-500 text-amber-500" strokeWidth={1.5} />
+              </span>
+            </button>
+          );
+        }
+
         return (
-          <button
-            key={i}
-            type="button"
-            disabled={!interactive}
-            onClick={() => onRate?.(i + 1)}
-            className={cn(
-              "transition-colors",
-              interactive && "cursor-pointer hover:scale-110",
-              !interactive && "cursor-default"
-            )}
-          >
+          <span key={i} className="relative inline-block shrink-0 leading-none" style={{ width: size, height: size }}>
             <Star
               size={size}
-              strokeWidth={emptyStarsLightSurface ? (filled ? 0 : 2) : undefined}
-              className={cn(
-                emptyStarsLightSurface
-                  ? filled
-                    ? "fill-amber-500 text-amber-500"
-                    : halfFilled
-                      ? "fill-amber-500/60 text-amber-500"
-                      : "fill-white text-amber-500"
-                  : filled
-                    ? "fill-amber-500 text-amber-500"
-                    : halfFilled
-                      ? "fill-amber-500/50 text-amber-500"
-                      : "fill-muted text-muted-foreground/30"
-              )}
+              className="absolute inset-0 fill-transparent text-amber-500/35"
+              strokeWidth={1.75}
+              aria-hidden
             />
-          </button>
+            <span className="absolute inset-0 overflow-hidden" style={{ width: pct }} aria-hidden>
+              <Star size={size} className="fill-amber-500 text-amber-500" strokeWidth={1.75} />
+            </span>
+          </span>
         );
       })}
     </div>

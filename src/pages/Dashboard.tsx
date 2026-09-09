@@ -5509,7 +5509,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-2">
                 <Trash2 className="w-5 h-5 text-destructive" />
                 <h3 className="font-heading font-semibold text-foreground">
-                  {locale === "fr" ? "Suppression de compte (Loi 25)" : "Account Deletion (Law 25)"}
+                  {locale === "fr" ? "Suppression de compte" : "Account Deletion"}
                 </h3>
               </div>
 
@@ -6897,7 +6897,7 @@ export default function Dashboard() {
                 className="gap-1.5"
               >
                 {deletionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {locale === "fr" ? "Envoyer le courriel de confirmation" : "Send confirmation email"}
+                {locale === "fr" ? "Je confirme" : "I confirm"}
               </Button>
             </DialogFooter>
           </DialogContent>
