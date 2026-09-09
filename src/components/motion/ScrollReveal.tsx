@@ -19,7 +19,7 @@ type Props = {
 
 /**
  * Appear / disappear when scrolling in and out of view.
- * Middle ~70% of the screen displays clear, active content; the top/bottom ~15%
+ * Middle ~60% of the screen displays clear, active content; the top/bottom ~20%
  * provides the smooth fade-in / fade-away transition zone.
  */
 export default function ScrollReveal({
@@ -29,13 +29,13 @@ export default function ScrollReveal({
   y = 10,
   once = false,
   amount = "some",
-  margin = "-15% 0px",
+  margin = "-20% 0px",
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, {
     once,
     amount,
-    margin: margin as "-15% 0px",
+    margin: margin as "-20% 0px",
   });
   const reduced = usePrefersReducedMotion();
 
