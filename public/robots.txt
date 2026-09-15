@@ -1,6 +1,10 @@
 User-agent: *
 Allow: /
 
+# Preferred host for indexing (both domains serve the same app)
+Host: https://www.altshift.ca
+Sitemap: https://www.altshift.ca/sitemap.xml
+
 # Private / account surfaces — keep out of indexing when crawled via direct URLs
 Disallow: /dashboard
 Disallow: /admin
@@ -10,6 +14,8 @@ Disallow: /phone-preview
 Disallow: /create-pro-account
 Disallow: /pro-onboarding
 Disallow: /pro-plans/checkout
+Disallow: /confirm-deletion
+Disallow: /pay/
 
 User-agent: Googlebot
 Allow: /

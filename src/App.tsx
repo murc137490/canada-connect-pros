@@ -41,6 +41,7 @@ import ApplePayHandoffPay from "./pages/ApplePayHandoffPay";
 import ConfirmAccountDeletion from "./pages/ConfirmAccountDeletion";
 import AuthHashErrorToast from "@/components/AuthHashErrorToast";
 import HashScroll from "@/components/HashScroll";
+import CanonicalUrl from "@/components/CanonicalUrl";
 import MonitorAdminGuard from "@/components/MonitorAdminGuard";
 import AdminMemberIdGate from "@/components/admin/AdminMemberIdGate";
 import AdminAcceptPros from "./pages/AdminAcceptPros";
@@ -72,6 +73,7 @@ const App = () => (
             <AuthProvider>
             <AuthHashErrorToast />
             <HashScroll />
+            <CanonicalUrl />
             <NotificationProvider>
             <WhatsNewProvider>
             <Routes>

@@ -30,15 +30,9 @@
       "permanent": true
     },
     {
-      "source": "/:path*",
+      "source": "/:path((?!\\.well-known/).*)",
       "has": [{ "type": "host", "value": "premiereservices.ca" }],
-      "destination": "https://www.altshift.ca/:path*",
-      "permanent": true
-    },
-    {
-      "source": "/:path*",
-      "has": [{ "type": "host", "value": "www.premiereservices.ca" }],
-      "destination": "https://www.altshift.ca/:path*",
+      "destination": "https://www.premiereservices.ca/:path*",
       "permanent": true
     }
   ],

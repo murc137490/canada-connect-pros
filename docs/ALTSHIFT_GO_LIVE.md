@@ -1,147 +1,199 @@
-# AltShift go-live checklist
+# Dual domain setup: AltShift + Première Services
 
-Brand: **AltShift** · Legal entity: **Services AltShift Inc.** · Domain: **altshift.ca**
+**Goal**
 
-This file lists everything outside the React app that must be updated before public launch.
-The website code is already rebranded in-repo.
+- `https://www.altshift.ca` → primary public / search URL  
+- `https://www.premiereservices.ca` → still works (same website)  
+- Google should prefer **AltShift** in search results  
 
-## Before the public flip
+The app already sets a **canonical** tag to `https://www.altshift.ca…` on every page, even if someone opens Première Services. Apex domains redirect to their own `www` versions only (they do **not** force Première → AltShift).
 
-### 1) Domain & hosting (Vercel / Cloudflare DNS)
+Emails / OAuth “home” links should use **AltShift** (`VITE_SITE_URL` / Supabase `SITE_URL`).
 
-1. Point `altshift.ca` and `www.altshift.ca` DNS to Vercel (or your host).
-2. In Vercel → Project → Domains: add `altshift.ca` and `www.altshift.ca`.
-3. Set production env:
-   - `VITE_SITE_URL=https://www.altshift.ca`
-   - `VITE_SUPABASE_URL=…`
-   - `VITE_SUPABASE_ANON_KEY=…`
-   - Square / Maps keys as already used
-4. Keep `premiereservices.ca` DNS temporarily if you still own it; redirects to `www.altshift.ca` are in `vercel.json`.
-5. After SSL is green on `www.altshift.ca`, deploy `main`.
+---
 
-**Cloudflare prompt (if DNS is on Cloudflare):**
-> Add A/CNAME records for altshift.ca and www.altshift.ca to my Vercel project. Proxy can stay DNS-only or proxied; ensure SSL Full (strict). Do not break existing premiereservices.ca until 301 redirects to www.altshift.ca are confirmed.
+## A) Vercel — attach both domains
 
-### 2) Supabase Auth URLs
+1. Open [vercel.com](https://vercel.com) → log in.  
+2. Open your **project** (the one that deploys this repo).  
+3. Top tabs → **Settings**.  
+4. Left sidebar → **Domains**.  
+5. Add these four (if missing), one at a time:
 
-Dashboard → Authentication → URL Configuration:
+   | Domain | What Vercel should do |
+   |--------|------------------------|
+   | `www.altshift.ca` | Production (main) |
+   | `altshift.ca` | Redirect to `www.altshift.ca` |
+   | `www.premiereservices.ca` | Production (same project) |
+   | `premiereservices.ca` | Redirect to `www.premiereservices.ca` |
 
-- Site URL: `https://www.altshift.ca`
-- Redirect URLs include:
-  - `https://www.altshift.ca/**`
-  - `https://www.altshift.ca/auth/callback`
-  - `http://localhost:3000/**` (dev)
-  - keep old premierservices URLs briefly if needed during cutover
+6. For each domain, Vercel shows DNS records. Keep that tab open for section B.
 
-**Supabase prompt:**
-> Update Auth Site URL to https://www.altshift.ca and allow redirects for https://www.altshift.ca/** and https://www.altshift.ca/auth/callback. Keep localhost for development. Brand is now AltShift (Services AltShift Inc.).
+7. Still in **Settings** → left → **Environment Variables** (Production):
 
-### 3) Supabase Edge Function secrets
+   | Name | Value |
+   |------|--------|
+   | `VITE_SITE_URL` | `https://www.altshift.ca` |
+   | `VITE_SUPABASE_URL` | (your existing Supabase URL) |
+   | `VITE_SUPABASE_ANON_KEY` | (your existing anon key) |
 
-Update secrets (Settings → Edge Functions → Secrets), then **redeploy** all email/payment/oauth functions:
+8. **Deployments** → open latest → **⋯** → **Redeploy** (so `VITE_SITE_URL` is baked into the build).
 
-| Secret | Suggested value |
-|--------|-----------------|
-| `SITE_URL` / `PUBLIC_SITE_URL` | `https://www.altshift.ca` |
-| `FROM_EMAIL` | `support@altshift.ca` or `no-reply@altshift.ca` |
-| `FROM_NAME` | `AltShift` |
-| `REPLY_TO_EMAIL` | `support@altshift.ca` |
-| `RESEND_API_KEY` | (new or same provider key) |
-| Square / Twilio / HF keys | unchanged unless rotating |
+---
 
-Redeploy at minimum: `send-app-email`, `account-deletion`, `referral-invite`, `ai-chat-hf`, `geocode`, `square-oauth-callback`, `square-create-payment`, `square-finalize-payment`, `square-register-apple-pay-domain`, `decline-pro`, `admin-remove-pro`, `booking-sms-notify`, claim/declined email functions.
+## B) DNS — where your domains are registered
 
-**Supabase CLI prompt:**
-> Redeploy all Supabase Edge Functions after SITE_URL/FROM_EMAIL/FROM_NAME were changed to AltShift / https://www.altshift.ca / support@altshift.ca.
+Do this in **Cloudflare**, **GoDaddy**, **Namecheap**, or whoever hosts DNS for each domain.
 
-### 4) Resend (email)
+### For `altshift.ca`
 
-1. Add and verify domain **altshift.ca** (SPF, DKIM, DMARC DNS records Resend shows).
-2. Sending domain / from addresses: `support@altshift.ca`, `no-reply@altshift.ca`, `notifications@altshift.ca`.
-3. Update Auth email templates in Supabase (confirm signup, magic link, reset password) using files in `supabase/email-templates/` (already say AltShift).
-4. Remove or leave old premiereservices.ca domain until traffic dies.
+1. Open the DNS zone for `altshift.ca`.  
+2. Add the records Vercel showed (usually):
 
-**Resend prompt:**
-> Verify domain altshift.ca for transactional email. Create SPF/DKIM/DMARC records. Allow sending from support@altshift.ca, no-reply@altshift.ca, and notifications@altshift.ca for AltShift (Services AltShift Inc.).
+   - **A** `@` → `76.76.21.21` (Vercel), **or** the exact A/CNAME Vercel lists  
+   - **CNAME** `www` → `cname.vercel-dns.com.` (or the value Vercel shows)
 
-### 5) Square
+3. If using **Cloudflare**: for those records you can use **DNS only** (grey cloud) first; SSL is easier. Later you can proxy if you want.  
+4. Wait until Vercel Domains shows **Valid** / SSL issued for `www.altshift.ca`.
 
-1. Update business/public name to **AltShift** / **Services AltShift Inc.** where Square shows the statement descriptor (within Square’s character limits).
-2. Square App → Redirect URL for OAuth: `https://<project>.supabase.co/functions/v1/square-oauth-callback` (unchanged) but success return uses `SITE_URL` → must be altshift.ca.
-3. Register Apple Pay domain: `www.altshift.ca` (and apex if needed) via `square-register-apple-pay-domain`.
-4. Upload Apple domain association file under `public/.well-known/` if required for the new domain.
-5. Update customer-facing location / receipt branding if Square Dashboard has a public business name field.
+### For `premiereservices.ca`
 
-**Square prompt:**
-> Our consumer brand is now AltShift (legal: Services AltShift Inc.), live site https://www.altshift.ca. Update statement descriptors, OAuth return site URL, and register Apple Pay for www.altshift.ca.
+1. Open that DNS zone.  
+2. Point `@` and `www` the same way to the **same** Vercel project (same A/CNAME values).  
+3. Wait until Vercel shows both Première domains as valid.
 
-### 6) Google (Maps / OAuth / Gemini if used)
+**Test in the browser**
 
-1. Google Cloud Console → Credentials: add authorized JS origins / redirect URIs for `https://www.altshift.ca` (and remove or keep old domain during transition).
-2. Maps / Places API key HTTP referrer restrictions: add `https://www.altshift.ca/*`.
-3. If Gemini/Google AI is used for any feature: update any project display name; API keys usually don’t need rename.
-4. OAuth consent screen: app name **AltShift**, support email `support@altshift.ca`, authorized domains `altshift.ca`.
+- `https://www.altshift.ca` loads the site  
+- `https://www.premiereservices.ca` loads the **same** site  
+- `https://altshift.ca` jumps to `www.altshift.ca`  
+- `https://premiereservices.ca` jumps to `www.premiereservices.ca`
 
-**Google Cloud prompt:**
-> Rebrand app to AltShift. Add https://www.altshift.ca to OAuth authorized origins/redirects and to Maps API key HTTP referrer allowlist. Support email support@altshift.ca. Legal entity Services AltShift Inc.
+---
 
-### 7) Hugging Face / support AI
+## C) Supabase Auth — both domains must be allowed
 
-No rename required for the model. Redeploy `ai-chat-hf` so prompts/links point at altshift.ca (already in code). Confirm `HF_TOKEN` / model secrets still set.
+1. Open [supabase.com/dashboard](https://supabase.com/dashboard) → your project.  
+2. Left sidebar → **Authentication**.  
+3. Top → **URL Configuration** (sometimes under **Sign In / Providers** → scroll, or **Settings** inside Auth).  
+4. Set:
 
-### 8) Twilio
+   - **Site URL:** `https://www.altshift.ca`  
+     (this is the “preferred” home for auth emails)
 
-1. Update friendly name / messaging brand to AltShift if shown to users.
-2. Verify caller ID / messaging service still works.
-3. Ensure `booking-sms-notify` copy (redeployed) says AltShift.
+5. Under **Redirect URLs**, add **all** of these (Add URL for each):
 
-### 9) Mailboxes
+   - `https://www.altshift.ca/**`  
+   - `https://www.altshift.ca/auth/callback`  
+   - `https://www.premiereservices.ca/**`  
+   - `https://www.premiereservices.ca/auth/callback`  
+   - `http://localhost:3000/**` (local dev)
 
-Create/migrate:
+6. Click **Save**.
 
-- `support@altshift.ca` (public)
-- `no-reply@altshift.ca` (Resend)
-- `notifications@altshift.ca` (optional)
-- Privacy contact mailbox if different
+Without the Première redirect URLs, login on `premiereservices.ca` will break even though the site loads.
 
-Forward old `*@premiereservices.ca` → new addresses for 6–12 months.
+---
 
-### 10) Legal / corporate
+## D) Supabase Edge Function secrets
 
-1. Confirm corporate registration **Services AltShift Inc.** matches `LEGAL_ENTITY_NAME` in code.
-2. Have counsel re-issue Terms / Privacy / Cookies with the new name + domain (drafts still say REVIEW_REQUIRED in places).
-3. Update invoices, contracts, and any PDF letterheads.
-4. Update Québec / Canada tax accounts (GST/QST) display name if required.
+1. Supabase Dashboard → project → left **Edge Functions**.  
+2. Open **Secrets** (or **Project Settings** → **Edge Functions** → Secrets).  
+3. Set / update:
 
-### 11) Analytics / pixels (if any)
+   | Secret | Value |
+   |--------|--------|
+   | `SITE_URL` | `https://www.altshift.ca` |
+   | `PUBLIC_SITE_URL` | `https://www.altshift.ca` |
+   | `FROM_NAME` | `AltShift` |
+   | `FROM_EMAIL` | `support@altshift.ca` or `no-reply@altshift.ca` |
+   | `REPLY_TO_EMAIL` | `support@altshift.ca` |
 
-Update domain filters, property URLs, and cookie policy links to altshift.ca.
+4. Redeploy functions that send email or return to the site (Dashboard → each function → **Deploy**, or CLI `supabase functions deploy`).  
+   Priority: `send-app-email`, `account-deletion`, `referral-invite`, `square-oauth-callback`, `ai-chat-hf`, `square-register-apple-pay-domain`.
 
-### 12) Demo accounts
+---
 
-Code now expects `@altshift.demo` demo emails. If showcase users still use `@premierservices.demo`, either recreate them or keep dual detection (currently detects `@altshift.demo` and demo.* patterns).
+## E) Resend (email domain)
 
-### 13) Staff admin allowlist
+1. Open [resend.com](https://resend.com) → **Domains**.  
+2. **Add Domain** → `altshift.ca`.  
+3. Resend shows DNS records (SPF, DKIM, etc.).  
+4. In your DNS provider for `altshift.ca`, create those records exactly.  
+5. Back in Resend → wait until domain is **Verified**.  
+6. Keep `premiereservices.ca` verified for a while if old mail still sends from it; new mail should use AltShift.
 
-Code allowlist placeholders are `admin1@altshift.ca` … `admin5@altshift.ca`. Ensure real staff emails are set via `profiles.is_platform_admin` / `manage-platform-admins` — don’t rely on unused placeholders.
+7. Supabase → **Authentication** → **Email Templates**: paste the HTML from `supabase/email-templates/` in this repo (already says AltShift), or confirm the “From” address uses the verified AltShift domain.
 
-## Smoke test before announcing
+---
 
-- [ ] https://www.altshift.ca loads, title/favicon say AltShift
-- [ ] Signup confirmation email arrives from altshift.ca domain
-- [ ] Password reset + magic link work
-- [ ] Google OAuth (if enabled) returns to altshift.ca
-- [ ] Pro Square Connect returns to dashboard on altshift.ca
-- [ ] Booking authorize/capture still works
-- [ ] Apple Pay domain association on www.altshift.ca
-- [ ] Support AI links point to altshift.ca
-- [ ] Account deletion email links use altshift.ca
-- [ ] Old premierservices.ca → 301 to altshift.ca
+## F) Google — Maps / OAuth (so both domains don’t get blocked)
 
-## Already done in this repo
+1. Open [Google Cloud Console](https://console.cloud.google.com) → your project.  
+2. **APIs & Services** → **Credentials**.  
+3. Open your **API key** used for Maps:
 
-- UI, meta tags, boot splash, invoices, terms/privacy/cookie brand strings
-- Email shared layout + Auth HTML templates
-- Edge function default SITE_URL / FROM_* / brand copy
-- Vercel apex + legacy domain redirects
-- Demo domain `@altshift.demo`
+   - **Application restrictions** → **HTTP referrers**  
+   - Add:  
+     - `https://www.altshift.ca/*`  
+     - `https://www.premiereservices.ca/*`  
+     - `http://localhost:3000/*`  
+   - Save  
+
+4. If you use **OAuth 2.0 Client ID** (Google login):
+
+   - Open that client  
+   - **Authorized JavaScript origins:** add both `https://www.altshift.ca` and `https://www.premiereservices.ca`  
+   - **Authorized redirect URIs:** include your Supabase callback  
+     `https://<YOUR-PROJECT-REF>.supabase.co/auth/v1/callback`  
+   - Save  
+
+5. **OAuth consent screen** → App name can be **AltShift**; support email `support@altshift.ca`.
+
+---
+
+## G) Square
+
+1. [squareup.com/dashboard](https://squareup.com/dashboard) (or developer portal for the app).  
+2. Update public / statement name toward **AltShift** where the UI allows (length limits apply).  
+3. Developer app → ensure OAuth redirect is still your Supabase function URL.  
+4. Register Apple Pay for **both** storefront hosts if you use Apple Pay on both:
+
+   - `www.altshift.ca`  
+   - `www.premiereservices.ca`  
+
+   (Your edge function `square-register-apple-pay-domain` — call once per domain, or use Square’s domain registration UI.)  
+5. Confirm `public/.well-known/apple-developer-merchantid-domain-association` is deployed on **both** domains (same Vercel project = same file).
+
+---
+
+## H) Make Google prefer AltShift in search
+
+1. Go to [Google Search Console](https://search.google.com/search-console).  
+2. **Add property** → URL prefix → `https://www.altshift.ca` → verify (DNS TXT or HTML tag).  
+3. Optionally also add `https://www.premiereservices.ca` so you can see old traffic.  
+4. On the **AltShift** property:  
+   - **Sitemaps** → submit `https://www.altshift.ca/sitemap.xml`  
+5. On the Première property (if added):  
+   - You can leave it; canonical tags tell Google the AltShift URL is preferred.  
+6. Expect days–weeks for search results to shift; both sites working does **not** mean Google instantly drops Première.
+
+---
+
+## I) Quick checklist before you tell people
+
+- [ ] `www.altshift.ca` loads  
+- [ ] `www.premiereservices.ca` loads (same app, AltShift branding)  
+- [ ] View source / Inspect → `<link rel="canonical" href="https://www.altshift.ca/...">`  
+- [ ] Signup email links open on **altshift.ca**  
+- [ ] Login works on **both** www hosts  
+- [ ] Maps / Google login work on both  
+- [ ] Search Console sitemap submitted for AltShift  
+
+---
+
+## What you do *not* need
+
+- You do **not** need to delete `premiereservices.ca`.  
+- You do **not** need users to type AltShift only — bookmarks to Première still work.  
+- You do **not** need separate Vercel projects; one project, four domains is correct.
