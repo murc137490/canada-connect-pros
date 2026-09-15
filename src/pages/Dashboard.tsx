@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } fro
 import { format } from "date-fns";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
+import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isDemoAccount } from "@/lib/demoAccount";
@@ -382,7 +383,7 @@ async function fetchJobRequestsForClient(userId: string) {
 }
 
 export default function Dashboard() {
-  const { user, session, signOut } = useAuth();
+  const { user, session, signOut, loading: authLoading } = useAuth();
   const { t, locale } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -3628,6 +3629,10 @@ export default function Dashboard() {
   const hasSavedBirthday = Boolean(profile?.birthday);
   const proViewingMyRequests = Boolean(proProfile?.is_verified && searchParams.get("view") === "my-requests");
 
+  if (authLoading) {
+    return <BootLoadingScreen label={t.common?.loading ?? "Loading"} />;
+  }
+
   if (!user) {
     return (
       <Layout>
@@ -4370,20 +4375,17 @@ export default function Dashboard() {
             {dashboardDockReady ? (
               <Dock items={dashboardDockItems} />
             ) : (
-              <div
-                className="flex h-[84px] md:h-[80px] items-center justify-center"
-                aria-busy="true"
-                aria-label={t.common?.loading ?? "Loading"}
-              >
-                <Loader2 className="animate-spin text-muted-foreground" size={24} />
-              </div>
+              <BootLoadingScreen
+                fullScreen={false}
+                label={t.common?.loading ?? "Loading"}
+              />
             )}
           </div>
 
           {!isAdminDashboardShell && proProfile?.is_verified && (
             <TabsContent value="pro" className="space-y-4">
               {proProfileLoading ? (
-                <div className="flex justify-center py-12"><Loader2 className="animate-spin text-muted-foreground" size={32} /></div>
+                <BootLoadingScreen fullScreen={false} label={t.common?.loading ?? "Loading"} />
               ) : (
                 <div className="space-y-6">
                   <div className="rounded-xl border bg-card p-6 md:p-8">

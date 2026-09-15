@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import BootLoadingScreen from "@/components/BootLoadingScreen";
+import { markAltShiftAppReady } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +26,7 @@ export default function AuthCallback() {
       const desc = detail?.trim() || t.auth.toastError;
       toast({ title: t.auth.toastError, description: desc, variant: "destructive" });
       clearOAuthRedirect();
+      markAltShiftAppReady();
       navigate("/auth?mode=login", { replace: true });
     };
 
@@ -90,7 +92,10 @@ export default function AuthCallback() {
         }
       }
       clearOAuthRedirect();
-      if (!cancelled) navigate(next, { replace: true });
+      if (!cancelled) {
+        markAltShiftAppReady();
+        navigate(next, { replace: true });
+      }
     };
 
     void run();
@@ -99,10 +104,5 @@ export default function AuthCallback() {
     };
   }, [navigate, searchParams, t.auth.continueWithGoogle, t.auth.toastError, t.auth.welcomeBack, toast]);
 
-  return (
-    <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 p-8 text-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <p className="text-sm text-muted-foreground">{message}</p>
-    </div>
-  );
+  return <BootLoadingScreen label={message} />;
 }

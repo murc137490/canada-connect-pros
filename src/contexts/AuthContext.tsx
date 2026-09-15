@@ -34,6 +34,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function signalAppReady() {
   try {
+    // Keep the HTML boot splash up through OAuth return — AuthCallback owns dismissal.
+    if (window.location.pathname.startsWith("/auth/callback")) return;
+    window.dispatchEvent(new Event("altshift-app-ready"));
+    (window as Window & { __altshiftMarkAppReady?: () => void }).__altshiftMarkAppReady?.();
+  } catch {
+    // ignore
+  }
+}
+
+/** Call when a route finishes its own boot work (e.g. OAuth callback). */
+export function markAltShiftAppReady() {
+  try {
     window.dispatchEvent(new Event("altshift-app-ready"));
     (window as Window & { __altshiftMarkAppReady?: () => void }).__altshiftMarkAppReady?.();
   } catch {

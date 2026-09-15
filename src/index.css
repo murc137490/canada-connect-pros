@@ -1109,3 +1109,123 @@ apple-pay-button {
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.88);
 }
+
+/* React copy of index.html #altshift-boot — used after HTML splash dismisses */
+.altshift-boot-screen {
+  --boot-bg: #f7f4ef;
+  --boot-fg: #ffffff;
+  --boot-shadow: 100px;
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: 100svh;
+  margin: 0;
+  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0)
+    env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+  background: var(--boot-bg);
+  overflow: hidden;
+}
+
+.altshift-boot-screen[data-boot-theme='dark'] {
+  --boot-bg: #0a0a0a;
+  --boot-fg: #ffffff;
+}
+
+.altshift-boot-screen__main {
+  box-sizing: content-box;
+  width: max-content;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 var(--boot-shadow) var(--boot-shadow);
+  display: block;
+  transform-origin: center center;
+}
+
+.altshift-boot-screen__logo {
+  margin: 0;
+  padding: 0;
+  width: max-content;
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+  text-align: center;
+  font-size: clamp(2.625rem, 8.4vw, 5.5125rem);
+  color: var(--boot-fg);
+  font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  font-kerning: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: text-shadow;
+  animation-duration: 1s;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+  animation-name: animateShadowLight;
+}
+
+.altshift-boot-screen[data-boot-theme='dark'] .altshift-boot-screen__logo {
+  animation-name: animateShadowDark;
+}
+
+.altshift-boot-screen__logo h1 {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .altshift-boot-screen__main {
+    transform: scale(1.09);
+  }
+  .altshift-boot-screen__logo {
+    font-size: clamp(3.444rem, 16.905vw, 5.1345rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .altshift-boot-screen__main {
+    padding: 0;
+    transform: none;
+  }
+  .altshift-boot-screen__logo {
+    animation: none;
+    will-change: auto;
+    color: #15284a;
+    text-shadow: none;
+  }
+  .altshift-boot-screen[data-boot-theme='dark'] .altshift-boot-screen__logo {
+    color: #ffffff;
+  }
+}
+
+.altshift-boot-screen[data-compact='true'] {
+  position: relative;
+  inset: auto;
+  z-index: 1;
+  width: 100%;
+  height: auto;
+  min-height: 5.25rem;
+  border-radius: 1rem;
+  --boot-shadow: 36px;
+}
+
+.altshift-boot-screen[data-compact='true'] .altshift-boot-screen__logo {
+  font-size: clamp(1.35rem, 4vw, 2rem);
+}
+
+.altshift-boot-screen[data-compact='true'] .altshift-boot-screen__main {
+  transform: none;
+}

@@ -53,6 +53,7 @@ import {
   DialogTitle as DayDialogTitle,
 } from "@/components/ui/dialog";
 import AddressInput, { hasGoogleAddressAutocomplete } from "@/components/AddressInput";
+import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { Loader2, Upload, X, Plus } from "lucide-react";
 import { activatePendingGrowthTrial } from "@/lib/trialCheckout";
 import { referralInvite } from "@/lib/referralInvite";
@@ -719,11 +720,11 @@ export function ProProfileEditorDialog({
           </DialogHeader>
 
           {!profileDataLoaded || onboardingMissingForNew ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-16">
-              <Loader2 className="h-10 w-10 animate-spin text-primary opacity-90" aria-hidden />
-              <p className="text-sm text-muted-foreground text-center">
-                {locale === "fr" ? "Chargement…" : "Loading…"}
-              </p>
+            <div className="flex flex-1 flex-col items-center justify-center px-2 py-6">
+              <BootLoadingScreen
+                fullScreen={false}
+                label={locale === "fr" ? "Chargement…" : "Loading…"}
+              />
             </div>
           ) : (
             <>
