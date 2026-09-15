@@ -105,7 +105,8 @@
         line-height: 0.92;
         letter-spacing: -0.02em;
         text-align: center;
-        font-size: clamp(3.5rem, 12vw, 7.5rem);
+        /* Original Première size + 5% */
+        font-size: clamp(2.625rem, 8.4vw, 5.5125rem);
         color: var(--boot-fg);
         font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
         font-kerning: normal;
@@ -131,30 +132,30 @@
         margin: 0;
         padding: 0;
         text-align: center;
-        white-space: normal;
+        white-space: nowrap;
       }
 
       @media (max-width: 640px) {
         #altshift-boot .site__main {
-          transform: scale(1.12);
+          transform: scale(1.09);
         }
         #altshift-boot .boot-logo {
-          font-size: clamp(4.25rem, 22vw, 6.75rem);
+          font-size: clamp(3.444rem, 16.905vw, 5.1345rem);
         }
       }
 
       @media (max-width: 380px) {
         #altshift-boot .site__main {
-          transform: scale(1.06);
+          transform: scale(1.01);
         }
         #altshift-boot .boot-logo {
-          font-size: clamp(3.75rem, 24vw, 5.75rem);
+          font-size: clamp(3.1395rem, 18.1125vw, 4.5255rem);
         }
       }
 
       @media (orientation: portrait) and (min-height: 900px) and (min-width: 641px) {
         #altshift-boot .boot-logo {
-          font-size: clamp(4rem, 10vh, 7.25rem);
+          font-size: clamp(2.8875rem, 7.35vh, 5.25rem);
         }
       }
 
@@ -187,10 +188,7 @@
     <div id="altshift-boot" role="status" aria-label="AltShift">
       <main class="site__main">
         <div class="boot-logo">
-          <h1>
-            Alt<br />
-            Shift
-          </h1>
+          <h1>AltShift</h1>
         </div>
       </main>
     </div>
