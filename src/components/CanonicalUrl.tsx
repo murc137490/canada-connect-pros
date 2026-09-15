@@ -25,9 +25,8 @@ function upsertMetaProperty(property: string, content: string) {
 }
 
 /**
- * Always advertise www.altshift.ca as the canonical URL, even when the visitor
- * is on www.premiereservices.ca — so Google prefers AltShift in search results
- * while both domains keep working.
+ * Always advertise www.altshift.ca as the canonical URL.
+ * Legacy premierservices.ca hosts 301 to AltShift at the edge and via LegacyHostRedirect.
  */
 export default function CanonicalUrl() {
   const { pathname, search } = useLocation();
