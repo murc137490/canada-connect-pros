@@ -136,7 +136,7 @@ export const TERMS_FULL_SECTIONS = [
   },
   {
     title: "1. INTRODUCTION",
-    body: `These Terms of Service (“Terms”) govern the use of the platform operated by ${COMPANY_NAME} (“Platform,” “we,” “us,” or “our”). The Platform connects clients seeking services (“Clients”) with independent professionals (“Service Providers”). By using the Platform, you agree to these Terms.`,
+    body: `These Terms of Service (“Terms”) govern the use of the platform operated by ${LEGAL_COMPANY_NAME}, doing business as ${COMPANY_NAME} (“Platform,” “we,” “us,” or “our”). The Platform connects clients seeking services (“Clients”) with independent professionals (“Service Providers”). By using the Platform, you agree to these Terms.`,
   },
   {
     title: "2. PLATFORM ROLE",
@@ -298,7 +298,7 @@ export const TERMS_FULL_SECTIONS_FR = [
   },
   {
     title: "1. INTRODUCTION",
-    body: `Les présentes Conditions d'utilisation (« Conditions ») régissent l'utilisation de la plateforme exploitée par ${COMPANY_NAME} (« Plateforme », « nous », « notre » ou « nos »). La Plateforme met en relation des clients recherchant des services (« Clients ») avec des professionnels indépendants (« Fournisseurs de services »). En utilisant la Plateforme, vous acceptez les présentes Conditions.`,
+    body: `Les présentes Conditions d'utilisation (« Conditions ») régissent l'utilisation de la plateforme exploitée par ${LEGAL_COMPANY_NAME}, faisant affaire sous le nom ${COMPANY_NAME} (« Plateforme », « nous », « notre » ou « nos »). La Plateforme met en relation des clients recherchant des services (« Clients ») avec des professionnels indépendants (« Fournisseurs de services »). En utilisant la Plateforme, vous acceptez les présentes Conditions.`,
   },
   {
     title: "2. RÔLE DE LA PLATEFORME",
