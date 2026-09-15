@@ -1,3 +1,47 @@
+## Critical: make Gemini / auth use altshift.ca (not premierservices.ca)
+
+The website code can say AltShift while **Vercel** and **Supabase** still have the old URL saved. That is why you still see Premiere links and `https://www.premiereservices.ca/?code=...`.
+
+### 1) Vercel — change the site URL env var
+
+1. Open [vercel.com](https://vercel.com) → your project  
+2. **Settings** → **Environment Variables**  
+3. Find `VITE_SITE_URL`  
+4. Change value to exactly: `https://www.altshift.ca`  
+5. Apply to **Production** (and Preview if listed)  
+6. **Save**  
+7. **Deployments** → latest → **⋯** → **Redeploy** (do a fresh rebuild)
+
+Without this redeploy, the browser build keeps the old URL baked in.
+
+### 2) Supabase — change Auth Site URL
+
+1. Open [supabase.com/dashboard](https://supabase.com/dashboard) → your project  
+2. Left: **Authentication**  
+3. **URL Configuration**  
+4. **Site URL** → set to: `https://www.altshift.ca`  
+5. Under **Redirect URLs**, keep both:
+   - `https://www.altshift.ca/**`
+   - `https://www.premiereservices.ca/**`
+6. **Save**
+
+### 3) Supabase Edge secrets (emails / OAuth return)
+
+1. Project → **Edge Functions** → **Secrets** (or Project Settings → Edge Functions)  
+2. Set:
+   - `SITE_URL` = `https://www.altshift.ca`
+   - `PUBLIC_SITE_URL` = `https://www.altshift.ca`
+   - `FROM_NAME` = `AltShift`
+3. Save  
+
+(AI chat function `ai-chat-hf` was redeployed with AltShift-only links.)
+
+### Why `?code=...` appeared on premierservices.ca
+
+That `code` is a login/OAuth return. Supabase/Google sent you back to whatever **Site URL / redirect origin** was configured (still Première). After steps 1–2 above, new logins should land on `https://www.altshift.ca/...`.
+
+---
+
 # Dual domain setup: AltShift + Première Services
 
 **Goal**
