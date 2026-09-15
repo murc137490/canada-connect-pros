@@ -105,7 +105,7 @@
         line-height: 0.92;
         letter-spacing: -0.02em;
         text-align: center;
-        font-size: clamp(2.5rem, 8vw, 5.25rem);
+        font-size: clamp(3.5rem, 12vw, 7.5rem);
         color: var(--boot-fg);
         font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
         font-kerning: normal;
@@ -131,34 +131,30 @@
         margin: 0;
         padding: 0;
         text-align: center;
-        white-space: nowrap;
+        white-space: normal;
       }
 
       @media (max-width: 640px) {
         #altshift-boot .site__main {
-          /* Keep visual center; ~15% larger than prior phone size */
-          transform: scale(1.09);
+          transform: scale(1.12);
         }
         #altshift-boot .boot-logo {
-          font-size: clamp(3.28rem, 16.1vw, 4.89rem);
-        }
-        #altshift-boot h1 {
-          white-space: normal;
+          font-size: clamp(4.25rem, 22vw, 6.75rem);
         }
       }
 
       @media (max-width: 380px) {
         #altshift-boot .site__main {
-          transform: scale(1.01);
+          transform: scale(1.06);
         }
         #altshift-boot .boot-logo {
-          font-size: clamp(2.99rem, 17.25vw, 4.31rem);
+          font-size: clamp(3.75rem, 24vw, 5.75rem);
         }
       }
 
       @media (orientation: portrait) and (min-height: 900px) and (min-width: 641px) {
         #altshift-boot .boot-logo {
-          font-size: clamp(2.75rem, 7vh, 5rem);
+          font-size: clamp(4rem, 10vh, 7.25rem);
         }
       }
 
