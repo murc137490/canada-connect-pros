@@ -7,9 +7,9 @@ export type WhatsNewItem = {
   createdAt: string;
 };
 
-export const WHATS_NEW_CHANGED_EVENT = "premiere-whats-new-changed";
+export const WHATS_NEW_CHANGED_EVENT = "altshift-whats-new-changed";
 
-const READ_KEY = "premiere-whats-new-read-v1";
+const READ_KEY = "altshift-whats-new-read-v1";
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function loadWhatsNewReadIds(): Set<string> {

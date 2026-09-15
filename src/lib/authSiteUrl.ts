@@ -1,7 +1,7 @@
 /**
  * Canonical site URL for Supabase email actions (confirm signup, password reset).
  *
- * In production, set `VITE_SITE_URL=https://www.premiereservices.ca` so confirmation
+ * In production, set `VITE_SITE_URL=https://www.altshift.ca` so confirmation
  * links never use localhost. If unset, falls back to the current browser origin (dev).
  */
 export function getPublicSiteOrigin(): string {

@@ -245,7 +245,7 @@ async function geocodeGeocoderCa(address: string): Promise<GeoOut | null> {
     for (const url of urls) {
       try {
         const res = await fetch(url, {
-          headers: { "User-Agent": "PremiereServices/1.0 (geocode)", Accept: "application/json" },
+          headers: { "User-Agent": "AltShift/1.0 (geocode)", Accept: "application/json" },
         });
         const data = (await res.json().catch(() => null)) as {
           latt?: string | number;
@@ -311,7 +311,7 @@ async function geocodePhotonExact(address: string): Promise<GeoOut | null> {
   for (const url of urls) {
     try {
       const res = await fetch(url, {
-        headers: { Accept: "application/json", "User-Agent": "PremiereServices/1.0 (geocode)" },
+        headers: { Accept: "application/json", "User-Agent": "AltShift/1.0 (geocode)" },
       });
       if (!res.ok) continue;
       const data = (await res.json()) as {
@@ -452,7 +452,7 @@ async function reverseGeocoderCa(lat: number, lng: number): Promise<GeoOut | nul
   try {
     const url = `https://geocoder.ca/?reverse=1&latt=${encodeURIComponent(String(lat))}&longt=${encodeURIComponent(String(lng))}&json=1`;
     const res = await fetch(url, {
-      headers: { "User-Agent": "PremiereServices/1.0 (reverse-geocode)", Accept: "application/json" },
+      headers: { "User-Agent": "AltShift/1.0 (reverse-geocode)", Accept: "application/json" },
     });
     if (!res.ok) return null;
     const data = (await res.json()) as {
@@ -490,7 +490,7 @@ async function reverseNominatim(lat: number, lng: number): Promise<GeoOut | null
     const res = await fetch(url, {
       headers: {
         Accept: "application/json",
-        "User-Agent": "PremiereServices/1.0 (https://www.premiereservices.ca; reverse-geocode)",
+        "User-Agent": "AltShift/1.0 (https://www.altshift.ca; reverse-geocode)",
       },
     });
     if (!res.ok) return null;

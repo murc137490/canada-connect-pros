@@ -4,11 +4,11 @@ export const SUPER_ADMIN_EMAIL = "murc137490@gmail.com";
 
 const PLATFORM_ADMIN_ALLOWLIST = [
   SUPER_ADMIN_EMAIL,
-  "admin1@premiereservices.ca",
-  "admin2@premiereservices.ca",
-  "admin3@premiereservices.ca",
-  "admin4@premiereservices.ca",
-  "admin5@premiereservices.ca",
+  "admin1@altshift.ca",
+  "admin2@altshift.ca",
+  "admin3@altshift.ca",
+  "admin4@altshift.ca",
+  "admin5@altshift.ca",
 ] as const;
 
 export function normalizeEmail(email: string | null | undefined): string {

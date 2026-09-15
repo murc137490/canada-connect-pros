@@ -17,9 +17,9 @@ const corsHeaders = {
 };
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "support@premiereservices.ca";
-const FROM_NAME = Deno.env.get("FROM_NAME") ?? "Première Services";
-const SITE_URL = (Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.premiereservices.ca").replace(/\/+$/, "");
+const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "support@altshift.ca";
+const FROM_NAME = Deno.env.get("FROM_NAME") ?? "AltShift";
+const SITE_URL = (Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.altshift.ca").replace(/\/+$/, "");
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -98,7 +98,7 @@ function renderEmailTemplate({
 <body>
   <div class="card">
     <div class="header">
-      <div class="brand">Première Services</div>
+      <div class="brand">AltShift</div>
       <div class="title">${titleFr} / ${titleEn}</div>
     </div>
     
@@ -123,7 +123,7 @@ function renderEmailTemplate({
     </div>
 
     <div class="footer">
-      Première Services · Québec, Canada<br>
+      AltShift · Québec, Canada<br>
       Pour toute question : <a href="mailto:${FROM_EMAIL}" style="color: #38bdf8;">${FROM_EMAIL}</a>
     </div>
   </div>
@@ -298,10 +298,10 @@ Deno.serve(async (req) => {
     const emailHtml = renderEmailTemplate({
       titleFr: "Confirmation requise : suppression de votre compte",
       titleEn: "Confirmation required: delete your account",
-      contentFr: `<p>Vous avez demandé la suppression définitive de votre compte Première Services et de vos données personnelles.</p>
+      contentFr: `<p>Vous avez demandé la suppression définitive de votre compte AltShift et de vos données personnelles.</p>
         <p>Pour confirmer cette action, veuillez cliquer sur le bouton ci-dessous. Une fois confirmée, votre compte entrera dans une période de <strong>24 heures</strong>, après laquelle toutes vos données seront définitivement purgées.</p>
         <p>Si vous n'êtes pas à l'origine de cette demande, veuillez ignorer ce courriel et changer votre mot de passe sans délai.</p>`,
-      contentEn: `<p>You have requested to permanently delete your Première Services account and personal data.</p>
+      contentEn: `<p>You have requested to permanently delete your AltShift account and personal data.</p>
         <p>To confirm this request, please click the button below. Once confirmed, your account will enter a <strong>24-hour grace period</strong>, after which all personal records and files will be permanently purged.</p>
         <p>If you did not request this, you can safely ignore this email and change your password immediately.</p>`,
       actionUrl: confirmUrl,

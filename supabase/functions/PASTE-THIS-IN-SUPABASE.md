@@ -88,8 +88,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const systemContent = context
-      ? `You are the Premiere Services AI support assistant for a Canadian home services marketplace. Use the following database results when relevant to answer the user.\n\nDatabase results:\n${context}\n\nBe friendly, helpful, and concise. Phone: 1-800-PREMIERE. Email: support@premiereservices.ca. If you don't know something, direct users to contact support.`
-      : `You are the Premiere Services AI support assistant for a Canadian home services marketplace. Help customers find and hire verified pros. Be friendly and concise. Phone: 1-800-PREMIERE. Email: support@premiereservices.ca.`;
+      ? `You are the AltShift AI support assistant for a Canadian home services marketplace. Use the following database results when relevant to answer the user.\n\nDatabase results:\n${context}\n\nBe friendly, helpful, and concise. Phone: +1 450 910 1400. Email: support@altshift.ca. If you don't know something, direct users to contact support.`
+      : `You are the AltShift AI support assistant for a Canadian home services marketplace. Help customers find and hire verified pros. Be friendly and concise. Phone: +1 450 910 1400. Email: support@altshift.ca.`;
 
     const hfResp = await fetch(HF_CHAT_URL, {
       method: "POST",
@@ -187,7 +187,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const systemContent = `You are a Canadian home services assistant for Premiere Services. The user describes a project or need in their own words. Your job is to:
+    const systemContent = `You are a Canadian home services assistant for AltShift. The user describes a project or need in their own words. Your job is to:
 1. Summarize their request in one short, clear sentence (simplified request) that captures what they need.
 2. Suggest 4–6 specific services that match their need. Use exact service names we offer, e.g. "Plumber", "Snow Removal", "House Cleaning", "Landscaping", "HVAC System", "Moving", "Electrician", "Roof Repair", "Window Replacement", "Painting", "Fence Installation", "Pool Cleaning", "Pest Control", "Home Inspection", "Accountant", "Photography", "Catering", "Tutoring", "Dog Walking", "Massage Therapy", etc.
 

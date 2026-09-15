@@ -34,8 +34,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function signalAppReady() {
   try {
-    window.dispatchEvent(new Event("premiere-app-ready"));
-    (window as Window & { __premiereMarkAppReady?: () => void }).__premiereMarkAppReady?.();
+    window.dispatchEvent(new Event("altshift-app-ready"));
+    (window as Window & { __altshiftMarkAppReady?: () => void }).__altshiftMarkAppReady?.();
   } catch {
     // ignore
   }
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider: "google",
       options: {
         // Dedicated callback route exchanges PKCE code; keep allow-list:
-        // https://www.premiereservices.ca/auth/callback** and http://localhost:*/auth/callback**
+        // https://www.altshift.ca/auth/callback** and http://localhost:*/auth/callback**
         redirectTo: `${origin}/auth/callback`,
         queryParams: {
           prompt: "select_account",

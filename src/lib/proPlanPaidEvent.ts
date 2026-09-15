@@ -1,5 +1,5 @@
 /** Fired after a successful paid plan checkout so shell UI (e.g. nav) can update without a full reload. */
-export const PRO_PLAN_PAID_EVENT = "premiere-pro-plan-paid";
+export const PRO_PLAN_PAID_EVENT = "altshift-pro-plan-paid";
 
 export function dispatchProPlanPaidEvent() {
   if (typeof window === "undefined") return;

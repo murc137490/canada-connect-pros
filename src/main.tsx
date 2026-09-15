@@ -3,6 +3,24 @@ import { SAFE_USER_ERROR, readUiLocale } from "./lib/userFacingError";
 
 silenceClientDiagnostics();
 
+/** One-time migrate Première localStorage keys → AltShift. */
+try {
+  const migrations: Array<[string, string]> = [
+    ["premiere-theme", "altshift-theme"],
+    ["premiere-locale", "altshift-locale"],
+    ["premiere-cookie-consent-v2", "altshift-cookie-consent-v2"],
+    ["premiere-whats-new-read-v1", "altshift-whats-new-read-v1"],
+  ];
+  for (const [from, to] of migrations) {
+    if (!localStorage.getItem(to)) {
+      const v = localStorage.getItem(from);
+      if (v != null) localStorage.setItem(to, v);
+    }
+  }
+} catch {
+  /* ignore */
+}
+
 const rootEl = document.getElementById("root");
 const showError = (html: string) => {
   if (rootEl) rootEl.innerHTML = html;
@@ -11,7 +29,7 @@ const showError = (html: string) => {
 async function bootstrap() {
   if (!rootEl) {
     document.body.innerHTML =
-      '<div style="padding:24px;font-family:sans-serif;text-align:center;">Please refresh. If this continues, contact support@premiereservices.ca.</div>';
+      '<div style="padding:24px;font-family:sans-serif;text-align:center;">Please refresh. If this continues, contact support@altshift.ca.</div>';
     return;
   }
   try {
@@ -33,7 +51,7 @@ async function bootstrap() {
         `</div>`,
     );
     try {
-      window.dispatchEvent(new Event("premiere-app-ready"));
+      window.dispatchEvent(new Event("altshift-app-ready"));
     } catch {
       /* ignore */
     }

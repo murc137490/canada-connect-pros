@@ -47,10 +47,10 @@ const corsHeaders = {
 };
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "support@premiereservices.ca";
-const FROM_NAME = Deno.env.get("FROM_NAME") ?? "Premiere Services";
-const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "support@premiereservices.ca";
-const SITE_URL = trimTrailingSlash(Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://premiereservices.ca");
+const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "support@altshift.ca";
+const FROM_NAME = Deno.env.get("FROM_NAME") ?? "AltShift";
+const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "support@altshift.ca";
+const SITE_URL = trimTrailingSlash(Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://altshift.ca");
 const ADMIN_EMAIL =
   Deno.env.get("ADMIN_NOTIFICATION_EMAIL") ??
   Deno.env.get("ADMIN_EMAIL") ??
@@ -182,7 +182,7 @@ async function loadBookingContext(adminClient: ReturnType<typeof createClient>, 
       client_name: clientProfile?.full_name ?? clientEmail,
       client_email: clientEmail,
       client_phone: clientProfile?.phone ?? "",
-      pro_name: pro?.business_name ?? "Premiere Services Pro",
+      pro_name: pro?.business_name ?? "AltShift Pro",
       booking_id: booking.id,
       booking_date: bookingDate,
       booking_time: bookingTime,
@@ -290,7 +290,7 @@ function renderTemplate(type: EmailType, language: Language, vars: TemplateVars)
 const copy: Record<EmailType, Record<Language, { subject: string; preheader: string; heading: string; body: string }>> = {
   booking_created: {
     en: {
-      subject: "Premiere Services - Booking request received",
+      subject: "AltShift - Booking request received",
       preheader: "Booking request received",
       heading: "Thank you for booking, {{name}}.",
       body: detailsBlock([
@@ -303,7 +303,7 @@ const copy: Record<EmailType, Record<Language, { subject: string; preheader: str
       ]) + cta("Manage booking", "{{manage_booking_url}}") + paragraph("We received your booking request and will send another email once it is confirmed."),
     },
     fr: {
-      subject: "Premiere Services - Demande de réservation reçue",
+      subject: "AltShift - Demande de réservation reçue",
       preheader: "Demande de réservation reçue",
       heading: "Merci pour votre réservation, {{name}}.",
       body: detailsBlock([
@@ -318,7 +318,7 @@ const copy: Record<EmailType, Record<Language, { subject: string; preheader: str
   },
   booking_confirmed: {
     en: {
-      subject: "Premiere Services - Your booking is confirmed",
+      subject: "AltShift - Your booking is confirmed",
       preheader: "Your booking is confirmed",
       heading: "Hi {{name}}, your booking is confirmed.",
       body: detailsBlock([
@@ -332,7 +332,7 @@ const copy: Record<EmailType, Record<Language, { subject: string; preheader: str
       ]) + cta("View booking details", "{{manage_booking_url}}") + paragraph("Your payment is complete or your booking has been confirmed by our team."),
     },
     fr: {
-      subject: "Premiere Services - Votre réservation est confirmée",
+      subject: "AltShift - Votre réservation est confirmée",
       preheader: "Votre réservation est confirmée",
       heading: "Bonjour {{name}}, votre réservation est confirmée.",
       body: detailsBlock([
@@ -348,7 +348,7 @@ const copy: Record<EmailType, Record<Language, { subject: string; preheader: str
   },
   booking_cancelled: {
     en: {
-      subject: "Premiere Services - Booking cancelled",
+      subject: "AltShift - Booking cancelled",
       preheader: "Booking cancelled",
       heading: "Hi {{name}}, your booking has been cancelled.",
       body: detailsBlock([
@@ -361,7 +361,7 @@ const copy: Record<EmailType, Record<Language, { subject: string; preheader: str
       ]) + cta("Manage booking", "{{manage_booking_url}}") + paragraph("Refunds or rebooking options, if applicable, follow the cancellation policy."),
     },
     fr: {
-      subject: "Premiere Services - Réservation annulée",
+      subject: "AltShift - Réservation annulée",
       preheader: "Réservation annulée",
       heading: "Bonjour {{name}}, votre réservation a été annulée.",
       body: detailsBlock([
@@ -376,7 +376,7 @@ const copy: Record<EmailType, Record<Language, { subject: string; preheader: str
   },
   booking_reminder: {
     en: {
-      subject: "Premiere Services - Booking reminder",
+      subject: "AltShift - Booking reminder",
       preheader: "Booking reminder",
       heading: "Hi {{name}}, your booking is coming up {{reminder_window}}.",
       body: detailsBlock([
@@ -388,7 +388,7 @@ const copy: Record<EmailType, Record<Language, { subject: string; preheader: str
       ]) + cta("Manage booking", "{{manage_booking_url}}") + paragraph("If you need to cancel or reschedule, please do so as early as possible."),
     },
     fr: {
-      subject: "Premiere Services - Rappel de réservation",
+      subject: "AltShift - Rappel de réservation",
       preheader: "Rappel de réservation",
       heading: "Bonjour {{name}}, votre réservation approche {{reminder_window}}.",
       body: detailsBlock([
@@ -402,13 +402,13 @@ const copy: Record<EmailType, Record<Language, { subject: string; preheader: str
   },
   support_receipt: {
     en: {
-      subject: "Premiere Services - We received your message",
+      subject: "AltShift - We received your message",
       preheader: "We received your message",
       heading: "Hi {{name}}, thanks for contacting us.",
       body: paragraph("Our support team received your message and will get back to you as soon as possible.") + detailsBlock([["Ticket ID", "{{ticket_id}}"], ["Subject", "{{subject}}"], ["Submitted", "{{submitted_date}}"], ["Message", "{{message}}"]]),
     },
     fr: {
-      subject: "Premiere Services - Nous avons reçu votre message",
+      subject: "AltShift - Nous avons reçu votre message",
       preheader: "Nous avons reçu votre message",
       heading: "Bonjour {{name}}, merci de nous avoir contactés.",
       body: paragraph("Notre équipe de support a bien reçu votre message et vous répondra dès que possible.") + detailsBlock([["ID du billet", "{{ticket_id}}"], ["Sujet", "{{subject}}"], ["Date d’envoi", "{{submitted_date}}"], ["Message", "{{message}}"]]),
@@ -416,13 +416,13 @@ const copy: Record<EmailType, Record<Language, { subject: string; preheader: str
   },
   admin_new_booking: {
     en: {
-      subject: "Premiere Services - New booking received",
+      subject: "AltShift - New booking received",
       preheader: "Internal booking notification",
       heading: "New booking received",
       body: detailsBlock([["Booking ID", "{{booking_id}}"], ["Client", "{{client_name}}"], ["Client email", "{{client_email}}"], ["Client phone", "{{client_phone}}"], ["Professional", "{{pro_name}}"], ["Service", "{{service_type}}"], ["Date", "{{booking_date}}"], ["Time", "{{booking_time}} {{timezone}}"], ["Location", "{{booking_location}}"], ["Status", "{{booking_status}}"], ["Payment status", "{{payment_status}}"]]) + cta("Open admin booking", "{{admin_booking_url}}"),
     },
     fr: {
-      subject: "Premiere Services - Nouvelle réservation reçue",
+      subject: "AltShift - Nouvelle réservation reçue",
       preheader: "Notification interne",
       heading: "Nouvelle réservation reçue",
       body: detailsBlock([["ID de réservation", "{{booking_id}}"], ["Client", "{{client_name}}"], ["Courriel client", "{{client_email}}"], ["Téléphone client", "{{client_phone}}"], ["Professionnel", "{{pro_name}}"], ["Service", "{{service_type}}"], ["Date", "{{booking_date}}"], ["Heure", "{{booking_time}} {{timezone}}"], ["Lieu", "{{booking_location}}"], ["Statut", "{{booking_status}}"], ["Statut du paiement", "{{payment_status}}"]]) + cta("Ouvrir dans l’admin", "{{admin_booking_url}}"),
@@ -436,16 +436,16 @@ const copy: Record<EmailType, Record<Language, { subject: string; preheader: str
 function authCopy(enHeading: string, frHeading: string, enButton: string, frButton: string, url: string) {
   return {
     en: {
-      subject: `Premiere Services - ${enHeading}`,
+      subject: `AltShift - ${enHeading}`,
       preheader: enHeading,
       heading: `Hi {{name}}, ${enHeading.toLowerCase()}.`,
-      body: paragraph("Use the secure link below for your Premiere Services account.") + cta(enButton, url) + paragraph("If you did not request this email, you can ignore it."),
+      body: paragraph("Use the secure link below for your AltShift account.") + cta(enButton, url) + paragraph("If you did not request this email, you can ignore it."),
     },
     fr: {
-      subject: `Premiere Services - ${frHeading}`,
+      subject: `AltShift - ${frHeading}`,
       preheader: frHeading,
       heading: `Bonjour {{name}}, ${frHeading.toLowerCase()}.`,
-      body: paragraph("Utilisez le lien sécurisé ci-dessous pour votre compte Premiere Services.") + cta(frButton, url) + paragraph("Si vous n’avez pas demandé ce courriel, vous pouvez l’ignorer."),
+      body: paragraph("Utilisez le lien sécurisé ci-dessous pour votre compte AltShift.") + cta(frButton, url) + paragraph("Si vous n’avez pas demandé ce courriel, vous pouvez l’ignorer."),
     },
   };
 }
@@ -458,14 +458,14 @@ function layout(heading: string, preheader: string, body: string, language: Lang
   <div style="display:none;max-height:0;overflow:hidden;">${escapeHtml(preheader)}</div>
   <div style="max-width:640px;margin:0 auto;padding:28px;">
     <div style="background:#ffffff;border-radius:16px;padding:28px;border:1px solid #e5e7eb;">
-      <h1 style="margin:0 0 8px;font-size:24px;">Premiere Services</h1>
+      <h1 style="margin:0 0 8px;font-size:24px;">AltShift</h1>
       <p style="margin:0 0 24px;color:#6b7280;">${escapeHtml(preheader)}</p>
       <h2 style="font-size:20px;margin:0 0 12px;">${escapeHtml(heading)}</h2>
       ${body}
       <p style="margin-top:24px;font-size:14px;color:#6b7280;">${support}: <a href="mailto:${escapeHtml(REPLY_TO_EMAIL)}">${escapeHtml(REPLY_TO_EMAIL)}</a> · ${escapeHtml(str(vars.support_hours))}</p>
       <p style="font-size:14px;color:#6b7280;">${language === "fr" ? "Annulation / replanification" : "Cancellation / reschedule"}: <a href="${escapeAttr(str(vars.cancellation_policy_url ?? `${SITE_URL}/terms`))}">${terms}</a></p>
       <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-      <p style="font-size:12px;color:#9ca3af;">Premiere Services · <a href="${escapeAttr(str(vars.terms_url ?? `${SITE_URL}/terms`))}">${terms}</a> · <a href="${escapeAttr(str(vars.privacy_url ?? `${SITE_URL}/privacy`))}">${privacy}</a></p>
+      <p style="font-size:12px;color:#9ca3af;">AltShift · <a href="${escapeAttr(str(vars.terms_url ?? `${SITE_URL}/terms`))}">${terms}</a> · <a href="${escapeAttr(str(vars.privacy_url ?? `${SITE_URL}/privacy`))}">${privacy}</a></p>
     </div>
   </div>
 </body></html>`;

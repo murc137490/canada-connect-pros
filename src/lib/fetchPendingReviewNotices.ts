@@ -8,7 +8,7 @@ export type PendingReviewNotice = {
   label: string;
 };
 
-export const REVIEWS_CHANGED_EVENT = "premiere-reviews-changed";
+export const REVIEWS_CHANGED_EVENT = "altshift-reviews-changed";
 
 export function notifyReviewsChanged(): void {
   window.dispatchEvent(new CustomEvent(REVIEWS_CHANGED_EVENT));

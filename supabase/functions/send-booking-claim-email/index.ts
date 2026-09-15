@@ -16,7 +16,7 @@ const SMTP_PASS = Deno.env.get("SMTP_PASS");
 const FROM_EMAIL = Deno.env.get("CLAIM_FROM_EMAIL") ?? Deno.env.get("FROM_EMAIL") ?? "noreply@example.com";
 const FROM_NAME = Deno.env.get("FROM_NAME") ?? "";
 
-const SUPPORT_EMAIL = "support@premiereservices.ca";
+const SUPPORT_EMAIL = "support@altshift.ca";
 
 const MAX_ATTACHMENTS = 10;
 
@@ -235,8 +235,8 @@ Deno.serve(async (req) => {
 
     const supportSubject =
       claimType === "issue" || claimType === "payment_problem" || claimType === "service_problem" || claimType === "cancellation"
-        ? `Premiere Services – Issue #${issueLabel} (booking #${bookingId})`
-        : `Premiere Services – Claim (${claimType}) #${bookingId}`;
+        ? `AltShift – Issue #${issueLabel} (booking #${bookingId})`
+        : `AltShift – Claim (${claimType}) #${bookingId}`;
 
     const supportHtml = `
       <h2 style="margin:0 0 12px 0;">${escapeHtml(typeLabel)}</h2>
@@ -251,7 +251,7 @@ Deno.serve(async (req) => {
       <p><strong>Details:</strong></p>
       <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
       ${attachmentsHtml}
-      <p style="color:#666; font-size:12px;">Submitted from Premiere Services.</p>
+      <p style="color:#666; font-size:12px;">Submitted from AltShift.</p>
     `;
 
     let supportSent = false;
@@ -270,7 +270,7 @@ Deno.serve(async (req) => {
     if (clientEmail) {
       const clientSubject = `We received your report — Issue #${issueLabel}`;
       const clientHtml = `
-        <h2 style="margin:0 0 12px 0;">Thank you for contacting Premiere Services</h2>
+        <h2 style="margin:0 0 12px 0;">Thank you for contacting AltShift</h2>
         <p>Your report was received and logged.</p>
         <p><strong>Your issue number:</strong> ${escapeHtml(issueLabel)}</p>
         <p>Please keep this number for your records. Our team will review your case and follow up as needed.</p>

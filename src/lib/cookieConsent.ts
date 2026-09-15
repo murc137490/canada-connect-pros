@@ -1,7 +1,7 @@
 import type { CookieCategory } from "@/config/legalConfig";
 
-const STORAGE_KEY = "premiere-cookie-consent-v2";
-const LEGACY_KEY = "premiere-cookie-consent";
+const STORAGE_KEY = "altshift-cookie-consent-v2";
+const LEGACY_KEY = "altshift-cookie-consent";
 
 export type CookieConsentState = Record<CookieCategory, boolean> & {
   updatedAt: string;
@@ -56,7 +56,7 @@ export function setCookieConsent(
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   localStorage.setItem(LEGACY_KEY, next.analytics || next.marketing ? "accepted" : "declined");
-  window.dispatchEvent(new CustomEvent("premiere-cookie-consent", { detail: next }));
+  window.dispatchEvent(new CustomEvent("altshift-cookie-consent", { detail: next }));
   return next;
 }
 

@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
   const bodyText =
     event === "reminder"
       ? `Reminder: appointment with ${biz}${datePart ? ` on ${datePart}` : ""}${timePart ? ` at ${timePart}` : ""}. Reply STOP to opt out.`
-      : `Booking confirmed with ${biz}${datePart ? ` on ${datePart}` : ""}${timePart ? ` at ${timePart}` : ""}. Premiere Services.`;
+      : `Booking confirmed with ${biz}${datePart ? ` on ${datePart}` : ""}${timePart ? ` at ${timePart}` : ""}. AltShift.`;
 
   const auth = basicAuth(accountSid, authToken);
   const form = new URLSearchParams();

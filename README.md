@@ -1,6 +1,6 @@
-## Canada Connect Pros
+## AltShift (Services AltShift Inc.)
 
-React + Vite + TypeScript front-end for a Canadian home services marketplace, using Supabase for authentication/database and Supabase Edge Functions for AI-powered features.
+React + Vite + TypeScript front-end for a Canadian / Québec local services marketplace (**altshift.ca**), using Supabase for authentication/database and Supabase Edge Functions for payments, email, and AI support.
 
 ### Tech stack
 

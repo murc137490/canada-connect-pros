@@ -1,4 +1,4 @@
-{
+﻿{
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
@@ -25,8 +25,20 @@
   "redirects": [
     {
       "source": "/:path((?!\\.well-known/).*)",
+      "has": [{ "type": "host", "value": "altshift.ca" }],
+      "destination": "https://www.altshift.ca/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "premiereservices.ca" }],
-      "destination": "https://www.premiereservices.ca/:path*",
+      "destination": "https://www.altshift.ca/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.premiereservices.ca" }],
+      "destination": "https://www.altshift.ca/:path*",
       "permanent": true
     }
   ],

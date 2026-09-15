@@ -17,7 +17,7 @@ export default function CategoryPage() {
   const category = serviceCategories.find((c) => c.slug === slug);
   const visual = getCategoryVisual(slug ?? "");
 
-  useScrollRestore(slug ? `premiere:scroll:/services/${slug}` : "premiere:scroll:/services/category");
+  useScrollRestore(slug ? `altshift:scroll:/services/${slug}` : "altshift:scroll:/services/category");
 
   if (!category) {
     return (

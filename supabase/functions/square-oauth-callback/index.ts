@@ -27,7 +27,7 @@ function siteOrigin(): string {
       /* fall through */
     }
   }
-  return "https://www.premiereservices.ca";
+  return "https://www.altshift.ca";
 }
 
 function bytesToBase64Url(bytes: Uint8Array): string {

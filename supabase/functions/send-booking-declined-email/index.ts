@@ -13,7 +13,7 @@ const SMTP_HOST = Deno.env.get("SMTP_HOST");
 const SMTP_PORT = Deno.env.get("SMTP_PORT");
 const SMTP_USER = Deno.env.get("SMTP_USER");
 const SMTP_PASS = Deno.env.get("SMTP_PASS");
-const FROM_EMAIL = Deno.env.get("BOOKING_DECLINED_FROM_EMAIL") ?? Deno.env.get("FROM_EMAIL") ?? "notifications@premiereservices.ca";
+const FROM_EMAIL = Deno.env.get("BOOKING_DECLINED_FROM_EMAIL") ?? Deno.env.get("FROM_EMAIL") ?? "notifications@altshift.ca";
 const FROM_NAME = Deno.env.get("FROM_NAME") ?? "";
 
 Deno.serve(async (req) => {
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
     const businessName = pro?.business_name ?? "The professional";
     const reason = booking.decline_reason ? `\n\nReason: ${escapeHtml(booking.decline_reason)}` : "";
     const dateStr = booking.created_at ? new Date(booking.created_at).toLocaleDateString(undefined, { dateStyle: "long" }) : "";
-    const subject = "Premiere Services – Your booking request was declined";
+    const subject = "AltShift – Your booking request was declined";
     const html = `<p>Your booking request with <strong>${escapeHtml(businessName)}</strong> (request date: ${escapeHtml(dateStr)}) was declined.</p>${reason}<p>You can book another pro or contact us if you have questions.</p>`;
     let emailSent = false;
     if (SMTP_HOST && SMTP_USER && SMTP_PASS) {

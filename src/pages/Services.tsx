@@ -55,7 +55,7 @@ export default function Services() {
   const locationDetectOnceRef = useRef(false);
   const [locating, setLocating] = useState(false);
 
-  useScrollRestore("premiere:scroll:/services");
+  useScrollRestore("altshift:scroll:/services");
 
   const normalizedPostal = useMemo(
     () => postalCode.trim().toUpperCase().replace(/\s+/g, " "),

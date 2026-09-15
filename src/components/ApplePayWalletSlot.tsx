@@ -21,7 +21,7 @@ export function isAppleSafariBrowser(): boolean {
 type ApplePayWalletSlotProps = {
   children: ReactNode;
   unavailableLabel: string;
-  /** Opens Première QR handoff only when Square Apple Pay cannot mount. */
+  /** Opens AltShift QR handoff only when Square Apple Pay cannot mount. */
   onRequestIphoneHandoff?: () => void;
   handoffButtonLabel?: string;
   className?: string;
@@ -34,7 +34,7 @@ const btnBase =
  * Prefer Square `<ApplePay>` whenever Apple Pay JS reports capability
  * (Safari sheet, or Apple’s native Windows/Chrome QR).
  * Branded overlay outside Safari (Square’s CSS button is otherwise blank).
- * Première QR handoff only if Square never mounts.
+ * AltShift QR handoff only if Square never mounts.
  */
 export function ApplePayWalletSlot({
   children,

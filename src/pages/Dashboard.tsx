@@ -1219,7 +1219,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!proProfile?.is_verified) return;
     if (typeof window === "undefined") return;
-    const key = "premiere-pro-onboarding-v1";
+    const key = "altshift-pro-onboarding-v1";
     if (localStorage.getItem(key) === "done") return;
     setShowOnboarding(true);
     setOnboardingStep(0);
@@ -1227,7 +1227,7 @@ export default function Dashboard() {
 
   const completeOnboarding = () => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("premiere-pro-onboarding-v1", "done");
+      localStorage.setItem("altshift-pro-onboarding-v1", "done");
     }
     setShowOnboarding(false);
   };
@@ -3457,7 +3457,7 @@ export default function Dashboard() {
         const savedName = accountForm.full_name.trim();
         await supabase.auth.updateUser({ data: { full_name: savedName || null } }).catch(() => {});
         try {
-          window.dispatchEvent(new CustomEvent("premiere:profile-updated", { detail: { full_name: savedName } }));
+          window.dispatchEvent(new CustomEvent("altshift:profile-updated", { detail: { full_name: savedName } }));
         } catch {
           /* ignore */
         }
@@ -3518,7 +3518,7 @@ export default function Dashboard() {
       if (metaErr) console.warn(metaErr);
       try {
         window.dispatchEvent(
-          new CustomEvent("premiere:profile-updated", { detail: { full_name: savedName } })
+          new CustomEvent("altshift:profile-updated", { detail: { full_name: savedName } })
         );
       } catch {
         /* ignore */
@@ -6533,7 +6533,7 @@ export default function Dashboard() {
                       <p className="mb-2 font-medium text-foreground">{t.dashboard.emptyInvoices}</p>
                       <p className="mb-4 text-sm leading-relaxed max-w-md mx-auto">
                         {t.dashboard.invoicesEmptyExplain ??
-                          "When you pay for a booking on Première, a receipt will show up here with the date, amount, payment method, platform fee, and taxes. Open “View receipt details” for the full breakdown."}
+                          "When you pay for a booking on AltShift, a receipt will show up here with the date, amount, payment method, platform fee, and taxes. Open “View receipt details” for the full breakdown."}
                       </p>
                       <Button asChild variant="outline">
                         <Link to="/services">{t.dashboard.browseServices}</Link>

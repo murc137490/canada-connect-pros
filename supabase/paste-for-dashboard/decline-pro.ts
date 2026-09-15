@@ -39,7 +39,7 @@ const SMTP_HOST = Deno.env.get("SMTP_HOST");
 const SMTP_PORT = Deno.env.get("SMTP_PORT");
 const SMTP_USER = Deno.env.get("SMTP_USER");
 const SMTP_PASS = Deno.env.get("SMTP_PASS");
-const FROM_EMAIL = Deno.env.get("DECLINE_PRO_FROM_EMAIL") ?? Deno.env.get("FROM_EMAIL") ?? "notifications@premiereservices.ca";
+const FROM_EMAIL = Deno.env.get("DECLINE_PRO_FROM_EMAIL") ?? Deno.env.get("FROM_EMAIL") ?? "notifications@altshift.ca";
 const FROM_NAME = Deno.env.get("FROM_NAME") ?? "";
 
 Deno.serve(async (req) => {
@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
     const toEmail = authUser?.user?.email;
     if (toEmail) {
       const businessName = proProfile?.business_name ?? "Your application";
-      const subject = "Premiere Services – Pro application update";
+      const subject = "AltShift – Pro application update";
       const html = `<p>Your pro application for <strong>${escapeHtml(businessName)}</strong> was not accepted at this time.</p>${reason ? `<p><strong>Reason:</strong> ${escapeHtml(reason)}</p>` : ""}<p>You can contact us if you have questions.</p>`;
       if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
         emailSent = await sendEmailViaSmtp({ SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, FROM_EMAIL, FROM_NAME }, toEmail, subject, html);

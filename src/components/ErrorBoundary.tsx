@@ -13,7 +13,7 @@ interface State {
 
 function readLocale(): "en" | "fr" {
   try {
-    const stored = localStorage.getItem("premiere-locale");
+    const stored = localStorage.getItem("altshift-locale") ?? localStorage.getItem("premiere-locale");
     if (stored === "fr" || stored === "en") return stored;
   } catch {
     /* ignore */
@@ -175,7 +175,7 @@ export function AppErrorScreen({
             color: dark ? "#f7f3ec" : navy,
           }}
         >
-          Première Services
+          AltShift
         </p>
 
         <h1

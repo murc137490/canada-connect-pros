@@ -148,10 +148,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       const name = (event as CustomEvent<{ full_name?: string }>).detail?.full_name;
       if (typeof name === "string") setProfileFullName(name.trim() || null);
     };
-    window.addEventListener("premiere:profile-updated", onProfileUpdated);
+    window.addEventListener("altshift:profile-updated", onProfileUpdated);
     return () => {
       cancelled = true;
-      window.removeEventListener("premiere:profile-updated", onProfileUpdated);
+      window.removeEventListener("altshift:profile-updated", onProfileUpdated);
     };
   }, [user?.id]);
 
@@ -223,9 +223,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <Link
             to="/"
             className="min-w-0 shrink font-heading text-sm sm:text-[15px] font-extrabold tracking-tight text-foreground hover:opacity-80 transition-opacity"
-            aria-label="Premiere Services – Home"
+            aria-label="AltShift – Home"
           >
-            <span className="block truncate">Première</span>
+            <span className="block truncate">AltShift</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-0.5 ml-2" aria-label="Primary">
@@ -365,7 +365,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)] md:gap-12">
             <div className="space-y-4 max-w-sm">
               <div className="font-heading text-xl font-extrabold tracking-tight">
-                Première Services
+                AltShift
               </div>
               <p className="text-sm text-white/65 leading-relaxed">
                 {t.footer.tagline}
@@ -428,7 +428,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
-            <span>© {new Date().getFullYear()} Première Services. {t.footer.rights}</span>
+            <span>© {new Date().getFullYear()} Services AltShift Inc. {t.footer.rights}</span>
             <div className="flex flex-wrap gap-3">
               <Link to="/terms" className="hover:text-white/70 transition-colors">{t.footer.termsOfService}</Link>
               <Link to="/privacy" className="hover:text-white/70 transition-colors">

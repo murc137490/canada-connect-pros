@@ -101,7 +101,7 @@ async function postReferralInvite(
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
           apikey: ANON_KEY,
-          "x-client-info": "premiere-web",
+          "x-client-info": "altshift-web",
         },
         body: JSON.stringify(body),
       });

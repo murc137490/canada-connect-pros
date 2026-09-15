@@ -145,8 +145,8 @@ async function chatWithProviderChain(
 
 function staticProviderDownMessage(language: "en" | "fr"): string {
   return language === "fr"
-    ? "L’assistant est temporairement saturé. Écrivez-nous à support@premiereservices.ca (réponse sous 24 h) ou composez le +1 450 910 1400 (lun–ven, 8 h–20 h HE). Nous sommes là pour vous aider."
-    : "Our AI assistant is temporarily busy. Email support@premiereservices.ca (we reply within 24 hours) or call +1 450 910 1400 (Mon–Fri, 8am–8pm EST). We’re happy to help.";
+    ? "L’assistant est temporairement saturé. Écrivez-nous à support@altshift.ca (réponse sous 24 h) ou composez le +1 450 910 1400 (lun–ven, 8 h–20 h HE). Nous sommes là pour vous aider."
+    : "Our AI assistant is temporarily busy. Email support@altshift.ca (we reply within 24 hours) or call +1 450 910 1400 (Mon–Fri, 8am–8pm EST). We’re happy to help.";
 }
 
 async function chatWithHf(messages: ChatMsg[], maxTokens: number, temperature: number): Promise<string> {
@@ -172,32 +172,32 @@ async function chatWithHf(messages: ChatMsg[], maxTokens: number, temperature: n
 }
 
 
-// --- Topic gate: block only obvious non-Premiere retail / unrelated queries (no LLM). ---
+// --- Topic gate: block only obvious non-AltShift retail / unrelated queries (no LLM). ---
 
 function matchesHardOffTopic(text: string): boolean {
   const q = text.trim();
   if (!q) return false;
 
-  const hasPremiereTie = /\b(premiere|première|website|site|platform|app|booking|account|pro\b|professional)\b/i.test(q);
+  const hasBrandTie = /\b(altshift|alt\s*shift|premiere|première|website|site|platform|app|booking|account|pro\b|professional)\b/i.test(q);
 
   if (
     /\b(buy|buying|purchase|shop(ping)?\s+for|where\s+(to\s+)?buy|get\s+skis|get\s+a\s+snowboard)\b/i.test(q) &&
     /\b(skis|ski\b|snowboard|ski\s*boots|bottes\s+de\s+ski)\b/i.test(q) &&
-    !hasPremiereTie
+    !hasBrandTie
   ) {
     return true;
   }
 
   if (
     /\b(recommend|best|good|looking\s+for)\s+.+\b(skis|snowboard|ski\s+boots)\b/i.test(q) &&
-    !/\b(pro|professional|hire|booking|premiere)\b/i.test(q)
+    !/\b(pro|professional|hire|booking|altshift|premiere)\b/i.test(q)
   ) {
     return true;
   }
 
   if (
     /\b(skis|snowboard|ski\s*boots)\b/i.test(q) &&
-    !hasPremiereTie &&
+    !hasBrandTie &&
     /\b(help\s+me\s+(pick|choose|find)|which\s+(ski|skis)|what\s+(ski|skis)|pick\s+(some\s+)?skis|choose\s+(my\s+)?skis)\b/i.test(q)
   ) {
     return true;
@@ -215,7 +215,7 @@ function matchesHardOffTopic(text: string): boolean {
     /\b(walmart|target\.com|amazon|best\s*buy|costco)\b/i.test(q) &&
     /\b(buy|buying|purchase|shop|which\s+(ones?\s+)?(are\s+)?(the\s+)?best|recommend)\b/i.test(q) &&
     /\b(speakers?|headphones?|tv|television|laptop|iphone)\b/i.test(q) &&
-    !hasPremiereTie
+    !hasBrandTie
   ) {
     return true;
   }
@@ -224,7 +224,7 @@ function matchesHardOffTopic(text: string): boolean {
     /\b(walmart|target\.com|amazon|best\s*buy|costco)\b/i.test(q) &&
     /\b(cheapest|cheaper|cheap|price|priced|cost|how\s+much|sells?|carry|carries)\b/i.test(q) &&
     /\b(speakers?|headphones?|earbuds?|tv|television|laptop|iphone|phone|tablet|gadget)\b/i.test(q) &&
-    !hasPremiereTie
+    !hasBrandTie
   ) {
     return true;
   }
@@ -236,7 +236,7 @@ type TopicGateResult = { allowed: true } | { allowed: false; reason: "off_topic"
 
 /**
  * Allow almost everything through to the model (benefit of the doubt + clarifying questions).
- * Block only obvious non-Premiere topics (retail product shopping, etc.) to save API cost.
+ * Block only obvious non-AltShift topics (retail product shopping, etc.) to save API cost.
  */
 function evaluateSupportTopicGate(userMessage: string, _history: Turn[]): TopicGateResult {
   const msg = userMessage.trim();
@@ -249,8 +249,8 @@ function evaluateSupportTopicGate(userMessage: string, _history: Turn[]): TopicG
 
 function staticOffTopicRefusal(language: "en" | "fr"): string {
   return language === "fr"
-    ? "Je suis uniquement là pour vous aider avec Premiere Services (la plateforme, votre compte, les réservations et les services à domicile offerts sur le site). Ce message ne semble pas lié à nos services — si vous avez une question sur Premiere Services, écrivez à support@premiereservices.ca."
-    : "I'm only here to help with Premiere Services — the platform, your account, bookings, and home services offered through our marketplace. This doesn't look related to what we offer. For Premiere-related questions, email support@premiereservices.ca.";
+    ? "Je suis uniquement là pour vous aider avec AltShift (la plateforme, votre compte, les réservations et les services à domicile offerts sur le site). Ce message ne semble pas lié à nos services — si vous avez une question sur AltShift, écrivez à support@altshift.ca."
+    : "I'm only here to help with AltShift — the platform, your account, bookings, and home services offered through our marketplace. This doesn't look related to what we offer. For AltShift-related questions, email support@altshift.ca.";
 }
 
 // --- end topic gate ---
@@ -326,21 +326,21 @@ Deno.serve(async (req: Request) => {
     if (intent === "support_help") {
       systemContent =
         language === "fr"
-          ? `Tu es l'assistant support de Premiere Services (marché canadien de services à domicile). Tu aides clients et pros.
+          ? `Tu es l'assistant support de AltShift (marché canadien de services à domicile). Tu aides clients et pros.
 
 **Style conversationnel (important) :**
 - Ne dump pas une longue liste d’étapes d’un coup.
-- Pose **une** question courte pour avancer (ex. « Avez-vous déjà un compte Premiere Services ? »).
+- Pose **une** question courte pour avancer (ex. « Avez-vous déjà un compte AltShift ? »).
 - Ensuite donne **seulement la prochaine action** avec un lien cliquable.
 - Réponses courtes (2–4 phrases). Jamais de phrase coupée. Ne répète pas ton rôle.
 
 **Liens (toujours URL complète https) :**
-- Devenir pro : [Join Pros](https://www.premiereservices.ca/join-pros)
-- Créer un compte : [Sign up](https://www.premiereservices.ca/auth?mode=signup&redirect=/join-pros)
-- Se connecter : [Log in](https://www.premiereservices.ca/auth?mode=login&redirect=/join-pros)
-- Forfaits pro : [Pro plans](https://www.premiereservices.ca/pro-plans)
-- Tableau de bord : [Dashboard](https://www.premiereservices.ca/dashboard)
-- Support : support@premiereservices.ca · +1 450 910 1400
+- Devenir pro : [Join Pros](https://www.altshift.ca/join-pros)
+- Créer un compte : [Sign up](https://www.altshift.ca/auth?mode=signup&redirect=/join-pros)
+- Se connecter : [Log in](https://www.altshift.ca/auth?mode=login&redirect=/join-pros)
+- Forfaits pro : [Pro plans](https://www.altshift.ca/pro-plans)
+- Tableau de bord : [Dashboard](https://www.altshift.ca/dashboard)
+- Support : support@altshift.ca · +1 450 910 1400
 
 **Créer un compte pro — parcours guidé :**
 1. Demande s’ils ont déjà un compte.
@@ -350,24 +350,24 @@ Deno.serve(async (req: Request) => {
 N’invente pas d’autres URLs.
 
 Langue : **français uniquement** (sauf noms propres / URL).`
-          : `You are the Premiere Services support assistant for a Canadian home services marketplace. You help customers and pros.
+          : `You are the AltShift support assistant for a Canadian home services marketplace. You help customers and pros.
 
 **Conversational style (important):**
 - Do **not** dump a long numbered checklist in one reply.
-- Ask **one** short clarifying question first (e.g. “Do you already have a Premiere Services account?”).
+- Ask **one** short clarifying question first (e.g. “Do you already have a AltShift account?”).
 - Then give **only the next action** with a markdown link AND the full URL on its own line.
 - Example format:
   Do you already have an account?
-  If not: [Sign up](https://www.premiereservices.ca/auth?mode=signup&redirect=/join-pros)
+  If not: [Sign up](https://www.altshift.ca/auth?mode=signup&redirect=/join-pros)
 - Keep replies short (2–4 sentences). Never cut off mid-sentence. Don’t restate your role.
 
 **Links (always full https URLs, use markdown [label](url)):**
-- Become a pro: [Join Pros](https://www.premiereservices.ca/join-pros)
-- Create an account: [Sign up](https://www.premiereservices.ca/auth?mode=signup&redirect=/join-pros)
-- Log in: [Log in](https://www.premiereservices.ca/auth?mode=login&redirect=/join-pros)
-- Pro plans: [Pro plans](https://www.premiereservices.ca/pro-plans)
-- Dashboard: [Dashboard](https://www.premiereservices.ca/dashboard)
-- Support: support@premiereservices.ca · +1 450 910 1400 (Mon–Fri, 8am–8pm EST)
+- Become a pro: [Join Pros](https://www.altshift.ca/join-pros)
+- Create an account: [Sign up](https://www.altshift.ca/auth?mode=signup&redirect=/join-pros)
+- Log in: [Log in](https://www.altshift.ca/auth?mode=login&redirect=/join-pros)
+- Pro plans: [Pro plans](https://www.altshift.ca/pro-plans)
+- Dashboard: [Dashboard](https://www.altshift.ca/dashboard)
+- Support: support@altshift.ca · +1 450 910 1400 (Mon–Fri, 8am–8pm EST)
 
 **Create a pro account — guided flow:**
 1. Ask if they already have an account.
@@ -400,8 +400,8 @@ Language: **English only** (proper nouns / URLs excepted).`;
           : " You must reply only in English.";
       systemContent =
         (context
-          ? `You are the Premiere Services AI support assistant for a Canadian home services marketplace. Use the following database results when relevant to answer the user.\n\nDatabase results:\n${context}\n\nBe friendly, helpful, and concise. Phone: 1-800-PREMIERE. Email: support@premiereservices.ca. If you don't know something, direct users to contact support.`
-          : `You are the Premiere Services AI support assistant for a Canadian home services marketplace. Help customers find and hire verified pros. Be friendly and concise. Phone: 1-800-PREMIERE. Email: support@premiereservices.ca.`) +
+          ? `You are the AltShift AI support assistant for a Canadian home services marketplace. Use the following database results when relevant to answer the user.\n\nDatabase results:\n${context}\n\nBe friendly, helpful, and concise. Phone: +1 450 910 1400. Email: support@altshift.ca. If you don't know something, direct users to contact support.`
+          : `You are the AltShift AI support assistant for a Canadian home services marketplace. Help customers find and hire verified pros. Be friendly and concise. Phone: +1 450 910 1400. Email: support@altshift.ca.`) +
         langInstruction +
         systemExtension;
     }

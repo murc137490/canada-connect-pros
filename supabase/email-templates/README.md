@@ -1,8 +1,8 @@
-# Premiere Services email templates
+# AltShift email templates
 
 Brand-aligned transactional emails (navy `#102556`, warm stone `#F8F6F3`, white letter panel, Manrope + Instrument Serif wordmark).
 
-**Visual bar:** credible from a premium Canadian marketplace you’d trust with a booking and payment — calm, intentional, distinctly Premiere — not a generic SaaS/Resend demo.
+**Visual bar:** credible from a premium Canadian marketplace you’d trust with a booking and payment — calm, intentional, distinctly AltShift — not a generic SaaS/Resend demo.
 
 ## App pipeline (Resend)
 
@@ -33,6 +33,6 @@ These use Supabase Go variables (`{{ .ConfirmationURL }}`, `{{ .Email }}`, etc.)
 
 Subject line suggestions:
 
-- Magic Link: `Your Premiere Services sign-in link`
-- Reset Password: `Reset your Premiere Services password`
-- Confirm: `Confirm your Premiere Services account`
+- Magic Link: `Your AltShift sign-in link`
+- Reset Password: `Reset your AltShift password`
+- Confirm: `Confirm your AltShift account`

@@ -26,7 +26,7 @@ type TourState = {
 };
 
 function storageKey(userId: string) {
-  return `premiere:dash-tour:${userId}`;
+  return `altshift:dash-tour:${userId}`;
 }
 
 function readState(userId: string): TourState {
@@ -166,9 +166,9 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
       titleEn: "Booking ID verification",
       titleFr: "Vérification d’identité",
       bodyEn:
-        "You may upload a government ID for booking verification. Retention details are subject to legal review — Première stores it securely for platform checks.",
+        "You may upload a government ID for booking verification. Retention details are subject to legal review — AltShift stores it securely for platform checks.",
       bodyFr:
-        "Vous pouvez téléverser une pièce d’identité pour la vérification. La conservation est sujette à révision juridique — Première la garde de façon sécurisée.",
+        "Vous pouvez téléverser une pièce d’identité pour la vérification. La conservation est sujette à révision juridique — AltShift la garde de façon sécurisée.",
     },
     {
       target: "[data-tour='available-jobs']",
@@ -254,9 +254,9 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
       titleEn: "Invoices",
       titleFr: "Factures",
       bodyEn:
-        "Paid booking receipts appear here with the service amount, Première’s platform fee, and taxes. If you have none yet, this tab explains what will show once you pay.",
+        "Paid booking receipts appear here with the service amount, AltShift’s platform fee, and taxes. If you have none yet, this tab explains what will show once you pay.",
       bodyFr:
-        "Les reçus des réservations payées apparaissent ici avec le montant du service, les frais de plateforme Première et les taxes. S’il n’y en a pas encore, cet onglet explique ce qui s’affichera après un paiement.",
+        "Les reçus des réservations payées apparaissent ici avec le montant du service, les frais de plateforme AltShift et les taxes. S’il n’y en a pas encore, cet onglet explique ce qui s’affichera après un paiement.",
     },
   ],
 };

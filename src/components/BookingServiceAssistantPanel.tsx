@@ -87,8 +87,8 @@ export default function BookingServiceAssistantPanel({
 
       const system_extension =
         locale === "fr"
-          ? `Le client réserve ou envisage une réservation sur Premiere Services (Canada). Utilise ce contexte pour répondre avec précision:\n${serviceBlock}\nRéponds en français. Reste concis et utile; si tu ne sais pas, indique de contacter le professionnel ou le support Premiere.`
-          : `The client is booking or considering a booking on Premiere Services (Canada). Use this context:\n${serviceBlock}\nReply in English. Be concise and helpful; if unsure, suggest contacting the professional or Premiere support.`;
+          ? `Le client réserve ou envisage une réservation sur AltShift (Canada). Utilise ce contexte pour répondre avec précision:\n${serviceBlock}\nRéponds en français. Reste concis et utile; si tu ne sais pas, indique de contacter le professionnel ou le support AltShift.`
+          : `The client is booking or considering a booking on AltShift (Canada). Use this context:\n${serviceBlock}\nReply in English. Be concise and helpful; if unsure, suggest contacting the professional or AltShift support.`;
 
       const resp = await fetch(AI_CHAT_URL, {
         method: "POST",

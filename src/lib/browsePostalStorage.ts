@@ -1,7 +1,7 @@
 import { distanceKm } from "@/lib/geocode";
 
-export const BROWSE_POSTAL_STORAGE_KEY = "premiere:browsePostal";
-export const BROWSE_POSTAL_CHANGED_EVENT = "premiere-browse-postal-changed";
+export const BROWSE_POSTAL_STORAGE_KEY = "altshift:browsePostal";
+export const BROWSE_POSTAL_CHANGED_EVENT = "altshift-browse-postal-changed";
 
 export type BrowsePostalPayload = {
   postal: string;

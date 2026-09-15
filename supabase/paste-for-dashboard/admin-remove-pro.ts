@@ -39,7 +39,7 @@ const SMTP_HOST = Deno.env.get("SMTP_HOST");
 const SMTP_PORT = Deno.env.get("SMTP_PORT");
 const SMTP_USER = Deno.env.get("SMTP_USER");
 const SMTP_PASS = Deno.env.get("SMTP_PASS");
-const FROM_EMAIL = Deno.env.get("REMOVE_PRO_FROM_EMAIL") ?? Deno.env.get("FROM_EMAIL") ?? "notifications@premiereservices.ca";
+const FROM_EMAIL = Deno.env.get("REMOVE_PRO_FROM_EMAIL") ?? Deno.env.get("FROM_EMAIL") ?? "notifications@altshift.ca";
 const FROM_NAME = Deno.env.get("FROM_NAME") ?? "";
 
 Deno.serve(async (req) => {
@@ -129,8 +129,8 @@ Deno.serve(async (req) => {
       const toEmail = authUser?.user?.email;
       if (toEmail) {
         const businessName = proProfile.business_name ?? "your pro profile";
-        const subject = "Premiere Services – Pro status updated";
-        const html = `<p>Your pro profile for <strong>${escapeHtml(businessName)}</strong> has been removed from Premiere Services.</p><p>You still keep your normal user account and can continue using the platform as a client.</p>`;
+        const subject = "AltShift – Pro status updated";
+        const html = `<p>Your pro profile for <strong>${escapeHtml(businessName)}</strong> has been removed from AltShift.</p><p>You still keep your normal user account and can continue using the platform as a client.</p>`;
         if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
           emailSent = await sendEmailViaSmtp({ SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, FROM_EMAIL, FROM_NAME }, toEmail, subject, html);
         } else if (RESEND_API_KEY) {

@@ -24,7 +24,7 @@ export default function ProPlanCancel() {
     { key: "dont_use", label: c?.reasonDontUse ?? "I don't use it" },
     { key: "complicated", label: c?.reasonComplicated ?? "Too complicated" },
     { key: "expensive", label: c?.reasonExpensive ?? "Too expensive" },
-    { key: "dislike", label: c?.reasonDislike ?? "I simply don't like Premiere Services" },
+    { key: "dislike", label: c?.reasonDislike ?? "I simply don't like AltShift" },
   ];
 
   const [reason, setReason] = useState<ProPlanCancelReason | null>(null);

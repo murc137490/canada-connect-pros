@@ -72,13 +72,13 @@ export function isMetaSupportQuery(cleaned: string): boolean {
       q
     );
 
-  const premiere =
-    /\b(premiere services|première services|customer service|service client|help desk|faq|terms|conditions|privacy|confidentialité)\b/i.test(
+  const brand =
+    /\b(altshift|alt\s*shift|premiere services|première services|customer service|service client|help desk|faq|terms|conditions|privacy|confidentialité)\b/i.test(
       q
     );
 
   const metaPhrase =
     /^(how (much|does)|combien|what is your|quel est votre|do you offer|offrez-vous)/i.test(cleaned.trim());
 
-  return platform || premiere || metaPhrase;
+  return platform || brand || metaPhrase;
 }

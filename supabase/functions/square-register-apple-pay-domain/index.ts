@@ -17,8 +17,8 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
   const domain =
-    (url.searchParams.get("domain") ?? "www.premiereservices.ca").trim() ||
-    "www.premiereservices.ca";
+    (url.searchParams.get("domain") ?? "www.altshift.ca").trim() ||
+    "www.altshift.ca";
   const fileUrl = `https://${domain}/.well-known/apple-developer-merchantid-domain-association`;
 
   let probe: Record<string, unknown> = {};

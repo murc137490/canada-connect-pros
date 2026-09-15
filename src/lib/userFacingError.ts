@@ -14,7 +14,7 @@ const LOOKS_LIKE_JSON_ERR_RE = /^\s*\{[\s\S]*"error"\s*:/;
 
 export function readUiLocale(): "en" | "fr" {
   try {
-    const stored = localStorage.getItem("premiere-locale");
+    const stored = localStorage.getItem("altshift-locale") ?? localStorage.getItem("premiere-locale");
     if (stored === "fr" || stored === "en") return stored;
   } catch {
     /* ignore */
@@ -121,5 +121,5 @@ export function sanitizeToastContent(input: {
 export function logClientDiagnostic(scope: string, err?: unknown): void {
   if (!import.meta.env.DEV) return;
   // eslint-disable-next-line no-console
-  console.warn(`[premiere:${scope}]`, err);
+  console.warn(`[altshift:${scope}]`, err);
 }

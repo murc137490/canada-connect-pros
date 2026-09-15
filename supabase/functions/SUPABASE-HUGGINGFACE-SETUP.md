@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const systemPrompt = `You are a Canadian home services assistant for Premiere Services. The user describes a project or need in their own words. Your job is to:
+    const systemPrompt = `You are a Canadian home services assistant for AltShift. The user describes a project or need in their own words. Your job is to:
 1. Summarize their request in one short, clear sentence (simplified request) that captures what they need.
 2. Suggest 4–6 specific services that match their need. Use exact service names we offer, e.g. "Plumber", "Snow Removal", "House Cleaning", "Landscaping", "HVAC System", "Moving", "Electrician", "Roof Repair", "Window Replacement", "Painting", "Fence Installation", "Pool Cleaning", "Pest Control", "Home Inspection", "Accountant", "Photography", "Catering", "Tutoring", "Dog Walking", "Massage Therapy", etc.
 

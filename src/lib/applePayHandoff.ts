@@ -42,10 +42,10 @@ export function applePayHandoffUrl(handoffId: string): string {
   const configured = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") || "";
   const browserHost =
     typeof window !== "undefined" ? window.location.hostname.replace(/^www\./, "").toLowerCase() : "";
-  const onProductionHost = browserHost === "premiereservices.ca";
+  const onProductionHost = browserHost === "altshift.ca";
   const origin = onProductionHost
     ? window.location.origin
-    : configured || "https://www.premiereservices.ca";
+    : configured || "https://www.altshift.ca";
   return `${origin}/pay/apple-handoff/${encodeURIComponent(handoffId)}`;
 }
 

@@ -1,4 +1,4 @@
-const REDIRECT_KEY = "premiere:oauth-redirect";
+const REDIRECT_KEY = "altshift:oauth-redirect";
 
 export function peekOAuthRedirect(fallback = "/"): string {
   try {

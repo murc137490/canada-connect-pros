@@ -204,7 +204,7 @@ export default function ApplePayHandoffPay() {
           </h1>
           <p className="text-sm text-muted-foreground">
             {terms.applePayHandoffSignInBody ??
-              "Use the same Première account as on your computer, then Apple Pay will be available in Safari."}
+              "Use the same AltShift account as on your computer, then Apple Pay will be available in Safari."}
           </p>
           <Button asChild>
             <Link to={`/auth?redirect=${redirect}`}>{t.auth?.signIn ?? "Sign in"}</Link>

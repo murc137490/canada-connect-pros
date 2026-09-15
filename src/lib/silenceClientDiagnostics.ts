@@ -12,9 +12,9 @@ export function silenceClientDiagnostics(): void {
 
   const noop = () => {};
   try {
-    // Keep console intact for emergency overrides only via __premiereAllowLogs
-    const w = window as Window & { __premiereAllowLogs?: boolean };
-    if (w.__premiereAllowLogs) return;
+    // Keep console intact for emergency overrides only via __altshiftAllowLogs
+    const w = window as Window & { __altshiftAllowLogs?: boolean };
+    if (w.__altshiftAllowLogs) return;
 
     console.log = noop;
     console.info = noop;

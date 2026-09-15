@@ -263,7 +263,7 @@ export default function ProPlansContent({
             <h4 className="font-semibold text-foreground mb-2">{plans?.platformFeeTitle ?? "5% platform fee on completed transactions"}</h4>
             <p className="text-sm text-muted-foreground">
               {plans?.platformFeeDesc ??
-                "Starter, Growth, and Pro: we retain 5% of every completed transaction processed through Premiere Services - jobs that are marked completed and paid via the platform."}
+                "Starter, Growth, and Pro: we retain 5% of every completed transaction processed through AltShift - jobs that are marked completed and paid via the platform."}
             </p>
           </div>
         </div>

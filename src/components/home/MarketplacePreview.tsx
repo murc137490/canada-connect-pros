@@ -99,7 +99,7 @@ export default function MarketplacePreview({
               dark ? "bg-white/[0.06] text-white/55" : "bg-background text-muted-foreground"
             )}
           >
-            premierservices.ca
+            altshift.ca
           </div>
 
           <div className="hidden shrink-0 items-center gap-1.5 sm:flex">

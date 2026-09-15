@@ -5,14 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='48' font-family='Georgia' fill='%2315284A' font-weight='700'%3EP%3C/text%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='42' font-family='Arial' fill='%2315284A' font-weight='700'%3EA%3C/text%3E%3C/svg%3E"
     />
-    <title>Première Services — Find the right professional near you</title>
+    <title>AltShift — Find the right professional near you</title>
     <meta name="description" content="Describe your need and receive quotes from trusted local service professionals across Quebec and Canada." />
-    <meta name="author" content="Première Services" />
-    <meta property="og:title" content="Première Services — Find the right professional" />
+    <meta name="author" content="Services AltShift Inc." />
+    <meta property="og:title" content="AltShift — Find the right professional" />
     <meta property="og:description" content="A modern marketplace for local service professionals. Post a request, compare quotes, book with confidence." />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.altshift.ca" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -25,7 +26,7 @@
     <script src="https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js" crossorigin="anonymous"></script>
     <script>
       try {
-        var theme = localStorage.getItem("premiere-theme");
+        var theme = localStorage.getItem("altshift-theme");
         var dark =
           theme === "dark" ||
           ((theme === "system" || theme === null) &&
@@ -42,7 +43,7 @@
         box-sizing: border-box;
       }
 
-      #premiere-boot {
+      #altshift-boot {
         --boot-bg: #f7f4ef;
         --boot-fg: #ffffff;
         /* Must match long-shadow.css max offset (−100px, +100px). */
@@ -69,12 +70,12 @@
         transition: opacity 0.45s ease, visibility 0.45s ease;
       }
 
-      html[data-boot-theme="dark"] #premiere-boot {
+      html[data-boot-theme="dark"] #altshift-boot {
         --boot-bg: #0a0a0a;
         --boot-fg: #ffffff;
       }
 
-      #premiere-boot.is-done {
+      #altshift-boot.is-done {
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
@@ -85,7 +86,7 @@
         flex-centered box is the visual logo (glyphs + long shadow). That puts the logo
         center on the screen center.
       */
-      #premiere-boot .site__main {
+      #altshift-boot .site__main {
         box-sizing: content-box;
         width: max-content;
         max-width: none;
@@ -95,7 +96,7 @@
         transform-origin: center center;
       }
 
-      #premiere-boot .boot-logo {
+      #altshift-boot .boot-logo {
         margin: 0;
         padding: 0;
         width: max-content;
@@ -119,11 +120,11 @@
         animation-name: animateShadowLight;
       }
 
-      html[data-boot-theme="dark"] #premiere-boot .boot-logo {
+      html[data-boot-theme="dark"] #altshift-boot .boot-logo {
         animation-name: animateShadowDark;
       }
 
-      #premiere-boot h1 {
+      #altshift-boot h1 {
         font: inherit;
         color: inherit;
         margin: 0;
@@ -133,45 +134,45 @@
       }
 
       @media (max-width: 640px) {
-        #premiere-boot .site__main {
+        #altshift-boot .site__main {
           /* Keep visual center; ~15% larger than prior phone size */
           transform: scale(1.09);
         }
-        #premiere-boot .boot-logo {
+        #altshift-boot .boot-logo {
           font-size: clamp(3.28rem, 16.1vw, 4.89rem);
         }
-        #premiere-boot h1 {
+        #altshift-boot h1 {
           white-space: normal;
         }
       }
 
       @media (max-width: 380px) {
-        #premiere-boot .site__main {
+        #altshift-boot .site__main {
           transform: scale(1.01);
         }
-        #premiere-boot .boot-logo {
+        #altshift-boot .boot-logo {
           font-size: clamp(2.99rem, 17.25vw, 4.31rem);
         }
       }
 
       @media (orientation: portrait) and (min-height: 900px) and (min-width: 641px) {
-        #premiere-boot .boot-logo {
+        #altshift-boot .boot-logo {
           font-size: clamp(2.75rem, 7vh, 5rem);
         }
       }
 
       @media (prefers-reduced-motion: reduce) {
-        #premiere-boot .site__main {
+        #altshift-boot .site__main {
           padding: 0;
           transform: none;
         }
-        #premiere-boot .boot-logo {
+        #altshift-boot .boot-logo {
           animation: none;
           will-change: auto;
           color: #15284a;
           text-shadow: none;
         }
-        html[data-boot-theme="dark"] #premiere-boot .boot-logo {
+        html[data-boot-theme="dark"] #altshift-boot .boot-logo {
           color: #ffffff;
         }
       }
@@ -186,13 +187,10 @@
       })();
     </script>
 
-    <div id="premiere-boot" role="status" aria-label="Première Services">
+    <div id="altshift-boot" role="status" aria-label="AltShift">
       <main class="site__main">
         <div class="boot-logo">
-          <h1>
-            Première<br />
-            Services
-          </h1>
+          <h1>AltShift</h1>
         </div>
       </main>
     </div>
@@ -201,7 +199,7 @@
     <script type="module" src="/src/main.tsx"></script>
     <script>
       (function () {
-        var boot = document.getElementById("premiere-boot");
+        var boot = document.getElementById("altshift-boot");
         if (!boot) return;
 
         var finished = false;
@@ -217,8 +215,8 @@
           }, 450);
         }
 
-        window.addEventListener("premiere-app-ready", finish);
-        window.__premiereMarkAppReady = finish;
+        window.addEventListener("altshift-app-ready", finish);
+        window.__altshiftMarkAppReady = finish;
         window.setTimeout(finish, reduceMotion ? 300 : MAX_MS);
       })();
     </script>

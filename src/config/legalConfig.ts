@@ -1,18 +1,22 @@
 /**
- * Central product/legal configuration for Première Services.
+ * Central product/legal configuration for AltShift (Services AltShift Inc.).
  * Not legal advice. Values marked REVIEW_REQUIRED must be confirmed by the owner / counsel.
  */
 
-export const LEGAL_ENTITY_NAME = "REVIEW_REQUIRED — Première Services (confirm registered legal name)";
+export const LEGAL_ENTITY_NAME = "Services AltShift Inc.";
+
+export const BRAND_NAME = "AltShift";
+
+export const SITE_URL = "https://www.altshift.ca";
 
 export const PRIVACY_CONTACT = {
   name: "REVIEW_REQUIRED",
   title: "Privacy contact / Responsable de la protection des renseignements personnels",
-  email: "support@premiereservices.ca",
+  email: "support@altshift.ca",
 } as const;
 
 /** Public support contact (operational). */
-export const SUPPORT_EMAIL = "support@premiereservices.ca";
+export const SUPPORT_EMAIL = "support@altshift.ca";
 
 /** Public support phone (display). */
 export const SUPPORT_PHONE = "+1 450 910 1400";
@@ -25,11 +29,11 @@ export const SUPPORT_PHONE_TEL = "tel:+14509101400";
  * Do not expand this to "licensed" or "insured" without an actual verification process.
  */
 export const VERIFIED_PRO_DEFINITION = {
-  en: "Première Services verifies certain credentials where applicable, but verification does not constitute an endorsement, guarantee, certification or warranty of the provider's work.",
-  fr: "Première Services vérifie certains titres de compétences le cas échéant, mais cette vérification ne constitue pas une approbation, une garantie, une certification ni une assurance quant au travail du fournisseur.",
+  en: "AltShift verifies certain credentials where applicable, but verification does not constitute an endorsement, guarantee, certification or warranty of the provider's work.",
+  fr: "AltShift vérifie certains titres de compétences le cas échéant, mais cette vérification ne constitue pas une approbation, une garantie, une certification ni une assurance quant au travail du fournisseur.",
 } as const;
 
-/** Première Services platform fee shown to customers/pros (business model). */
+/** AltShift platform fee shown to customers/pros (business model). */
 export const PLATFORM_FEE_RATE = 0.05;
 
 /**
@@ -50,16 +54,16 @@ export const SERVICE_RESOLUTION_HELP = {
   en: {
     title: "Booking issue help",
     short:
-      "If a service booked through Première Services is not performed substantially according to the agreed booking, Première Services can help review the issue through our claims process.",
+      "If a service booked through AltShift is not performed substantially according to the agreed booking, AltShift can help review the issue through our claims process.",
     body:
-      "Possible outcomes (case-by-case, not automatic): correction/re-performance by the original professional; a replacement professional where appropriate and available; a partial refund where only part of the service was materially deficient; or a full refund in serious cases where the service was not performed or materially failed. Submitting a claim does not guarantee a refund. Première Services does not promise unlimited consequential damages or payment for all damage caused by professionals.",
+      "Possible outcomes (case-by-case, not automatic): correction/re-performance by the original professional; a replacement professional where appropriate and available; a partial refund where only part of the service was materially deficient; or a full refund in serious cases where the service was not performed or materially failed. Submitting a claim does not guarantee a refund. AltShift does not promise unlimited consequential damages or payment for all damage caused by professionals.",
   },
   fr: {
     title: "Aide en cas de problème de réservation",
     short:
-      "Si un service réservé via Première Services n’est pas réalisé substantiellement conformément à la réservation convenue, Première Services peut vous aider à examiner le problème selon notre procédure de réclamation.",
+      "Si un service réservé via AltShift n’est pas réalisé substantiellement conformément à la réservation convenue, AltShift peut vous aider à examiner le problème selon notre procédure de réclamation.",
     body:
-      "Résultats possibles (au cas par cas, non automatiques) : correction/reprise par le professionnel d’origine; un autre professionnel lorsque c’est approprié et disponible; un remboursement partiel si une partie du service était matériellement déficiente; ou un remboursement complet dans les cas graves où le service n’a pas été réalisé ou a matériellement échoué. Déposer une réclamation ne garantit pas un remboursement. Première Services ne promet pas de dommages consécutifs illimités ni de payer tous les dommages causés par des professionnels.",
+      "Résultats possibles (au cas par cas, non automatiques) : correction/reprise par le professionnel d’origine; un autre professionnel lorsque c’est approprié et disponible; un remboursement partiel si une partie du service était matériellement déficiente; ou un remboursement complet dans les cas graves où le service n’a pas été réalisé ou a matériellement échoué. Déposer une réclamation ne garantit pas un remboursement. AltShift ne promet pas de dommages consécutifs illimités ni de payer tous les dommages causés par des professionnels.",
   },
 } as const;
 

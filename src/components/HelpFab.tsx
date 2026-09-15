@@ -10,10 +10,10 @@ import { MOTION } from "@/motion/types";
 import { usePrefersReducedMotion } from "@/motion/usePrefersReducedMotion";
 import { ChatMessageContent } from "@/components/ChatMessageContent";
 
-const HISTORY_KEY = "premiere-support-chat-history";
-const ACTIVE_KEY = "premiere-support-chat-active";
-const FAB_DISMISSED_KEY = "premiere-help-fab-dismissed";
-const FAB_POS_KEY = "premiere-help-fab-pos";
+const HISTORY_KEY = "altshift-support-chat-history";
+const ACTIVE_KEY = "altshift-support-chat-active";
+const FAB_DISMISSED_KEY = "altshift-help-fab-dismissed";
+const FAB_POS_KEY = "altshift-help-fab-pos";
 const MAX_HISTORY = 20;
 const FAB_SIZE = 56;
 

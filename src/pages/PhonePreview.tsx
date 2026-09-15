@@ -36,7 +36,7 @@ export default function PhonePreview() {
       <Iphone width={PHONE_W} screenHeight={PHONE_H}>
         <iframe
           src={iframeSrc}
-          title="Premiere Services mobile preview"
+          title="AltShift mobile preview"
           className="block h-full min-h-0 w-full border-0 bg-zinc-950"
         />
       </Iphone>

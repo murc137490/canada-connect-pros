@@ -95,7 +95,7 @@ export function useWhatsNewItems(opts: {
       items.push({
         id: "platform-welcome",
         kind: "platform",
-        title: t.dashboard.whatsNewPlatformTitle ?? "Welcome to Premiere Services",
+        title: t.dashboard.whatsNewPlatformTitle ?? "Welcome to AltShift",
         body: t.dashboard.whatsNewPlatformBody ?? "Manage bookings, reviews, and your pro profile from your dashboard.",
         href: "/dashboard",
         createdAt: new Date().toISOString(),

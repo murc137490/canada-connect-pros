@@ -135,7 +135,7 @@ export default function SquareBookingPayment({
     const isSandboxApp = applicationId.startsWith("sandbox-");
     // Soft diagnostic: Apple Pay sheet that opens then closes is almost always
     // domain / environment mismatch (Production domain + Sandbox secrets or vice versa).
-    if (typeof window !== "undefined" && window.location.hostname.includes("premiereservices.ca")) {
+    if (typeof window !== "undefined" && window.location.hostname.includes("altshift.ca")) {
       if (isSandboxApp) {
         console.warn(
           "[Apple Pay] This site is production but Square application ID is sandbox. Verify Apple Pay domain in Sandbox, or switch Edge secrets to Production (SQUARE_ENVIRONMENT=production + production app/location/token).",
@@ -159,7 +159,7 @@ export default function SquareBookingPayment({
       merchantCapabilities: ["supports3DS"],
       total: {
         amount: amountStr,
-        label: "Premiere Services",
+        label: "AltShift",
       },
     }),
     [amountStr, currencyCode]

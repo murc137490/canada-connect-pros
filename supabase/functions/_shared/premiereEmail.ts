@@ -1,5 +1,5 @@
 /**
- * Premiere Services transactional email design system.
+ * AltShift transactional email design system.
  *
  * Visual bar: would this look credible from a premium Canadian marketplace
  * you’d trust with a booking and payment? Immediate YES.
@@ -25,7 +25,7 @@ export const EMAIL_BRAND = {
   surfaceMuted: "#F3F0EB",
   /** Site --accent maple — use sparingly (status rules only) */
   accent: "#E86B0C",
-  support: "support@premiereservices.ca",
+  support: "support@altshift.ca",
   fontSans:
     "'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
   fontSerif: "'Instrument Serif', Georgia, 'Times New Roman', serif",
@@ -62,15 +62,14 @@ function attr(value: string) {
   return esc(value);
 }
 
-/** Quiet wordmark — matches site “Première”, not a giant H1. */
+/** Quiet wordmark — AltShift brand. */
 export function emailHeader(siteUrl: string): string {
-  const home = attr(siteUrl || "https://premiereservices.ca");
+  const home = attr(siteUrl || "https://www.altshift.ca");
   return `
   <tr>
     <td style="padding:0 0 32px 0;">
       <a href="${home}" style="text-decoration:none;color:${EMAIL_BRAND.ink};">
-        <span style="font-family:${EMAIL_BRAND.fontSerif};font-size:28px;line-height:1.1;font-weight:400;letter-spacing:-0.02em;color:${EMAIL_BRAND.ink};">Première</span>
-        <span style="display:inline-block;margin-left:8px;font-family:${EMAIL_BRAND.fontSans};font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:${EMAIL_BRAND.muted};vertical-align:0.35em;">Services</span>
+        <span style="font-family:${EMAIL_BRAND.fontSans};font-size:26px;line-height:1.1;font-weight:700;letter-spacing:-0.03em;color:${EMAIL_BRAND.ink};">AltShift</span>
       </a>
       <div style="margin-top:20px;height:2px;width:40px;background-color:${EMAIL_BRAND.primary};line-height:2px;font-size:2px;">&nbsp;</div>
     </td>
@@ -176,9 +175,9 @@ export function emailFooter(opts: {
   return `
   <tr>
     <td style="padding:28px 8px 0 8px;">
-      <p style="margin:0 0 8px 0;font-family:${EMAIL_BRAND.fontSerif};font-size:16px;line-height:1.2;font-weight:400;color:${EMAIL_BRAND.ink};">Première <span style="font-family:${EMAIL_BRAND.fontSans};font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:${EMAIL_BRAND.mutedSoft};vertical-align:middle;">Services</span></p>
+      <p style="margin:0 0 8px 0;font-family:${EMAIL_BRAND.fontSans};font-size:16px;line-height:1.2;font-weight:700;letter-spacing:-0.02em;color:${EMAIL_BRAND.ink};">AltShift</p>
       <p style="margin:0;font-family:${EMAIL_BRAND.fontSans};font-size:12px;line-height:1.7;color:${EMAIL_BRAND.mutedSoft};">
-        <a href="mailto:support@premiereservices.ca" style="color:${EMAIL_BRAND.mutedSoft};text-decoration:underline;">support@premiereservices.ca</a>
+        <a href="mailto:support@altshift.ca" style="color:${EMAIL_BRAND.mutedSoft};text-decoration:underline;">support@altshift.ca</a>
         &nbsp;·&nbsp;
         <a href="${attr(opts.termsUrl)}" style="color:${EMAIL_BRAND.mutedSoft};text-decoration:underline;">${terms}</a>
         &nbsp;·&nbsp;
@@ -207,7 +206,7 @@ export function emailShell(opts: EmailShellOptions & { siteUrl: string }): strin
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light">
   <meta name="supported-color-schemes" content="light">
-  <title>Premiere Services</title>
+  <title>AltShift</title>
   <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Manrope:wght@400;500;600;700&display=swap');

@@ -6,11 +6,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const PLATFORM_ADMIN_ALLOWLIST = [
-  "admin1@premiereservices.ca",
-  "admin2@premiereservices.ca",
-  "admin3@premiereservices.ca",
-  "admin4@premiereservices.ca",
-  "admin5@premiereservices.ca",
+  "admin1@altshift.ca",
+  "admin2@altshift.ca",
+  "admin3@altshift.ca",
+  "admin4@altshift.ca",
+  "admin5@altshift.ca",
 ] as const;
 
 const ALLOW_SET = new Set(PLATFORM_ADMIN_ALLOWLIST.map((e) => e.toLowerCase().trim()));

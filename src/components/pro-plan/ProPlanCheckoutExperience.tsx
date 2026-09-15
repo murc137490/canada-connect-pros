@@ -156,7 +156,7 @@ export default function ProPlanCheckoutExperience({
       merchantCapabilities: ["supports3DS"],
       total: {
         amount: chargeCents != null ? (chargeCents / 100).toFixed(2) : "0.00",
-        label: "Premiere Services",
+        label: "AltShift",
       },
     }),
     [chargeCents]

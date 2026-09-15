@@ -20,11 +20,11 @@ const SMTP_HOST = Deno.env.get("SMTP_HOST");
 const SMTP_PORT = Deno.env.get("SMTP_PORT");
 const SMTP_USER = Deno.env.get("SMTP_USER");
 const SMTP_PASS = Deno.env.get("SMTP_PASS");
-const DEFAULT_FROM_EMAIL = "no-reply@premiereservices.ca";
+const DEFAULT_FROM_EMAIL = "no-reply@altshift.ca";
 const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? DEFAULT_FROM_EMAIL;
-const FROM_NAME = Deno.env.get("FROM_NAME") ?? "Premiere Services";
-const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "support@premiereservices.ca";
-const SITE_URL = trimTrailingSlash(Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://premiereservices.ca");
+const FROM_NAME = Deno.env.get("FROM_NAME") ?? "AltShift";
+const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "support@altshift.ca";
+const SITE_URL = trimTrailingSlash(Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.altshift.ca");
 
 type ReferralInvite = {
   id: string;
@@ -433,8 +433,8 @@ function renderInviteEmail(language: "en" | "fr", vars: { senderName: string; si
   const bodyHtml =
     emailParagraph(
       isFr
-        ? `${vars.senderName} vous invite à rejoindre Premiere Services.`
-        : `${vars.senderName} invited you to join Premiere Services.`,
+        ? `${vars.senderName} vous invite à rejoindre AltShift.`
+        : `${vars.senderName} invited you to join AltShift.`,
     ) +
     emailParagraph(
       isFr
@@ -449,12 +449,12 @@ function renderInviteEmail(language: "en" | "fr", vars: { senderName: string; si
     );
 
   return {
-    subject: isFr ? "Invitation Premiere Services" : "Premiere Services invitation",
+    subject: isFr ? "Invitation AltShift" : "AltShift invitation",
     html: emailShell({
       language,
       preheader: isFr
-        ? `${vars.senderName} vous a invité sur Premiere Services.`
-        : `${vars.senderName} invited you to Premiere Services.`,
+        ? `${vars.senderName} vous a invité sur AltShift.`
+        : `${vars.senderName} invited you to AltShift.`,
       eyebrow: isFr ? "Invitation" : "Invitation",
       title,
       bodyHtml,
@@ -489,7 +489,7 @@ async function sendReferralInviteEmail(toEmail: string, subject: string, html: s
       ok: false,
       hint:
         r.hint ??
-        "Could not send email via Resend. Verify premiereservices.ca in Resend (DNS) and that RESEND_API_KEY is correct.",
+        "Could not send email via Resend. Verify altshift.ca in Resend (DNS) and that RESEND_API_KEY is correct.",
       details: r.details,
     };
   }

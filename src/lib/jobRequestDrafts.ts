@@ -27,7 +27,7 @@ export type JobRequestDraft = JobRequestDraftPayload & {
 };
 
 function storageKey(userId: string): string {
-  return `premiere:job-request-drafts:v1:${userId}`;
+  return `altshift:job-request-drafts:v1:${userId}`;
 }
 
 function dateToIso(d: Date | undefined): string | null {

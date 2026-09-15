@@ -5,7 +5,8 @@
 
 const LAST_UPDATED = "March 2026";
 const LAST_UPDATED_FR = "mars 2026";
-const COMPANY_NAME = "Premiere Services";
+const COMPANY_NAME = "AltShift";
+const LEGAL_COMPANY_NAME = "Services AltShift Inc.";
 
 /** Terms shown when a client requests a booking (client-only). */
 export const TERMS_SUMMARY_BOOKING = `
@@ -131,7 +132,7 @@ En continuant, vous confirmez avoir lu et accepté ces conditions professionnell
 export const TERMS_FULL_SECTIONS = [
   {
     title: "TERMS OF SERVICE",
-    body: `Last updated: ${LAST_UPDATED}\n\nBooking issue help (not an unlimited satisfaction guarantee)\n\nIf a service booked through Première Services is not performed substantially according to the agreed booking, Première Services may help review the issue through the claims process. Possible outcomes are case-by-case and not automatic (correction, replacement where available, partial or full refund in serious cases). Submitting a claim does not guarantee a refund. Final legal wording: LEGAL_REVIEW_REQUIRED.`,
+    body: `Last updated: ${LAST_UPDATED}\n\nBooking issue help (not an unlimited satisfaction guarantee)\n\nIf a service booked through AltShift is not performed substantially according to the agreed booking, AltShift may help review the issue through the claims process. Possible outcomes are case-by-case and not automatic (correction, replacement where available, partial or full refund in serious cases). Submitting a claim does not guarantee a refund. Final legal wording: LEGAL_REVIEW_REQUIRED.`,
   },
   {
     title: "1. INTRODUCTION",
@@ -143,7 +144,7 @@ export const TERMS_FULL_SECTIONS = [
   },
   {
     title: "3. NO WARRANTY",
-    body: `The Platform makes no warranties or guarantees regarding the quality, safety, legality, suitability, or outcome of services provided by Service Providers. Première Services verifies certain credentials where applicable, but verification does not constitute an endorsement, guarantee, certification or warranty of the provider's work. Any verification conducted by the Platform is limited and does not guarantee qualifications, licensing completeness, insurance coverage, or background checks.`,
+    body: `The Platform makes no warranties or guarantees regarding the quality, safety, legality, suitability, or outcome of services provided by Service Providers. AltShift verifies certain credentials where applicable, but verification does not constitute an endorsement, guarantee, certification or warranty of the provider's work. Any verification conducted by the Platform is limited and does not guarantee qualifications, licensing completeness, insurance coverage, or background checks.`,
   },
   {
     title: "4. USER ACCOUNTS",
@@ -167,7 +168,7 @@ export const TERMS_FULL_SECTIONS = [
   },
   {
     title: "8. PAYMENTS",
-    body: `Payments are typically processed through Square (including Square Connect when a Service Provider has connected their Square account). The Platform does not operate a traditional escrow account merely by using Square. Customer-facing invoices may show a five percent (5%) Première Services platform fee on the service subtotal, plus applicable taxes. Internal application-fee settings on Square Connect are an implementation detail and are not a published “Square list price.” Refunds are handled case-by-case and are not automatic. LEGAL_REVIEW_REQUIRED for legal characterization of the payment flow.`,
+    body: `Payments are typically processed through Square (including Square Connect when a Service Provider has connected their Square account). The Platform does not operate a traditional escrow account merely by using Square. Customer-facing invoices may show a five percent (5%) AltShift platform fee on the service subtotal, plus applicable taxes. Internal application-fee settings on Square Connect are an implementation detail and are not a published “Square list price.” Refunds are handled case-by-case and are not automatic. LEGAL_REVIEW_REQUIRED for legal characterization of the payment flow.`,
   },
   {
     title: "8A. PRE-EXISTING CLIENTS, NEW PLATFORM CLIENTS, AND FEES (SERVICE PROVIDERS)",
@@ -293,7 +294,7 @@ export const TERMS_PROVIDER_AGREEMENT = [
 export const TERMS_FULL_SECTIONS_FR = [
   {
     title: "CONDITIONS D'UTILISATION",
-    body: `Dernière mise à jour : ${LAST_UPDATED_FR}\n\nAide en cas de problème de réservation (pas une garantie de satisfaction illimitée)\n\nSi un service réservé via Première Services n’est pas réalisé substantiellement conformément à la réservation, Première Services peut aider à examiner le problème via la procédure de réclamation. Les résultats sont au cas par cas et non automatiques. Déposer une réclamation ne garantit pas un remboursement. LEGAL_REVIEW_REQUIRED.`,
+    body: `Dernière mise à jour : ${LAST_UPDATED_FR}\n\nAide en cas de problème de réservation (pas une garantie de satisfaction illimitée)\n\nSi un service réservé via AltShift n’est pas réalisé substantiellement conformément à la réservation, AltShift peut aider à examiner le problème via la procédure de réclamation. Les résultats sont au cas par cas et non automatiques. Déposer une réclamation ne garantit pas un remboursement. LEGAL_REVIEW_REQUIRED.`,
   },
   {
     title: "1. INTRODUCTION",
@@ -305,7 +306,7 @@ export const TERMS_FULL_SECTIONS_FR = [
   },
   {
     title: "3. AUCUNE GARANTIE",
-    body: `La Plateforme ne donne aucune garantie concernant la qualité, la sécurité, la légalité, la pertinence ou le résultat des services fournis par les Fournisseurs de services. Première Services vérifie certains titres de compétences le cas échéant, mais cette vérification ne constitue pas une approbation, une garantie, une certification ni une assurance quant au travail du fournisseur. Toute vérification effectuée par la Plateforme est limitée et ne garantit pas les qualifications, la complétude des permis, la couverture d'assurance ou les vérifications d'antécédents.`,
+    body: `La Plateforme ne donne aucune garantie concernant la qualité, la sécurité, la légalité, la pertinence ou le résultat des services fournis par les Fournisseurs de services. AltShift vérifie certains titres de compétences le cas échéant, mais cette vérification ne constitue pas une approbation, une garantie, une certification ni une assurance quant au travail du fournisseur. Toute vérification effectuée par la Plateforme est limitée et ne garantit pas les qualifications, la complétude des permis, la couverture d'assurance ou les vérifications d'antécédents.`,
   },
   {
     title: "4. COMPTES UTILISATEURS",

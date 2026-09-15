@@ -5,7 +5,7 @@ export const BOOKING_INVOICE_GST_RATE = 0.05;
 export const BOOKING_INVOICE_QST_RATE = 0.09975;
 
 /**
- * Customer-facing Première Services platform fee on the service subtotal (5%).
+ * Customer-facing AltShift platform fee on the service subtotal (5%).
  * Do not describe this as "Square's card rate." Internal Connect app_fee is separate.
  */
 export const BOOKING_INVOICE_PROCESSING_FEE_RATE = PLATFORM_FEE_RATE;

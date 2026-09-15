@@ -164,7 +164,7 @@ export default function Support() {
                   </p>
                   <p className="text-[11px] text-muted-foreground leading-tight">{t.support.contactResponse}</p>
                   <a
-                    href={`mailto:${SUPPORT_EMAIL}?subject=Premiere%20Services%20-%20Support`}
+                    href={`mailto:${SUPPORT_EMAIL}?subject=AltShift%20Services%20-%20Support`}
                     className="inline-block mt-2 text-xs font-medium text-primary hover:underline focus:outline-none dark:text-sky-400 dark:hover:text-sky-300"
                   >
                     {locale === "fr" ? "Envoyer un courriel →" : "Send email →"}

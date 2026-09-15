@@ -4,8 +4,8 @@ import { translations } from "@/i18n/translations";
 import { cn } from "@/lib/utils";
 import { getCookieConsent, isCookieAllowed } from "@/lib/cookieConsent";
 
-const STORAGE_KEY = "premiere-locale";
-const COOKIE_NAME = "premiere-locale";
+const STORAGE_KEY = "altshift-locale";
+const COOKIE_NAME = "altshift-locale";
 
 type Translations = (typeof translations)["en"];
 
@@ -26,7 +26,7 @@ function prefersReducedMotion() {
 
 function readLocaleCookie(): Locale | null {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(/(?:^|; )premiere-locale=(fr|en)(?:;|$)/);
+  const match = document.cookie.match(/(?:^|; )altshift-locale=(fr|en)(?:;|$)/);
   return match?.[1] === "en" || match?.[1] === "fr" ? match[1] : null;
 }
 
@@ -45,10 +45,13 @@ function writeLocaleCookie(locale: Locale) {
  */
 function readInitialLocale(): Locale {
   if (typeof window === "undefined") return "fr";
-  const stored = localStorage.getItem(STORAGE_KEY);
+  const stored = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem("premiere-locale");
   if (stored === "fr" || stored === "en") return stored;
   const fromCookie = readLocaleCookie();
   if (fromCookie) return fromCookie;
+  // Legacy cookie from Première branding
+  const legacy = typeof document !== "undefined" ? document.cookie.match(/(?:^|; )premiere-locale=(fr|en)(?:;|$)/) : null;
+  if (legacy?.[1] === "en" || legacy?.[1] === "fr") return legacy[1];
   return "fr";
 }
 

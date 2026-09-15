@@ -13,7 +13,7 @@ export type CookieSection = { title: string; body: string };
 export const COOKIE_SECTIONS_EN: CookieSection[] = [
   {
     title: "1. Overview",
-    body: `This Cookie Policy explains how Première Services uses cookies and similar technologies (including local storage) on https://www.premiereservices.ca.
+    body: `This Cookie Policy explains how AltShift uses cookies and similar technologies (including local storage) on https://www.altshift.ca.
 
 Contact: ${PRIVACY_CONTACT.email} · Support: ${SUPPORT_EMAIL}
 
@@ -41,7 +41,7 @@ Refusing non-essential cookies does not block login or booking.`,
 export const COOKIE_SECTIONS_FR: CookieSection[] = [
   {
     title: "1. Aperçu",
-    body: `La présente politique explique comment Première Services utilise les témoins et technologies similaires (dont le stockage local) sur https://www.premiereservices.ca.
+    body: `La présente politique explique comment AltShift utilise les témoins et technologies similaires (dont le stockage local) sur https://www.altshift.ca.
 
 Contact : ${PRIVACY_CONTACT.email} · Soutien : ${SUPPORT_EMAIL}
 

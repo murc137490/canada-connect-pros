@@ -41,10 +41,10 @@ const corsHeaders = {
 };
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "support@premiereservices.ca";
-const FROM_NAME = Deno.env.get("FROM_NAME") ?? "Premiere Services";
-const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "support@premiereservices.ca";
-const SITE_URL = trimTrailingSlash(Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://premiereservices.ca");
+const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "support@altshift.ca";
+const FROM_NAME = Deno.env.get("FROM_NAME") ?? "AltShift";
+const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "support@altshift.ca";
+const SITE_URL = trimTrailingSlash(Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.altshift.ca");
 const ADMIN_EMAIL =
   Deno.env.get("ADMIN_NOTIFICATION_EMAIL") ??
   Deno.env.get("ADMIN_EMAIL") ??
@@ -179,7 +179,7 @@ async function loadBookingContext(adminClient: ReturnType<typeof createClient>, 
       client_name: clientProfile?.full_name ?? clientEmail,
       client_email: clientEmail,
       client_phone: clientProfile?.phone ?? "",
-      pro_name: pro?.business_name ?? "Premiere Services Pro",
+      pro_name: pro?.business_name ?? "AltShift Pro",
       booking_id: booking.id,
       booking_date: bookingDate,
       booking_time: bookingTime,
@@ -317,7 +317,7 @@ const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
   booking_created: {
     en: {
       subject: "We received your booking request",
-      preheader: "Your Premiere Services booking request is in.",
+      preheader: "Your AltShift booking request is in.",
       eyebrow: "Booking",
       title: "Thanks, {{name}} — we received your request",
       showPolicyLinks: true,
@@ -335,7 +335,7 @@ const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
     },
     fr: {
       subject: "Nous avons reçu votre demande de réservation",
-      preheader: "Votre demande de réservation Premiere Services est enregistrée.",
+      preheader: "Votre demande de réservation AltShift est enregistrée.",
       eyebrow: "Réservation",
       title: "Merci, {{name}} — nous avons bien reçu votre demande",
       showPolicyLinks: true,
@@ -360,7 +360,7 @@ const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
       title: "You’re booked, {{name}}",
       showPolicyLinks: true,
       body:
-        emailParagraph("Your Premiere Services booking is confirmed.") +
+        emailParagraph("Your AltShift booking is confirmed.") +
         detailsBlock([
           ["Booking ID", "{{booking_id}}"],
           ["Service", "{{service_type}}"],
@@ -379,7 +379,7 @@ const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
       title: "C’est confirmé, {{name}}",
       showPolicyLinks: true,
       body:
-        emailParagraph("Votre réservation Premiere Services est confirmée.") +
+        emailParagraph("Votre réservation AltShift est confirmée.") +
         detailsBlock([
           ["ID de réservation", "{{booking_id}}"],
           ["Service", "{{service_type}}"],
@@ -435,7 +435,7 @@ const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
   booking_reminder: {
     en: {
       subject: "Reminder: your booking is coming up",
-      preheader: "Your Premiere Services booking is soon.",
+      preheader: "Your AltShift booking is soon.",
       eyebrow: "Reminder",
       title: "Coming up {{reminder_window}}, {{name}}",
       showPolicyLinks: true,
@@ -452,7 +452,7 @@ const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
     },
     fr: {
       subject: "Rappel : votre réservation approche",
-      preheader: "Votre réservation Premiere Services approche.",
+      preheader: "Votre réservation AltShift approche.",
       eyebrow: "Rappel",
       title: "Ça approche {{reminder_window}}, {{name}}",
       showPolicyLinks: true,
@@ -544,30 +544,30 @@ const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
   },
   auth_confirm_signup: {
     en: {
-      subject: "Confirm your Premiere Services account",
+      subject: "Confirm your AltShift account",
       preheader: "One step left to activate your account.",
       eyebrow: "Account",
       title: "Confirm your email",
       body:
-        emailParagraph("Welcome{{name_suffix}}. Confirm your email to finish setting up Premiere Services.") +
+        emailParagraph("Welcome{{name_suffix}}. Confirm your email to finish setting up AltShift.") +
         cta("Confirm email", "{{confirmation_url}}") +
         emailSecondaryNote("This link expires in {{expires_in}}. If you didn’t create an account, you can ignore this email."),
     },
     fr: {
-      subject: "Confirmez votre compte Premiere Services",
+      subject: "Confirmez votre compte AltShift",
       preheader: "Une dernière étape pour activer votre compte.",
       eyebrow: "Compte",
       title: "Confirmez votre courriel",
       body:
-        emailParagraph("Bienvenue{{name_suffix}}. Confirmez votre courriel pour terminer la création de votre compte Premiere Services.") +
+        emailParagraph("Bienvenue{{name_suffix}}. Confirmez votre courriel pour terminer la création de votre compte AltShift.") +
         cta("Confirmer mon courriel", "{{confirmation_url}}") +
         emailSecondaryNote("Ce lien expire dans {{expires_in}}. Si vous n’avez pas créé de compte, ignorez ce courriel."),
     },
   },
   auth_reset_password: {
     en: {
-      subject: "Reset your Premiere Services password",
-      preheader: "Reset your Premiere Services password securely.",
+      subject: "Reset your AltShift password",
+      preheader: "Reset your AltShift password securely.",
       eyebrow: "Security",
       title: "Reset your password",
       body:
@@ -579,8 +579,8 @@ const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
         ),
     },
     fr: {
-      subject: "Réinitialisez votre mot de passe Premiere Services",
-      preheader: "Réinitialisez votre mot de passe Premiere Services en toute sécurité.",
+      subject: "Réinitialisez votre mot de passe AltShift",
+      preheader: "Réinitialisez votre mot de passe AltShift en toute sécurité.",
       eyebrow: "Sécurité",
       title: "Réinitialisez votre mot de passe",
       body:
@@ -594,24 +594,24 @@ const copy: Record<EmailType, Record<Language, TemplateCopy>> = {
   },
   auth_magic_link: {
     en: {
-      subject: "Your Premiere Services sign-in link",
-      preheader: "Your secure Premiere Services sign-in link.",
+      subject: "Your AltShift sign-in link",
+      preheader: "Your secure AltShift sign-in link.",
       eyebrow: "Sign in",
       title: "Welcome back{{name_suffix}}",
       body:
-        emailParagraph("Use the secure button below to access your Premiere Services account. No password needed for this step.") +
+        emailParagraph("Use the secure button below to access your AltShift account. No password needed for this step.") +
         cta("Sign in securely", "{{magic_link_url}}") +
         emailSecondaryNote(
           "This link expires in {{expires_in}}. If you didn’t request it, you can safely ignore this email. Don’t forward it.",
         ),
     },
     fr: {
-      subject: "Votre lien de connexion Premiere Services",
-      preheader: "Votre lien de connexion sécurisé Premiere Services.",
+      subject: "Votre lien de connexion AltShift",
+      preheader: "Votre lien de connexion sécurisé AltShift.",
       eyebrow: "Connexion",
       title: "Bon retour{{name_suffix}}",
       body:
-        emailParagraph("Utilisez le bouton sécurisé ci-dessous pour accéder à votre compte Premiere Services. Aucun mot de passe n’est requis pour cette étape.") +
+        emailParagraph("Utilisez le bouton sécurisé ci-dessous pour accéder à votre compte AltShift. Aucun mot de passe n’est requis pour cette étape.") +
         cta("Se connecter en toute sécurité", "{{magic_link_url}}") +
         emailSecondaryNote(
           "Ce lien expire dans {{expires_in}}. Si vous ne l’avez pas demandé, ignorez ce courriel. Ne le transférez pas.",

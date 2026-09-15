@@ -27,7 +27,7 @@ const CLIENT_KEY = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-const GEO_SESSION_KEY = "premiere:geocodeCache:v1";
+const GEO_SESSION_KEY = "altshift:geocodeCache:v1";
 const memoryGeoCache = new Map<string, GeocodeLocation>();
 /** In-flight dedupe so rapid remounts / Strict Mode don't hammer the edge function. */
 const inflightGeo = new Map<string, Promise<GeocodeLocation | null>>();

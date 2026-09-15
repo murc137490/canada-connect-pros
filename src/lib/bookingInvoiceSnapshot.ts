@@ -31,9 +31,9 @@ export type BookingInvoiceSnapshotV1 = {
   renewal_anchor_date?: string | null;
   /** 5-character public reference for receipts (matches `bookings.public_booking_code`). */
   booking_public_code?: string | null;
-  /** 6-digit Premiere member ID (client). */
+  /** 6-digit AltShift member ID (client). */
   client_member_number?: string | null;
-  /** 6-digit Premiere member ID (pro account). */
+  /** 6-digit AltShift member ID (pro account). */
   pro_member_number?: string | null;
 };
 

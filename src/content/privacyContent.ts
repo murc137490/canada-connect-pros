@@ -13,7 +13,7 @@ export type PrivacySection = { title: string; body: string };
 export const PRIVACY_SECTIONS_EN: PrivacySection[] = [
   {
     title: "1. Who we are",
-    body: `This Privacy Policy describes how ${LEGAL_ENTITY_NAME} (“Première Services”, “we”, “us”) collects and uses personal information when you use https://www.premiereservices.ca and related services.
+    body: `This Privacy Policy describes how ${LEGAL_ENTITY_NAME} (“AltShift”, “we”, “us”) collects and uses personal information when you use https://www.altshift.ca and related services.
 
 Privacy contact: ${PRIVACY_CONTACT.title} — ${PRIVACY_CONTACT.name} — ${PRIVACY_CONTACT.email}
 Support: ${SUPPORT_EMAIL}
@@ -84,7 +84,7 @@ Retention periods for identity documents, financial records, and claims evidence
   },
   {
     title: "8. AI / automated processing",
-    body: `Our Help assistant may send the text of your support conversation to an AI provider to generate answers about Première Services. Do not paste government IDs, passwords, or full payment card details into chat. AI answers are informational and may be incomplete.
+    body: `Our Help assistant may send the text of your support conversation to an AI provider to generate answers about AltShift. Do not paste government IDs, passwords, or full payment card details into chat. AI answers are informational and may be incomplete.
 
 [REVIEW_REQUIRED — LR for automated decision disclosures if expanded.]`,
   },
@@ -115,7 +115,7 @@ Support: ${SUPPORT_EMAIL}`,
 export const PRIVACY_SECTIONS_FR: PrivacySection[] = [
   {
     title: "1. Qui nous sommes",
-    body: `La présente Politique de confidentialité décrit comment ${LEGAL_ENTITY_NAME} (« Première Services », « nous ») recueille et utilise des renseignements personnels lorsque vous utilisez https://www.premiereservices.ca et les services connexes.
+    body: `La présente Politique de confidentialité décrit comment ${LEGAL_ENTITY_NAME} (« AltShift », « nous ») recueille et utilise des renseignements personnels lorsque vous utilisez https://www.altshift.ca et les services connexes.
 
 Contact confidentialité : ${PRIVACY_CONTACT.title} — ${PRIVACY_CONTACT.name} — ${PRIVACY_CONTACT.email}
 Soutien : ${SUPPORT_EMAIL}
