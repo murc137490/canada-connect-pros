@@ -131,6 +131,7 @@ export type Database = {
           website: string | null
           years_experience: number | null
           square_location_id: string | null
+          share_slug: string | null
         }
         Insert: {
           availability?: string | null
@@ -167,6 +168,7 @@ export type Database = {
           website?: string | null
           years_experience?: number | null
           square_location_id?: string | null
+          share_slug?: string | null
         }
         Update: {
           availability?: string | null
@@ -203,6 +205,7 @@ export type Database = {
           website?: string | null
           years_experience?: number | null
           square_location_id?: string | null
+          share_slug?: string | null
         }
         Relationships: []
       }

@@ -50,6 +50,8 @@ export type LoadedProEditState = {
   existingPrimaryPhotoUrl: string | null;
   existingGalleryUrls: string[];
   isVerified: boolean;
+  shareSlug: string | null;
+  proProfileId: string;
 };
 
 function levelFromParsed(level: string | null): LanguageLevel {
@@ -193,6 +195,8 @@ export function useLoadExistingProProfile(userId: string | undefined, enabled: b
         existingPrimaryPhotoUrl: primary?.url ?? null,
         existingGalleryUrls: gallery.map((g) => g.url),
         isVerified: pro.is_verified === true,
+        shareSlug: (pro as { share_slug?: string | null }).share_slug?.trim() || null,
+        proProfileId: pro.id,
       });
 
       if (pro.email_language === "fr" || pro.email_language === "en") {

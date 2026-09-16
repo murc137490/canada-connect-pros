@@ -5,7 +5,8 @@ import Layout from "@/components/Layout";
 import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { isDemoAccount } from "@/lib/demoAccount";
+import { isDemoAccount, isDemoProProfile } from "@/lib/demoAccount";
+import { publicShareUrl, slugifyShareName } from "@/lib/proShareSlug";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LiquidButton } from "@/components/ui/liquid-button";
@@ -499,6 +500,7 @@ export default function Dashboard() {
     primary_category_slug?: string | null;
     referral_invite_panel_enabled?: boolean | null;
     square_location_id?: string | null;
+    share_slug?: string | null;
     service_at_workspace_only?: boolean | null;
     offers_workspace?: boolean | null;
     offers_travel?: boolean | null;
@@ -2718,7 +2720,7 @@ export default function Dashboard() {
       const { data: proData, error: proError } = await supabase
         .from("pro_profiles")
         .select(
-          "id, business_name, availability, is_verified, price_min, price_max, subscription_tier, page_template, page_primary_color, page_secondary_color, page_accent_color, page_background_color, page_header_text, unavailable_dates, available_date_overrides, primary_category_slug, referral_invite_panel_enabled, square_location_id, service_at_workspace_only, offers_workspace, offers_travel, business_address, latitude, longitude, service_radius_km, booking_cancel_policy, booking_cancel_fee_percent"
+          "id, business_name, availability, is_verified, price_min, price_max, subscription_tier, page_template, page_primary_color, page_secondary_color, page_accent_color, page_background_color, page_header_text, unavailable_dates, available_date_overrides, primary_category_slug, referral_invite_panel_enabled, square_location_id, share_slug, service_at_workspace_only, offers_workspace, offers_travel, business_address, latitude, longitude, service_radius_km, booking_cancel_policy, booking_cancel_fee_percent"
         )
         .eq("user_id", user.id)
         .single();
@@ -2735,6 +2737,7 @@ export default function Dashboard() {
         available_date_overrides?: string[];
         referral_invite_panel_enabled?: boolean | null;
         square_location_id?: string | null;
+        share_slug?: string | null;
         service_at_workspace_only?: boolean | null;
         business_address?: string | null;
       } | null;
@@ -2767,6 +2770,11 @@ export default function Dashboard() {
         square_location_id:
           typeof pro.square_location_id === "string" && pro.square_location_id.trim()
             ? pro.square_location_id.trim()
+            : null,
+        share_slug:
+          typeof (pro as { share_slug?: string | null }).share_slug === "string" &&
+          (pro as { share_slug?: string }).share_slug!.trim()
+            ? (pro as { share_slug: string }).share_slug.trim()
             : null,
       });
       {
@@ -4424,6 +4432,47 @@ export default function Dashboard() {
                         <p className="text-sm text-muted-foreground">{t.dashboard.topPercent}</p>
                       </div>
                     </div>
+                    {(() => {
+                      const slug =
+                        (proProfile.share_slug?.trim() ||
+                          slugifyShareName(proProfile.business_name || profile?.full_name || "pro")) ||
+                        "pro";
+                      const shareHref = publicShareUrl(slug);
+                      return (
+                        <div className="mt-5 rounded-lg border border-border/70 bg-muted/30 px-4 py-3">
+                          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1.5">
+                            {t.dashboard.shareLinkLabel ?? "Your public link"}
+                          </p>
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <a
+                              href={shareHref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="min-w-0 truncate text-sm font-medium text-primary hover:underline"
+                            >
+                              {shareHref}
+                            </a>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="shrink-0 gap-1.5"
+                              onClick={() => {
+                                void navigator.clipboard.writeText(shareHref).then(() => {
+                                  toast({
+                                    title: t.common?.linkCopied ?? "Link copied",
+                                    description: shareHref,
+                                  });
+                                });
+                              }}
+                            >
+                              <Copy size={14} />
+                              {t.dashboard.copyShareLink ?? "Copy link"}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="rounded-xl border bg-card p-6 md:p-8" data-tour="pro-avatar-square">
@@ -4434,19 +4483,29 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <h3 className="font-heading font-bold text-foreground mb-1">{t.dashboard.squarePaymentsHeading}</h3>
-                          {!proProfile.square_location_id ? (
+                          {proProfile.square_location_id || isDemoProProfile(proProfile) ? (
+                            <a
+                              href="https://app.squareup.com/dashboard"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:underline dark:text-emerald-400"
+                            >
+                              <CheckCircle size={16} className="shrink-0" aria-hidden />
+                              {t.dashboard.squareConnectedWithSquare ?? "Connected with Square"}
+                            </a>
+                          ) : (
                             <p className="text-sm text-muted-foreground max-w-prose">
                               {t.dashboard.squarePaymentsNotConnected}
                             </p>
-                          ) : null}
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                        {proProfile.square_location_id ? (
+                        {proProfile.square_location_id || isDemoProProfile(proProfile) ? (
                           <Button
                             type="button"
                             variant="outline"
-                            disabled={squareConnectLoading}
+                            disabled={squareConnectLoading || isDemoProProfile(proProfile)}
                             onClick={() => void handleSquareDisconnect()}
                           >
                             {squareConnectLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

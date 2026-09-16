@@ -118,6 +118,7 @@ const App = () => (
               <Route path="/pay/apple-handoff/:handoffId" element={<><PrivateNoIndex /><ApplePayHandoffPay /></>} />
               <Route path="/auth" element={<><PrivateNoIndex /><Auth /></>} />
               <Route path="/auth/callback" element={<><PrivateNoIndex /><AuthCallback /></>} />
+              <Route path="/:shareSlug" element={<ProProfilePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </WhatsNewProvider>

@@ -52,6 +52,8 @@ import {
   DialogHeader as DayDialogHeader,
   DialogTitle as DayDialogTitle,
 } from "@/components/ui/dialog";
+import { resolveShareSlugChoices } from "@/lib/resolveShareSlug";
+import { publicShareUrl, slugifyShareName } from "@/lib/proShareSlug";
 import AddressInput, { hasGoogleAddressAutocomplete } from "@/components/AddressInput";
 import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { Loader2, Upload, X, Plus } from "lucide-react";
@@ -188,6 +190,10 @@ export function ProProfileEditorDialog({
   const [existingIdDocumentUrl, setExistingIdDocumentUrl] = useState<string | null>(null);
   const [existingGalleryUrls, setExistingGalleryUrls] = useState<string[]>([]);
   const [isProVerified, setIsProVerified] = useState(false);
+  const [selectedShareSlug, setSelectedShareSlug] = useState("");
+  const [shareSlugTaken, setShareSlugTaken] = useState(false);
+  const [shareSlugAlternatives, setShareSlugAlternatives] = useState<[string, string] | null>(null);
+  const [shareSlugChecking, setShareSlugChecking] = useState(false);
   const onboarding = searchParams.get("onboarding") === "1";
   const isEditMode = hasExistingProfile;
   const promoCode = (searchParams.get("promo_code") ?? "").trim();
@@ -217,8 +223,41 @@ export function ProProfileEditorDialog({
     setExistingIdDocumentUrl(proEdit.existingIdDocumentUrl);
     setExistingGalleryUrls(proEdit.existingGalleryUrls);
     setIsProVerified(proEdit.isVerified);
+    setSelectedShareSlug(proEdit.shareSlug || slugifyShareName(proEdit.formPatch.firstNameOrBusiness));
+    setShareSlugTaken(false);
+    setShareSlugAlternatives(null);
     setProfileApplied(true);
   }, [proEdit, profileApplied]);
+
+  useEffect(() => {
+    if (!open) return;
+    const name = form.firstNameOrBusiness.trim();
+    if (!name) {
+      setSelectedShareSlug("");
+      setShareSlugTaken(false);
+      setShareSlugAlternatives(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setShareSlugChecking(true);
+      void resolveShareSlugChoices(name, proEdit?.proProfileId).then((res) => {
+        if (cancelled) return;
+        setShareSlugTaken(res.taken);
+        setShareSlugAlternatives(res.taken ? res.alternatives : null);
+        setSelectedShareSlug((prev) => {
+          if (!res.taken) return res.preferred;
+          if (prev === res.alternatives[0] || prev === res.alternatives[1]) return prev;
+          return res.alternatives[0];
+        });
+        setShareSlugChecking(false);
+      });
+    }, 320);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [form.firstNameOrBusiness, open, proEdit?.proProfileId]);
 
   useEffect(() => {
     if (open) return;
@@ -439,6 +478,7 @@ export function ProProfileEditorDialog({
       payload.page_background_color = pageBackgroundColor || null;
       payload.page_header_text = null;
       payload.service_tags = proServiceTags.length > 0 ? proServiceTags : null;
+      payload.share_slug = selectedShareSlug || slugifyShareName(form.firstNameOrBusiness);
 
       if (existing?.id) {
         let upErr = (await supabase.from("pro_profiles").update(payload).eq("id", existing.id)).error;
@@ -819,6 +859,45 @@ export function ProProfileEditorDialog({
               className="w-full"
               required
             />
+            {form.firstNameOrBusiness.trim() ? (
+              <div className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2.5 space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {t.dashboard.shareSlugPreview ?? "Public link preview"}
+                  {shareSlugChecking ? "…" : ""}
+                </p>
+                {!shareSlugTaken ? (
+                  <p className="text-sm font-medium text-foreground break-all">
+                    {publicShareUrl(selectedShareSlug || slugifyShareName(form.firstNameOrBusiness))}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-foreground">
+                      {t.dashboard.shareSlugTakenTitle ?? "That link is taken"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t.dashboard.shareSlugTakenHint ??
+                        "Pick one of these available links for your public page:"}
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {(shareSlugAlternatives ?? []).map((alt) => (
+                        <label
+                          key={alt}
+                          className="flex cursor-pointer items-center gap-2 rounded-md border border-border/60 bg-background px-3 py-2 text-sm"
+                        >
+                          <input
+                            type="radio"
+                            name="share-slug-choice"
+                            checked={selectedShareSlug === alt}
+                            onChange={() => setSelectedShareSlug(alt)}
+                          />
+                          <span className="break-all font-medium">{publicShareUrl(alt)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : null}
           </div>
 
           <div className="space-y-2">

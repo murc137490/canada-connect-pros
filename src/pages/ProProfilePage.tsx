@@ -36,6 +36,7 @@ import {
 } from "@/lib/bookingInvoiceSnapshot";
 import { buildClientInvoiceContactBlock } from "@/lib/clientInvoiceContactBlock";
 import type { AvailabilityState } from "@/components/WeekdayAvailability";
+import { isReservedShareSlug, isUuidLike } from "@/lib/proShareSlug";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { isDemoAccount, isDemoProProfile } from "@/lib/demoAccount";
@@ -138,7 +139,12 @@ interface ProData {
 }
 
 export default function ProProfilePage() {
-  const { proId } = useParams<{ proId: string }>();
+  const { proId: proIdParam, shareSlug: shareSlugParam } = useParams<{
+    proId?: string;
+    shareSlug?: string;
+  }>();
+  const [resolvedProId, setResolvedProId] = useState<string | undefined>(proIdParam);
+  const proId = resolvedProId;
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -683,6 +689,40 @@ export default function ProProfilePage() {
       toast({ title: t.common?.linkCopied ?? "Link copied", description: "" });
     }
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (proIdParam) {
+        setResolvedProId(proIdParam);
+        return;
+      }
+      const slug = (shareSlugParam ?? "").trim().toLowerCase();
+      if (!slug || isReservedShareSlug(slug) || isUuidLike(slug)) {
+        setResolvedProId(undefined);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      const { data } = await supabase
+        .from("pro_profiles")
+        .select("id")
+        .ilike("share_slug", slug)
+        .eq("is_verified", true)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!data?.id) {
+        setResolvedProId(undefined);
+        setPro(null);
+        setLoading(false);
+        return;
+      }
+      setResolvedProId(data.id);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [proIdParam, shareSlugParam]);
 
   useEffect(() => {
     if (!proId) return;
