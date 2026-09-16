@@ -2240,9 +2240,6 @@ export default function ProProfilePage() {
                                 : "This professional has not completed a billing address yet. Please try again later or contact support."
                             );
                           }
-                          const supplierLegal =
-                            (typeof pro.legal_business_name === "string" && pro.legal_business_name.trim()) ||
-                            (pro.business_name ?? "").trim();
                           const serviceLine = svc
                             ? serviceLineLabel(svc)
                             : t.profile?.servicesOffered ?? "Service";
@@ -2270,7 +2267,6 @@ export default function ProProfilePage() {
                           const invoice = buildBookingInvoiceSnapshotV2({
                             proProfileId: pro.id,
                             businessName: pro.business_name ?? "",
-                            supplierLegalName: supplierLegal,
                             supplierAddress,
                             supplierGstNumber: pro.gst_registration_number ?? null,
                             supplierQstNumber: pro.qst_registration_number ?? null,

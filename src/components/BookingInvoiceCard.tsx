@@ -5,6 +5,7 @@ import { normalizeBookingInvoiceSnapshot } from "@/lib/bookingInvoiceSnapshot";
 import { buildQuebecBilingualInvoiceHtml } from "@/lib/quebecInvoiceHtml";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PREMIERE_FAVICON_DATA_URI } from "@/lib/siteFavicon";
+import { LEGAL_ENTITY_NAME } from "@/config/legalConfig";
 
 export type BookingPaymentRow = {
   amount_cents: number;
@@ -125,7 +126,10 @@ export default function BookingInvoiceCard({
   return (
     <div className="rounded-xl border border-border bg-card p-4 md:p-5 space-y-4 text-sm">
       <div className="min-w-0 space-y-1">
-        <p className="font-semibold text-foreground">{businessName}</p>
+        <p className="font-semibold text-foreground">{LEGAL_ENTITY_NAME}</p>
+        {businessName?.trim() ? (
+          <p className="text-sm text-muted-foreground">{businessName.trim()}</p>
+        ) : null}
         <p className="text-xs text-muted-foreground font-mono truncate" title={bookingId}>
           {refDisplay}
         </p>

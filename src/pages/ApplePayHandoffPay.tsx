@@ -108,14 +108,10 @@ export default function ApplePayHandoffPay() {
           (typeof pro?.business_address === "string" && pro.business_address.trim()) ||
           (typeof pro?.location === "string" && pro.location.trim()) ||
           "";
-        const supplierLegal =
-          (typeof pro?.legal_business_name === "string" && pro.legal_business_name.trim()) ||
-          (pro?.business_name ?? "").trim();
 
         const snapshot = buildBookingInvoiceSnapshotV2({
           proProfileId: draft.proProfileId,
           businessName: pro?.business_name ?? "",
-          supplierLegalName: supplierLegal || (pro?.business_name ?? "Professional"),
           supplierAddress: supplierAddress || "—",
           supplierGstNumber: pro?.gst_registration_number ?? null,
           supplierQstNumber: pro?.qst_registration_number ?? null,

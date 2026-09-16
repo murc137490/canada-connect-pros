@@ -1,5 +1,6 @@
 import type { NormalizedBookingInvoice } from "@/lib/bookingInvoiceSnapshot";
 import { PREMIERE_FAVICON_DATA_URI } from "@/lib/siteFavicon";
+import { LEGAL_ENTITY_NAME } from "@/config/legalConfig";
 
 function esc(s: string) {
   return s
@@ -149,12 +150,12 @@ export function buildQuebecBilingualInvoiceHtml(
     </section>
   `;
 
-  return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/><link rel="icon" href="${PREMIERE_FAVICON_DATA_URI}"/><title>AltShift — ${esc(invNo)}</title></head>
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/><link rel="icon" href="${PREMIERE_FAVICON_DATA_URI}"/><title>${esc(LEGAL_ENTITY_NAME)} — ${esc(invNo)}</title></head>
 <body style="font-family:system-ui,-apple-system,sans-serif;padding:24px;max-width:720px;margin:0 auto;color:#111;line-height:1.45;">
 ${frBlock}
 <hr style="margin:24px 0;border:none;border-top:1px solid #ccc;"/>
 ${enBlock}
-<p style="margin-top:32px;font-size:11px;color:#888;">AltShift — plateforme de mise en relation. Ce document reprend les données fournies au moment du paiement.</p>
-<p style="margin-top:8px;font-size:11px;color:#888;">AltShift — connection platform. This document reflects the information provided at the time of payment.</p>
+<p style="margin-top:32px;font-size:11px;color:#888;">${esc(LEGAL_ENTITY_NAME)} — plateforme de mise en relation. Ce document reprend les données fournies au moment du paiement.</p>
+<p style="margin-top:8px;font-size:11px;color:#888;">${esc(LEGAL_ENTITY_NAME)} — connection platform. This document reflects the information provided at the time of payment.</p>
 </body></html>`;
 }

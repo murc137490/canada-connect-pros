@@ -1,4 +1,5 @@
 import { computeBookingInvoiceFromBaseCents } from "@/lib/bookingInvoiceAmounts";
+import { LEGAL_ENTITY_NAME } from "@/config/legalConfig";
 
 /** Legacy snapshots from before Quebec invoice v2. */
 export const BOOKING_INVOICE_SNAPSHOT_V1 = 1 as const;
@@ -134,7 +135,7 @@ export function normalizeBookingInvoiceSnapshot(
       invoice_number: raw.invoice_number ?? null,
       invoice_date_iso: raw.paid_at,
       paid_at_iso: raw.paid_at,
-      supplier_legal_name: raw.supplier_legal_name,
+      supplier_legal_name: LEGAL_ENTITY_NAME,
       supplier_address: raw.supplier_address,
       supplier_gst_display: blankTaxDisplay(raw.supplier_gst_number),
       supplier_qst_display: blankTaxDisplay(raw.supplier_qst_number),
@@ -167,7 +168,7 @@ export function normalizeBookingInvoiceSnapshot(
       invoice_number: null,
       invoice_date_iso: raw.paid_at,
       paid_at_iso: raw.paid_at,
-      supplier_legal_name: raw.business_name,
+      supplier_legal_name: LEGAL_ENTITY_NAME,
       supplier_address: "",
       supplier_gst_display: PLACEHOLDER_TAX,
       supplier_qst_display: PLACEHOLDER_TAX,
@@ -220,7 +221,8 @@ export function buildServiceDescriptionDetailed(params: {
 export function buildBookingInvoiceSnapshotV2(params: {
   proProfileId: string;
   businessName: string;
-  supplierLegalName: string;
+  /** Ignored: client receipts always use Services AltShift Inc. */
+  supplierLegalName?: string;
   supplierAddress: string;
   supplierGstNumber?: string | null;
   supplierQstNumber?: string | null;
@@ -279,7 +281,7 @@ export function buildBookingInvoiceSnapshotV2(params: {
     ...base,
     v: BOOKING_INVOICE_SNAPSHOT_V2,
     invoice_number: null,
-    supplier_legal_name: params.supplierLegalName.trim() || params.businessName.trim(),
+    supplier_legal_name: LEGAL_ENTITY_NAME,
     supplier_address: params.supplierAddress.trim(),
     supplier_gst_number: params.supplierGstNumber?.trim() || null,
     supplier_qst_number: params.supplierQstNumber?.trim() || null,
