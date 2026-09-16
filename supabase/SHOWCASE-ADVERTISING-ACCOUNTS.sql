@@ -50,13 +50,13 @@ Output everything as a single markdown report organized by these 9 sections, wit
 -- and live presentations to prospective clients:
 --
 --   1. PRO ACCOUNT:
---      Email:    demo.pro@premierservices.demo
+--      Email:    demo.pro@altshift.ca
 --      Password: DemoPro2026!
 --      Name:     Alex Rivera (Rivera Home Services)
 --      Role:     Verified Pro (Growth tier, full dashboard, custom services, quotes)
 --
 --   2. CLIENT ACCOUNT:
---      Email:    demo.client@premierservices.demo
+--      Email:    demo.client@altshift.ca
 --      Password: DemoClient2026!
 --      Name:     Sam Chen
 --      Role:     Client (ready to book, post jobs, accept quotes, review)
@@ -73,8 +73,8 @@ Output everything as a single markdown report organized by these 9 sections, wit
 --   2) Paste this entire file and click "Run"
 --   3) If your Supabase instance prevents direct auth.users creation via SQL:
 --      Go to Authentication → Users → "Add user":
---        - demo.pro@premierservices.demo    / DemoPro2026!   (Auto Confirm: ON)
---        - demo.client@premierservices.demo / DemoClient2026! (Auto Confirm: ON)
+--        - demo.pro@altshift.ca    / DemoPro2026!   (Auto Confirm: ON)
+--        - demo.client@altshift.ca / DemoClient2026! (Auto Confirm: ON)
 --      Then re-run this SQL script.
 -- ==============================================================================
 
@@ -91,8 +91,8 @@ DECLARE
 BEGIN
 
   -- 1. Try to fetch existing auth users
-  SELECT id INTO v_pro_uid FROM auth.users WHERE lower(email) = lower('demo.pro@premierservices.demo') LIMIT 1;
-  SELECT id INTO v_client_uid FROM auth.users WHERE lower(email) = lower('demo.client@premierservices.demo') LIMIT 1;
+  SELECT id INTO v_pro_uid FROM auth.users WHERE lower(email) = lower('demo.pro@altshift.ca') LIMIT 1;
+  SELECT id INTO v_client_uid FROM auth.users WHERE lower(email) = lower('demo.client@altshift.ca') LIMIT 1;
 
   -- 2. If missing, attempt automatic creation in auth.users
   IF v_pro_uid IS NULL THEN
@@ -105,11 +105,11 @@ BEGIN
         gen_random_uuid(),
         'authenticated',
         'authenticated',
-        'demo.pro@premierservices.demo',
+        'demo.pro@altshift.ca',
         crypt('DemoPro2026!', gen_salt('bf')),
         now(),
         '{"provider": "email", "providers": ["email"]}'::jsonb,
-        '{"full_name": "Alex Rivera", "email": "demo.pro@premierservices.demo"}'::jsonb,
+        '{"full_name": "Alex Rivera", "email": "demo.pro@altshift.ca"}'::jsonb,
         now(),
         now()
       ) RETURNING id INTO v_pro_uid;
@@ -128,11 +128,11 @@ BEGIN
         gen_random_uuid(),
         'authenticated',
         'authenticated',
-        'demo.client@premierservices.demo',
+        'demo.client@altshift.ca',
         crypt('DemoClient2026!', gen_salt('bf')),
         now(),
         '{"provider": "email", "providers": ["email"]}'::jsonb,
-        '{"full_name": "Sam Chen", "email": "demo.client@premierservices.demo"}'::jsonb,
+        '{"full_name": "Sam Chen", "email": "demo.client@altshift.ca"}'::jsonb,
         now(),
         now()
       ) RETURNING id INTO v_client_uid;
@@ -143,17 +143,17 @@ BEGIN
 
   -- Re-query if just created
   IF v_pro_uid IS NULL THEN
-    SELECT id INTO v_pro_uid FROM auth.users WHERE lower(email) = lower('demo.pro@premierservices.demo') LIMIT 1;
+    SELECT id INTO v_pro_uid FROM auth.users WHERE lower(email) = lower('demo.pro@altshift.ca') LIMIT 1;
   END IF;
   IF v_client_uid IS NULL THEN
-    SELECT id INTO v_client_uid FROM auth.users WHERE lower(email) = lower('demo.client@premierservices.demo') LIMIT 1;
+    SELECT id INTO v_client_uid FROM auth.users WHERE lower(email) = lower('demo.client@altshift.ca') LIMIT 1;
   END IF;
 
   IF v_pro_uid IS NULL OR v_client_uid IS NULL THEN
     RAISE EXCEPTION
       'Please create both users first in Supabase Dashboard -> Authentication -> Users (with Auto-confirm Email turned ON):
-       1) demo.pro@premierservices.demo    (Password: DemoPro2026!)
-       2) demo.client@premierservices.demo (Password: DemoClient2026!)
+       1) demo.pro@altshift.ca    (Password: DemoPro2026!)
+       2) demo.client@altshift.ca (Password: DemoClient2026!)
        Then run this script again.';
   END IF;
 
@@ -425,7 +425,7 @@ BEGIN
   );
 
   RAISE NOTICE 'Première Services showcase accounts created successfully!';
-  RAISE NOTICE 'Pro login:    demo.pro@premierservices.demo    / DemoPro2026!';
-  RAISE NOTICE 'Client login: demo.client@premierservices.demo / DemoClient2026!';
+  RAISE NOTICE 'Pro login:    demo.pro@altshift.ca    / DemoPro2026!';
+  RAISE NOTICE 'Client login: demo.client@altshift.ca / DemoClient2026!';
 
 END $$;

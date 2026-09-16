@@ -2,12 +2,12 @@
 -- DEMO ACCOUNT SEED — for promotional / walkthrough video
 -- ============================================================
 -- Creates rich demo data for:
---   Pro:    demo.pro@premierservices.demo   /  DemoPro2026!
---   Client: demo.client@premierservices.demo / DemoClient2026!
+--   Pro:    demo.pro@altshift.ca   /  DemoPro2026!
+--   Client: demo.client@altshift.ca / DemoClient2026!
 --
 -- SETUP (do this once in Supabase Dashboard → Authentication → Users):
---   1) Add user  demo.pro@premierservices.demo     password DemoPro2026!    (auto-confirm email)
---   2) Add user  demo.client@premierservices.demo  password DemoClient2026! (auto-confirm email)
+--   1) Add user  demo.pro@altshift.ca     password DemoPro2026!    (auto-confirm email)
+--   2) Add user  demo.client@altshift.ca  password DemoClient2026! (auto-confirm email)
 --   3) Run THIS entire script in SQL Editor
 --
 -- SAFE TO RE-RUN: deletes previous demo rows for those emails, then re-inserts.
@@ -27,16 +27,16 @@ DECLARE
   v_job_id uuid;
   v_invoice jsonb;
 BEGIN
-  SELECT id INTO v_pro_uid FROM auth.users WHERE lower(email) = lower('demo.pro@premierservices.demo') LIMIT 1;
-  SELECT id INTO v_client_uid FROM auth.users WHERE lower(email) = lower('demo.client@premierservices.demo') LIMIT 1;
+  SELECT id INTO v_pro_uid FROM auth.users WHERE lower(email) = lower('demo.pro@altshift.ca') LIMIT 1;
+  SELECT id INTO v_client_uid FROM auth.users WHERE lower(email) = lower('demo.client@altshift.ca') LIMIT 1;
 
   IF v_pro_uid IS NULL OR v_client_uid IS NULL THEN
     RAISE EXCEPTION
       'Create both Auth users first (Authentication → Users), then re-run. Missing: %',
       CASE
         WHEN v_pro_uid IS NULL AND v_client_uid IS NULL THEN 'demo.pro AND demo.client'
-        WHEN v_pro_uid IS NULL THEN 'demo.pro@premierservices.demo'
-        ELSE 'demo.client@premierservices.demo'
+        WHEN v_pro_uid IS NULL THEN 'demo.pro@altshift.ca'
+        ELSE 'demo.client@altshift.ca'
       END;
   END IF;
 
@@ -282,6 +282,6 @@ BEGIN
   );
 
   RAISE NOTICE 'Demo seed OK. Pro UID=%, Client UID=%, Pro profile=%', v_pro_uid, v_client_uid, v_pro_id;
-  RAISE NOTICE 'Login pro: demo.pro@premierservices.demo / DemoPro2026!';
-  RAISE NOTICE 'Login client: demo.client@premierservices.demo / DemoClient2026!';
+  RAISE NOTICE 'Login pro: demo.pro@altshift.ca / DemoPro2026!';
+  RAISE NOTICE 'Login client: demo.client@altshift.ca / DemoClient2026!';
 END $$;

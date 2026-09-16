@@ -6,8 +6,8 @@
  * or processing actual credit card charges.
  */
 
-export const DEMO_CLIENT_EMAIL = "demo.client@altshift.demo";
-export const DEMO_PRO_EMAIL = "demo.pro@altshift.demo";
+export const DEMO_CLIENT_EMAIL = "demo.client@altshift.ca";
+export const DEMO_PRO_EMAIL = "demo.pro@altshift.ca";
 
 export const DEMO_PRO_BUSINESS_NAME = "Rivera Home Services";
 export const DEMO_PRO_PHONE = "514-555-0142";
@@ -23,6 +23,7 @@ export function isDemoAccount(email?: string | null): boolean {
     em === DEMO_CLIENT_EMAIL ||
     em === DEMO_PRO_EMAIL ||
     em.endsWith("@altshift.demo") ||
+    em.endsWith("@premierservices.demo") ||
     em.startsWith("demo.client@") ||
     em.startsWith("demo.pro@") ||
     em.startsWith("demo-client@") ||
