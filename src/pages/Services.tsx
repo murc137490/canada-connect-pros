@@ -318,8 +318,8 @@ export default function Services() {
       >
         <div className="border-b border-border bg-muted/40">
           <div className="container py-8 md:py-10">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-              <div className="min-w-0 flex-1">
+            <div className="flex flex-col gap-6">
+              <div className="min-w-0">
                 <div className="mb-4 flex items-start gap-4">
                   <div
                     className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/[0.06] text-primary sm:flex"
@@ -347,14 +347,15 @@ export default function Services() {
                   />
                 </div>
               </div>
-              <div className="group flex flex-col items-center lg:items-end gap-2 shrink-0 w-full lg:w-auto">
-                <p className="text-sm text-muted-foreground text-center lg:text-right opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200 min-h-[1.25rem]">
+
+              <div className="group mx-auto flex w-full max-w-xl flex-col items-center gap-2">
+                <p className="min-h-[1.25rem] text-center text-sm text-muted-foreground opacity-100 transition-opacity duration-200 lg:opacity-0 lg:group-hover:opacity-100">
                   {t.services.receiveResponse}
                 </p>
-                <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 w-full max-w-md lg:max-w-none lg:justify-end">
-                  <div className="flex flex-col items-center justify-center gap-1.5 p-2 min-h-[3.25rem] w-full sm:flex-1 sm:min-w-[14rem] lg:min-w-[16rem] max-w-[min(100%,20rem)] sm:max-w-none mx-auto sm:mx-0">
+                <div className="flex w-full flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+                  <div className="mx-auto flex w-full max-w-[min(100%,20rem)] flex-col items-center justify-center gap-1.5 p-2 min-h-[3.25rem] sm:mx-0 sm:max-w-none sm:min-w-[14rem] sm:flex-1">
                     {postalLoading || locating ? (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         {t.services.postalDetecting}
                       </p>
@@ -401,20 +402,20 @@ export default function Services() {
                       </button>
                     </div>
                     {postalError ? (
-                      <p className="text-xs text-amber-600 dark:text-amber-400/90 text-center px-1">{postalError}</p>
+                      <p className="px-1 text-center text-xs text-amber-600 dark:text-amber-400/90">{postalError}</p>
                     ) : postalResolved ? (
-                      <p className="text-xs text-muted-foreground text-center truncate max-w-full px-1">
+                      <p className="max-w-full truncate px-1 text-center text-xs text-muted-foreground">
                         {postalResolved.city
                           ? `${postalResolved.city}${postalResolved.province ? `, ${postalResolved.province}` : ""}`
                           : normalizedPostal}
                       </p>
                     ) : null}
                   </div>
-                  <div className="flex justify-center sm:justify-end shrink-0">
+                  <div className="flex shrink-0 justify-center">
                     <MakeRequestButton label={t.services.makeARequest} to="/make-request" />
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground text-center lg:text-right opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200 min-h-[1.25rem]">
+                <p className="min-h-[1.25rem] text-center text-sm text-muted-foreground opacity-100 transition-opacity duration-200 lg:opacity-0 lg:group-hover:opacity-100">
                   {t.services.under24Hours}
                 </p>
               </div>

@@ -19,17 +19,23 @@ This is enforced in:
 
 Without this redeploy, the browser build can still bake the old URL into emails / OAuth helpers.
 
-### 2) Supabase — Auth Site URL
+### 2) Supabase — Auth Site URL (required for Google login)
 
 1. Open [supabase.com/dashboard](https://supabase.com/dashboard) → your project  
-2. Left: **Authentication**  
-3. **URL Configuration**  
-4. **Site URL** → set to: `https://www.altshift.ca`  
-5. Under **Redirect URLs**, keep AltShift (Première entries are optional for legacy bookmarks only):
+2. Left: **Authentication** → **URL Configuration**  
+3. **Site URL** → exactly: `https://www.altshift.ca`  
+4. **Redirect URLs** must include:
    - `https://www.altshift.ca/**`
    - `https://www.altshift.ca/auth/callback`
    - `http://localhost:3000/**` (local)
-6. **Save**
+5. **Save**
+
+If Site URL is still `premiereservices.ca`, Google can return a `?code=` that never reaches `/auth/callback` and login fails.
+
+Also in **Google Cloud Console** → OAuth client:
+- Authorized JavaScript origins: `https://www.altshift.ca`
+- Authorized redirect URI: `https://hptzapnrnbqlptrstjxo.supabase.co/auth/v1/callback`
+- Optional: rename the consent-screen app from “premiereservices” to “AltShift”
 
 ### 3) Supabase Edge secrets (emails / OAuth return)
 

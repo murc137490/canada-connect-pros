@@ -18,9 +18,11 @@ export default function HomeTrust() {
             <h2 className="font-display text-display-md text-foreground max-w-[12ch]">
               {t.index.trustTitle}
             </h2>
-            <p className="mt-4 md:mt-2 text-[17px] text-muted-foreground leading-relaxed max-w-md">
-              {t.index.trustSupport}
-            </p>
+            {t.index.trustSupport ? (
+              <p className="mt-4 md:mt-2 text-[17px] text-muted-foreground leading-relaxed max-w-md">
+                {t.index.trustSupport}
+              </p>
+            ) : null}
           </div>
         </ScrollReveal>
 

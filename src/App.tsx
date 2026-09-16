@@ -43,6 +43,7 @@ import AuthHashErrorToast from "@/components/AuthHashErrorToast";
 import HashScroll from "@/components/HashScroll";
 import CanonicalUrl from "@/components/CanonicalUrl";
 import LegacyHostRedirect from "@/components/LegacyHostRedirect";
+import OAuthCodeForwarder from "@/components/OAuthCodeForwarder";
 import MonitorAdminGuard from "@/components/MonitorAdminGuard";
 import AdminMemberIdGate from "@/components/admin/AdminMemberIdGate";
 import AdminAcceptPros from "./pages/AdminAcceptPros";
@@ -75,6 +76,7 @@ const App = () => (
             <AuthHashErrorToast />
             <HashScroll />
             <LegacyHostRedirect />
+            <OAuthCodeForwarder />
             <CanonicalUrl />
             <NotificationProvider>
             <WhatsNewProvider>
