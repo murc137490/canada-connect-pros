@@ -41,7 +41,6 @@ import {
   X,
   Copy,
   Check,
-  Wallet,
   ShieldAlert,
   BadgeCheck,
   AlertTriangle,
@@ -1290,41 +1289,6 @@ export default function Dashboard() {
           variant: "destructive",
         });
       }
-    } finally {
-      setSquareConnectLoading(false);
-    }
-  }, [proProfile?.id, session?.access_token, toast, t.dashboard]);
-
-  const handleSquareDisconnect = useCallback(async () => {
-    if (!proProfile?.id || !session?.access_token) return;
-    const base = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim();
-    const anon = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim();
-    if (!base) return;
-    setSquareConnectLoading(true);
-    try {
-      const res = await fetch(`${base.replace(/\/+$/, "")}/functions/v1/square-oauth-disconnect`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: anon ?? "",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ pro_profile_id: proProfile.id }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        toast({
-          title: t.dashboard.squareOAuthErrorToast,
-          description: data.error ?? res.statusText,
-          variant: "destructive",
-        });
-        return;
-      }
-      setProProfile((prev) => (prev ? { ...prev, square_location_id: null } : null));
-      toast({
-        title: t.dashboard.squareDisconnectToast,
-        description: t.dashboard.squareDisconnectToastDesc,
-      });
     } finally {
       setSquareConnectLoading(false);
     }
@@ -4396,7 +4360,7 @@ export default function Dashboard() {
                 <BootLoadingScreen fullScreen={false} label={t.common?.loading ?? "Loading"} />
               ) : (
                 <div className="space-y-6">
-                  <div className="rounded-xl border bg-card p-6 md:p-8">
+                  <div className="rounded-xl border bg-card p-6 md:p-8" data-tour="pro-avatar-square">
                     <div className="flex flex-col sm:flex-row gap-4 items-start">
                       <ClickableProfileAvatar
                         className="h-20 w-20"
@@ -4406,6 +4370,30 @@ export default function Dashboard() {
                         onSave={saveProfileAvatar}
                       />
                       <div>
+                        {proProfile.square_location_id || isDemoProProfile(proProfile) ? (
+                          <a
+                            href="https://app.squareup.com/dashboard"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mb-1.5 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:underline dark:text-emerald-400"
+                            aria-label={t.dashboard.squareConnectedWithSquare ?? "Connected with Square"}
+                          >
+                            <CheckCircle size={16} className="shrink-0" aria-hidden />
+                            <span>Square</span>
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={squareConnectLoading}
+                            onClick={() => void handleSquareConnect()}
+                            className="mb-1.5 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:underline disabled:opacity-60"
+                          >
+                            {squareConnectLoading ? (
+                              <Loader2 size={14} className="animate-spin shrink-0" aria-hidden />
+                            ) : null}
+                            {t.dashboard.squareConnectButton}
+                          </button>
+                        )}
                         <h2 className="font-heading text-xl font-bold text-foreground">{proProfile.business_name}</h2>
                         <p className="text-muted-foreground">{profile?.full_name ?? ""}</p>
                       </div>
@@ -4473,56 +4461,6 @@ export default function Dashboard() {
                         </div>
                       );
                     })()}
-                  </div>
-
-                  <div className="rounded-xl border bg-card p-6 md:p-8" data-tour="pro-avatar-square">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                      <div className="flex gap-3">
-                        <div className="rounded-lg bg-muted p-3 shrink-0">
-                          <Wallet className="h-6 w-6 text-foreground" aria-hidden />
-                        </div>
-                        <div>
-                          <h3 className="font-heading font-bold text-foreground mb-1">{t.dashboard.squarePaymentsHeading}</h3>
-                          {proProfile.square_location_id || isDemoProProfile(proProfile) ? (
-                            <a
-                              href="https://app.squareup.com/dashboard"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:underline dark:text-emerald-400"
-                            >
-                              <CheckCircle size={16} className="shrink-0" aria-hidden />
-                              {t.dashboard.squareConnectedWithSquare ?? "Connected with Square"}
-                            </a>
-                          ) : (
-                            <p className="text-sm text-muted-foreground max-w-prose">
-                              {t.dashboard.squarePaymentsNotConnected}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                        {proProfile.square_location_id || isDemoProProfile(proProfile) ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            disabled={squareConnectLoading || isDemoProProfile(proProfile)}
-                            onClick={() => void handleSquareDisconnect()}
-                          >
-                            {squareConnectLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                            {t.dashboard.squareDisconnectButton}
-                          </Button>
-                        ) : (
-                          <Button
-                            type="button"
-                            disabled={squareConnectLoading}
-                            onClick={() => void handleSquareConnect()}
-                          >
-                            {squareConnectLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                            {t.dashboard.squareConnectButton}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
                   </div>
 
                   <div className="overflow-hidden rounded-xl border bg-card p-4 sm:p-6 md:p-8" data-tour="pro-featured">

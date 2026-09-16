@@ -190,10 +190,10 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
     },
     {
       target: "[data-tour='pro-avatar-square']",
-      titleEn: "Photo & Square payouts",
-      titleFr: "Photo et paiements Square",
-      bodyEn: "Add a personal photo and connect Square so client payments can pay out to your account.",
-      bodyFr: "Ajoutez une photo et connectez Square pour recevoir les paiements clients.",
+      titleEn: "Photo & Square",
+      titleFr: "Photo et Square",
+      bodyEn: "Add a personal photo. When Square is connected, the check above your name opens your Square dashboard.",
+      bodyFr: "Ajoutez une photo. Quand Square est relié, la coche au-dessus de votre nom ouvre votre tableau de bord Square.",
     },
     {
       target: "[data-tour='pro-featured']",
