@@ -7,12 +7,13 @@ import { serviceCategories, getAllServices } from "@/data/services";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
-import { ArrowLeft, ArrowRight, Loader2, SlidersHorizontal, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, SlidersHorizontal, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProCard, { type ProCardData } from "@/components/pro/ProCard";
 import StarBorder from "@/components/StarBorder";
 import GradientText from "@/components/GradientText";
+import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { useToast } from "@/hooks/use-toast";
 import { filterAdvertiseableProIds } from "@/lib/filterAdvertiseablePros";
 import { isDemoAccount, isDemoProProfile } from "@/lib/demoAccount";
@@ -229,9 +230,7 @@ export default function ProListPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="animate-spin text-muted-foreground" size={32} />
-          </div>
+          <BootLoadingScreen fullScreen={false} label={t.common?.loading ?? "Loading"} />
         ) : pros.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground text-lg mb-4">

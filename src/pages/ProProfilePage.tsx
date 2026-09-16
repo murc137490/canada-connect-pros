@@ -15,8 +15,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Briefcase, Check,
-  Loader2, ShieldCheck, CalendarCheck, CreditCard, ChevronRight, ChevronDown, Share2, Info, X, Heart, Sparkles
+  ShieldCheck, CalendarCheck, CreditCard, ChevronRight, ChevronDown, Share2, Info, X, Heart, Sparkles
 } from "lucide-react";
+import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { serviceCategories } from "@/data/services";
 import { getCategoryName } from "@/i18n/constants";
 import StarRating from "@/components/pro/StarRating";
@@ -928,8 +929,8 @@ export default function ProProfilePage() {
   if (loading) {
     return (
       <Layout>
-        <div className="container py-20 flex justify-center">
-          <Loader2 className="animate-spin text-muted-foreground" size={32} />
+        <div className="container py-12">
+          <BootLoadingScreen fullScreen={false} label={t.common?.loading ?? "Loading"} />
         </div>
       </Layout>
     );
