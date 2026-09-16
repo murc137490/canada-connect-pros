@@ -24,9 +24,9 @@
   ],
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/((?!\\.well-known/apple-developer-merchantid-domain-association$).*)",
       "has": [{ "type": "host", "value": "altshift.ca" }],
-      "destination": "https://www.altshift.ca/:path*",
+      "destination": "https://www.altshift.ca/$1",
       "permanent": true
     },
     {
