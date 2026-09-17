@@ -11,6 +11,16 @@ import AvailabilityCalendar from "./AvailabilityCalendar";
 import type { UnavailableDatesMap, UnavailableDayStored, UnavailableTimeSlot } from "@/lib/unavailableDates";
 import { getUnavailableNote, getUnavailableSlots, isWholeDayUnavailable } from "@/lib/unavailableDates";
 import { buildDayBreakdownSegments, type DayBreakdownSegment, weekdayKeyFromDateStr } from "@/lib/dayScheduleBreakdown";
+import {
+  defaultWeeklySchedule,
+  parseAvailabilityToWeekly,
+  weeklyScheduleToAvailability,
+  type WeekdaySchedule,
+  type WeeklyScheduleState,
+} from "@/lib/proWeeklyAvailability";
+
+export type { WeekdaySchedule, WeeklyScheduleState };
+export { defaultWeeklySchedule, parseAvailabilityToWeekly, weeklyScheduleToAvailability };
 
 const WEEKDAY_LABELS: Record<WeekdayKey, keyof typeof import("@/i18n/translations").translations.en.createPro> = {
   mon: "weekdayMon",
@@ -82,48 +92,6 @@ function slotsOverlapPairwise(slots: UnavailableTimeSlot[]): boolean {
     if (ranges[i].a < ranges[i - 1].b) return true;
   }
   return false;
-}
-
-export type WeekdaySchedule = { available: boolean; start: string; end: string };
-export type WeeklyScheduleState = Record<WeekdayKey, WeekdaySchedule>;
-
-export const defaultWeeklySchedule = (): WeeklyScheduleState =>
-  WEEKDAY_KEYS.reduce((acc, key) => {
-    acc[key] = { available: false, start: "09:00", end: "17:00" };
-    return acc;
-  }, {} as WeeklyScheduleState);
-
-/** Serialize weekly schedule to same JSON shape we store in availability column (keeps .available for parseAvailableWeekdays). */
-export function weeklyScheduleToAvailability(weekly: WeeklyScheduleState): string {
-  const obj: Record<string, { available: boolean; start?: string; end?: string }> = {};
-  WEEKDAY_KEYS.forEach((key) => {
-    obj[key] = { available: weekly[key].available, start: weekly[key].start, end: weekly[key].end };
-  });
-  return JSON.stringify(obj);
-}
-
-/** Parse availability string from DB into weekly schedule. Handles old format (morning/afternoon/evening) and new (start/end). */
-export function parseAvailabilityToWeekly(availability: string | null | undefined): WeeklyScheduleState {
-  const defaultState = defaultWeeklySchedule();
-  if (!availability?.trim()) return defaultState;
-  const s = availability.trim();
-  if (!s.startsWith("{")) return defaultState;
-  try {
-    const parsed = JSON.parse(s) as Record<string, { available?: boolean; morning?: boolean; afternoon?: boolean; evening?: boolean; start?: string; end?: string }>;
-    WEEKDAY_KEYS.forEach((key) => {
-      const day = parsed[key];
-      if (!day) return;
-      const available = !!day.available || !!(day.morning || day.afternoon || day.evening);
-      defaultState[key] = {
-        available,
-        start: (day as { start?: string }).start ?? "09:00",
-        end: (day as { end?: string }).end ?? "17:00",
-      };
-    });
-    return defaultState;
-  } catch {
-    return defaultState;
-  }
 }
 
 export interface ProScheduleEditorProps {

@@ -562,6 +562,20 @@ export default function ProProfilePage() {
       toast({ title: t.auth.toastError, description: t.terms.bookingDateNotInPast ?? "You cannot book a date in the past.", variant: "destructive" });
       return;
     }
+    const hasOverride = (pro?.available_date_overrides ?? []).includes(dateStr);
+    const wholeDayOff = isWholeDayUnavailable(pro?.unavailable_dates?.[dateStr]);
+    const isBookable = !wholeDayOff && (hasOverride || isAvailableByWeekday);
+    if (!isBookable) {
+      toast({
+        title: locale === "fr" ? "Aucune plage disponible" : "No available times",
+        description:
+          locale === "fr"
+            ? "Ce jour n’est pas ouvert à la réservation. Choisissez un jour coloré sur le calendrier."
+            : "This day isn’t open for booking. Pick a highlighted day on the calendar.",
+        duration: 8000,
+      });
+      return;
+    }
     setSelectedBookingDate(dateStr);
     setSelectedBookingTime(null);
     setBookingDialogOpen(true);

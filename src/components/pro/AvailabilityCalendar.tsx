@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { isWholeDayUnavailable, type UnavailableDayStored } from "@/lib/unavailableDates";
+import { isWholeDayUnavailable, type UnavailableDayStored, type UnavailableDatesMap } from "@/lib/unavailableDates";
+import { availableWeekdayIndices } from "@/lib/proWeeklyAvailability";
 
 /** @deprecated use t.dashboard when rendering (locale). Kept for optional prop fallbacks. */
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -12,37 +13,6 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 
 function ymdFromDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-const WEEKDAY_TO_INDEX: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
-
-/** Parse availability string (JSON, key-value, or text) to set of weekday indices 0-6 (Sun-Sat). */
-function parseAvailableWeekdays(availability: string | null | undefined): Set<number> {
-  const set = new Set<number>();
-  if (!availability || !availability.trim()) return set;
-  const s = availability.trim().toLowerCase();
-
-  if (s.startsWith("{")) {
-    try {
-      const parsed = JSON.parse(s) as Record<string, { available?: boolean }>;
-      (Object.keys(parsed) as string[]).forEach((key) => {
-        const idx = WEEKDAY_TO_INDEX[key];
-        if (typeof idx === "number" && parsed[key]?.available) set.add(idx);
-      });
-      /* JSON schedule: never fall through to text heuristics (keys like "mon" would mark weekdays available). */
-      return set;
-    } catch {
-      /* fall through to text parse */
-    }
-  }
-
-  if (s.includes("mon") || s.includes("tue") || s.includes("wed") || s.includes("thu") || s.includes("fri")) {
-    [1, 2, 3, 4, 5].forEach((d) => set.add(d));
-  }
-  if (s.includes("sat")) set.add(6);
-  if (s.includes("sun")) set.add(0);
-  if (s.includes("every day") || s.includes("7 days")) [0, 1, 2, 3, 4, 5, 6].forEach((d) => set.add(d));
-  return set;
 }
 
 export type { UnavailableDatesMap, UnavailableDayStored } from "@/lib/unavailableDates";
@@ -128,7 +98,7 @@ export default function AvailabilityCalendar({
   const [draftYear, setDraftYear] = useState(() => viewDate.getFullYear());
   const [draftMonth, setDraftMonth] = useState(() => viewDate.getMonth());
   const monthColRef = useRef<HTMLDivElement>(null);
-  const availableDays = parseAvailableWeekdays(availability);
+  const availableDays = availableWeekdayIndices(availability);
   const busySet = new Set(busyDates);
   const overridesSet = new Set(availableDateOverrides);
 

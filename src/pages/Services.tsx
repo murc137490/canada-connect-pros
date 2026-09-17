@@ -53,6 +53,8 @@ export default function Services() {
   const postalResolvedRef = useRef(postalResolved);
   postalResolvedRef.current = postalResolved;
   const locationDetectOnceRef = useRef(false);
+  const locationDetectGenRef = useRef(0);
+  const postalInputRef = useRef<HTMLInputElement>(null);
   const [locating, setLocating] = useState(false);
 
   useScrollRestore("altshift:scroll:/services");
@@ -152,9 +154,11 @@ export default function Services() {
       if (opts?.fromEmptyFocus && (postalCode.trim() || locationDetectOnceRef.current)) return;
       if (opts?.fromEmptyFocus) locationDetectOnceRef.current = true;
 
+      const gen = ++locationDetectGenRef.current;
       setLocating(true);
       setPostalError(null);
       const result = await detectBrowserLocationPostal();
+      if (gen !== locationDetectGenRef.current) return;
       setLocating(false);
 
       if (!result.ok) {
@@ -243,10 +247,13 @@ export default function Services() {
   }, [normalizedPostal, t.services.postalInvalid]);
 
   const warnPostalFirst = useCallback(() => {
+    setPostalError(t.services.postalEnterFirstDesc);
+    postalInputRef.current?.focus({ preventScroll: false });
+    postalInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     toast({
       title: t.services.postalEnterFirstToast,
       description: t.services.postalEnterFirstDesc,
-      variant: "destructive",
+      duration: 12000,
     });
   }, [toast, t.services]);
 
@@ -362,6 +369,7 @@ export default function Services() {
                     ) : null}
                     <div className="flex w-full items-center gap-2">
                       <input
+                        ref={postalInputRef}
                         type="text"
                         inputMode="text"
                         autoComplete="postal-code"
@@ -369,11 +377,17 @@ export default function Services() {
                         value={postalCode}
                         onChange={(e) => {
                           postalEditedRef.current = true;
+                          locationDetectGenRef.current += 1;
+                          if (locating) setLocating(false);
                           const next = formatCanadianPostalInput(e.target.value);
                           setPostalCode(next);
-                          setPostalResolved(null);
                           setPostalError(null);
-                          if (!next.trim()) clearBrowsePostalLocation();
+                          if (!next.trim()) {
+                            setPostalResolved(null);
+                            clearBrowsePostalLocation();
+                          } else if (!isCompleteCanadianPostal(next)) {
+                            setPostalResolved(null);
+                          }
                         }}
                         onFocus={() => {
                           if (!postalCode.trim()) void applyDetectedLocation({ fromEmptyFocus: true });
@@ -383,8 +397,7 @@ export default function Services() {
                           if (normalizedPostal) void resolvePostal();
                         }}
                         maxLength={7}
-                        disabled={locating}
-                        className={`block w-full min-w-0 sm:min-w-[12.5rem] rounded-lg border px-3 py-2.5 text-center text-sm text-foreground bg-background outline-none focus:ring-2 disabled:opacity-60 ${
+                        className={`block w-full min-w-0 sm:min-w-[12.5rem] rounded-lg border px-3 py-2.5 text-center text-sm text-foreground bg-background outline-none focus:ring-2 ${
                           !postalResolved
                             ? "border-accent/55 focus:ring-accent/40"
                             : "border-border focus:ring-ring"

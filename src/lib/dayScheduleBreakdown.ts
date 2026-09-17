@@ -1,7 +1,7 @@
 import type { UnavailableDayStored } from "@/lib/unavailableDates";
 import { getUnavailableSlots, isWholeDayUnavailable, getUnavailableNote } from "@/lib/unavailableDates";
 import type { WeekdayKey } from "@/i18n/constants";
-import type { WeeklyScheduleState } from "@/components/pro/ProScheduleEditor";
+import type { WeeklyScheduleState } from "@/lib/proWeeklyAvailability";
 import { endTimeAfterMinutes } from "@/lib/bookingTimeRange";
 
 function parseHHMM(s: string | undefined | null): number | null {
