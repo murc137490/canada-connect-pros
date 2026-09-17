@@ -51,10 +51,10 @@ export default function ClientAccountSummaryBlock({ client }: Props) {
       <p className="font-heading font-semibold text-foreground text-sm">{d.accountDetailsTitle}</p>
       <Field label={d.accountName} value={client.full_name?.trim() || "-"} />
       <Field label={d.accountPhone} value={client.phone?.trim() || "-"} />
-      <Field label={d.accountPostalCode} value={postal} hint={d.accountPostalHint} />
+      <Field label={d.accountPostalCode} value={postal} />
       <Field label={d.accountAddress} value={client.address?.trim() || "-"} />
-      <Field label={d.accountEmail} value={client.email?.trim() || "-"} hint={d.accountEmailHint} />
-      <Field label={auth.emailLanguageLabel} value={lang} hint={d.accountEmailLanguageHint} />
+      <Field label={d.accountEmail} value={client.email?.trim() || "-"} />
+      <Field label={auth.emailLanguageLabel} value={lang} />
       <Field label={d.accountBirthday} value={birthday} />
       <p className="text-sm text-foreground font-mono">
         <span className="font-medium font-sans">{d.accountMemberId}: </span>

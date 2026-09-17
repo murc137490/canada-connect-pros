@@ -193,7 +193,7 @@ Deno.serve(async (req) => {
 
     const { data: booking } = await adminClient
       .from("bookings")
-      .select("id, client_id, pro_profile_id, preferred_date, created_at, status")
+      .select("id, client_id, pro_profile_id, preferred_date, created_at, status, public_booking_code")
       .eq("id", bookingId)
       .single();
 
@@ -231,18 +231,23 @@ Deno.serve(async (req) => {
                   ? "Cancellation / schedule"
                   : "Booking report";
 
-    const issueLabel = Number.isFinite(issueNumber) ? String(issueNumber) : claimId.slice(0, 8).toUpperCase();
+    const issueLabel = Number.isFinite(issueNumber)
+      ? `R${String(Math.trunc(issueNumber)).padStart(7, "0")}`
+      : `R${claimId.replace(/-/g, "").slice(0, 7).toUpperCase()}`;
+    const bookingLabel =
+      typeof booking.public_booking_code === "string" && booking.public_booking_code.trim()
+        ? booking.public_booking_code.trim().toUpperCase()
+        : bookingId.slice(0, 8).toUpperCase();
 
     const supportSubject =
       claimType === "issue" || claimType === "payment_problem" || claimType === "service_problem" || claimType === "cancellation"
-        ? `AltShift – Issue #${issueLabel} (booking #${bookingId})`
-        : `AltShift – Claim (${claimType}) #${bookingId}`;
+        ? `AltShift – ${issueLabel} (booking ${bookingLabel})`
+        : `AltShift – Claim (${claimType}) ${issueLabel}`;
 
     const supportHtml = `
       <h2 style="margin:0 0 12px 0;">${escapeHtml(typeLabel)}</h2>
-      <p><strong>Issue number:</strong> ${escapeHtml(issueLabel)}</p>
-      <p><strong>Claim ID:</strong> ${escapeHtml(claimId)}</p>
-      <p><strong>Booking ID:</strong> ${escapeHtml(bookingId)}</p>
+      <p><strong>Ticket reference:</strong> ${escapeHtml(issueLabel)}</p>
+      <p><strong>Booking ID:</strong> ${escapeHtml(bookingLabel)}</p>
       <p><strong>Service provider:</strong> ${escapeHtml(businessName)}</p>
       <p><strong>Report type:</strong> ${escapeHtml(claimType)}</p>
       <p><strong>Client email:</strong> ${escapeHtml(clientEmail)}</p>

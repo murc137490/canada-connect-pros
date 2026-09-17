@@ -135,15 +135,6 @@ export default function AdminTrialTokens() {
             <CardTitle className="text-xl">{d.adminTrialPageCardTitle ?? "2-month Growth trial links"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              {d.adminTrialPageIntro ??
-                "Generate a new one-use personal link for a 2-month Growth trial. Links are stored in the database: unclaimed rows stay until someone completes checkout; claimed rows remain so you can see who used each invite."}
-            </p>
-            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-foreground">
-              {d.adminTrialPageOnceNote ??
-                "Each link works once. After it is claimed, the URL is cleared server-side - use the table below to see status and account email. Copy is only available for unclaimed invites."}
-            </div>
-
             <div className="flex flex-wrap items-center gap-3">
               <Button onClick={handleGenerate} disabled={generating}>
                 {generating ? <Loader2 className="size-4 animate-spin" /> : null}

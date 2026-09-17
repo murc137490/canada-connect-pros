@@ -129,11 +129,6 @@ export default function AdminStaffManager() {
           <ShieldPlus size={22} />
           {fr ? "Comptes administrateurs" : "Admin accounts"}
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          {fr
-            ? "Super admin : murc137490@gmail.com — créez des admins avec un Member ID à 6 chiffres pour l’audit (qui / quoi / quand)."
-            : "Super admin: murc137490@gmail.com — create admins with a 6-digit Member ID for audit (who / what / when)."}
-        </p>
       </div>
 
       <form onSubmit={createStaff} className="grid gap-3 sm:grid-cols-2">

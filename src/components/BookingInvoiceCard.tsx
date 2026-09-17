@@ -6,6 +6,7 @@ import { buildQuebecBilingualInvoiceHtml } from "@/lib/quebecInvoiceHtml";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PREMIERE_FAVICON_DATA_URI } from "@/lib/siteFavicon";
 import { LEGAL_ENTITY_NAME } from "@/config/legalConfig";
+import { displayBookingId } from "@/lib/bookingDisplayIds";
 
 export type BookingPaymentRow = {
   amount_cents: number;
@@ -41,7 +42,11 @@ export default function BookingInvoiceCard({
   const norm = normalizeBookingInvoiceSnapshot(bookingId, snapshotJson, {
     fallbackBookingPublicCode: bookingPublicCode ?? undefined,
   });
-  const refDisplay = norm?.booking_reference_code?.trim() || bookingPublicCode?.trim().toUpperCase() || "-";
+  const refDisplay =
+    displayBookingId(norm?.booking_reference_code ?? bookingPublicCode, bookingId) ||
+    norm?.booking_reference_code?.trim() ||
+    bookingPublicCode?.trim().toUpperCase() ||
+    "-";
 
   const totalDisplay = norm
     ? `${(norm.total_cents / 100).toFixed(2)} ${norm.currency}`

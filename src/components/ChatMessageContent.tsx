@@ -2,17 +2,47 @@ import { Fragment, type ReactNode } from "react";
 
 type Seg = { type: "text"; value: string } | { type: "link"; href: string; label: string };
 
+function shortAltshiftLabel(href: string): string {
+  try {
+    const u = href.startsWith("http") ? new URL(href) : new URL(href, "https://www.altshift.ca");
+    if (!/(^|\.)altshift\.ca$/i.test(u.hostname) && href.startsWith("http")) return href;
+    const path = `${u.pathname}${u.search}` || "/";
+    if (path.startsWith("/dashboard")) return "Dashboard";
+    if (path.startsWith("/join-pros")) return "Join Pros";
+    if (path.startsWith("/pro-plans")) return "Pro plans";
+    if (path.startsWith("/services")) return "Services";
+    if (path.startsWith("/auth")) return path.includes("signup") ? "Sign up" : "Log in";
+    if (path.startsWith("/support")) return "Support";
+    const slug = path.replace(/^\//, "").split(/[/?#]/)[0];
+    return slug ? slug.replace(/-/g, " ") : "AltShift";
+  } catch {
+    return href;
+  }
+}
+
 function parseChatLinks(text: string): Seg[] {
   const segs: Seg[] = [];
-  const re = /\[([^\]]{1,80})\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>"'`\]]+)/gi;
+  const re =
+    /\[([^\]]{1,80})\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)|(https?:\/\/(?:www\.)?altshift\.ca[^\s<>"'`\]]*)|(https?:\/\/[^\s<>"'`\]]+)/gi;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) segs.push({ type: "text", value: text.slice(last, m.index) });
     if (m[1] && m[2]) {
-      segs.push({ type: "link", label: m[1].trim(), href: m[2] });
+      const href = m[2].trim();
+      const label =
+        href.includes("altshift.ca") || href.startsWith("/")
+          ? m[1].trim() || shortAltshiftLabel(href)
+          : m[1].trim();
+      segs.push({ type: "link", label, href });
     } else if (m[3]) {
       const raw = m[3];
+      const href = raw.replace(/[.,;:!?]+$/u, "");
+      const trail = raw.slice(href.length);
+      segs.push({ type: "link", label: shortAltshiftLabel(href), href });
+      if (trail) segs.push({ type: "text", value: trail });
+    } else if (m[4]) {
+      const raw = m[4];
       const href = raw.replace(/[.,;:!?]+$/u, "");
       const trail = raw.slice(href.length);
       segs.push({ type: "link", label: href, href });
@@ -27,7 +57,7 @@ function parseChatLinks(text: string): Seg[] {
 const inlineLinkClass =
   "font-semibold text-primary underline underline-offset-2 hover:opacity-90 break-words cursor-pointer";
 
-/** Renders assistant chat text with inline clickable <a href> links only (no buttons). */
+/** Renders assistant chat text with inline clickable <a href> links only (no bare long URLs for AltShift). */
 export function ChatMessageContent({
   text,
   className,

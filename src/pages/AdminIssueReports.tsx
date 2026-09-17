@@ -14,6 +14,7 @@ import StorageDisplayImage from "@/components/StorageDisplayImage";
 import ClientAccountSummaryBlock, {
   type ClientAccountSummary,
 } from "@/components/admin/ClientAccountSummaryBlock";
+import { displayBookingId, formatIssueTicketRef } from "@/lib/bookingDisplayIds";
 
 const EVIDENCE_BUCKET = "booking-evidence";
 
@@ -204,10 +205,6 @@ export default function AdminIssueReports() {
         </div>
 
         <div className="rounded-xl border bg-card p-4 md:p-8 max-h-[calc(100dvh-10rem)] overflow-y-auto">
-          <p className="text-muted-foreground text-sm mb-6">
-            {d.adminIssueReportsIntro ??
-              "Client reports with booking reference, member ID, and account summary (no private verification documents)."}
-          </p>
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="animate-spin text-muted-foreground" size={28} />
@@ -242,23 +239,17 @@ export default function AdminIssueReports() {
                     </div>
 
                     <p className="text-sm font-semibold text-foreground">
-                      {(d.adminIssueNumberLine ?? "Issue #{{number}}").replace(
+                      {(d.adminIssueNumberLine ?? "Issue {{number}}").replace(
                         "{{number}}",
-                        String(c.issue_number ?? "-"),
+                        formatIssueTicketRef(c.issue_number) || "-",
                       )}{" "}
                       · {claimTypeLabel(c)} · {c.pro_profiles?.business_name ?? "Provider"}
                     </p>
 
                     <div className="grid gap-1 text-xs font-mono text-muted-foreground break-all sm:grid-cols-2">
                       <p>
-                        {d.adminIssueBookingId ?? "Booking ID"}: {c.booking_id}
-                      </p>
-                      <p>
-                        {d.adminIssueBookingRef ?? "Booking ref"}:{" "}
-                        {booking?.public_booking_code?.toUpperCase() ?? "-"}
-                      </p>
-                      <p>
-                        {d.accountMemberId ?? "Member ID"}: {client?.public_user_number ?? "-"}
+                        {d.adminIssueBookingId ?? "Booking ID"}:{" "}
+                        {displayBookingId(booking?.public_booking_code, c.booking_id)}
                       </p>
                     </div>
 

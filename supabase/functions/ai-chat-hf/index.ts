@@ -5,6 +5,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.27.0";
 import { loadUserSessionSnapshot, formatSessionContextBlock } from "./sessionContext.ts";
+import { sanitizeSupportReply } from "./sanitizeReply.ts";
 
 const HF_CHAT_URL = "https://router.huggingface.co/v1/chat/completions";
 const HF_MODEL = "Featherless-Chat-Models/Mistral-7B-Instruct-v0.2:featherless-ai";
@@ -351,21 +352,22 @@ ${sessionBlock}
 - Utilise la section Session ci-dessus. Si l’utilisateur est connecté, ne pose JAMAIS la question « Avez-vous déjà un compte ? ».
 - Donne **la prochaine action** avec un lien cliquable quand c’est utile.
 - Réponses courtes (2–4 phrases). Jamais de phrase coupée. Ne répète pas ton rôle.
-- N’utilise JAMAIS l’ancien nom « Première Services » / « Premiere Services » ni le domaine premierservices.ca. Marque et site officiels : **AltShift** / https://www.altshift.ca
+- N’utilise JAMAIS l’ancien nom « Première Services » / « Premiere Services » ni le domaine premierservices.ca. Marque : **AltShift**.
+- Si Session dit connecté, ne pose JAMAIS « Avez-vous déjà un compte ? ».
 
-**Liens (toujours URL complète https — domaine www.altshift.ca uniquement) :**
-- Devenir pro : [Join Pros](https://www.altshift.ca/join-pros)
-- Forfaits pro : [Pro plans](https://www.altshift.ca/pro-plans)
-- Tableau de bord : [Dashboard](https://www.altshift.ca/dashboard)
+**Liens (courts seulement — n’écris JAMAIS une URL https complète) :**
+- Devenir pro : [Join Pros](/join-pros)
+- Forfaits pro : [Pro plans](/pro-plans)
+- Tableau de bord : [Dashboard](/dashboard)
 - Support : support@altshift.ca · +1 450 910 1400
 
 **Ajouter / créer un service (pro déjà connecté) :**
-1. Ouvrir [Dashboard](https://www.altshift.ca/dashboard) → onglet Profil pro.
+1. Ouvrir [Dashboard](/dashboard) → onglet Profil pro.
 2. Section Services → « Ajouter un service ».
 3. Si le pro a déjà des services listés en session, mentionne-les et propose des ajouts similaires si pertinent.
-N’invente pas d’autres URLs.
+N’écris jamais www.altshift.ca ni https:// — seulement [Libellé](/chemin).
 
-Langue : **français uniquement** (sauf noms propres / URL).`
+Langue : **français uniquement** (sauf noms propres / courriel / téléphone).`
           : `You are the AltShift support assistant for a Canadian home services marketplace. You help customers and pros.
 
 ${sessionBlock}
@@ -375,21 +377,22 @@ ${sessionBlock}
 - Use the Session section above. If the user is logged in, NEVER ask “Do you already have an AltShift account?”
 - Give **the next action** with a markdown link when useful.
 - Keep replies short (2–4 sentences). Never cut off mid-sentence. Don’t restate your role.
-- NEVER use the old brand “Première Services” / “Premiere Services” or the domain premierservices.ca. Official brand/site: **AltShift** / https://www.altshift.ca
+- NEVER use the old brand “Première Services” / “Premiere Services” or the domain premierservices.ca. Official brand: **AltShift**.
+- NEVER ask “Do you already have an AltShift account?” when Session says logged in.
 
-**Links (always full https URLs on www.altshift.ca only, use markdown [label](url)):**
-- Become a pro: [Join Pros](https://www.altshift.ca/join-pros)
-- Pro plans: [Pro plans](https://www.altshift.ca/pro-plans)
-- Dashboard: [Dashboard](https://www.altshift.ca/dashboard)
+**Links (short only — NEVER paste a full https URL):**
+- Become a pro: [Join Pros](/join-pros)
+- Pro plans: [Pro plans](/pro-plans)
+- Dashboard: [Dashboard](/dashboard)
 - Support: support@altshift.ca · +1 450 910 1400 (Mon–Fri, 8am–8pm EST)
 
 **Add / create a service (logged-in pro):**
-1. Open [Dashboard](https://www.altshift.ca/dashboard) → Pro profile tab.
+1. Open [Dashboard](/dashboard) → Pro profile tab.
 2. Services section → “Add service”.
 3. If Session lists their current services, mention the count/names and optionally suggest similar ones to add.
-Don’t invent other URLs.
+Never write www.altshift.ca or https:// in replies — only markdown [Label](/path).
 
-Language: **English only** (proper nouns / URLs excepted).`;
+Language: **English only** (proper nouns / emails / phone excepted).`;
       maxTokens = 1024;
       temperature = 0.4;
     } else {
@@ -455,6 +458,10 @@ Language: **English only** (proper nouns / URLs excepted).`;
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    if (intent === "support_help") {
+      generated = sanitizeSupportReply(generated, true);
     }
 
     return new Response(JSON.stringify({ message: generated, sources: serviceSources, provider }), {

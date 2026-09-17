@@ -78,7 +78,7 @@ export function formatSessionContextBlock(snap: UserSessionSnapshot, language: "
       if (snap.businessName) lines.push(`- Entreprise : ${snap.businessName}`);
       lines.push(`- Vérifié : ${snap.proVerified ? "oui" : "non / en attente"}`);
       if (snap.subscriptionTier) lines.push(`- Forfait : ${snap.subscriptionTier}`);
-      if (snap.shareSlug) lines.push(`- Lien public : https://www.altshift.ca/${snap.shareSlug}`);
+      if (snap.shareSlug) lines.push(`- Lien public : /${snap.shareSlug}`);
       lines.push(`- Services offerts : ${snap.serviceCount}`);
       if (snap.serviceLabels.length) {
         lines.push(`- Liste des services : ${snap.serviceLabels.slice(0, 20).join("; ")}`);
@@ -88,9 +88,10 @@ export function formatSessionContextBlock(snap: UserSessionSnapshot, language: "
     lines.push("");
     lines.push("Règles session :");
     lines.push("- Ne demande JAMAIS « Avez-vous déjà un compte ? » ni n’envoie de lien Sign up / Log in.");
-    lines.push("- Pour ajouter un service (pro) : oriente vers [Dashboard](https://www.altshift.ca/dashboard) → onglet Profil pro → « Ajouter un service ».");
+    lines.push("- Pour ajouter un service (pro) : oriente vers [Dashboard](/dashboard) → onglet Profil pro → « Ajouter un service ».");
     lines.push("- Si le pro a déjà des services, mentionne le nombre et propose d’ajouter des services similaires si pertinent.");
-    lines.push("- Si connecté mais pas pro et qu’il veut offrir des services : [Join Pros](https://www.altshift.ca/join-pros).");
+    lines.push("- Si connecté mais pas pro et qu’il veut offrir des services : [Join Pros](/join-pros).");
+    lines.push("- N’écris jamais d’URL https complète — seulement [Libellé](/chemin).");
   } else {
     lines.push("## User session (trusted — do NOT ask if they have an account)");
     lines.push("- Logged in: yes");
@@ -101,7 +102,7 @@ export function formatSessionContextBlock(snap: UserSessionSnapshot, language: "
       if (snap.businessName) lines.push(`- Business: ${snap.businessName}`);
       lines.push(`- Verified: ${snap.proVerified ? "yes" : "no / pending"}`);
       if (snap.subscriptionTier) lines.push(`- Plan tier: ${snap.subscriptionTier}`);
-      if (snap.shareSlug) lines.push(`- Public link: https://www.altshift.ca/${snap.shareSlug}`);
+      if (snap.shareSlug) lines.push(`- Public link: /${snap.shareSlug}`);
       lines.push(`- Services offered: ${snap.serviceCount}`);
       if (snap.serviceLabels.length) {
         lines.push(`- Service list: ${snap.serviceLabels.slice(0, 20).join("; ")}`);
@@ -111,9 +112,10 @@ export function formatSessionContextBlock(snap: UserSessionSnapshot, language: "
     lines.push("");
     lines.push("Session rules:");
     lines.push("- NEVER ask “Do you already have an AltShift account?” and NEVER send Sign up / Log in links.");
-    lines.push("- To add a service (pro): send them to [Dashboard](https://www.altshift.ca/dashboard) → Pro profile tab → “Add service”.");
+    lines.push("- To add a service (pro): send them to [Dashboard](/dashboard) → Pro profile tab → “Add service”.");
     lines.push("- If they already have services, mention the count and optionally suggest similar services to add.");
-    lines.push("- If logged in but not a pro and they want to offer services: [Join Pros](https://www.altshift.ca/join-pros).");
+    lines.push("- If logged in but not a pro and they want to offer services: [Join Pros](/join-pros).");
+    lines.push("- NEVER write full https URLs — only markdown [Label](/path).");
   }
   return lines.join("\n");
 }

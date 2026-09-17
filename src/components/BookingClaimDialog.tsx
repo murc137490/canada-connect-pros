@@ -16,6 +16,7 @@ import {
 } from "@/lib/disputeCategories";
 import { MIN_CLAIM_REPORT_IMAGES } from "@/lib/jobRequestRules";
 import { toUserFacingMessage } from "@/lib/userFacingError";
+import { formatIssueTicketRef } from "@/lib/bookingDisplayIds";
 
 const EVIDENCE_BUCKET = "booking-evidence";
 
@@ -196,14 +197,18 @@ export default function BookingClaimDialog({
       if (fnError) {
         const hasNum = typeof saved.issue_number === "number";
         const desc = hasNum
-          ? (d.claimReportReceivedEmailFailWithRef ?? "").replace("{{number}}", String(saved.issue_number))
+          ? (d.claimReportReceivedEmailFailWithRef ?? "").replace(
+              "{{number}}",
+              formatIssueTicketRef(saved.issue_number),
+            )
           : (d.claimReportReceivedEmailFailNoRef ?? "");
         toast({
           title: d.claimReportReceivedTitle ?? "Report received",
           description: desc,
         });
       } else if (fnData && typeof fnData === "object" && "error" in fnData && fnData.error) {
-        const num = typeof saved.issue_number === "number" ? String(saved.issue_number) : "";
+        const num =
+          typeof saved.issue_number === "number" ? formatIssueTicketRef(saved.issue_number) : "";
         const desc = num
           ? (d.claimReportReceivedWithError ?? "")
               .replace("{{error}}", String(fnData.error))
@@ -214,7 +219,12 @@ export default function BookingClaimDialog({
           description: desc,
         });
       } else {
-        const refNum = fnData?.issue_number ?? (typeof saved.issue_number === "number" ? String(saved.issue_number) : "");
+        const refNum =
+          fnData?.issue_number != null
+            ? formatIssueTicketRef(fnData.issue_number)
+            : typeof saved.issue_number === "number"
+              ? formatIssueTicketRef(saved.issue_number)
+              : "";
         const supportOk = fnData?.email_sent_support === true;
         const clientOk = fnData?.email_sent_client === true;
         toast({
