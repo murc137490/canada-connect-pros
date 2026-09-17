@@ -29,6 +29,11 @@ export async function sendSupportChatMessage(
     return { ok: false, reply: "App misconfiguration: VITE_SUPABASE_ANON_KEY is missing." };
   }
 
+  const pagePath =
+    typeof window !== "undefined"
+      ? `${window.location.pathname}${window.location.search}`.slice(0, 200)
+      : undefined;
+
   try {
     const resp = await fetch(AI_CHAT_URL, {
       method: "POST",
@@ -42,6 +47,7 @@ export async function sendSupportChatMessage(
         access_token: session.access_token,
         language: replyLang,
         intent: "support_help",
+        page_path: pagePath,
         conversation_history: priorMessages
           .slice(-16)
           .filter((m) => m.role === "user" || m.role === "assistant")
