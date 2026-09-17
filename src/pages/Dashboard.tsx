@@ -651,6 +651,7 @@ export default function Dashboard() {
     id: string;
     pro_profile_id: string;
     statusCode: string;
+    public_booking_code?: string | null;
   } | null>(null);
   const [jobRequests, setJobRequests] = useState<JobRequest[]>([]);
   const [jobQuotesByRequestId, setJobQuotesByRequestId] = useState<Record<string, JobQuote[]>>({});
@@ -5357,6 +5358,7 @@ export default function Dashboard() {
               if (!o) setClaimBooking(null);
             }}
             bookingId={claimBooking?.id ?? null}
+            bookingPublicCode={claimBooking?.public_booking_code ?? null}
             proProfileId={claimBooking?.pro_profile_id ?? ""}
             bookingStatusCode={claimBooking?.statusCode ?? null}
           />
@@ -6382,7 +6384,12 @@ export default function Dashboard() {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => {
-                                      setClaimBooking({ id: b.id, pro_profile_id: b.pro_profile_id, statusCode: b.status });
+                                      setClaimBooking({
+                                        id: b.id,
+                                        pro_profile_id: b.pro_profile_id,
+                                        statusCode: b.status,
+                                        public_booking_code: b.public_booking_code ?? null,
+                                      });
                                       setClaimDialogOpen(true);
                                     }}
                                   >
@@ -6553,7 +6560,12 @@ export default function Dashboard() {
                           showSupplierAddress={b.pro_service_at_workspace_only === true}
                           onReport={() => {
                             setActiveTab("bookings");
-                            setClaimBooking({ id: b.id, pro_profile_id: b.pro_profile_id, statusCode: b.status });
+                            setClaimBooking({
+                              id: b.id,
+                              pro_profile_id: b.pro_profile_id,
+                              statusCode: b.status,
+                              public_booking_code: b.public_booking_code ?? null,
+                            });
                             setClaimDialogOpen(true);
                           }}
                         />
@@ -6587,13 +6599,10 @@ export default function Dashboard() {
               ) : (
               <>
               <div className="rounded-xl border bg-card p-6 md:p-8">
-                <h2 className="font-heading text-xl font-bold text-foreground mb-2 flex flex-wrap items-center gap-2">
+                <h2 className="font-heading text-xl font-bold text-foreground mb-4 flex flex-wrap items-center gap-2">
                   <ShieldCheck size={24} className="shrink-0" />
                   <span className="min-w-0 flex-1">{t.dashboard.adminAcceptProsTitle ?? "Accept pros"}</span>
                 </h2>
-                <p className="text-muted-foreground text-sm mb-4">
-                  {t.dashboard.adminAcceptProsIntro ?? "Approve applications so pros appear in search. Only you (admin) can see this."}
-                </p>
                 <Alert className="mb-6 border-amber-500/35 bg-amber-500/10 text-amber-950 dark:text-amber-50 [&>svg]:text-amber-700 dark:[&>svg]:text-amber-300">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle className="text-amber-950 dark:text-amber-50">
@@ -6704,10 +6713,6 @@ export default function Dashboard() {
                     {t.dashboard.adminAllProsRefresh ?? "Refresh"}
                   </Button>
                 </div>
-                <p className="text-muted-foreground text-sm mb-4">
-                  {t.dashboard.adminAllProsBlurb ??
-                    "Complete list - verified and pending. Admins can set tier from the dropdown."}
-                </p>
                 <div className="mb-4 max-w-xs">
                   <Label htmlFor="admin-member-filter">{t.dashboard.adminMemberIdSearch ?? "Look up by Member ID"}</Label>
                   <Input

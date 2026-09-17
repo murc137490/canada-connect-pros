@@ -122,13 +122,9 @@ export default function AdminAcceptPros() {
   return (
     <Layout>
       <div className="container py-8 max-w-3xl">
-        <h1 className="font-heading text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+        <h1 className="font-heading text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
           <ShieldCheck size={28} /> {d.adminAcceptProsTitle ?? "Accept pros"}
         </h1>
-        <p className="text-muted-foreground mb-6">
-          {d.adminAcceptProsPageOnlyYou ??
-            "Only you (admin) can see this page. Accept applications to give pros access to the pro section; they will not appear in search until accepted."}
-        </p>
 
         {pending.length === 0 ? (
           <p className="text-muted-foreground">{d.adminNoPendingPros ?? "No pending pros right now."}</p>

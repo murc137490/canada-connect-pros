@@ -186,11 +186,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const issueNumber =
-      typeof claimRow.issue_number === "number"
-        ? claimRow.issue_number
-        : Number.parseInt(String(claimRow.issue_number ?? ""), 10);
-
     const { data: booking } = await adminClient
       .from("bookings")
       .select("id, client_id, pro_profile_id, preferred_date, created_at, status, public_booking_code")
@@ -216,24 +211,6 @@ Deno.serve(async (req) => {
         ? ""
         : `<p><strong>Attachments (${attachment_urls.length}):</strong></p><ul>${attachment_urls.map((u) => `<li><a href="${escapeHtml(u)}">${escapeHtml(u)}</a></li>`).join("")}</ul>`;
 
-    const typeLabel =
-      claimType === "issue"
-        ? "Issue report"
-        : claimType === "refund"
-          ? "Refund request"
-          : claimType === "redo"
-            ? "Redo request"
-            : claimType === "payment_problem"
-              ? "Payment problem"
-              : claimType === "service_problem"
-                ? "Service problem"
-                : claimType === "cancellation"
-                  ? "Cancellation / schedule"
-                  : "Booking report";
-
-    const issueLabel = Number.isFinite(issueNumber)
-      ? `R${String(Math.trunc(issueNumber)).padStart(7, "0")}`
-      : `R${claimId.replace(/-/g, "").slice(0, 7).toUpperCase()}`;
     const rawBookingCode =
       typeof booking.public_booking_code === "string" ? booking.public_booking_code.trim().toUpperCase() : "";
     let bookingLabel = rawBookingCode;
@@ -242,18 +219,15 @@ Deno.serve(async (req) => {
       const n = Number.parseInt(hex, 16) % 100_000_000;
       bookingLabel = Number.isFinite(n) ? String(n).padStart(8, "0") : "00000000";
     }
+    // Ticket reference is the same public booking ID (8 digits).
+    const issueLabel = bookingLabel;
 
-    const supportSubject =
-      claimType === "issue" || claimType === "payment_problem" || claimType === "service_problem" || claimType === "cancellation"
-        ? `AltShift – ${issueLabel} (booking ${bookingLabel})`
-        : `AltShift – Claim (${claimType}) ${issueLabel}`;
+    const supportSubject = `AltShift – ${issueLabel}`;
 
     const supportHtml = `
-      <h2 style="margin:0 0 12px 0;">${escapeHtml(typeLabel)}</h2>
-      <p><strong>Ticket reference:</strong> ${escapeHtml(issueLabel)}</p>
+      <h2 style="margin:0 0 12px 0;">Booking report</h2>
       <p><strong>Booking ID:</strong> ${escapeHtml(bookingLabel)}</p>
       <p><strong>Service provider:</strong> ${escapeHtml(businessName)}</p>
-      <p><strong>Report type:</strong> ${escapeHtml(claimType)}</p>
       <p><strong>Client email:</strong> ${escapeHtml(clientEmail)}</p>
       <p><strong>Appointment date:</strong> ${escapeHtml(String(booking.preferred_date ?? booking.created_at ?? ""))}</p>
       <hr />
@@ -281,9 +255,8 @@ Deno.serve(async (req) => {
       const clientHtml = `
         <h2 style="margin:0 0 12px 0;">Thank you for contacting AltShift</h2>
         <p>Your report was received and logged.</p>
-        <p><strong>Your ticket reference:</strong> ${escapeHtml(issueLabel)}</p>
+        <p><strong>Booking ID:</strong> ${escapeHtml(bookingLabel)}</p>
         <p>Please keep this number for your records. Our team will review your case and follow up as needed.</p>
-        <p style="color:#666; font-size:12px;">Booking ID: ${escapeHtml(bookingLabel)}</p>
       `;
       if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
         clientSent = await sendEmailViaSmtp(

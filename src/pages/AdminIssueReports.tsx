@@ -14,7 +14,7 @@ import StorageDisplayImage from "@/components/StorageDisplayImage";
 import ClientAccountSummaryBlock, {
   type ClientAccountSummary,
 } from "@/components/admin/ClientAccountSummaryBlock";
-import { displayBookingId, formatIssueTicketRef } from "@/lib/bookingDisplayIds";
+import { displayBookingId } from "@/lib/bookingDisplayIds";
 
 const EVIDENCE_BUCKET = "booking-evidence";
 
@@ -65,14 +65,6 @@ export default function AdminIssueReports() {
       default:
         return code;
     }
-  };
-
-  const claimTypeLabel = (c: PendingBookingClaim) => {
-    if (c.claim_type === "issue") return d.adminIssueTypeIssue ?? "Issue report";
-    if (c.claim_type === "payment_problem") return d.adminIssueTypePayment ?? "Payment problem";
-    if (c.claim_type === "service_problem") return d.adminIssueTypeService ?? "Service problem";
-    if (c.dispute_category) return c.dispute_category.replace(/_/g, " ");
-    return c.claim_type;
   };
 
   useEffect(() => {
@@ -238,20 +230,15 @@ export default function AdminIssueReports() {
                       </span>
                     </div>
 
-                    <p className="text-sm font-semibold text-foreground">
+                    <p className="text-sm font-semibold text-foreground font-mono">
                       {(d.adminIssueNumberLine ?? "Issue {{number}}").replace(
                         "{{number}}",
-                        formatIssueTicketRef(c.issue_number) || "-",
+                        displayBookingId(booking?.public_booking_code, c.booking_id),
                       )}{" "}
-                      · {claimTypeLabel(c)} · {c.pro_profiles?.business_name ?? "Provider"}
+                      <span className="font-sans font-semibold">
+                        · {c.pro_profiles?.business_name ?? "Provider"}
+                      </span>
                     </p>
-
-                    <div className="grid gap-1 text-xs font-mono text-muted-foreground break-all sm:grid-cols-2">
-                      <p>
-                        {d.adminIssueBookingId ?? "Booking ID"}:{" "}
-                        {displayBookingId(booking?.public_booking_code, c.booking_id)}
-                      </p>
-                    </div>
 
                     <div className="flex flex-wrap gap-2 text-sm">
                       <Button type="button" variant="outline" size="sm" className="gap-1" asChild>

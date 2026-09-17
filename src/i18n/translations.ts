@@ -1020,13 +1020,13 @@ export const translations = {
       claimSaveFailed: "Could not save your report.",
       claimReportReceivedTitle: "Report received",
       claimReportReceivedEmailFailWithRef:
-        "Your report is saved and visible to support. Issue #{{number}} is your reference. Email did not send (network or function) - you can try again from your account if needed.",
+        "Your report is saved and visible to support. Booking ID {{number}} is your reference. Email did not send (network or function) - you can try again from your account if needed.",
       claimReportReceivedEmailFailNoRef:
         "Your report is saved and visible to support. Email did not send (network or function) - you can try again from your account if needed.",
-      claimIssueRefPeriod: "Issue #{{number}}.",
-      claimReportReceivedWithError: "{{error}} Issue #{{number}}.",
+      claimIssueRefPeriod: "Booking ID {{number}}.",
+      claimReportReceivedWithError: "{{error}} Booking ID {{number}}.",
       claimReportSubmittedTitle: "Report submitted",
-      claimIssueRefLine: "Your ticket reference is {{number}}.",
+      claimIssueRefLine: "Your booking ID is {{number}}.",
       claimSupportEmailSent: "Support was notified by email.",
       claimSupportEmailNotSent: "Support email was not sent (check edge function / mail config).",
       claimClientEmailSent: "A confirmation was sent to your email.",
@@ -1446,7 +1446,7 @@ export const translations = {
       adminIssueTypeIssue: "Issue report",
       adminIssueTypePayment: "Payment problem",
       adminIssueTypeService: "Service problem",
-      adminIssueNumberLine: "Issue {{number}}",
+      adminIssueNumberLine: "Booking ID {{number}}",
       adminTrialPageTitle: "Personal trial links",
       adminTrialPageCardTitle: "2-month Growth trial links",
       adminTrialPageIntro:
@@ -2853,13 +2853,13 @@ export const translations = {
       claimSaveFailed: "Impossible d’enregistrer votre signalement.",
       claimReportReceivedTitle: "Signalement reçu",
       claimReportReceivedEmailFailWithRef:
-        "Votre signalement est enregistré et visible pour le soutien. Le dossier n° {{number}} est votre référence. Le courriel n’a pas pu être envoyé (réseau ou fonction) - vous pourrez réessayer depuis votre compte si besoin.",
+        "Votre signalement est enregistré et visible pour le soutien. Le n° de réservation {{number}} est votre référence. Le courriel n’a pas pu être envoyé (réseau ou fonction) - vous pourrez réessayer depuis votre compte si besoin.",
       claimReportReceivedEmailFailNoRef:
         "Votre signalement est enregistré et visible pour le soutien. Le courriel n’a pas pu être envoyé (réseau ou fonction) - vous pourrez réessayer depuis votre compte si besoin.",
-      claimIssueRefPeriod: "Dossier n° {{number}}.",
-      claimReportReceivedWithError: "{{error}} Dossier n° {{number}}.",
+      claimIssueRefPeriod: "N° de réservation {{number}}.",
+      claimReportReceivedWithError: "{{error}} N° de réservation {{number}}.",
       claimReportSubmittedTitle: "Signalement envoyé",
-      claimIssueRefLine: "Votre référence de dossier est {{number}}.",
+      claimIssueRefLine: "Votre n° de réservation est {{number}}.",
       claimSupportEmailSent: "Le soutien a été avisé par courriel.",
       claimSupportEmailNotSent: "Le courriel au soutien n’a pas été envoyé (vérifiez la fonction ou la configuration courriel).",
       claimClientEmailSent: "Une confirmation a été envoyée à votre courriel.",
@@ -3282,7 +3282,7 @@ export const translations = {
       adminIssueTypeIssue: "Signalement",
       adminIssueTypePayment: "Problème de paiement",
       adminIssueTypeService: "Problème de service",
-      adminIssueNumberLine: "Dossier {{number}}",
+      adminIssueNumberLine: "N° de réservation {{number}}",
       adminTrialPageTitle: "Liens d’essai personnels",
       adminTrialPageCardTitle: "Liens d’essai Croissance de 2 mois",
       adminTrialPageIntro:

@@ -139,13 +139,8 @@ export default function AdminAccountDeletions() {
         <div>
           <h2 className="font-heading text-xl font-bold text-foreground flex items-center gap-2">
             <Trash2 className="w-5 h-5 text-destructive" />
-            {locale === "fr" ? "Demandes de suppression de compte (Loi 25)" : "Account Deletion Requests (Law 25)"}
+            {locale === "fr" ? "Demandes de suppression de compte" : "Account Deletion Requests"}
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {locale === "fr"
-              ? "Gérez les demandes de suppression et purgez définitivement les comptes après confirmation et délai de 24 heures."
-              : "Manage account deletion requests and execute permanent purges after confirmation and the 24-hour grace window."}
-          </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => void fetchRequests()} disabled={loading} className="gap-1.5">
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />

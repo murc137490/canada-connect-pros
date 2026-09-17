@@ -16,7 +16,7 @@ import {
 } from "@/lib/disputeCategories";
 import { MIN_CLAIM_REPORT_IMAGES } from "@/lib/jobRequestRules";
 import { toUserFacingMessage } from "@/lib/userFacingError";
-import { formatIssueTicketRef } from "@/lib/bookingDisplayIds";
+import { displayBookingId } from "@/lib/bookingDisplayIds";
 
 const EVIDENCE_BUCKET = "booking-evidence";
 
@@ -38,12 +38,14 @@ export default function BookingClaimDialog({
   open,
   onOpenChange,
   bookingId,
+  bookingPublicCode,
   proProfileId,
   bookingStatusCode,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   bookingId: string | null;
+  bookingPublicCode?: string | null;
   proProfileId: string;
   /** Raw booking status for display (localized in the dialog). */
   bookingStatusCode?: string | null;
@@ -195,20 +197,16 @@ export default function BookingClaimDialog({
       });
 
       if (fnError) {
-        const hasNum = typeof saved.issue_number === "number";
-        const desc = hasNum
-          ? (d.claimReportReceivedEmailFailWithRef ?? "").replace(
-              "{{number}}",
-              formatIssueTicketRef(saved.issue_number),
-            )
+        const refNum = displayBookingId(bookingPublicCode, bookingId);
+        const desc = refNum
+          ? (d.claimReportReceivedEmailFailWithRef ?? "").replace("{{number}}", refNum)
           : (d.claimReportReceivedEmailFailNoRef ?? "");
         toast({
           title: d.claimReportReceivedTitle ?? "Report received",
           description: desc,
         });
       } else if (fnData && typeof fnData === "object" && "error" in fnData && fnData.error) {
-        const num =
-          typeof saved.issue_number === "number" ? formatIssueTicketRef(saved.issue_number) : "";
+        const num = displayBookingId(bookingPublicCode, bookingId);
         const desc = num
           ? (d.claimReportReceivedWithError ?? "")
               .replace("{{error}}", String(fnData.error))
@@ -220,11 +218,9 @@ export default function BookingClaimDialog({
         });
       } else {
         const refNum =
-          fnData?.issue_number != null
-            ? formatIssueTicketRef(fnData.issue_number)
-            : typeof saved.issue_number === "number"
-              ? formatIssueTicketRef(saved.issue_number)
-              : "";
+          typeof fnData?.issue_number === "string" && /^\d{8}$/.test(fnData.issue_number.trim())
+            ? fnData.issue_number.trim()
+            : displayBookingId(bookingPublicCode, bookingId);
         const supportOk = fnData?.email_sent_support === true;
         const clientOk = fnData?.email_sent_client === true;
         toast({

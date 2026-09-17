@@ -17,13 +17,3 @@ export function displayBookingId(
   }
   return "--------";
 }
-
-/** Ticket / claim reference: letter + digits (e.g. R0000123). */
-export function formatIssueTicketRef(issueNumber: number | string | null | undefined): string {
-  const n =
-    typeof issueNumber === "number"
-      ? issueNumber
-      : Number.parseInt(String(issueNumber ?? "").replace(/\D/g, ""), 10);
-  if (!Number.isFinite(n) || n <= 0) return "";
-  return `R${String(Math.trunc(n)).padStart(7, "0")}`;
-}
