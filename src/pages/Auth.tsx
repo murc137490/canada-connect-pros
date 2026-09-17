@@ -504,9 +504,6 @@ export default function Auth() {
                       Français
                     </button>
                   </div>
-                  {t.auth.emailLanguageHint && (
-                    <p className="text-xs text-muted-foreground">{t.auth.emailLanguageHint}</p>
-                  )}
                 </div>
               </>
             )}

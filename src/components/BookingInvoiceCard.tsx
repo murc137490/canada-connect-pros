@@ -43,10 +43,7 @@ export default function BookingInvoiceCard({
     fallbackBookingPublicCode: bookingPublicCode ?? undefined,
   });
   const refDisplay =
-    displayBookingId(norm?.booking_reference_code ?? bookingPublicCode, bookingId) ||
-    norm?.booking_reference_code?.trim() ||
-    bookingPublicCode?.trim().toUpperCase() ||
-    "-";
+    displayBookingId(bookingPublicCode ?? norm?.booking_reference_code, bookingId) || "-";
 
   const totalDisplay = norm
     ? `${(norm.total_cents / 100).toFixed(2)} ${norm.currency}`

@@ -234,10 +234,14 @@ Deno.serve(async (req) => {
     const issueLabel = Number.isFinite(issueNumber)
       ? `R${String(Math.trunc(issueNumber)).padStart(7, "0")}`
       : `R${claimId.replace(/-/g, "").slice(0, 7).toUpperCase()}`;
-    const bookingLabel =
-      typeof booking.public_booking_code === "string" && booking.public_booking_code.trim()
-        ? booking.public_booking_code.trim().toUpperCase()
-        : bookingId.slice(0, 8).toUpperCase();
+    const rawBookingCode =
+      typeof booking.public_booking_code === "string" ? booking.public_booking_code.trim().toUpperCase() : "";
+    let bookingLabel = rawBookingCode;
+    if (!/^\d{8}$/.test(bookingLabel)) {
+      const hex = bookingId.replace(/-/g, "").slice(0, 8);
+      const n = Number.parseInt(hex, 16) % 100_000_000;
+      bookingLabel = Number.isFinite(n) ? String(n).padStart(8, "0") : "00000000";
+    }
 
     const supportSubject =
       claimType === "issue" || claimType === "payment_problem" || claimType === "service_problem" || claimType === "cancellation"
@@ -273,13 +277,13 @@ Deno.serve(async (req) => {
 
     let clientSent = false;
     if (clientEmail) {
-      const clientSubject = `We received your report — Issue #${issueLabel}`;
+      const clientSubject = `We received your report — ${issueLabel}`;
       const clientHtml = `
         <h2 style="margin:0 0 12px 0;">Thank you for contacting AltShift</h2>
         <p>Your report was received and logged.</p>
-        <p><strong>Your issue number:</strong> ${escapeHtml(issueLabel)}</p>
+        <p><strong>Your ticket reference:</strong> ${escapeHtml(issueLabel)}</p>
         <p>Please keep this number for your records. Our team will review your case and follow up as needed.</p>
-        <p style="color:#666; font-size:12px;">Booking reference: ${escapeHtml(bookingId)}</p>
+        <p style="color:#666; font-size:12px;">Booking ID: ${escapeHtml(bookingLabel)}</p>
       `;
       if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
         clientSent = await sendEmailViaSmtp(
