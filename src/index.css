@@ -536,12 +536,19 @@
     transform-origin: top center;
   }
 
+  .how-scroll-fade {
+    will-change: opacity;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .how-progress-fill {
       transform: scaleX(1);
     }
     .how-progress-fill-y {
       transform: scaleY(1);
+    }
+    .how-scroll-fade {
+      opacity: 1 !important;
     }
   }
 
