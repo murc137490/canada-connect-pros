@@ -4,14 +4,17 @@ type BrandLogoProps = {
   withWordmark?: boolean;
   wordmarkClassName?: string;
   /**
-   * auto — light mode: dark A / light S; dark mode: light A / dark S
-   * inverted — always light A / dark S (dark surfaces like the footer)
-   * light — always dark A / light S
+   * auto — light mode: light A / dark S; dark mode: dark A / light S
+   * onDark — dark A / light S (footer, dark surfaces)
+   * onLight — light A / dark S (forced light-surface look)
    */
-  tone?: "auto" | "inverted" | "light";
+  tone?: "auto" | "onDark" | "onLight";
 };
 
-/** AltShift SA monogram — A and S swap weight with theme. */
+/**
+ * AltShift SA monogram.
+ * Base asset is dark A + light S; inverted for light mode.
+ */
 export default function BrandLogo({
   className = "h-8 w-8",
   withWordmark = false,
@@ -19,7 +22,7 @@ export default function BrandLogo({
   tone = "auto",
 }: BrandLogoProps) {
   const toneClass =
-    tone === "inverted" ? "invert" : tone === "light" ? "" : "dark:invert";
+    tone === "onDark" ? "" : tone === "onLight" ? "invert" : "invert dark:invert-0";
 
   return (
     <span className="inline-flex items-center gap-2 min-w-0">

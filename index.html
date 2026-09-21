@@ -123,12 +123,13 @@
       }
 
       #altshift-boot .boot-mark {
-        filter: none;
+        /* Light mode boot: light A, dark S */
+        filter: invert(1);
       }
 
       html[data-boot-theme="dark"] #altshift-boot .boot-mark {
-        /* Light A, dark S on dark boot background */
-        filter: invert(1);
+        /* Dark mode boot: dark A, light S */
+        filter: none;
       }
 
       html[data-boot-theme="dark"] #altshift-boot .boot-logo {
