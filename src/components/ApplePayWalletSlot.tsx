@@ -33,7 +33,8 @@ const btnBase =
 /**
  * Prefer Square `<ApplePay>` whenever Apple Pay JS reports capability
  * (Safari sheet, or Apple’s native Windows/Chrome QR).
- * Branded overlay outside Safari (Square’s CSS button is otherwise blank).
+ * Branded look outside Safari sits under a near-invisible Square hit layer
+ * so clicks always reach the real wallet control.
  * AltShift QR handoff only if Square never mounts.
  */
 export function ApplePayWalletSlot({
@@ -51,6 +52,7 @@ export function ApplePayWalletSlot({
   useEffect(() => {
     let cancelled = false;
     const timers: number[] = [];
+    let observer: MutationObserver | null = null;
 
     void (async () => {
       await ensureApplePaySdkLoaded();
@@ -64,15 +66,22 @@ export function ApplePayWalletSlot({
         if (cancelled) return;
         setSdkLive(applePaySlotLooksLive(slotRef.current));
       };
-      for (const ms of [400, 1200, 2400, 4000, 6500]) {
+
+      for (const ms of [200, 600, 1200, 2400, 4000, 6500]) {
         timers.push(window.setTimeout(probe, ms));
       }
       probe();
+
+      if (slotRef.current) {
+        observer = new MutationObserver(probe);
+        observer.observe(slotRef.current, { childList: true, subtree: true, attributes: true });
+      }
     })();
 
     return () => {
       cancelled = true;
       timers.forEach((id) => window.clearTimeout(id));
+      observer?.disconnect();
     };
   }, []);
 
@@ -83,18 +92,10 @@ export function ApplePayWalletSlot({
 
   return (
     <div className={`relative h-12 min-h-12 w-full ${className ?? ""}`.trim()}>
-      {/* Always mount Square Apple Pay so Windows can open Apple’s native QR when capable. */}
-      <div
-        ref={slotRef}
-        className={`h-12 min-h-12 min-w-0 ${sdkLive ? "" : "invisible absolute inset-0"}`}
-        aria-hidden={!sdkLive}
-      >
-        {children}
-      </div>
-
+      {/* Brand under the Square control (visual only). */}
       {showOverlay ? (
         <div
-          className="sq-apple-pay-brand pointer-events-none absolute inset-0 z-[2] rounded-[4px] bg-black text-white ring-1 ring-white/25"
+          className="sq-apple-pay-brand pointer-events-none absolute inset-0 z-0 rounded-[4px] bg-black text-white ring-1 ring-white/25"
           aria-hidden
         >
           <ApplePayMark />
@@ -102,8 +103,25 @@ export function ApplePayWalletSlot({
         </div>
       ) : null}
 
+      {/*
+        Always mount Square Apple Pay. When we paint a brand cover (non-Safari),
+        keep the real control on top at near-zero opacity so clicks hit Square,
+        not a decorative layer (pointer-events-none over iframes is unreliable).
+      */}
+      <div
+        ref={slotRef}
+        className={
+          sdkLive
+            ? `relative z-10 h-12 min-h-12 min-w-0 ${showOverlay ? "sq-apple-pay-hit" : ""}`
+            : "invisible absolute inset-0 z-0"
+        }
+        aria-hidden={!sdkLive}
+      >
+        {children}
+      </div>
+
       {!ready ? (
-        <div className={`${btnBase} opacity-80`} aria-hidden>
+        <div className={`${btnBase} pointer-events-none opacity-80`} aria-hidden>
           <span className="text-xs text-white/60">…</span>
         </div>
       ) : null}
@@ -114,7 +132,7 @@ export function ApplePayWalletSlot({
           onClick={onRequestIphoneHandoff}
           title={unavailableLabel}
           aria-label={label}
-          className={`${btnBase} transition hover:bg-neutral-900`}
+          className={`${btnBase} relative z-10 transition hover:bg-neutral-900`}
         >
           <ApplePayMark />
           <span className="whitespace-nowrap leading-none">Pay</span>
@@ -122,7 +140,7 @@ export function ApplePayWalletSlot({
       ) : null}
 
       {showDisabled ? (
-        <button type="button" disabled title={unavailableLabel} aria-label={label} className={`${btnBase} cursor-not-allowed opacity-80`}>
+        <button type="button" disabled title={unavailableLabel} aria-label={label} className={`${btnBase} relative z-10 cursor-not-allowed opacity-80`}>
           <ApplePayMark />
           <span className="whitespace-nowrap leading-none">Pay</span>
         </button>

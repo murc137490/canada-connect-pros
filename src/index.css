@@ -1005,7 +1005,7 @@ apple-pay-button {
   max-height: 48px !important;
 }
 
-/* Centered Apple Pay brand overlay (Windows / non-Safari) */
+/* Centered Apple Pay brand overlay (Windows / non-Safari) ? never capture clicks */
 .sq-apple-pay-brand {
   display: flex !important;
   flex-direction: row !important;
@@ -1018,12 +1018,28 @@ apple-pay-button {
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
+  pointer-events: none !important;
 }
 
 .sq-apple-pay-brand > * {
   display: inline-block !important;
   vertical-align: middle;
   flex-shrink: 0;
+  pointer-events: none !important;
+}
+
+/* Near-invisible Square hit target above the brand cover */
+.sq-apple-pay-hit,
+.sq-apple-pay-hit iframe,
+.sq-apple-pay-hit apple-pay-button,
+.sq-apple-pay-hit button,
+.sq-apple-pay-hit [role="button"],
+.sq-apple-pay-hit #rswps-apple-pay-container,
+.sq-apple-pay-hit #pro-plan-apple-pay,
+.sq-apple-pay-hit #trial-apple-pay {
+  opacity: 0.01 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 /* Google Pay branded cover — hides Square iframe white flash permanently */
