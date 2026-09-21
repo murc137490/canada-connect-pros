@@ -40,15 +40,14 @@ export default function HomeHowItWorks() {
       raf = 0;
       const rect = section.getBoundingClientRect();
       const vh = window.innerHeight || 1;
-      // 0 when section top is near bottom of viewport; 1 when well into view
-      const start = vh * 0.92;
-      const end = vh * 0.20;
+      // Start as the section peeks in; finish ~25% sooner so steps light up earlier.
+      const start = vh * 0.98;
+      const end = vh * 0.35;
       const raw = (start - rect.top) / Math.max(start - end, 1);
       const p = Math.min(1, Math.max(0, raw));
       section.style.setProperty("--how-progress", p.toFixed(3));
 
-      const step =
-        p < 0.08 ? 1 : p < 0.45 ? 1 : p < 0.75 ? 2 : 3;
+      const step = p < 0.06 ? 1 : p < 0.34 ? 1 : p < 0.56 ? 2 : 3;
       if (step !== lastStep) {
         lastStep = step;
         setActiveStep(step);
@@ -65,7 +64,8 @@ export default function HomeHowItWorks() {
         tracking = !!entry?.isIntersecting;
         if (tracking) measure();
       },
-      { rootMargin: "20% 0px 20% 0px", threshold: 0 }
+      // Observe sooner so progress tracking starts before the section is centered.
+      { rootMargin: "35% 0px 35% 0px", threshold: 0 }
     );
 
     io.observe(section);
@@ -81,6 +81,9 @@ export default function HomeHowItWorks() {
     };
   }, [reduced]);
 
+  // Reveal ~25% earlier than the default mid-viewport fade (margin "-20%").
+  const revealEarly = "10% 0px";
+
   return (
     <section
       id="how-it-works"
@@ -89,7 +92,7 @@ export default function HomeHowItWorks() {
       style={{ ["--how-progress" as string]: reduced ? 1 : 0 }}
     >
       <div className="container-page">
-        <ScrollReveal y={14}>
+        <ScrollReveal y={14} margin={revealEarly} once>
           <h2 className="font-display text-display-md text-foreground whitespace-pre-line max-w-xl">
             {t.index.howTitle}
           </h2>
@@ -116,7 +119,7 @@ export default function HomeHowItWorks() {
             {steps.map((step, i) => {
               const on = activeStep > i;
               return (
-                <ScrollReveal key={step.n} y={14} delay={i * 0.03}>
+                <ScrollReveal key={step.n} y={14} delay={i * 0.02} margin={revealEarly} once>
                   <li className="how-step relative flex gap-5 md:block md:gap-0">
                     <span
                       className={cn(
