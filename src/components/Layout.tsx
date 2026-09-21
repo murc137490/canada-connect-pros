@@ -20,6 +20,7 @@ import { isSuperAdminEmail } from "@/lib/platformAdmin";
 import WhatsNewMenu from "@/components/WhatsNewMenu";
 import { useWhatsNew } from "@/contexts/WhatsNewContext";
 import { MOTION } from "@/motion/types";
+import BrandLogo from "@/components/BrandLogo";
 
 const SCROLL_COMPACT = 24;
 
@@ -222,10 +223,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className={`container-page flex items-center gap-3 transition-all duration-300 ${scrolled ? "h-12" : "h-14"}`}>
           <Link
             to="/"
-            className="min-w-0 shrink font-heading text-sm sm:text-[15px] font-extrabold tracking-tight text-foreground hover:opacity-80 transition-opacity"
+            className="min-w-0 shrink hover:opacity-80 transition-opacity"
             aria-label="AltShift – Home"
           >
-            <span className="block truncate">AltShift</span>
+            <BrandLogo
+              withWordmark
+              className={scrolled ? "h-7 w-7" : "h-8 w-8"}
+            />
           </Link>
 
           <nav className="hidden lg:flex items-center gap-0.5 ml-2" aria-label="Primary">
@@ -364,8 +368,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container-page py-14 md:py-16">
           <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)] md:gap-12">
             <div className="space-y-4 max-w-sm">
-              <div className="font-heading text-xl font-extrabold tracking-tight">
-                AltShift
+              <div className="flex items-center gap-2.5">
+                <BrandLogo className="h-9 w-9 brightness-0 invert" />
+                <span className="font-heading text-xl font-extrabold tracking-tight">AltShift</span>
               </div>
               <p className="text-sm text-white/65 leading-relaxed">
                 {t.footer.tagline}

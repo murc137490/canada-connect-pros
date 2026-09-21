@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import BrandLogo from "@/components/BrandLogo";
 
 type BootLoadingScreenProps = {
   /** Accessible status label */
@@ -47,7 +48,8 @@ export default function BootLoadingScreen({
       aria-label={label}
     >
       <main className="altshift-boot-screen__main">
-        <div className="altshift-boot-screen__logo">
+        <div className="altshift-boot-screen__logo flex flex-col items-center gap-4">
+          <BrandLogo className={dark ? "h-16 w-16 brightness-0 invert" : "h-16 w-16"} />
           <h1>AltShift</h1>
         </div>
       </main>
