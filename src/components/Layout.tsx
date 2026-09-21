@@ -369,7 +369,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)] md:gap-12">
             <div className="space-y-4 max-w-sm">
               <div className="flex items-center gap-2.5">
-                <BrandLogo className="h-9 w-9 brightness-0 invert" />
+                <BrandLogo className="h-9 w-9" tone="inverted" />
                 <span className="font-heading text-xl font-extrabold tracking-tight">AltShift</span>
               </div>
               <p className="text-sm text-white/65 leading-relaxed">

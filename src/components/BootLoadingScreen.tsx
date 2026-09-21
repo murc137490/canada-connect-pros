@@ -49,7 +49,7 @@ export default function BootLoadingScreen({
     >
       <main className="altshift-boot-screen__main">
         <div className="altshift-boot-screen__logo flex flex-col items-center gap-4">
-          <BrandLogo className={dark ? "h-16 w-16 brightness-0 invert" : "h-16 w-16"} />
+          <BrandLogo className="h-16 w-16" />
           <h1>AltShift</h1>
         </div>
       </main>

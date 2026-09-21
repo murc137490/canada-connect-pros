@@ -122,6 +122,15 @@
         animation-name: animateShadowLight;
       }
 
+      #altshift-boot .boot-mark {
+        filter: none;
+      }
+
+      html[data-boot-theme="dark"] #altshift-boot .boot-mark {
+        /* Light A, dark S on dark boot background */
+        filter: invert(1);
+      }
+
       html[data-boot-theme="dark"] #altshift-boot .boot-logo {
         animation-name: animateShadowDark;
       }
@@ -193,6 +202,7 @@
             alt=""
             width="72"
             height="72"
+            class="boot-mark"
             style="width:clamp(3rem,8vw,4.5rem);height:auto;display:block;"
           />
           <h1>AltShift</h1>
