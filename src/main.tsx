@@ -1,7 +1,10 @@
+import { registerSW } from "virtual:pwa-register";
 import { silenceClientDiagnostics } from "./lib/silenceClientDiagnostics";
 import { SAFE_USER_ERROR, readUiLocale } from "./lib/userFacingError";
 
 silenceClientDiagnostics();
+
+registerSW({ immediate: true });
 
 /** One-time migrate Première localStorage keys → AltShift. */
 try {
