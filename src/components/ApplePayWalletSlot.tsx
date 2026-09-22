@@ -28,14 +28,12 @@ type ApplePayWalletSlotProps = {
 };
 
 const btnBase =
-  "flex h-12 w-full flex-row flex-nowrap items-center justify-center gap-2 rounded-[4px] bg-black px-3 text-[15px] font-semibold tracking-tight text-white ring-1 ring-white/25";
+  "flex h-12 w-full flex-row flex-nowrap items-center justify-center gap-2 rounded-[4px] bg-black px-3 text-[15px] font-semibold tracking-tight text-white ring-1 ring-white/25 cursor-pointer";
 
 /**
- * Prefer Square `<ApplePay>` whenever Apple Pay JS reports capability
- * (Safari sheet, or Apple’s native Windows/Chrome QR).
- * Branded look outside Safari sits under a near-invisible Square hit layer
- * so clicks always reach the real wallet control.
- * AltShift QR handoff only if Square never mounts.
+ * Safari → Square `<ApplePay>` when live.
+ * Non-Safari with handoff → always use the clickable QR handoff (Square’s control often
+ * shows a not-allowed cursor on Windows/Chrome even when mounted).
  */
 export function ApplePayWalletSlot({
   children,
@@ -67,7 +65,7 @@ export function ApplePayWalletSlot({
         setSdkLive(applePaySlotLooksLive(slotRef.current));
       };
 
-      for (const ms of [200, 600, 1200, 2400, 4000, 6500]) {
+      for (const ms of [200, 600, 1200, 2400, 4000]) {
         timers.push(window.setTimeout(probe, ms));
       }
       probe();
@@ -86,36 +84,24 @@ export function ApplePayWalletSlot({
   }, []);
 
   const label = handoffButtonLabel || "Apple Pay";
-  const showHandoff = ready && !sdkLive && !!onRequestIphoneHandoff;
-  const showDisabled = ready && !sdkLive && !onRequestIphoneHandoff;
-  const showOverlay = sdkLive && !isSafari;
+  // Windows/Chrome: Square’s button often paints but rejects clicks (not-allowed cursor).
+  // Prefer our QR handoff whenever available outside Safari.
+  const useHandoff = ready && !!onRequestIphoneHandoff && !isSafari;
+  const useSquare = ready && sdkLive && isSafari;
+  const showDisabled = ready && !useHandoff && !useSquare && !sdkLive;
+  // Non-Safari without handoff but Square mounted: keep Square visible (no hit-layer tricks).
+  const useSquareNonSafari = ready && sdkLive && !isSafari && !onRequestIphoneHandoff;
 
   return (
     <div className={`relative h-12 min-h-12 w-full ${className ?? ""}`.trim()}>
-      {/* Brand under the Square control (visual only). */}
-      {showOverlay ? (
-        <div
-          className="sq-apple-pay-brand pointer-events-none absolute inset-0 z-0 rounded-[4px] bg-black text-white ring-1 ring-white/25"
-          aria-hidden
-        >
-          <ApplePayMark />
-          <span className="whitespace-nowrap text-[15px] font-semibold leading-none tracking-tight">Pay</span>
-        </div>
-      ) : null}
-
-      {/*
-        Always mount Square Apple Pay. When we paint a brand cover (non-Safari),
-        keep the real control on top at near-zero opacity so clicks hit Square,
-        not a decorative layer (pointer-events-none over iframes is unreliable).
-      */}
       <div
         ref={slotRef}
         className={
-          sdkLive
-            ? `relative z-10 h-12 min-h-12 min-w-0 ${showOverlay ? "sq-apple-pay-hit" : ""}`
-            : "invisible absolute inset-0 z-0"
+          useSquare || useSquareNonSafari
+            ? "relative z-10 h-12 min-h-12 min-w-0"
+            : "invisible pointer-events-none absolute inset-0 z-0"
         }
-        aria-hidden={!sdkLive}
+        aria-hidden={!(useSquare || useSquareNonSafari)}
       >
         {children}
       </div>
@@ -126,7 +112,7 @@ export function ApplePayWalletSlot({
         </div>
       ) : null}
 
-      {showHandoff ? (
+      {useHandoff ? (
         <button
           type="button"
           onClick={onRequestIphoneHandoff}
@@ -140,7 +126,13 @@ export function ApplePayWalletSlot({
       ) : null}
 
       {showDisabled ? (
-        <button type="button" disabled title={unavailableLabel} aria-label={label} className={`${btnBase} relative z-10 cursor-not-allowed opacity-80`}>
+        <button
+          type="button"
+          disabled
+          title={unavailableLabel}
+          aria-label={label}
+          className={`${btnBase} relative z-10 cursor-default opacity-70`}
+        >
           <ApplePayMark />
           <span className="whitespace-nowrap leading-none">Pay</span>
         </button>

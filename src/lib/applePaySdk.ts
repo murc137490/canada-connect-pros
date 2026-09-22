@@ -70,16 +70,25 @@ export async function resolveApplePayBrowserCapable(): Promise<boolean> {
   return isApplePayBrowserCapableSync();
 }
 
-/** Detect whether Square (or Apple) actually mounted a live wallet control. */
+/** Detect whether Square (or Apple) actually mounted a live, enabled wallet control. */
 export function applePaySlotLooksLive(el: HTMLElement | null | undefined): boolean {
   if (!el) return false;
-  if (el.querySelector("iframe, button, [role='button'], apple-pay-button")) return true;
+
+  const candidates = el.querySelectorAll<HTMLElement>("iframe, button, [role='button'], apple-pay-button");
+  for (const node of Array.from(candidates)) {
+    if (node.hasAttribute("disabled") || node.getAttribute("aria-disabled") === "true") continue;
+    const cs = window.getComputedStyle(node);
+    if (cs.display === "none" || cs.visibility === "hidden" || cs.pointerEvents === "none") continue;
+    if (cs.cursor === "not-allowed") continue;
+    if (node.getBoundingClientRect().height >= 32) return true;
+  }
 
   // Square's ApplePayContainer uses -webkit-appearance: -apple-pay-button and
   // stays display:none until payments.applePay() succeeds.
   for (const node of Array.from(el.querySelectorAll<HTMLElement>("*"))) {
     const cs = window.getComputedStyle(node);
-    if (cs.display === "none" || cs.visibility === "hidden") continue;
+    if (cs.display === "none" || cs.visibility === "hidden" || cs.pointerEvents === "none") continue;
+    if (cs.cursor === "not-allowed") continue;
     const h = node.getBoundingClientRect().height;
     if (h >= 36 && (String(cs.getPropertyValue("-webkit-appearance") || "").includes("apple-pay") || node.id.includes("apple-pay"))) {
       return true;

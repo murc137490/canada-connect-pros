@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef, startTransition } from "react";
 import { format } from "date-fns";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -767,7 +767,9 @@ export default function Dashboard() {
 
   const setDashboardTab = useCallback(
     (tab: string) => {
-      setActiveTab(tab);
+      startTransition(() => {
+        setActiveTab(tab);
+      });
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
@@ -4356,7 +4358,7 @@ export default function Dashboard() {
           </div>
 
           {!isAdminDashboardShell && proProfile?.is_verified && (
-            <TabsContent value="pro" className="space-y-4">
+            <TabsContent forceMount value="pro" className="space-y-4">
               {proProfileLoading ? (
                 <BootLoadingScreen fullScreen={false} label={t.common?.loading ?? "Loading"} />
               ) : (
@@ -5363,7 +5365,7 @@ export default function Dashboard() {
             bookingStatusCode={claimBooking?.statusCode ?? null}
           />
 
-          <TabsContent value="account" className="space-y-4 flex flex-col items-center">
+          <TabsContent forceMount value="account" className="space-y-4 flex flex-col items-center">
             <div className="flex justify-center w-full max-w-lg mx-auto pt-2">
               <ClickableProfileAvatar
                 className="h-24 w-24"
@@ -5926,7 +5928,7 @@ export default function Dashboard() {
 
           {!isAdminDashboardShell ? (
           <>
-          <TabsContent value="bookings" className="space-y-4">
+          <TabsContent forceMount value="bookings" className="space-y-4">
             {proProfile?.is_verified && proViewingMyRequests ? (
               <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">
                 <div data-tour="booking-requests" className="rounded-xl">
@@ -6447,7 +6449,7 @@ export default function Dashboard() {
             )}
           </TabsContent>
 
-          <TabsContent value="favorites" className="space-y-4">
+          <TabsContent forceMount value="favorites" className="space-y-4">
             {savedProsLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="animate-spin text-muted-foreground" size={32} />
@@ -6500,7 +6502,7 @@ export default function Dashboard() {
             )}
           </TabsContent>
 
-          <TabsContent value="reviews" className="space-y-4">
+          <TabsContent forceMount value="reviews" className="space-y-4">
             <div data-tour="reviews-panel">
               <DashboardReviewsPanel
                 proProfileId={showProReviewSection ? proProfile?.id ?? null : null}
@@ -6516,7 +6518,7 @@ export default function Dashboard() {
             ) : null}
           </TabsContent>
 
-          <TabsContent value="invoices" className="space-y-4">
+          <TabsContent forceMount value="invoices" className="space-y-4">
             {(() => {
               const invoiceRows = clientBookings.filter((b) => b.status !== "declined");
               const statusLabel = (code: string) =>
@@ -6585,13 +6587,13 @@ export default function Dashboard() {
           ) : null}
 
           {isAdminDashboardShell && isSuperAdmin && (
-            <TabsContent value="staff" className="space-y-4">
+            <TabsContent forceMount value="staff" className="space-y-4">
               <AdminStaffManager />
             </TabsContent>
           )}
 
           {isAdminDashboardShell && (
-            <TabsContent value="admin" className="space-y-4">
+            <TabsContent forceMount value="admin" className="space-y-4">
               {!isAdmin ? (
                 <div className="flex justify-center py-16">
                   <Loader2 className="animate-spin text-muted-foreground" size={32} />

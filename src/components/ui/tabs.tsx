@@ -38,11 +38,14 @@ TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
 const TabsContent = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
->(({ className, ...props }, ref) => (
+>(({ className, forceMount, ...props }, ref) => (
   <TabsPrimitive.Content
     ref={ref}
+    forceMount={forceMount}
     className={cn(
       "relative z-10 mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      // Keep panel mounted but hidden so tab switches stay instant after first paint.
+      forceMount != null && "data-[state=inactive]:hidden",
       className,
     )}
     {...props}

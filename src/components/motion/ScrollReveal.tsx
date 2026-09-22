@@ -49,7 +49,7 @@ export default function ScrollReveal({
       className={cn(className)}
       initial={{ opacity: 0, y }}
       animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: Math.round(y * 0.45) }}
-      transition={{ duration: 0.26, delay, ease: MOTION.ease }}
+      transition={{ duration: 0.2, delay, ease: MOTION.ease }}
     >
       {children}
     </motion.div>

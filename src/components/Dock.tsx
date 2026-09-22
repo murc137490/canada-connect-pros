@@ -180,7 +180,7 @@ export interface DockItemConfig {
 export default function Dock({
   items,
   className = "",
-  spring = { mass: 0.1, stiffness: 150, damping: 12 },
+  spring = { mass: 0.08, stiffness: 380, damping: 28 },
   magnification: magnificationProp,
   distance: distanceProp,
   panelHeight: panelHeightProp,
@@ -201,7 +201,7 @@ export default function Dock({
     if (layout === "wide") {
       return {
         baseItemSize: baseItemSizeProp ?? 56,
-        magnification: magnificationProp ?? 68,
+        magnification: magnificationProp ?? 62,
         panelHeight: panelHeightProp ?? 80,
         distance: distanceProp ?? 200,
       };
