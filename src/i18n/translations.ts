@@ -664,8 +664,7 @@ export const translations = {
       bookingRequestSentHoldHint:
         "Your card is authorized. You are only charged if the professional accepts.",
       applePayWalletRolloutNote: "",
-      applePayBetaTestingNote:
-        "Apple Pay works in Safari on iPhone/Mac. On Windows or Android, tap Apple Pay for a QR code and finish on your iPhone.",
+      applePayBetaTestingNote: "",
       applePayUnavailableOnDevice:
         "Scan the QR with your iPhone Camera (iOS 18+) or open the link in Safari to pay with Apple Pay.",
       applePayHandoffButtonLabel: "Apple Pay",
@@ -2494,8 +2493,7 @@ export const translations = {
       bookingRequestSentHoldHint:
         "Votre carte est pré-autorisée. Le montant n’est débité que si le professionnel accepte.",
       applePayWalletRolloutNote: "",
-      applePayBetaTestingNote:
-        "Apple Pay fonctionne dans Safari sur iPhone/Mac. Sur Windows ou Android, touchez Apple Pay pour un code QR et terminez sur votre iPhone.",
+      applePayBetaTestingNote: "",
       applePayUnavailableOnDevice:
         "Scannez le QR avec l’appareil photo de l’iPhone (iOS 18+) ou ouvrez le lien dans Safari pour payer avec Apple Pay.",
       applePayHandoffButtonLabel: "Apple Pay",

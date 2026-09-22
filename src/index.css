@@ -991,8 +991,19 @@ apple-pay-button {
 #rswps-google-pay-container,
 #pro-plan-google-pay,
 #trial-google-pay,
+.sq-google-pay-hit iframe,
 .sq-google-pay-slot iframe {
-  opacity: 0.001 !important;
+  opacity: 0.01 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.sq-google-pay-hit {
+  position: relative;
+  z-index: 1;
+  height: 48px;
+  min-height: 48px;
+  width: 100%;
 }
 
 #rswps-apple-pay-container,

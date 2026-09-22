@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState, useRef, type MutableRefObject } from "react";
-import { useApplePaySquareMissingHint } from "@/hooks/useApplePaySquareMissingHint";
 import { ApplePayWalletSlot } from "@/components/ApplePayWalletSlot";
 import {
   ApplePay,
@@ -124,10 +123,6 @@ export default function SquareBookingPayment({
       cancelled = true;
     };
   }, [squareLocationId]);
-
-  const squareSdkReady = !!(applicationId && locationIdForSdk);
-  const showApplePayBeta = useApplePaySquareMissingHint(walletApplePayRef, squareSdkReady);
-  const applePayBetaText = (terms.applePayBetaTestingNote ?? "").trim();
 
   useEffect(() => {
     if (!applicationId) return;
@@ -384,6 +379,7 @@ export default function SquareBookingPayment({
         }}
       >
         <div className="space-y-3">
+          <CreditCard style={CARD_STYLE} />
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {plans?.checkoutDigitalWallet ?? "Digital wallet"}
           </p>
@@ -410,19 +406,6 @@ export default function SquareBookingPayment({
               />
             </GooglePayWalletSlot>
           </div>
-          <p className="text-[11px] leading-relaxed text-muted-foreground">
-            {onApplePayHandoffRequest
-              ? (terms.applePayHandoffHint ??
-                  "On Windows/Android, tap Apple Pay to scan a QR and finish on iPhone Safari.")
-              : (terms.applePayBetaTestingNote ??
-                  "Apple Pay works in Safari on iPhone/Mac with Wallet. On Windows and Android, use Google Pay or card.")}
-          </p>
-          {showApplePayBeta && applePayBetaText ? (
-            <p className="text-xs leading-relaxed text-amber-900 dark:text-amber-100 rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-1.5">
-              {applePayBetaText}
-            </p>
-          ) : null}
-          <CreditCard style={CARD_STYLE} />
         </div>
       </PaymentForm>
     </div>

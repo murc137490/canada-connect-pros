@@ -7,9 +7,8 @@ type GooglePayWalletSlotProps = {
 };
 
 /**
- * Square’s Google Pay iframe paints white for a beat before the black button.
- * Keep a branded black cover on top (pointer-events: none) so clicks still hit
- * the real Google Pay control underneath, without the white flash.
+ * Brand art underneath; real Google Pay control on top at near-zero opacity
+ * so clicks always reach Square (pointer-events-none overlays are unreliable).
  */
 export function GooglePayWalletSlot({ children, className }: GooglePayWalletSlotProps) {
   return (
@@ -19,13 +18,13 @@ export function GooglePayWalletSlot({ children, className }: GooglePayWalletSlot
         className
       )}
     >
-      <div className="sq-google-pay-sdk absolute inset-0 z-0 h-12 min-h-12 min-w-0">{children}</div>
-      <div className="sq-google-pay-brand pointer-events-none absolute inset-0 z-[2]" aria-hidden>
+      <div className="sq-google-pay-brand pointer-events-none absolute inset-0 z-0" aria-hidden>
         <GooglePayMark />
         <span className="whitespace-nowrap text-[15px] font-semibold leading-none tracking-tight text-white">
           Pay
         </span>
       </div>
+      <div className="sq-google-pay-hit relative z-[1] h-12 min-h-12 min-w-0">{children}</div>
     </div>
   );
 }

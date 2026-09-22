@@ -241,6 +241,7 @@ export default function ProPlansFreeTrial() {
                         }}
                       >
                         <div className="space-y-3">
+                          <CreditCard style={CARD_STYLE} />
                           <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">
                             {t.plans?.checkoutDigitalWallet ?? "Digital wallet"}
                           </p>
@@ -263,11 +264,6 @@ export default function ProPlansFreeTrial() {
                               />
                             </GooglePayWalletSlot>
                           </div>
-                          <p className="text-[11px] leading-relaxed text-neutral-500">
-                            {t.terms?.applePayBetaTestingNote ??
-                              "Apple Pay works in Safari on iPhone/Mac with Wallet. On Windows and Android, use Google Pay or card."}
-                          </p>
-                          <CreditCard style={CARD_STYLE} />
                         </div>
                       </PaymentForm>
                     </div>

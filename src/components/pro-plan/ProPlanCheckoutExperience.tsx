@@ -220,7 +220,6 @@ export default function ProPlanCheckoutExperience({
   const previewReady = !previewLoading && !previewError && preview !== null;
   const needsPayment = previewReady && (chargeCents ?? 0) > 0;
   const freePlanChange = previewReady && chargeCents === 0;
-  const applePayBetaText = (terms.applePayBetaTestingNote ?? "").trim();
 
   const previewMode = preview?.mode ?? null;
   const modeExplanation =
@@ -448,6 +447,7 @@ export default function ProPlanCheckoutExperience({
                     }}
                   >
                     <div className="space-y-4">
+                      <CreditCard style={CARD_STYLE_CHECKOUT} />
                       <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">{plans?.checkoutDigitalWallet ?? "Digital wallet"}</p>
                       <div className="grid min-w-0 grid-cols-2 gap-2.5">
                         <ApplePayWalletSlot
@@ -465,11 +465,6 @@ export default function ProPlanCheckoutExperience({
                           <GooglePay id="pro-plan-google-pay" buttonSizeMode="fill" buttonType="plain" buttonColor="black" />
                         </GooglePayWalletSlot>
                       </div>
-                      <p className="text-[11px] leading-relaxed text-neutral-500">
-                        {applePayBetaText ||
-                          "Apple Pay works in Safari on iPhone/Mac with Wallet. On Windows and Android, use Google Pay or card."}
-                      </p>
-                      <CreditCard style={CARD_STYLE_CHECKOUT} />
                     </div>
                   </PaymentForm>
                 </div>
