@@ -21,7 +21,7 @@ export function isAppleSafariBrowser(): boolean {
 type ApplePayWalletSlotProps = {
   children: ReactNode;
   unavailableLabel: string;
-  /** Opens AltShift QR handoff on non-Safari (Windows / Android / Chrome). */
+  /** Fallback AltShift QR when Square Apple Pay did not mount (non-Safari). */
   onRequestIphoneHandoff?: () => void;
   handoffButtonLabel?: string;
   className?: string;
@@ -30,12 +30,12 @@ type ApplePayWalletSlotProps = {
 const btnBase =
   "flex h-12 w-full flex-row flex-nowrap items-center justify-center gap-2 rounded-[4px] bg-black px-3 text-[15px] font-semibold tracking-tight text-white ring-1 ring-white/25 cursor-pointer";
 
+const PROBE_MS = [200, 600, 1200, 2400, 4000, 7000] as const;
+
 /**
- * Safari + live Square → native Apple Pay.
- * Non-Safari + handoff callback → always our QR button (Square desktop Apple Pay is unreliable).
- * Non-Safari + live Square, no handoff → brand under + Square hit (pro checkout).
- * Else → disabled.
- * Keep Square mounted with opacity only — never visibility:hidden.
+ * Safari → Square’s native Apple Pay button (domain must be verified in Square).
+ * Chrome/Edge/etc. → Square hit layer when mounted (Apple Pay JS QR); else AltShift QR handoff.
+ * Never visibility:hidden on the Square node (breaks PaymentForm / card fields).
  */
 export function ApplePayWalletSlot({
   children,
@@ -47,6 +47,7 @@ export function ApplePayWalletSlot({
   const slotRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
   const [sdkLive, setSdkLive] = useState(false);
+  const [probeDone, setProbeDone] = useState(false);
   const [isSafari, setIsSafari] = useState(false);
 
   useEffect(() => {
@@ -67,8 +68,13 @@ export function ApplePayWalletSlot({
         setSdkLive(applePaySlotLooksLive(slotRef.current));
       };
 
-      for (const ms of [200, 600, 1200, 2400, 4000, 7000]) {
-        timers.push(window.setTimeout(probe, ms));
+      for (const ms of PROBE_MS) {
+        timers.push(
+          window.setTimeout(() => {
+            probe();
+            if (ms === PROBE_MS[PROBE_MS.length - 1]) setProbeDone(true);
+          }, ms),
+        );
       }
       probe();
 
@@ -86,13 +92,15 @@ export function ApplePayWalletSlot({
   }, []);
 
   const label = handoffButtonLabel || "Apple Pay";
-  const showSquareVisually = ready && sdkLive && isSafari;
-  /** Booking / flows with QR: always hand off on non-Safari so the button does something. */
-  const useHandoff = ready && !!onRequestIphoneHandoff && !isSafari;
-  /** Pro checkout without handoff: click through to Square when it actually mounted. */
-  const useSquareHit = ready && sdkLive && !isSafari && !onRequestIphoneHandoff;
+  /** Always trust Square on Safari once the slot is ready (probe can miss apple-pay-button). */
+  const showSquareVisually = ready && isSafari;
+  /** Verified domain → Square Apple Pay JS on desktop (QR to iPhone). Same pattern as Google Pay. */
+  const useSquareHit = ready && !isSafari && sdkLive;
+  /** Only if Square never mounted after probes. */
+  const useHandoff =
+    ready && probeDone && !isSafari && !sdkLive && !!onRequestIphoneHandoff;
   const showDisabled =
-    ready && !showSquareVisually && !useHandoff && !useSquareHit;
+    ready && probeDone && !showSquareVisually && !useSquareHit && !useHandoff;
 
   return (
     <div className={`relative h-12 min-h-12 w-full ${className ?? ""}`.trim()}>
@@ -106,12 +114,12 @@ export function ApplePayWalletSlot({
                 useHandoff || showDisabled ? "sq-apple-pay-hit-inert z-0" : "z-[2]",
               ].join(" ")
         }
-        aria-hidden={!showSquareVisually}
+        aria-hidden={!showSquareVisually && (useHandoff || showDisabled)}
       >
         {children}
       </div>
 
-      {!ready ? (
+      {!ready || (!probeDone && !isSafari && !sdkLive) ? (
         <div className={`${btnBase} pointer-events-none absolute inset-0 z-[1] opacity-80`} aria-hidden>
           <span className="text-xs text-white/60">…</span>
         </div>

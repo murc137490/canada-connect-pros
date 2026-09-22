@@ -1048,7 +1048,7 @@ apple-pay-button {
 .sq-apple-pay-hit #rswps-apple-pay-container,
 .sq-apple-pay-hit #pro-plan-apple-pay,
 .sq-apple-pay-hit #trial-apple-pay {
-  opacity: 0.01 !important;
+  opacity: 0.02 !important;
   pointer-events: auto !important;
   cursor: pointer !important;
 }

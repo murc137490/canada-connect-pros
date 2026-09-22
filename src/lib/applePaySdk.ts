@@ -74,13 +74,17 @@ export async function resolveApplePayBrowserCapable(): Promise<boolean> {
 export function applePaySlotLooksLive(el: HTMLElement | null | undefined): boolean {
   if (!el) return false;
 
-  const candidates = el.querySelectorAll<HTMLElement>("iframe, button, [role='button'], apple-pay-button");
+  const candidates = el.querySelectorAll<HTMLElement>(
+    "iframe, button, [role='button'], apple-pay-button, #rswps-apple-pay-container, #pro-plan-apple-pay, #trial-apple-pay",
+  );
   for (const node of Array.from(candidates)) {
     if (node.hasAttribute("disabled") || node.getAttribute("aria-disabled") === "true") continue;
     const cs = window.getComputedStyle(node);
     if (cs.display === "none" || cs.visibility === "hidden" || cs.pointerEvents === "none") continue;
     if (cs.cursor === "not-allowed") continue;
-    if (node.getBoundingClientRect().height >= 32) return true;
+    const h = node.getBoundingClientRect().height;
+    if (h >= 32) return true;
+    if (node.tagName.toLowerCase() === "apple-pay-button" && h >= 1) return true;
   }
 
   // Square's ApplePayContainer uses -webkit-appearance: -apple-pay-button and
