@@ -241,7 +241,6 @@ export default function ProPlansFreeTrial() {
                         }}
                       >
                         <div className="space-y-3">
-                          <CreditCard style={CARD_STYLE} />
                           <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">
                             {t.plans?.checkoutDigitalWallet ?? "Digital wallet"}
                           </p>
@@ -264,6 +263,7 @@ export default function ProPlansFreeTrial() {
                               />
                             </GooglePayWalletSlot>
                           </div>
+                          <CreditCard style={CARD_STYLE} />
                         </div>
                       </PaymentForm>
                     </div>

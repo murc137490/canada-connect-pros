@@ -379,7 +379,6 @@ export default function SquareBookingPayment({
         }}
       >
         <div className="space-y-3">
-          <CreditCard style={CARD_STYLE} />
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {plans?.checkoutDigitalWallet ?? "Digital wallet"}
           </p>
@@ -406,6 +405,7 @@ export default function SquareBookingPayment({
               />
             </GooglePayWalletSlot>
           </div>
+          <CreditCard style={CARD_STYLE} />
         </div>
       </PaymentForm>
     </div>

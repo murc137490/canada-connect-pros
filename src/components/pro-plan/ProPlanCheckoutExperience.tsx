@@ -447,7 +447,6 @@ export default function ProPlanCheckoutExperience({
                     }}
                   >
                     <div className="space-y-4">
-                      <CreditCard style={CARD_STYLE_CHECKOUT} />
                       <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">{plans?.checkoutDigitalWallet ?? "Digital wallet"}</p>
                       <div className="grid min-w-0 grid-cols-2 gap-2.5">
                         <ApplePayWalletSlot
@@ -465,6 +464,7 @@ export default function ProPlanCheckoutExperience({
                           <GooglePay id="pro-plan-google-pay" buttonSizeMode="fill" buttonType="plain" buttonColor="black" />
                         </GooglePayWalletSlot>
                       </div>
+                      <CreditCard style={CARD_STYLE_CHECKOUT} />
                     </div>
                   </PaymentForm>
                 </div>

@@ -21,7 +21,7 @@ export function isAppleSafariBrowser(): boolean {
 type ApplePayWalletSlotProps = {
   children: ReactNode;
   unavailableLabel: string;
-  /** Opens AltShift QR handoff only when Square Apple Pay cannot mount. */
+  /** Opens AltShift QR handoff on non-Safari (Windows / Android / Chrome). */
   onRequestIphoneHandoff?: () => void;
   handoffButtonLabel?: string;
   className?: string;
@@ -31,9 +31,11 @@ const btnBase =
   "flex h-12 w-full flex-row flex-nowrap items-center justify-center gap-2 rounded-[4px] bg-black px-3 text-[15px] font-semibold tracking-tight text-white ring-1 ring-white/25 cursor-pointer";
 
 /**
- * Keep Square’s Apple Pay node in the layout (opacity hit-layer, never visibility:hidden)
- * so PaymentForm can finish initializing card + wallets.
- * Non-Safari + handoff → clickable QR button on top.
+ * Safari + live Square → native Apple Pay.
+ * Non-Safari + handoff callback → always our QR button (Square desktop Apple Pay is unreliable).
+ * Non-Safari + live Square, no handoff → brand under + Square hit (pro checkout).
+ * Else → disabled.
+ * Keep Square mounted with opacity only — never visibility:hidden.
  */
 export function ApplePayWalletSlot({
   children,
@@ -65,7 +67,7 @@ export function ApplePayWalletSlot({
         setSdkLive(applePaySlotLooksLive(slotRef.current));
       };
 
-      for (const ms of [200, 600, 1200, 2400, 4000]) {
+      for (const ms of [200, 600, 1200, 2400, 4000, 7000]) {
         timers.push(window.setTimeout(probe, ms));
       }
       probe();
@@ -84,24 +86,25 @@ export function ApplePayWalletSlot({
   }, []);
 
   const label = handoffButtonLabel || "Apple Pay";
-  const useHandoff = ready && !!onRequestIphoneHandoff && !isSafari;
   const showSquareVisually = ready && sdkLive && isSafari;
-  const showDisabled = ready && !useHandoff && !showSquareVisually && !sdkLive;
-  /** Non-Safari with live Square (e.g. pro checkout): brand under, hit layer on top — same as Google Pay. */
-  const showBrandUnderlay = ready && !showSquareVisually && !useHandoff && !showDisabled && sdkLive;
+  /** Booking / flows with QR: always hand off on non-Safari so the button does something. */
+  const useHandoff = ready && !!onRequestIphoneHandoff && !isSafari;
+  /** Pro checkout without handoff: click through to Square when it actually mounted. */
+  const useSquareHit = ready && sdkLive && !isSafari && !onRequestIphoneHandoff;
+  const showDisabled =
+    ready && !showSquareVisually && !useHandoff && !useSquareHit;
 
   return (
     <div className={`relative h-12 min-h-12 w-full ${className ?? ""}`.trim()}>
-      {/*
-        Always keep Square mounted and “visible” to the SDK (opacity only).
-        visibility:hidden / display:none breaks PaymentForm init (card fields too).
-      */}
       <div
         ref={slotRef}
         className={
           showSquareVisually
             ? "relative z-[1] h-12 min-h-12 min-w-0"
-            : "sq-apple-pay-hit absolute inset-0 z-[1] h-12 min-h-12 min-w-0"
+            : [
+                "sq-apple-pay-hit absolute inset-0 h-12 min-h-12 min-w-0",
+                useHandoff || showDisabled ? "sq-apple-pay-hit-inert z-0" : "z-[2]",
+              ].join(" ")
         }
         aria-hidden={!showSquareVisually}
       >
@@ -109,25 +112,29 @@ export function ApplePayWalletSlot({
       </div>
 
       {!ready ? (
-        <div className={`${btnBase} pointer-events-none relative z-[2] opacity-80`} aria-hidden>
+        <div className={`${btnBase} pointer-events-none absolute inset-0 z-[1] opacity-80`} aria-hidden>
           <span className="text-xs text-white/60">…</span>
         </div>
       ) : null}
 
-      {showBrandUnderlay ? (
+      {(useSquareHit || useHandoff) && (
         <div className={`${btnBase} pointer-events-none absolute inset-0 z-0`} aria-hidden>
           <ApplePayMark />
           <span className="whitespace-nowrap leading-none">Pay</span>
         </div>
-      ) : null}
+      )}
 
       {useHandoff ? (
         <button
           type="button"
-          onClick={onRequestIphoneHandoff}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onRequestIphoneHandoff?.();
+          }}
           title={unavailableLabel}
           aria-label={label}
-          className={`${btnBase} relative z-[3] transition hover:bg-neutral-900`}
+          className={`${btnBase} absolute inset-0 z-[3] transition hover:bg-neutral-900`}
         >
           <ApplePayMark />
           <span className="whitespace-nowrap leading-none">Pay</span>
@@ -140,7 +147,7 @@ export function ApplePayWalletSlot({
           disabled
           title={unavailableLabel}
           aria-label={label}
-          className={`${btnBase} relative z-[3] cursor-default opacity-70`}
+          className={`${btnBase} absolute inset-0 z-[3] cursor-default opacity-70`}
         >
           <ApplePayMark />
           <span className="whitespace-nowrap leading-none">Pay</span>

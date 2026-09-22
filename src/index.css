@@ -1053,6 +1053,19 @@ apple-pay-button {
   cursor: pointer !important;
 }
 
+/* When our QR / disabled shell owns the click, mute Square completely */
+.sq-apple-pay-hit-inert,
+.sq-apple-pay-hit-inert iframe,
+.sq-apple-pay-hit-inert apple-pay-button,
+.sq-apple-pay-hit-inert button,
+.sq-apple-pay-hit-inert [role="button"],
+.sq-apple-pay-hit-inert #rswps-apple-pay-container,
+.sq-apple-pay-hit-inert #pro-plan-apple-pay,
+.sq-apple-pay-hit-inert #trial-apple-pay {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
 /* Google Pay branded cover — hides Square iframe white flash permanently */
 .sq-google-pay-brand {
   display: flex !important;
