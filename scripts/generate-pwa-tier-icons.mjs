@@ -11,6 +11,13 @@ import sharp from "sharp";
 import path from "path";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
+import {
+  TIER_THEMES,
+  nearDark,
+  nearLight,
+  sColorAt,
+  lerpRgb,
+} from "./brand-icon-colors.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -19,70 +26,53 @@ const outDir = path.join(root, "public");
 /** Absolute icon URLs — Samsung Internet resolves relative paths inconsistently. */
 const ORIGIN = "https://www.altshift.ca";
 
-/** @typedef {{ id: string, bg: [number,number,number], s: [number,number,number], a: [number,number,number], theme: string }} Theme */
-
-/** @type {Theme[]} */
-const THEMES = [
-  // Client — S-dominant SA: light S, dark A on black
-  { id: "client", bg: [10, 10, 10], s: [210, 210, 210], a: [32, 32, 32], theme: "#0a0a0a" },
-  // Starter — blue S, light A
-  { id: "starter", bg: [15, 23, 42], s: [96, 165, 250], a: [226, 232, 240], theme: "#1e3a8a" },
-  // Growth — mint S, light A
-  { id: "growth", bg: [2, 44, 34], s: [52, 211, 153], a: [236, 253, 245], theme: "#047857" },
-  // Pro — purple S, orange A accent
-  { id: "pro", bg: [30, 27, 75], s: [192, 132, 252], a: [251, 146, 60], theme: "#6d28d9" },
-];
-
-function nearLight(r, g, b) {
-  return (r + g + b) / 3 > 160;
-}
-function nearBlack(r, g, b) {
-  return r + g + b < 90;
-}
-
 /**
- * Source: SA monogram — dark A + light S on transparent.
- * - transparent → theme background
- * - dark A → theme.a
- * - light S → theme.s
+ * Opaque square: gradient S, black A, solid tier background (Android-safe).
  */
 async function recolorLogo(theme) {
   const { data, info } = await sharp(srcLogo).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const out = Buffer.from(data);
-  for (let i = 0; i < out.length; i += 4) {
-    const r = out[i];
-    const g = out[i + 1];
-    const b = out[i + 2];
-    const alpha = out[i + 3];
-    if (alpha < 20) {
-      out[i] = theme.bg[0];
-      out[i + 1] = theme.bg[1];
-      out[i + 2] = theme.bg[2];
+  const w = info.width;
+  const h = info.height;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      const r = out[i];
+      const g = out[i + 1];
+      const b = out[i + 2];
+      const alpha = out[i + 3];
+      if (alpha < 20) {
+        out[i] = theme.bg[0];
+        out[i + 1] = theme.bg[1];
+        out[i + 2] = theme.bg[2];
+        out[i + 3] = 255;
+        continue;
+      }
+      if (nearDark(r, g, b)) {
+        out[i] = theme.a[0];
+        out[i + 1] = theme.a[1];
+        out[i + 2] = theme.a[2];
+        out[i + 3] = 255;
+        continue;
+      }
+      if (nearLight(r, g, b)) {
+        const [sr, sg, sb] = sColorAt(theme, x, y, w, h);
+        out[i] = sr;
+        out[i + 1] = sg;
+        out[i + 2] = sb;
+        out[i + 3] = 255;
+        continue;
+      }
+      const lum = (r + g + b) / (3 * 255);
+      const [sr, sg, sb] = sColorAt(theme, x, y, w, h);
+      const mixed = lerpRgb(theme.a, [sr, sg, sb], lum);
+      out[i] = mixed[0];
+      out[i + 1] = mixed[1];
+      out[i + 2] = mixed[2];
       out[i + 3] = 255;
-      continue;
     }
-    if (nearBlack(r, g, b)) {
-      out[i] = theme.a[0];
-      out[i + 1] = theme.a[1];
-      out[i + 2] = theme.a[2];
-      out[i + 3] = 255;
-      continue;
-    }
-    if (nearLight(r, g, b)) {
-      out[i] = theme.s[0];
-      out[i + 1] = theme.s[1];
-      out[i + 2] = theme.s[2];
-      out[i + 3] = 255;
-      continue;
-    }
-    // Edge anti-alias: mix A ↔ S by luminance
-    const lum = (r + g + b) / (3 * 255);
-    out[i] = Math.round(theme.a[0] * (1 - lum) + theme.s[0] * lum);
-    out[i + 1] = Math.round(theme.a[1] * (1 - lum) + theme.s[1] * lum);
-    out[i + 2] = Math.round(theme.a[2] * (1 - lum) + theme.s[2] * lum);
-    out[i + 3] = 255;
   }
-  return sharp(out, { raw: { width: info.width, height: info.height, channels: 4 } });
+  return sharp(out, { raw: { width: w, height: h, channels: 4 } });
 }
 
 /** Flatten to opaque RGB PNG (Samsung rejects / mishandles alpha on install icons). */
@@ -100,7 +90,6 @@ async function writeSized(pipeline, size, file, bg) {
 }
 
 async function writeMaskable(pipeline, size, file, bg) {
-  // ~18% pad → logo stays inside Android 80% safe-zone circle (Samsung squircles).
   const pad = Math.round(size * 0.18);
   const inner = size - pad * 2;
   const innerBuf = await pipeline
@@ -156,7 +145,6 @@ async function writeManifest(theme) {
     background_color: bgHex,
     theme_color: theme.theme,
     categories: ["business", "lifestyle"],
-    // Separate any vs maskable only — "any maskable" breaks Samsung install icons.
     icons: [
       iconEntry(`${prefix}-96x96.png`, "96x96", "any"),
       iconEntry(`${prefix}-144x144.png`, "144x144", "any"),
@@ -172,7 +160,7 @@ async function writeManifest(theme) {
 }
 
 async function main() {
-  for (const theme of THEMES) {
+  for (const theme of TIER_THEMES) {
     const logo = await recolorLogo(theme);
     const base = `pwa-${theme.id}`;
     for (const size of [96, 144, 192, 512]) {
@@ -184,9 +172,8 @@ async function main() {
     await writeManifest(theme);
   }
 
-  // Default install assets = client B&W
-  const client = await recolorLogo(THEMES[0]);
-  const cbg = THEMES[0].bg;
+  const client = await recolorLogo(TIER_THEMES[0]);
+  const cbg = TIER_THEMES[0].bg;
   for (const size of [96, 144, 192, 512]) {
     await writeSized(client, size, `pwa-${size}x${size}.png`, cbg);
   }
@@ -194,10 +181,8 @@ async function main() {
   await writeMaskable(client, 512, "pwa-maskable-512x512.png", cbg);
   await writeSized(client, 180, "apple-touch-icon.png", cbg);
 
-  // Fallback path some Android WebViews still request
   await fs.copyFile(path.join(outDir, "manifest-client.webmanifest"), path.join(outDir, "manifest.webmanifest"));
   console.log("wrote manifest.webmanifest");
-
   console.log("done");
 }
 

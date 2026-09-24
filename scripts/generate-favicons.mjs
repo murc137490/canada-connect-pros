@@ -1,34 +1,23 @@
 /**
- * Transparent SA cutout favicons + in-app brand marks per tier.
+ * Transparent SA cutout favicons + in-app brand marks per tier (gradient S, black A).
  * Run: node scripts/generate-favicons.mjs
  */
 import sharp from "sharp";
 import path from "path";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
+import {
+  TIER_THEMES,
+  nearDark,
+  nearLight,
+  sColorAt,
+  lerpRgb,
+} from "./brand-icon-colors.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 const srcLogo = path.join(root, "public", "altshift-logo-transparent.png");
 const outDir = path.join(root, "public");
-
-/** @typedef {{ id: string, s: [number,number,number], a: [number,number,number] }} TierColors */
-
-/** @type {TierColors[]} */
-const TIERS = [
-  // S = tier accent (or light gray); A = pure black (never light / white)
-  { id: "client", s: [210, 210, 210], a: [0, 0, 0] },
-  { id: "starter", s: [96, 165, 250], a: [0, 0, 0] },
-  { id: "growth", s: [52, 211, 153], a: [0, 0, 0] },
-  { id: "pro", s: [192, 132, 252], a: [0, 0, 0] },
-];
-
-function nearLight(r, g, b) {
-  return (r + g + b) / 3 > 140;
-}
-function nearDark(r, g, b) {
-  return r + g + b < 120;
-}
 
 function pngIco(buffers) {
   const count = buffers.length;
@@ -67,11 +56,7 @@ function pngIco(buffers) {
   return out;
 }
 
-/**
- * Recolor SA mark with transparent outside (no square plate).
- * Returns cropped sharp pipeline + bbox size.
- */
-async function cutoutForTier(tier) {
+async function cutoutForTier(theme) {
   const { data, info } = await sharp(srcLogo).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const out = Buffer.alloc(data.length);
   const w = info.width;
@@ -103,28 +88,30 @@ async function cutoutForTier(tier) {
       }
 
       if (nearDark(r, g, b)) {
-        out[i] = tier.a[0];
-        out[i + 1] = tier.a[1];
-        out[i + 2] = tier.a[2];
+        out[i] = theme.a[0];
+        out[i + 1] = theme.a[1];
+        out[i + 2] = theme.a[2];
         out[i + 3] = 255;
         mark(x, y);
         continue;
       }
 
       if (nearLight(r, g, b)) {
-        out[i] = tier.s[0];
-        out[i + 1] = tier.s[1];
-        out[i + 2] = tier.s[2];
+        const [sr, sg, sb] = sColorAt(theme, x, y, w, h);
+        out[i] = sr;
+        out[i + 1] = sg;
+        out[i + 2] = sb;
         out[i + 3] = 255;
         mark(x, y);
         continue;
       }
 
-      // Edge anti-alias toward S color
       const lum = (r + g + b) / (3 * 255);
-      out[i] = Math.round(tier.a[0] * (1 - lum) + tier.s[0] * lum);
-      out[i + 1] = Math.round(tier.a[1] * (1 - lum) + tier.s[1] * lum);
-      out[i + 2] = Math.round(tier.a[2] * (1 - lum) + tier.s[2] * lum);
+      const [sr, sg, sb] = sColorAt(theme, x, y, w, h);
+      const mixed = lerpRgb(theme.a, [sr, sg, sb], lum);
+      out[i] = mixed[0];
+      out[i + 1] = mixed[1];
+      out[i + 2] = mixed[2];
       out[i + 3] = a;
       if (a > 8) mark(x, y);
     }
@@ -158,10 +145,9 @@ async function writeSized(pipeline, size, file) {
 async function main() {
   let clientIcoPngs = [];
 
-  for (const tier of TIERS) {
-    const cutout = await cutoutForTier(tier);
+  for (const theme of TIER_THEMES) {
+    const cutout = await cutoutForTier(theme);
 
-    // In-app / header mark (large transparent)
     await cutout
       .clone()
       .resize(256, 256, {
@@ -169,22 +155,21 @@ async function main() {
         background: { r: 0, g: 0, b: 0, alpha: 0 },
       })
       .png({ compressionLevel: 9 })
-      .toFile(path.join(outDir, `brand-logo-${tier.id}.png`));
-    console.log("wrote", `brand-logo-${tier.id}.png`);
+      .toFile(path.join(outDir, `brand-logo-${theme.id}.png`));
+    console.log("wrote", `brand-logo-${theme.id}.png`);
 
     const icoPngs = [];
     for (const size of [16, 32, 48, 64, 192]) {
-      const buf = await writeSized(cutout, size, `favicon-${tier.id}-${size}.png`);
+      const buf = await writeSized(cutout, size, `favicon-${theme.id}-${size}.png`);
       if (size === 16 || size === 32 || size === 48) icoPngs.push(buf);
     }
 
     const ico = pngIco(icoPngs);
-    await fs.writeFile(path.join(outDir, `favicon-${tier.id}.ico`), ico);
-    console.log("wrote", `favicon-${tier.id}.ico`, ico.length);
+    await fs.writeFile(path.join(outDir, `favicon-${theme.id}.ico`), ico);
+    console.log("wrote", `favicon-${theme.id}.ico`, ico.length);
 
-    if (tier.id === "client") {
+    if (theme.id === "client") {
       clientIcoPngs = icoPngs;
-      // Legacy default favicon paths (signed-out / B&W)
       await writeSized(cutout, 32, "favicon-32.png");
       await writeSized(cutout, 64, "favicon-64.png");
       await writeSized(cutout, 192, "favicon-192.png");

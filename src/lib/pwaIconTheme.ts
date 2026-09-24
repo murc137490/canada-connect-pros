@@ -2,6 +2,12 @@ import type { ProPlanId } from "@/lib/proPlanPreview";
 
 export type PwaIconTier = "client" | ProPlanId;
 
+/** Persist so Android can restore the tier icon before auth finishes. */
+export const BRAND_TIER_STORAGE_KEY = "altshift-brand-tier";
+
+/** Bump when icon assets change so Android/Chrome drop cached glyphs. */
+export const BRAND_ICON_CACHE_VER = "9";
+
 export type PwaIconTheme = {
   id: PwaIconTier;
   themeColor: string;
@@ -9,7 +15,7 @@ export type PwaIconTheme = {
   appleTouch: string;
   icon192: string;
   icon512: string;
-  /** Transparent SA cutout for browser tabs (not the opaque PWA square). */
+  /** Transparent SA cutout for desktop tabs. */
   faviconIco: string;
   favicon32: string;
   favicon64: string;
@@ -84,6 +90,24 @@ export function resolvePwaIconTier(paidTier: ProPlanId | null | undefined): PwaI
   return "client";
 }
 
+export function readStoredBrandTier(): PwaIconTier {
+  try {
+    const raw = localStorage.getItem(BRAND_TIER_STORAGE_KEY);
+    if (raw === "starter" || raw === "growth" || raw === "pro" || raw === "client") return raw;
+  } catch {
+    /* ignore */
+  }
+  return "client";
+}
+
+export function writeStoredBrandTier(tier: PwaIconTier) {
+  try {
+    localStorage.setItem(BRAND_TIER_STORAGE_KEY, tier);
+  } catch {
+    /* ignore */
+  }
+}
+
 function abs(path: string): string {
   if (typeof window === "undefined") return path;
   try {
@@ -91,6 +115,12 @@ function abs(path: string): string {
   } catch {
     return path;
   }
+}
+
+function cacheUrl(path: string): string {
+  const base = abs(path);
+  const join = base.includes("?") ? "&" : "?";
+  return `${base}${join}v=${BRAND_ICON_CACHE_VER}`;
 }
 
 function upsertIconLink(attrs: { rel: string; sizes?: string; type?: string; href: string }) {
@@ -111,13 +141,13 @@ function upsertIconLink(attrs: { rel: string; sizes?: string; type?: string; hre
     document.head.appendChild(el);
   }
   if (attrs.type) el.type = attrs.type;
-  // Cache-bust so browsers pick up tier swaps immediately
-  el.href = `${abs(attrs.href)}?v=8`;
+  el.href = cacheUrl(attrs.href);
 }
 
 /**
- * Apply tier chrome sitewide: tab favicon cutout, apple-touch, theme-color, manifest.
- * Opaque PWA install squares stay in the webmanifest only.
+ * Apply tier chrome sitewide.
+ * Desktop: transparent cutout favicons.
+ * Android/Samsung: also set opaque 192/512 rel=icon (installers ignore alpha cutouts).
  */
 export function applyPwaIconTheme(tier: PwaIconTier) {
   if (typeof document === "undefined") return;
@@ -126,7 +156,9 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
   upsertIconLink({ rel: "icon", href: theme.faviconIco, type: "image/x-icon" });
   upsertIconLink({ rel: "icon", sizes: "32x32", type: "image/png", href: theme.favicon32 });
   upsertIconLink({ rel: "icon", sizes: "64x64", type: "image/png", href: theme.favicon64 });
-  upsertIconLink({ rel: "icon", sizes: "192x192", type: "image/png", href: theme.favicon192 });
+  // Opaque 192/512 — Samsung Internet / Android Chrome ignore alpha cutouts for tabs & install
+  upsertIconLink({ rel: "icon", sizes: "192x192", type: "image/png", href: theme.icon192 });
+  upsertIconLink({ rel: "icon", sizes: "512x512", type: "image/png", href: theme.icon512 });
 
   let apple = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
   if (!apple) {
@@ -134,7 +166,7 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
     apple.rel = "apple-touch-icon";
     document.head.appendChild(apple);
   }
-  apple.href = `${abs(theme.appleTouch)}?v=8`;
+  apple.href = cacheUrl(theme.appleTouch);
 
   document.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
   const meta = document.createElement("meta");
@@ -157,5 +189,5 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
     link.rel = "manifest";
     document.head.appendChild(link);
   }
-  link.href = `${theme.manifestHref}?v=8`;
+  link.href = `${theme.manifestHref}?v=${BRAND_ICON_CACHE_VER}`;
 }

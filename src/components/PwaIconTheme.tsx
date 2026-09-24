@@ -4,11 +4,17 @@ import { BrandTierProvider } from "@/contexts/BrandTierContext";
 import { supabase } from "@/integrations/supabase/client";
 import { effectiveProTier } from "@/lib/proTierFeatures";
 import { PRO_PLAN_PAID_EVENT } from "@/lib/proPlanPaidEvent";
-import { applyPwaIconTheme, resolvePwaIconTier, type PwaIconTier } from "@/lib/pwaIconTheme";
+import {
+  applyPwaIconTheme,
+  readStoredBrandTier,
+  resolvePwaIconTier,
+  writeStoredBrandTier,
+  type PwaIconTier,
+} from "@/lib/pwaIconTheme";
 
 /**
  * Resolves the signed-in pro's paid tier and applies it sitewide:
- * - browser tab favicon (colored SA cutout)
+ * - browser tab / Android install icons
  * - apple-touch / theme-color / manifest
  * - BrandLogo via BrandTierProvider
  *
@@ -16,14 +22,19 @@ import { applyPwaIconTheme, resolvePwaIconTier, type PwaIconTier } from "@/lib/p
  */
 export default function PwaIconTheme({ children }: { children?: ReactNode }) {
   const { user } = useAuth();
-  const [tier, setTier] = useState<PwaIconTier>("client");
+  const [tier, setTier] = useState<PwaIconTier>(() =>
+    typeof window !== "undefined" ? readStoredBrandTier() : "client",
+  );
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
       if (!user?.id) {
-        if (!cancelled) setTier("client");
+        if (!cancelled) {
+          setTier("client");
+          writeStoredBrandTier("client");
+        }
         return;
       }
       try {
@@ -34,7 +45,10 @@ export default function PwaIconTheme({ children }: { children?: ReactNode }) {
           .maybeSingle();
 
         if (!prof || prof.is_verified !== true) {
-          if (!cancelled) setTier("client");
+          if (!cancelled) {
+            setTier("client");
+            writeStoredBrandTier("client");
+          }
           return;
         }
 
@@ -45,7 +59,11 @@ export default function PwaIconTheme({ children }: { children?: ReactNode }) {
           .maybeSingle();
 
         const paid = effectiveProTier(prof.subscription_tier, sub?.plan_id);
-        if (!cancelled) setTier(resolvePwaIconTier(paid));
+        const next = resolvePwaIconTier(paid);
+        if (!cancelled) {
+          setTier(next);
+          writeStoredBrandTier(next);
+        }
       } catch {
         if (!cancelled) setTier("client");
       }
