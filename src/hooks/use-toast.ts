@@ -4,7 +4,8 @@ import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 import { sanitizeToastContent } from "@/lib/userFacingError";
 
 const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
+/** How long after dismiss before the toast node is removed from the DOM. */
+const TOAST_REMOVE_DELAY = 400;
 
 type ToasterToast = ToastProps & {
   id: string;

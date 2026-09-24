@@ -132,19 +132,18 @@ Deno.serve(async (req) => {
   if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !anonKey || !serviceRoleKey) return json({ error: "Server misconfigured" }, 500);
+  if (!supabaseUrl || !serviceRoleKey) return json({ error: "Server misconfigured" }, 500);
 
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-  });
+  const jwt = authHeader.slice("Bearer ".length).trim();
+  if (!jwt) return json({ error: "Unauthorized" }, 401);
+
   const admin = createClient(supabaseUrl, serviceRoleKey);
-
+  // Pass JWT explicitly — global Authorization headers are unreliable on some iOS / Edge paths.
   const {
     data: { user },
     error: userError,
-  } = await userClient.auth.getUser();
+  } = await admin.auth.getUser(jwt);
   if (userError || !user) return json({ error: "Unauthorized" }, 401);
 
   try {

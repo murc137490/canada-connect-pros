@@ -3126,17 +3126,18 @@ export default function Dashboard() {
     if (recErr) {
       console.warn("[referrals] reconcile_my_referrals:", recErr.message);
     }
-    const { data, error } = await referralInvite("list");
+    // Direct RLS read — avoids Edge Function 401 toast loops on iOS focus/visibility.
+    const { data, error } = await supabase
+      .from("referral_invites")
+      .select("id, invitee_email, referral_code, reward_code, reward_days, status, created_at, accepted_at, claimed_at")
+      .order("created_at", { ascending: false })
+      .limit(20);
     if (error) {
-      toast({
-        title: locale === "fr" ? "Parrainage indisponible" : "Referrals unavailable",
-        description: errorMessage(error),
-        variant: "destructive",
-      });
+      console.warn("[referrals] list:", error.message);
       return;
     }
-    if (data?.invites) setReferralInvites(data.invites);
-  }, [locale, toast]);
+    setReferralInvites((data as ReferralInvite[]) ?? []);
+  }, []);
 
   useEffect(() => {
     if (!user) return;

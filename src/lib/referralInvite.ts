@@ -147,7 +147,13 @@ export async function referralInvite(
   action: "list" | "send" | "claim" | "validate_code" | "redeem_code",
   params: Record<string, unknown> = {},
 ) {
-  const token = await accessToken();
+  let token = await accessToken();
   if (!token) return { data: null, error: new Error("Please sign in again and retry.") };
-  return postReferralInvite(token, { action, ...params });
+  let result = await postReferralInvite(token, { action, ...params });
+  if (result.status === 401) {
+    const { data: refreshed } = await supabase.auth.refreshSession();
+    token = refreshed.session?.access_token ?? null;
+    if (token) result = await postReferralInvite(token, { action, ...params });
+  }
+  return result;
 }
