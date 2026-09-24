@@ -161,6 +161,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navLinks = [
     { label: t.nav.services, href: "/services" },
     { label: t.nav.howItWorks, href: "/#how-it-works" },
+    { label: t.nav.about, href: "/about" },
     ...(showJoinPros ? [{ label: t.nav.joinPros, href: "/join-pros" }] : []),
   ];
 
@@ -401,6 +402,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {showJoinPros && (
                   <li><Link to="/join-pros" className="hover:text-white transition-colors">{t.nav.joinPros}</Link></li>
                 )}
+                <li><Link to="/about" className="hover:text-white transition-colors">{t.footer.aboutUs}</Link></li>
                 <li><Link to="/support" className="hover:text-white transition-colors">{t.nav.support}</Link></li>
                 <li><Link to="/make-request" className="hover:text-white transition-colors">{t.nav.publishRequest}</Link></li>
               </ul>

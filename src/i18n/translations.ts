@@ -7,6 +7,7 @@ export const translations = {
       howItWorks: "How it works",
       joinPros: "For pros",
       support: "Support",
+      about: "About us",
       dashboard: "My Dashboard",
       dashboardShort: "My Dashboard",
       logIn: "Log in",
@@ -554,8 +555,9 @@ export const translations = {
       tagline: "Local pros, clear quotes, easy booking.",
       popular: "Popular",
       company: "Company",
+      aboutUs: "About us",
       serving: "Serving Quebec and expanding",
-      servingCities: "Quebec · Expanding",
+      servingCities: "Granby · Quebec · Expanding",
       rights: "All rights reserved.",
       termsOfService: "Terms of Service",
       privacyPolicy: "Privacy Policy",
@@ -568,6 +570,30 @@ export const translations = {
       snowRemoval: "Snow Removal",
       cleaning: "Cleaning",
       moving: "Moving",
+    },
+    about: {
+      eyebrow: "AltShift · Granby",
+      title: "About us",
+      lead:
+        "We're here for the little guy — helping neighbours in Granby earn from their skills, and helping households find trustworthy local help.",
+      granbyTitle: "Rooted in Granby",
+      granbyBody:
+        "AltShift started with a simple local goal: give people in Granby and the surrounding area a fair place to offer what they know how to do, and a clear way for others to book it. We want the platform to lift small operators first — not bury them under big chains.",
+      whoTitle: "Who we want to help",
+      whoBody:
+        "If you have a trade, a craft, or a practical skill, you belong here. That includes people building something new and people who still want meaningful work later in life.",
+      whoSmallBiz:
+        "Small businesses getting started — so they can find clients nearby without a huge marketing budget.",
+      whoRetired:
+        "Retired or semi-retired neighbours who still want to take on smaller jobs and stay active in the community.",
+      whoAnyone:
+        "Anyone who wants to apply, earn from what they know, and stay close to home.",
+      exchangeTitle: "A fair exchange",
+      exchangeBody:
+        "On one side: you offer a service or a skill and earn money. On the other: someone gets the help they need, locally and clearly. That two-way street is the whole point of AltShift.",
+      ctaLead: "Ready to be part of it?",
+      ctaPro: "Offer your skills",
+      ctaClient: "Post a job",
     },
     terms: {
       fullTitle: "Terms of Service",
@@ -1842,6 +1868,7 @@ export const translations = {
       howItWorks: "Ça marche comment",
       joinPros: "Pros",
       support: "Aide",
+      about: "Un peu sur nous",
       dashboard: "Mon tableau de bord",
       dashboardShort: "Mon tableau",
       logIn: "Connexion",
@@ -2389,8 +2416,9 @@ export const translations = {
       tagline: "Pros locaux, prix clairs, réservation simple.",
       popular: "Populaire",
       company: "Entreprise",
+      aboutUs: "Un peu sur nous",
       serving: "Desservant le Québec et en expansion",
-      servingCities: "Québec · En expansion",
+      servingCities: "Granby · Québec · En expansion",
       rights: "Tous droits réservés.",
       termsOfService: "Conditions d'utilisation",
       privacyPolicy: "Politique de confidentialité",
@@ -2403,6 +2431,30 @@ export const translations = {
       snowRemoval: "Déneigement",
       cleaning: "Nettoyage",
       moving: "Déménagement",
+    },
+    about: {
+      eyebrow: "AltShift · Granby",
+      title: "Un peu sur nous",
+      lead:
+        "On est là pour le petit gars — aider les voisins de Granby à gagner de l'argent avec leurs compétences, et aider les foyers à trouver de l'aide locale de confiance.",
+      granbyTitle: "Ancrés à Granby",
+      granbyBody:
+        "AltShift est parti d'un objectif local simple : offrir aux gens de Granby et des environs une place juste pour proposer ce qu'ils savent faire, et un moyen clair pour les autres de réserver. On veut d'abord soutenir les petits opérateurs — pas les écraser sous les grandes chaînes.",
+      whoTitle: "Qui on veut aider",
+      whoBody:
+        "Si vous avez un métier, un savoir-faire ou une compétence pratique, vous avez votre place ici. Ça inclut ceux qui démarrent quelque chose de nouveau et ceux qui veulent encore un travail qui a du sens plus tard dans la vie.",
+      whoSmallBiz:
+        "Les petites entreprises qui démarrent — pour trouver des clients près de chez elles sans un gros budget marketing.",
+      whoRetired:
+        "Les voisins à la retraite ou semi-retraite qui veulent encore prendre de petits jobs et rester actifs dans la communauté.",
+      whoAnyone:
+        "Quiconque veut postuler, gagner avec ce qu'il sait faire, et rester près de chez soi.",
+      exchangeTitle: "Un échange équitable",
+      exchangeBody:
+        "D'un côté : vous offrez un service ou une compétence et vous gagnez de l'argent. De l'autre : quelqu'un obtient l'aide dont il a besoin, localement et clairement. Ce va-et-vient, c'est tout le sens d'AltShift.",
+      ctaLead: "Prêt à en faire partie ?",
+      ctaPro: "Offrir vos compétences",
+      ctaClient: "Publier une job",
     },
     terms: {
       fullTitle: "Conditions d'utilisation",
