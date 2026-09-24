@@ -8,6 +8,27 @@ export type SupportChatMessage = {
 
 const AI_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-hf`;
 
+function isGetAppQuestion(text: string): boolean {
+  const q = text.toLowerCase();
+  return (
+    /\b(download|install|get)\b.{0,40}\b(app|application)\b/.test(q) ||
+    /\b(app|application)\b.{0,40}\b(download|install|home\s*screen|écran)\b/.test(q) ||
+    /\btélécharg/.test(q) ||
+    /\binstaller?\b.{0,30}\b(app|application)\b/.test(q) ||
+    /\b(app|application)\s+altshift\b/.test(q) ||
+    /\baltshift\s+app\b/.test(q) ||
+    /\badd to home\b/.test(q) ||
+    /\bécran d['’]?accueil\b/.test(q)
+  );
+}
+
+function getAppGuideReply(lang: "en" | "fr"): string {
+  if (lang === "fr") {
+    return "AltShift n’est pas sur l’App Store ni le Play Store — ajoutez-la depuis le site sur l’écran d’accueil.\n\n[Android](/get-app/android) · [iPhone](/get-app/ios)";
+  }
+  return "AltShift isn’t on the App Store or Play Store — add it from the website to your home screen.\n\n[Android](/get-app/android) · [iPhone](/get-app/ios)";
+}
+
 export async function sendSupportChatMessage(
   rawInput: string,
   priorMessages: SupportChatMessage[],
@@ -15,6 +36,10 @@ export async function sendSupportChatMessage(
 ): Promise<{ ok: true; reply: string } | { ok: false; reply: string }> {
   const cleaned = cleanSupportQuery(rawInput);
   const replyLang = inferSupportReplyLanguage(priorMessages, cleaned);
+
+  if (isGetAppQuestion(cleaned)) {
+    return { ok: true, reply: getAppGuideReply(replyLang) };
+  }
 
   const {
     data: { session },

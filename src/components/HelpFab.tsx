@@ -534,8 +534,28 @@ export default function HelpFab() {
                     </div>
                   </div>
                 ) : (
-                  <div key={i} className="max-w-[95%] text-[14px] leading-relaxed text-foreground">
+                  <div key={i} className="max-w-[95%] space-y-2.5 text-[14px] leading-relaxed text-foreground">
                     <ChatMessageContent text={msg.content} onNavigate={() => setOpen(false)} />
+                    {i === 0 &&
+                      msg.role === "assistant" &&
+                      !messages.some((m) => m.role === "user") && (
+                        <div className="flex flex-wrap gap-2 pt-0.5">
+                          <Link
+                            to="/get-app/android"
+                            onClick={() => setOpen(false)}
+                            className="inline-flex items-center rounded-full border border-foreground/15 bg-foreground/[0.05] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-foreground/10 transition-colors"
+                          >
+                            {t.support.getAppAndroid ?? "Android"}
+                          </Link>
+                          <Link
+                            to="/get-app/ios"
+                            onClick={() => setOpen(false)}
+                            className="inline-flex items-center rounded-full border border-foreground/15 bg-foreground/[0.05] px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-foreground/10 transition-colors"
+                          >
+                            {t.support.getAppIphone ?? "iPhone"}
+                          </Link>
+                        </div>
+                      )}
                   </div>
                 )
               )}

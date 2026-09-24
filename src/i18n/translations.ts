@@ -523,7 +523,11 @@ export const translations = {
       askPlaceholder: "Ask anything",
       contactHours: "Mon-Fri, 8am-8pm EST",
       contactResponse: "Response within 24 hours",
-      aiGreeting: "Hi, I'm the AltShift AI assistant. How can I help you today?",
+      aiGreeting:
+        "Hi, I'm the AltShift AI assistant. Ask me how to download the AltShift app.\n\n[Android](/get-app/android) · [iPhone](/get-app/ios)",
+      getAppAndroid: "Android",
+      getAppIphone: "iPhone",
+      getAppHint: "Ask me how to download the AltShift app",
       signInToUse: "Please sign in to use the AI assistant.",
       thinking: "Thinking...",
       aiThinking: "AI is thinking…",
@@ -543,6 +547,9 @@ export const translations = {
       faq4a: "If a booked service is not performed substantially as agreed, use Report an issue in your Dashboard. Refunds are case-by-case and not automatic. Contact support@altshift.ca.",
       faq5q: "Do you serve all provinces and territories?",
       faq5a: "We're expanding from city to city across Canada - building a community of trusted local pros and clients, one neighbourhood at a time.",
+      faq6q: "How do I download the AltShift app?",
+      faq6a:
+        "There is no App Store or Play Store listing. Install AltShift from the website onto your home screen — ask the AI assistant, or open the Android and iPhone guides linked in the chat greeting.",
     },
     footer: {
       tagline: "Local pros, clear quotes, easy booking.",
@@ -2352,7 +2359,11 @@ export const translations = {
       askPlaceholder: "Demandez n'importe quoi",
       contactHours: "Lun.–ven., 8 h–20 h HNE",
       contactResponse: "Réponse sous 24 h",
-      aiGreeting: "Bonjour, je suis l'assistant IA AltShift. Comment puis-je vous aider?",
+      aiGreeting:
+        "Bonjour, je suis l'assistant IA AltShift. Demandez-moi comment télécharger l'application AltShift.\n\n[Android](/get-app/android) · [iPhone](/get-app/ios)",
+      getAppAndroid: "Android",
+      getAppIphone: "iPhone",
+      getAppHint: "Demandez-moi comment télécharger l'application AltShift",
       signInToUse: "Veuillez vous connecter pour utiliser l'assistant IA.",
       thinking: "Réflexion...",
       aiThinking: "L'IA réfléchit…",
@@ -2372,6 +2383,9 @@ export const translations = {
       faq4a: "Si un service réservé n’est pas réalisé substantiellement comme convenu, utilisez Signaler un problème dans votre tableau de bord. Les remboursements sont au cas par cas et non automatiques. Contactez support@altshift.ca.",
       faq5q: "Desservez-vous toutes les provinces et territoires?",
       faq5a: "Nous nous développons de ville en ville partout au Canada - en bâtissant une communauté de pros et de clients de confiance, un quartier à la fois.",
+      faq6q: "Comment télécharger l'application AltShift ?",
+      faq6a:
+        "Il n'y a pas d'App Store ni de Play Store. Installez AltShift depuis le site sur l'écran d'accueil — demandez à l'assistant IA, ou ouvrez les guides Android et iPhone liés dans le message d'accueil du chat.",
     },
     footer: {
       tagline: "Pros locaux, prix clairs, réservation simple.",

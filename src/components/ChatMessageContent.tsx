@@ -13,6 +13,9 @@ function shortAltshiftLabel(href: string): string {
     if (path.startsWith("/services")) return "Services";
     if (path.startsWith("/auth")) return path.includes("signup") ? "Sign up" : "Log in";
     if (path.startsWith("/support")) return "Support";
+    if (path.startsWith("/get-app/ios")) return "iPhone app";
+    if (path.startsWith("/get-app/android")) return "Android app";
+    if (path.startsWith("/get-app")) return "Get the app";
     const slug = path.replace(/^\//, "").split(/[/?#]/)[0];
     return slug ? slug.replace(/-/g, " ") : "AltShift";
   } catch {

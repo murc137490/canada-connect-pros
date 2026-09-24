@@ -39,6 +39,7 @@ import ProOnboardingStart from "./pages/ProOnboardingStart";
 import ProOnboardingTier from "./pages/ProOnboardingTier";
 import ApplePayHandoffPay from "./pages/ApplePayHandoffPay";
 import ConfirmAccountDeletion from "./pages/ConfirmAccountDeletion";
+import GetAppGuide from "./pages/GetAppGuide";
 import AuthHashErrorToast from "@/components/AuthHashErrorToast";
 import HashScroll from "@/components/HashScroll";
 import CanonicalUrl from "@/components/CanonicalUrl";
@@ -105,6 +106,8 @@ const App = () => (
               <Route path="/make-request" element={<MonitorAdminGuard><MakeRequest /></MonitorAdminGuard>} />
               <Route path="/admin" element={<Navigate to="/dashboard?tab=admin" replace />} />
               <Route path="/support" element={<Support />} />
+              <Route path="/get-app" element={<Navigate to="/get-app/android" replace />} />
+              <Route path="/get-app/:platform" element={<GetAppGuide />} />
               <Route path="/help/dashboard-guide" element={<DashboardGuide />} />
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />

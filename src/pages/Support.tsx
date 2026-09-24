@@ -92,6 +92,7 @@ export default function Support() {
                   { q: t.support.faq3q, a: t.support.faq3a },
                   { q: t.support.faq4q, a: t.support.faq4a },
                   { q: t.support.faq5q, a: t.support.faq5a },
+                  { q: t.support.faq6q, a: t.support.faq6a },
                 ].map((faq, i) => (
                   <div key={`${locale}-${i}`} className="glass-card rounded-2xl overflow-hidden">
                     <button
@@ -193,11 +194,29 @@ export default function Support() {
                       </div>
                     )}
                     <div
-                      className={`max-w-[80%] px-4 py-3 rounded-2xl whitespace-pre-wrap ${
+                      className={`max-w-[80%] px-4 py-3 rounded-2xl whitespace-pre-wrap space-y-2.5 ${
                         msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-foreground"
                       }`}
                     >
                       {msg.role === "assistant" ? <ChatMessageContent text={msg.content} /> : msg.content}
+                      {msg.role === "assistant" &&
+                        i === 0 &&
+                        !messages.some((m) => m.role === "user") && (
+                          <div className="flex flex-wrap gap-2">
+                            <Link
+                              to="/get-app/android"
+                              className="inline-flex items-center rounded-full border border-border bg-background/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-foreground/5"
+                            >
+                              {t.support.getAppAndroid ?? "Android"}
+                            </Link>
+                            <Link
+                              to="/get-app/ios"
+                              className="inline-flex items-center rounded-full border border-border bg-background/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-foreground/5"
+                            >
+                              {t.support.getAppIphone ?? "iPhone"}
+                            </Link>
+                          </div>
+                        )}
                     </div>
                   </div>
                 ))}

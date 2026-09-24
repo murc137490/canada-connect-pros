@@ -359,7 +359,13 @@ ${sessionBlock}
 - Devenir pro : [Join Pros](/join-pros)
 - Forfaits pro : [Pro plans](/pro-plans)
 - Tableau de bord : [Dashboard](/dashboard)
+- App Android (écran d’accueil) : [Android](/get-app/android)
+- App iPhone (écran d’accueil) : [iPhone](/get-app/ios)
 - Support : support@altshift.ca · +1 450 910 1400
+
+**Télécharger / installer l’app AltShift :**
+Il n’y a pas d’App Store ni de Play Store. AltShift s’installe depuis le site (PWA) sur l’écran d’accueil.
+Si l’utilisateur demande comment télécharger / obtenir / installer l’app : envoie les deux liens [Android](/get-app/android) et [iPhone](/get-app/ios) et dis d’ouvrir le guide adapté. Ne dis pas d’aller sur l’App Store.
 
 **Ajouter / créer un service (pro déjà connecté) :**
 1. Ouvrir [Dashboard](/dashboard) → onglet Profil pro.
@@ -384,7 +390,13 @@ ${sessionBlock}
 - Become a pro: [Join Pros](/join-pros)
 - Pro plans: [Pro plans](/pro-plans)
 - Dashboard: [Dashboard](/dashboard)
+- Android app (home screen): [Android](/get-app/android)
+- iPhone app (home screen): [iPhone](/get-app/ios)
 - Support: support@altshift.ca · +1 450 910 1400 (Mon–Fri, 8am–8pm EST)
+
+**Download / install the AltShift app:**
+There is no App Store or Play Store listing. AltShift installs from the website (PWA) onto the home screen.
+If the user asks how to download / get / install the app: send both [Android](/get-app/android) and [iPhone](/get-app/ios) and tell them to open the matching guide. Do not send them to the App Store.
 
 **Add / create a service (logged-in pro):**
 1. Open [Dashboard](/dashboard) → Pro profile tab.
