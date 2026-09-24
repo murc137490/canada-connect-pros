@@ -12,15 +12,13 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-type StrengthLevel = "empty" | "weak" | "medium" | "strong";
+type StrengthLevel = "empty" | "weak" | "ok";
 
 function passwordStrength(password: string): {
   level: StrengthLevel;
   label: string;
   labelFr: string;
   color: string;
-  entropy: number;
-  poolSize: number;
   percent: number;
 } {
   if (!password) {
@@ -29,31 +27,27 @@ function passwordStrength(password: string): {
       label: "Enter a password",
       labelFr: "Entrez un mot de passe",
       color: "bg-muted",
-      entropy: 0,
-      poolSize: 0,
       percent: 8,
     };
   }
 
-  const hasLower = /[a-z]/.test(password);
-  const hasUpper = /[A-Z]/.test(password);
-  const hasNumber = /\d/.test(password);
-  const hasSpecial = /[^A-Za-z0-9]/.test(password);
-  const poolSize =
-    (hasLower ? 26 : 0) +
-    (hasUpper ? 26 : 0) +
-    (hasNumber ? 10 : 0) +
-    (hasSpecial ? 33 : 0);
-  const entropy = poolSize > 0 ? password.length * Math.log2(poolSize) : 0;
-  const percent = Math.min(100, Math.max(8, Math.round((entropy / 80) * 100)));
+  if (password.length < 8) {
+    return {
+      level: "weak",
+      label: "Too short",
+      labelFr: "Trop court",
+      color: "bg-red-500",
+      percent: Math.max(12, Math.round((password.length / 8) * 55)),
+    };
+  }
 
-  if (entropy < 45) {
-    return { level: "weak", label: "Weak", labelFr: "Faible", color: "bg-red-500", entropy, poolSize, percent };
-  }
-  if (entropy < 70) {
-    return { level: "medium", label: "Medium", labelFr: "Moyen", color: "bg-yellow-500", entropy, poolSize, percent };
-  }
-  return { level: "strong", label: "Strong", labelFr: "Fort", color: "bg-green-500", entropy, poolSize, percent };
+  return {
+    level: "ok",
+    label: "Ready",
+    labelFr: "Prêt",
+    color: "bg-green-500",
+    percent: 100,
+  };
 }
 
 export default function ResetPassword() {
@@ -119,12 +113,12 @@ export default function ResetPassword() {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (strength.level !== "strong") {
+    if (password.length < 8) {
       toast({
-        title: fr ? "Mot de passe trop faible" : "Password too weak",
+        title: fr ? "Mot de passe trop court" : "Password too short",
         description: fr
-          ? "Utilisez au moins 12 caractères avec majuscules, minuscules, chiffres et symbole."
-          : "Use at least 12 characters with uppercase, lowercase, numbers, and a symbol.",
+          ? "Utilisez au moins 8 caractères."
+          : "Use at least 8 characters.",
         variant: "destructive",
       });
       return;
@@ -242,8 +236,8 @@ export default function ResetPassword() {
                         </p>
                         <p className="text-xs leading-relaxed text-muted-foreground">
                           {fr
-                            ? "Pour un mot de passe plus fort, utilisez des lettres minuscules et majuscules, des chiffres et des caractères spéciaux."
-                            : "For a stronger password, use lowercase and uppercase letters, numbers, and special characters."}
+                            ? "Minimum 8 caractères."
+                            : "At least 8 characters."}
                         </p>
                       </div>
                     </div>
