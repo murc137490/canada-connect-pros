@@ -112,7 +112,7 @@ function upsertIconLink(attrs: { rel: string; sizes?: string; type?: string; hre
   }
   if (attrs.type) el.type = attrs.type;
   // Cache-bust so browsers pick up tier swaps immediately
-  el.href = `${abs(attrs.href)}?v=7`;
+  el.href = `${abs(attrs.href)}?v=8`;
 }
 
 /**
@@ -134,7 +134,7 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
     apple.rel = "apple-touch-icon";
     document.head.appendChild(apple);
   }
-  apple.href = `${abs(theme.appleTouch)}?v=7`;
+  apple.href = `${abs(theme.appleTouch)}?v=8`;
 
   document.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
   const meta = document.createElement("meta");
@@ -157,5 +157,5 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
     link.rel = "manifest";
     document.head.appendChild(link);
   }
-  link.href = `${theme.manifestHref}?v=7`;
+  link.href = `${theme.manifestHref}?v=8`;
 }

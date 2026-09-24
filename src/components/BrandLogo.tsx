@@ -1,4 +1,4 @@
-import { useBrandLogoSrc, useBrandTier } from "@/contexts/BrandTierContext";
+import { useBrandLogoSrc } from "@/contexts/BrandTierContext";
 
 type BrandLogoProps = {
   className?: string;
@@ -6,34 +6,22 @@ type BrandLogoProps = {
   withWordmark?: boolean;
   wordmarkClassName?: string;
   /**
-   * auto — light mode: light A / dark S; dark mode: dark A / light S (B&W only)
-   * onDark — dark A / light S (footer, dark surfaces; B&W only)
-   * onLight — light A / dark S (forced light-surface look; B&W only)
-   *
-   * Paid tiers use a pre-colored cutout and skip invert filters.
+   * Kept for call-site compatibility. Assets are black A + light/tier S —
+   * no invert, so the A never flips to white.
    */
   tone?: "auto" | "onDark" | "onLight";
 };
 
 /**
- * AltShift SA monogram — B&W when signed out / client; tier colors when subscribed.
+ * AltShift SA monogram — black A + light/tier-colored S.
+ * Signed out / client = B&W; subscribed = tier-colored S.
  */
 export default function BrandLogo({
   className = "h-8 w-8",
   withWordmark = false,
   wordmarkClassName = "font-heading text-sm sm:text-[15px] font-extrabold tracking-tight text-foreground",
-  tone = "auto",
 }: BrandLogoProps) {
-  const tier = useBrandTier();
   const src = useBrandLogoSrc();
-  const isClient = tier === "client";
-  const toneClass = !isClient
-    ? ""
-    : tone === "onDark"
-      ? ""
-      : tone === "onLight"
-        ? "invert"
-        : "invert dark:invert-0";
 
   return (
     <span className="inline-flex items-center gap-2 min-w-0">
@@ -42,7 +30,7 @@ export default function BrandLogo({
         alt=""
         width={64}
         height={64}
-        className={`shrink-0 object-contain ${toneClass} ${className}`}
+        className={`shrink-0 object-contain ${className}`}
         decoding="async"
       />
       {withWordmark ? <span className={`block truncate ${wordmarkClassName}`}>AltShift</span> : null}

@@ -16,10 +16,11 @@ const outDir = path.join(root, "public");
 
 /** @type {TierColors[]} */
 const TIERS = [
-  { id: "client", s: [210, 210, 210], a: [18, 18, 18] },
-  { id: "starter", s: [96, 165, 250], a: [226, 232, 240] },
-  { id: "growth", s: [52, 211, 153], a: [236, 253, 245] },
-  { id: "pro", s: [192, 132, 252], a: [251, 146, 60] },
+  // S = tier accent (or light gray); A = pure black (never light / white)
+  { id: "client", s: [210, 210, 210], a: [0, 0, 0] },
+  { id: "starter", s: [96, 165, 250], a: [0, 0, 0] },
+  { id: "growth", s: [52, 211, 153], a: [0, 0, 0] },
+  { id: "pro", s: [192, 132, 252], a: [0, 0, 0] },
 ];
 
 function nearLight(r, g, b) {
