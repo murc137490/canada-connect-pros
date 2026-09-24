@@ -75,7 +75,7 @@ const App = () => (
         <BrowserRouter>
           <LanguageProvider>
             <AuthProvider>
-            <PwaIconTheme />
+            <PwaIconTheme>
             <AuthHashErrorToast />
             <HashScroll />
             <LegacyHostRedirect />
@@ -128,6 +128,7 @@ const App = () => (
             </Routes>
             </WhatsNewProvider>
             </NotificationProvider>
+            </PwaIconTheme>
           </AuthProvider>
           </LanguageProvider>
         </BrowserRouter>

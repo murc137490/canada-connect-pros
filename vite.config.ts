@@ -20,8 +20,11 @@ export default defineConfig(() => ({
       manifest: false,
       includeAssets: [
         "favicon.ico",
+        "favicon-*.ico",
+        "favicon-*.png",
         "favicon-32.png",
         "favicon-64.png",
+        "brand-logo-*.png",
         "apple-touch-icon.png",
         "manifest.webmanifest",
         "manifest-*.webmanifest",

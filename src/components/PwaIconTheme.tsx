@@ -1,16 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { BrandTierProvider } from "@/contexts/BrandTierContext";
 import { supabase } from "@/integrations/supabase/client";
 import { effectiveProTier } from "@/lib/proTierFeatures";
 import { PRO_PLAN_PAID_EVENT } from "@/lib/proPlanPaidEvent";
 import { applyPwaIconTheme, resolvePwaIconTier, type PwaIconTier } from "@/lib/pwaIconTheme";
 
 /**
- * Sets the installable PWA / home-screen icon to:
- * - black & white for normal clients (and logged-out)
- * - starter / growth / pro colors when the user has that paid tier
+ * Resolves the signed-in pro's paid tier and applies it sitewide:
+ * - browser tab favicon (colored SA cutout)
+ * - apple-touch / theme-color / manifest
+ * - BrandLogo via BrandTierProvider
+ *
+ * Signed out / non-pro / unverified → client B&W.
  */
-export default function PwaIconTheme() {
+export default function PwaIconTheme({ children }: { children?: ReactNode }) {
   const { user } = useAuth();
   const [tier, setTier] = useState<PwaIconTier>("client");
 
@@ -60,5 +64,5 @@ export default function PwaIconTheme() {
     applyPwaIconTheme(tier);
   }, [tier]);
 
-  return null;
+  return <BrandTierProvider tier={tier}>{children ?? null}</BrandTierProvider>;
 }

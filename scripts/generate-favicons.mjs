@@ -1,5 +1,5 @@
 /**
- * Build browser-tab favicons as an SA cutout (transparent outside the mark).
+ * Transparent SA cutout favicons + in-app brand marks per tier.
  * Run: node scripts/generate-favicons.mjs
  */
 import sharp from "sharp";
@@ -12,6 +12,16 @@ const root = path.resolve(__dirname, "..");
 const srcLogo = path.join(root, "public", "altshift-logo-transparent.png");
 const outDir = path.join(root, "public");
 
+/** @typedef {{ id: string, s: [number,number,number], a: [number,number,number] }} TierColors */
+
+/** @type {TierColors[]} */
+const TIERS = [
+  { id: "client", s: [210, 210, 210], a: [18, 18, 18] },
+  { id: "starter", s: [96, 165, 250], a: [226, 232, 240] },
+  { id: "growth", s: [52, 211, 153], a: [236, 253, 245] },
+  { id: "pro", s: [192, 132, 252], a: [251, 146, 60] },
+];
+
 function nearLight(r, g, b) {
   return (r + g + b) / 3 > 140;
 }
@@ -19,7 +29,6 @@ function nearDark(r, g, b) {
   return r + g + b < 120;
 }
 
-/** Pack PNG buffers into a multi-size .ico (PNG-in-ICO). */
 function pngIco(buffers) {
   const count = buffers.length;
   const headerSize = 6 + count * 16;
@@ -58,10 +67,10 @@ function pngIco(buffers) {
 }
 
 /**
- * Keep light S + dark A; everything else transparent so the tab icon
- * is the monogram silhouette, not a square plate.
+ * Recolor SA mark with transparent outside (no square plate).
+ * Returns cropped sharp pipeline + bbox size.
  */
-async function cutoutMonogram() {
+async function cutoutForTier(tier) {
   const { data, info } = await sharp(srcLogo).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const out = Buffer.alloc(data.length);
   const w = info.width;
@@ -71,6 +80,13 @@ async function cutoutMonogram() {
   let minY = h;
   let maxX = 0;
   let maxY = 0;
+
+  const mark = (x, y) => {
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+  };
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -86,40 +102,30 @@ async function cutoutMonogram() {
       }
 
       if (nearDark(r, g, b)) {
-        out[i] = 18;
-        out[i + 1] = 18;
-        out[i + 2] = 18;
+        out[i] = tier.a[0];
+        out[i + 1] = tier.a[1];
+        out[i + 2] = tier.a[2];
         out[i + 3] = 255;
-        if (x < minX) minX = x;
-        if (y < minY) minY = y;
-        if (x > maxX) maxX = x;
-        if (y > maxY) maxY = y;
+        mark(x, y);
         continue;
       }
 
       if (nearLight(r, g, b)) {
-        out[i] = 210;
-        out[i + 1] = 210;
-        out[i + 2] = 210;
+        out[i] = tier.s[0];
+        out[i + 1] = tier.s[1];
+        out[i + 2] = tier.s[2];
         out[i + 3] = 255;
-        if (x < minX) minX = x;
-        if (y < minY) minY = y;
-        if (x > maxX) maxX = x;
-        if (y > maxY) maxY = y;
+        mark(x, y);
         continue;
       }
 
+      // Edge anti-alias toward S color
       const lum = (r + g + b) / (3 * 255);
-      out[i] = 210;
-      out[i + 1] = 210;
-      out[i + 2] = 210;
-      out[i + 3] = Math.round(a * lum);
-      if (out[i + 3] > 8) {
-        if (x < minX) minX = x;
-        if (y < minY) minY = y;
-        if (x > maxX) maxX = x;
-        if (y > maxY) maxY = y;
-      }
+      out[i] = Math.round(tier.a[0] * (1 - lum) + tier.s[0] * lum);
+      out[i + 1] = Math.round(tier.a[1] * (1 - lum) + tier.s[1] * lum);
+      out[i + 2] = Math.round(tier.a[2] * (1 - lum) + tier.s[2] * lum);
+      out[i + 3] = a;
+      if (a > 8) mark(x, y);
     }
   }
 
@@ -149,21 +155,50 @@ async function writeSized(pipeline, size, file) {
 }
 
 async function main() {
-  const cutout = await cutoutMonogram();
-  await cutout.clone().png().toFile(path.join(outDir, "favicon-cutout.png"));
-  console.log("wrote favicon-cutout.png");
+  let clientIcoPngs = [];
 
-  const icoPngs = [];
-  for (const size of [16, 32, 48, 64, 192]) {
-    const name = `favicon-${size}.png`;
-    const buf = await writeSized(cutout, size, name);
-    if (size === 16 || size === 32 || size === 48) icoPngs.push(buf);
+  for (const tier of TIERS) {
+    const cutout = await cutoutForTier(tier);
+
+    // In-app / header mark (large transparent)
+    await cutout
+      .clone()
+      .resize(256, 256, {
+        fit: "contain",
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
+      .png({ compressionLevel: 9 })
+      .toFile(path.join(outDir, `brand-logo-${tier.id}.png`));
+    console.log("wrote", `brand-logo-${tier.id}.png`);
+
+    const icoPngs = [];
+    for (const size of [16, 32, 48, 64, 192]) {
+      const buf = await writeSized(cutout, size, `favicon-${tier.id}-${size}.png`);
+      if (size === 16 || size === 32 || size === 48) icoPngs.push(buf);
+    }
+
+    const ico = pngIco(icoPngs);
+    await fs.writeFile(path.join(outDir, `favicon-${tier.id}.ico`), ico);
+    console.log("wrote", `favicon-${tier.id}.ico`, ico.length);
+
+    if (tier.id === "client") {
+      clientIcoPngs = icoPngs;
+      // Legacy default favicon paths (signed-out / B&W)
+      await writeSized(cutout, 32, "favicon-32.png");
+      await writeSized(cutout, 64, "favicon-64.png");
+      await writeSized(cutout, 192, "favicon-192.png");
+      await writeSized(cutout, 16, "favicon-16.png");
+      await writeSized(cutout, 48, "favicon-48.png");
+      await writeSized(cutout, 32, "favicon.png");
+      await cutout.clone().png().toFile(path.join(outDir, "favicon-cutout.png"));
+      console.log("wrote favicon-cutout.png");
+    }
   }
-  await writeSized(cutout, 32, "favicon.png");
 
-  const ico = pngIco(icoPngs);
+  const ico = pngIco(clientIcoPngs);
   await fs.writeFile(path.join(outDir, "favicon.ico"), ico);
   console.log("wrote favicon.ico", ico.length);
+  console.log("done");
 }
 
 main().catch((err) => {
