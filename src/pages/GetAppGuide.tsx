@@ -83,11 +83,6 @@ export default function GetAppGuide() {
                 ? "Android · écran d’accueil"
                 : "Android · Home screen"}
           </h1>
-          <p className="mt-3 text-muted-foreground leading-relaxed">
-            {fr
-              ? "Pas d’App Store ni Play Store — ajoutez AltShift depuis le navigateur. Ça s’ouvre en plein écran comme une app."
-              : "No App Store or Play Store listing — add AltShift from your browser. It opens full-screen like an app."}
-          </p>
 
           <div className="mt-6 flex gap-2">
             <Link
@@ -133,12 +128,6 @@ export default function GetAppGuide() {
               );
             })}
           </ol>
-
-          <p className="mt-10 text-sm text-muted-foreground leading-relaxed">
-            {fr
-              ? "Sur ordinateur (Chrome ou Edge) : icône d’installation dans la barre d’adresse, ou menu → Installer AltShift."
-              : "On desktop (Chrome or Edge): use the install icon in the address bar, or menu → Install AltShift."}
-          </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Link

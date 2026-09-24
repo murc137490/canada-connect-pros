@@ -523,8 +523,7 @@ export const translations = {
       askPlaceholder: "Ask anything",
       contactHours: "Mon-Fri, 8am-8pm EST",
       contactResponse: "Response within 24 hours",
-      aiGreeting:
-        "Hi, I'm the AltShift AI assistant. Ask me how to download the AltShift app.\n\n[Android](/get-app/android) · [iPhone](/get-app/ios)",
+      aiGreeting: "Hi, I'm the AltShift AI assistant. How can I help you today?",
       getAppAndroid: "Android",
       getAppIphone: "iPhone",
       getAppHint: "Ask me how to download the AltShift app",
@@ -2359,8 +2358,7 @@ export const translations = {
       askPlaceholder: "Demandez n'importe quoi",
       contactHours: "Lun.–ven., 8 h–20 h HNE",
       contactResponse: "Réponse sous 24 h",
-      aiGreeting:
-        "Bonjour, je suis l'assistant IA AltShift. Demandez-moi comment télécharger l'application AltShift.\n\n[Android](/get-app/android) · [iPhone](/get-app/ios)",
+      aiGreeting: "Bonjour, je suis l'assistant IA AltShift. Comment puis-je vous aider?",
       getAppAndroid: "Android",
       getAppIphone: "iPhone",
       getAppHint: "Demandez-moi comment télécharger l'application AltShift",
