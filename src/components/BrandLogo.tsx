@@ -16,7 +16,7 @@ type BrandLogoProps = {
  * Inverted for light surfaces so the mark reads dark.
  */
 export default function BrandLogo({
-  className = "h-8 w-8",
+  className = "h-10 w-10",
   withWordmark = false,
   wordmarkClassName = "font-heading text-sm sm:text-[15px] font-extrabold tracking-tight text-foreground",
   tone = "auto",
