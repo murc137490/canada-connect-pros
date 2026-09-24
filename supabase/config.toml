@@ -43,6 +43,10 @@ verify_jwt = false
 [functions.referral-invite]
 verify_jwt = false
 
+# Public forgot-password: generates recovery link + sends via Resend (bypasses Auth SMTP).
+[functions.request-password-reset]
+verify_jwt = false
+
 [functions.square-oauth-start]
 verify_jwt = false
 

@@ -54,6 +54,26 @@ export default function Auth() {
     setMode(modeFromUrl);
   }, [searchParams]);
 
+  // Browser back from Google account picker restores bfcache with spinner still on.
+  useEffect(() => {
+    const clearGoogleSpinner = () => setGoogleLoading(false);
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) clearGoogleSpinner();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") clearGoogleSpinner();
+    };
+    clearGoogleSpinner();
+    window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("focus", clearGoogleSpinner);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("focus", clearGoogleSpinner);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
   // After login / OAuth (or if already signed in), land on the intended page.
   // Wait if admin Member ID verification is needed on this page.
   useEffect(() => {
@@ -243,6 +263,8 @@ export default function Auth() {
     setGoogleLoading(true);
     try {
       await signInWithGoogle(redirect);
+      // Full-page redirect should unload us; clear spinner if user cancels / returns.
+      window.setTimeout(() => setGoogleLoading(false), 12_000);
     } catch (err: unknown) {
       const raw = (err as Error)?.message ?? "";
       const providerOff = /provider is not enabled|unsupported provider/i.test(raw);
@@ -272,16 +294,36 @@ export default function Auth() {
 
     setResetLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
-        redirectTo: `${getPublicSiteOrigin()}/reset-password`,
+      // Prefer Resend edge function — Auth Custom SMTP is currently rejecting credentials (535).
+      const { data, error } = await supabase.functions.invoke("request-password-reset", {
+        body: {
+          email: trimmedEmail,
+          language: locale === "fr" ? "fr" : "en",
+          redirectTo: `${getPublicSiteOrigin()}/reset-password`,
+        },
       });
       if (error) throw error;
+      if (data && typeof data === "object" && "error" in data && (data as { error?: string }).error) {
+        throw new Error(String((data as { error: string }).error));
+      }
       toast({
         title: t.auth.resetPasswordSentTitle ?? "Password reset sent",
         description: t.auth.resetPasswordSentBody ?? "Check your email for the reset link.",
       });
     } catch (err: unknown) {
-      toast({ title: t.auth.toastError, description: (err as Error).message, variant: "destructive" });
+      const msg = (err as Error)?.message ?? "";
+      if (isAuthEmailDeliveryError(msg)) {
+        toast({
+          title: t.auth.toastError,
+          description:
+            locale === "fr"
+              ? "Impossible d’envoyer le courriel de réinitialisation. Réessayez dans une minute ou contactez support@altshift.ca."
+              : "Could not send the recovery email. Try again in a minute or contact support@altshift.ca.",
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: t.auth.toastError, description: msg || t.auth.toastError, variant: "destructive" });
+      }
     } finally {
       setResetLoading(false);
     }
