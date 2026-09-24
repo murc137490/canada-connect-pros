@@ -17,40 +17,40 @@
   ],
   "icons": [
     {
-      "src": "/pwa-pro-192x192.png",
+      "src": "https://www.altshift.ca/pwa-pro-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://www.altshift.ca/pwa-pro-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://www.altshift.ca/pwa-pro-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/pwa-pro-512x512.png",
+      "src": "https://www.altshift.ca/pwa-pro-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/pwa-pro-maskable-192x192.png",
+      "src": "https://www.altshift.ca/pwa-pro-maskable-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/pwa-pro-maskable-512x512.png",
+      "src": "https://www.altshift.ca/pwa-pro-maskable-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    },
-    {
-      "src": "/pwa-pro-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/pwa-pro-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
     }
   ]
 }

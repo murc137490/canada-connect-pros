@@ -7,6 +7,8 @@ export type PwaIconTheme = {
   themeColor: string;
   backgroundColor: string;
   appleTouch: string;
+  icon192: string;
+  icon512: string;
   /** Static file under /public — Android needs a real URL, not a blob: manifest. */
   manifestHref: string;
 };
@@ -17,6 +19,8 @@ export const PWA_ICON_THEMES: Record<PwaIconTier, PwaIconTheme> = {
     themeColor: "#0a0a0a",
     backgroundColor: "#0a0a0a",
     appleTouch: "/pwa-client-apple-touch.png",
+    icon192: "/pwa-client-192x192.png",
+    icon512: "/pwa-client-512x512.png",
     manifestHref: "/manifest-client.webmanifest",
   },
   starter: {
@@ -24,6 +28,8 @@ export const PWA_ICON_THEMES: Record<PwaIconTier, PwaIconTheme> = {
     themeColor: "#1e3a8a",
     backgroundColor: "#0f172a",
     appleTouch: "/pwa-starter-apple-touch.png",
+    icon192: "/pwa-starter-192x192.png",
+    icon512: "/pwa-starter-512x512.png",
     manifestHref: "/manifest-starter.webmanifest",
   },
   growth: {
@@ -31,6 +37,8 @@ export const PWA_ICON_THEMES: Record<PwaIconTier, PwaIconTheme> = {
     themeColor: "#047857",
     backgroundColor: "#022c22",
     appleTouch: "/pwa-growth-apple-touch.png",
+    icon192: "/pwa-growth-192x192.png",
+    icon512: "/pwa-growth-512x512.png",
     manifestHref: "/manifest-growth.webmanifest",
   },
   pro: {
@@ -38,6 +46,8 @@ export const PWA_ICON_THEMES: Record<PwaIconTier, PwaIconTheme> = {
     themeColor: "#6d28d9",
     backgroundColor: "#1e1b4b",
     appleTouch: "/pwa-pro-apple-touch.png",
+    icon192: "/pwa-pro-192x192.png",
+    icon512: "/pwa-pro-512x512.png",
     manifestHref: "/manifest-pro.webmanifest",
   },
 };
@@ -56,10 +66,26 @@ function abs(path: string): string {
   }
 }
 
+function upsertSizedIcon(sizes: string, href: string) {
+  let el = document.querySelector<HTMLLinkElement>(`link[rel="icon"][sizes="${sizes}"]`);
+  if (!el) {
+    el = document.createElement("link");
+    el.rel = "icon";
+    el.setAttribute("sizes", sizes);
+    document.head.appendChild(el);
+  }
+  el.type = "image/png";
+  el.href = href;
+}
+
 /** Update apple-touch-icon + web manifest for the current user’s tier (before install). */
 export function applyPwaIconTheme(tier: PwaIconTier) {
   if (typeof document === "undefined") return;
   const theme = PWA_ICON_THEMES[tier] ?? PWA_ICON_THEMES.client;
+
+  // Samsung Internet often reads <link rel="icon"> for Add to Home before the manifest.
+  upsertSizedIcon("192x192", abs(theme.icon192));
+  upsertSizedIcon("512x512", abs(theme.icon512));
 
   let apple = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
   if (!apple) {
@@ -82,6 +108,6 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
     link.rel = "manifest";
     document.head.appendChild(link);
   }
-  // Bust caches so Android Chrome re-reads icons after deploy / tier change.
-  link.href = `${theme.manifestHref}?v=5`;
+  // Bust caches so Android Chrome / Samsung Internet re-reads icons after deploy / tier change.
+  link.href = `${theme.manifestHref}?v=4`;
 }

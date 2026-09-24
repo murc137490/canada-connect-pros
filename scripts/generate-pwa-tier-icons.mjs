@@ -1,6 +1,11 @@
 /**
- * Build brand + PWA icons from the AS mark (flat solid fill, no metallic gradients).
+ * Generate PWA / home-screen icons for client (B&W) and pro tiers.
  * Run: node scripts/generate-pwa-tier-icons.mjs
+ *
+ * Samsung / Android notes:
+ * - Never use purpose "any maskable" (breaks some installers → Android robot).
+ * - Maskable + any icons must be opaque (no alpha).
+ * - Keep maskable artwork inside ~80% safe zone.
  */
 import sharp from "sharp";
 import path from "path";
@@ -9,117 +14,91 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
-const srcLogo = path.join(root, "public", "altshift-logo-source.png");
+const srcLogo = path.join(root, "public", "altshift-logo.png");
 const outDir = path.join(root, "public");
+/** Absolute icon URLs — Samsung Internet resolves relative paths inconsistently. */
+const ORIGIN = "https://www.altshift.ca";
 
-/** @typedef {[number, number, number]} RGB */
-/** @typedef {{ id: string, bg: RGB, mark: RGB, theme: string }} Theme */
+/** @typedef {{ id: string, bg: [number,number,number], s: [number,number,number], a: [number,number,number], theme: string }} Theme */
 
-/** Flat solid tier colors — same energy as the old B&W mark, just recolored. */
 /** @type {Theme[]} */
 const THEMES = [
-  { id: "client", bg: [10, 10, 10], mark: [245, 245, 245], theme: "#0a0a0a" },
-  { id: "starter", bg: [15, 23, 42], mark: [96, 165, 250], theme: "#1e3a8a" },
-  { id: "growth", bg: [2, 44, 34], mark: [52, 211, 153], theme: "#047857" },
-  { id: "pro", bg: [30, 27, 75], mark: [192, 132, 252], theme: "#6d28d9" },
+  // Normal users — black & white only (white mark, black A counter for contrast)
+  { id: "client", bg: [10, 10, 10], s: [245, 245, 245], a: [10, 10, 10], theme: "#0a0a0a" },
+  // Starter — blue tier
+  { id: "starter", bg: [15, 23, 42], s: [96, 165, 250], a: [248, 250, 252], theme: "#1e3a8a" },
+  // Growth — green / teal
+  { id: "growth", bg: [2, 44, 34], s: [52, 211, 153], a: [236, 253, 245], theme: "#047857" },
+  // Pro — purple mark on deep indigo
+  { id: "pro", bg: [30, 27, 75], s: [192, 132, 252], a: [251, 146, 60], theme: "#6d28d9" },
 ];
 
-const MASTER = 1024;
-/** Match previous logo scale — almost full canvas, tiny safe margin. */
-const PAD_RATIO = 0.04;
+function nearWhite(r, g, b) {
+  return r > 200 && g > 200 && b > 200;
+}
+function nearBlack(r, g, b) {
+  return r + g + b < 80;
+}
 
 /**
- * Place the source mark centered on a square canvas.
- * @returns {Promise<Float32Array>} luminance mask 0..1
+ * Source art is white AS mark on black (or transparent).
+ * - transparent / black → theme background
+ * - white / light mark → theme.s (tier accent)
+ * - mid anti-alias → blend toward theme.s
  */
-async function loadMarkMask(size) {
-  const meta = await sharp(srcLogo).metadata();
-  const sw = meta.width ?? 320;
-  const sh = meta.height ?? 295;
-  const fit = Math.round(size * (1 - PAD_RATIO * 2));
-  const scale = Math.min(fit / sw, fit / sh);
-  const dw = Math.max(1, Math.round(sw * scale));
-  const dh = Math.max(1, Math.round(sh * scale));
-  const left = Math.floor((size - dw) / 2);
-  const top = Math.floor((size - dh) / 2);
-
-  const resized = await sharp(srcLogo)
-    .resize(dw, dh, { fit: "fill", kernel: sharp.kernel.lanczos3 })
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-
-  const mark = new Float32Array(size * size);
-  const { data, info } = resized;
-  for (let y = 0; y < info.height; y++) {
-    for (let x = 0; x < info.width; x++) {
-      const si = (y * info.width + x) * 4;
-      const r = data[si];
-      const g = data[si + 1];
-      const b = data[si + 2];
-      const a = data[si + 3] / 255;
-      const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-      // Harder threshold → flat mark, soft AA only on the edge
-      let strength = 0;
-      if (lum > 0.55) strength = 1;
-      else if (lum > 0.25) strength = (lum - 0.25) / 0.3;
-      strength *= a;
-      const dx = left + x;
-      const dy = top + y;
-      if (dx < 0 || dy < 0 || dx >= size || dy >= size) continue;
-      mark[dy * size + dx] = Math.max(mark[dy * size + dx], strength);
+async function recolorLogo(theme) {
+  const { data, info } = await sharp(srcLogo).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const out = Buffer.from(data);
+  for (let i = 0; i < out.length; i += 4) {
+    const r = out[i];
+    const g = out[i + 1];
+    const b = out[i + 2];
+    const alpha = out[i + 3];
+    if (alpha < 20 || nearBlack(r, g, b)) {
+      out[i] = theme.bg[0];
+      out[i + 1] = theme.bg[1];
+      out[i + 2] = theme.bg[2];
+      out[i + 3] = 255;
+      continue;
     }
+    if (nearWhite(r, g, b)) {
+      out[i] = theme.s[0];
+      out[i + 1] = theme.s[1];
+      out[i + 2] = theme.s[2];
+      out[i + 3] = 255;
+      continue;
+    }
+    // Anti-aliased edge: mix accent into background by luminance
+    const lum = (r + g + b) / (3 * 255);
+    out[i] = Math.round(theme.bg[0] * (1 - lum) + theme.s[0] * lum);
+    out[i + 1] = Math.round(theme.bg[1] * (1 - lum) + theme.s[1] * lum);
+    out[i + 2] = Math.round(theme.bg[2] * (1 - lum) + theme.s[2] * lum);
+    out[i + 3] = 255;
   }
-  return mark;
+  return sharp(out, { raw: { width: info.width, height: info.height, channels: 4 } });
 }
 
-/** @param {Float32Array} mark @param {Theme} theme @param {number} size */
-function paintTheme(mark, theme, size) {
-  const out = Buffer.alloc(size * size * 4);
-  const [mr, mg, mb] = theme.mark;
-  const [br, bg, bb] = theme.bg;
-  for (let i = 0; i < size * size; i++) {
-    const m = mark[i];
-    const o = i * 4;
-    out[o] = Math.round(br + (mr - br) * m);
-    out[o + 1] = Math.round(bg + (mg - bg) * m);
-    out[o + 2] = Math.round(bb + (mb - bb) * m);
-    out[o + 3] = 255;
-  }
-  return sharp(out, { raw: { width: size, height: size, channels: 4 } });
-}
-
-async function writeTransparentMaster(mark) {
-  const size = MASTER;
-  const out = Buffer.alloc(size * size * 4);
-  for (let i = 0; i < size * size; i++) {
-    const m = mark[i];
-    const o = i * 4;
-    out[o] = 255;
-    out[o + 1] = 255;
-    out[o + 2] = 255;
-    out[o + 3] = Math.round(Math.max(0, Math.min(1, m)) * 255);
-  }
-  await sharp(out, { raw: { width: size, height: size, channels: 4 } })
-    .png()
-    .toFile(path.join(outDir, "altshift-logo-transparent.png"));
-  console.log("wrote altshift-logo-transparent.png");
-}
-
-async function writeSolidMaster(mark) {
-  await paintTheme(mark, THEMES[0], MASTER).png().toFile(path.join(outDir, "altshift-logo.png"));
-  console.log("wrote altshift-logo.png");
-}
-
-async function writeSized(pipeline, size, file) {
-  await pipeline.clone().resize(size, size, { fit: "cover" }).png().toFile(path.join(outDir, file));
+/** Flatten to opaque RGB PNG (Samsung rejects / mishandles alpha on install icons). */
+async function writeSized(pipeline, size, file, bg) {
+  await pipeline
+    .clone()
+    .resize(size, size, { fit: "cover" })
+    .flatten({ background: { r: bg[0], g: bg[1], b: bg[2] } })
+    .png({ compressionLevel: 9, adaptiveFiltering: true })
+    .toFile(path.join(outDir, file));
   console.log("wrote", file);
 }
 
 async function writeMaskable(pipeline, size, file, bg) {
-  const pad = Math.round(size * 0.1);
+  // ~18% pad → logo stays inside Android 80% safe-zone circle (Samsung squircles).
+  const pad = Math.round(size * 0.18);
   const inner = size - pad * 2;
-  const innerBuf = await pipeline.clone().resize(inner, inner, { fit: "cover" }).png().toBuffer();
+  const innerBuf = await pipeline
+    .clone()
+    .resize(inner, inner, { fit: "cover" })
+    .flatten({ background: { r: bg[0], g: bg[1], b: bg[2] } })
+    .png()
+    .toBuffer();
   await sharp({
     create: {
       width: size,
@@ -129,9 +108,20 @@ async function writeMaskable(pipeline, size, file, bg) {
     },
   })
     .composite([{ input: innerBuf, left: pad, top: pad }])
-    .png()
+    .flatten({ background: { r: bg[0], g: bg[1], b: bg[2] } })
+    .removeAlpha()
+    .png({ compressionLevel: 9, adaptiveFiltering: true })
     .toFile(path.join(outDir, file));
   console.log("wrote", file);
+}
+
+function iconEntry(src, sizes, purpose) {
+  return {
+    src: `${ORIGIN}${src}`,
+    sizes,
+    type: "image/png",
+    purpose,
+  };
 }
 
 async function writeManifest(theme) {
@@ -153,13 +143,14 @@ async function writeManifest(theme) {
     background_color: bgHex,
     theme_color: theme.theme,
     categories: ["business", "lifestyle"],
+    // Separate any vs maskable only — "any maskable" breaks Samsung install icons.
     icons: [
-      { src: `${prefix}-192x192.png`, sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: `${prefix}-512x512.png`, sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: `${prefix}-maskable-192x192.png`, sizes: "192x192", type: "image/png", purpose: "maskable" },
-      { src: `${prefix}-maskable-512x512.png`, sizes: "512x512", type: "image/png", purpose: "maskable" },
-      { src: `${prefix}-192x192.png`, sizes: "192x192", type: "image/png", purpose: "any maskable" },
-      { src: `${prefix}-512x512.png`, sizes: "512x512", type: "image/png", purpose: "any maskable" },
+      iconEntry(`${prefix}-96x96.png`, "96x96", "any"),
+      iconEntry(`${prefix}-144x144.png`, "144x144", "any"),
+      iconEntry(`${prefix}-192x192.png`, "192x192", "any"),
+      iconEntry(`${prefix}-512x512.png`, "512x512", "any"),
+      iconEntry(`${prefix}-maskable-192x192.png`, "192x192", "maskable"),
+      iconEntry(`${prefix}-maskable-512x512.png`, "512x512", "maskable"),
     ],
   };
   const file = `manifest-${id}.webmanifest`;
@@ -167,62 +158,33 @@ async function writeManifest(theme) {
   console.log("wrote", file);
 }
 
-async function writeIco(pngBuf, dest) {
-  const header = Buffer.alloc(6);
-  header.writeUInt16LE(0, 0);
-  header.writeUInt16LE(1, 2);
-  header.writeUInt16LE(1, 4);
-  const entry = Buffer.alloc(16);
-  entry[0] = 32;
-  entry[1] = 32;
-  entry.writeUInt16LE(0, 2);
-  entry.writeUInt16LE(1, 4);
-  entry.writeUInt16LE(32, 6);
-  entry.writeUInt32LE(pngBuf.length, 8);
-  entry.writeUInt32LE(22, 12);
-  await fs.writeFile(dest, Buffer.concat([header, entry, pngBuf]));
-}
-
-async function writeFavicons(mark) {
-  const client = paintTheme(mark, THEMES[0], MASTER);
-  const buf32 = await client.clone().resize(32, 32).png().toBuffer();
-  const buf64 = await client.clone().resize(64, 64).png().toBuffer();
-  await fs.writeFile(path.join(outDir, "favicon-32.png"), buf32);
-  await fs.writeFile(path.join(outDir, "favicon-64.png"), buf64);
-  await writeIco(buf32, path.join(outDir, "favicon.ico"));
-  console.log("wrote favicon-32.png, favicon-64.png, favicon.ico");
-}
-
 async function main() {
-  await fs.access(srcLogo);
-  const mark = await loadMarkMask(MASTER);
-
-  await writeSolidMaster(mark);
-  await writeTransparentMaster(mark);
-  await writeFavicons(mark);
-
   for (const theme of THEMES) {
-    const logo = paintTheme(mark, theme, MASTER);
+    const logo = await recolorLogo(theme);
     const base = `pwa-${theme.id}`;
-    await writeSized(logo, 192, `${base}-192x192.png`);
-    await writeSized(logo, 512, `${base}-512x512.png`);
+    for (const size of [96, 144, 192, 512]) {
+      await writeSized(logo, size, `${base}-${size}x${size}.png`, theme.bg);
+    }
     await writeMaskable(logo, 192, `${base}-maskable-192x192.png`, theme.bg);
     await writeMaskable(logo, 512, `${base}-maskable-512x512.png`, theme.bg);
-    await writeSized(logo, 180, `${base}-apple-touch.png`);
+    await writeSized(logo, 180, `${base}-apple-touch.png`, theme.bg);
     await writeManifest(theme);
   }
 
-  const client = paintTheme(mark, THEMES[0], MASTER);
-  await writeSized(client, 192, "pwa-192x192.png");
-  await writeSized(client, 512, "pwa-512x512.png");
-  await writeMaskable(client, 192, "pwa-maskable-192x192.png", THEMES[0].bg);
-  await writeMaskable(client, 512, "pwa-maskable-512x512.png", THEMES[0].bg);
-  await writeSized(client, 180, "apple-touch-icon.png");
+  // Default install assets = client B&W
+  const client = await recolorLogo(THEMES[0]);
+  const cbg = THEMES[0].bg;
+  for (const size of [96, 144, 192, 512]) {
+    await writeSized(client, size, `pwa-${size}x${size}.png`, cbg);
+  }
+  await writeMaskable(client, 192, "pwa-maskable-192x192.png", cbg);
+  await writeMaskable(client, 512, "pwa-maskable-512x512.png", cbg);
+  await writeSized(client, 180, "apple-touch-icon.png", cbg);
 
-  await paintTheme(mark, THEMES[0], MASTER)
-    .jpeg({ quality: 95 })
-    .toFile(path.join(outDir, "altshift-logo-current.jpg"));
-  console.log("wrote altshift-logo-current.jpg");
+  // Fallback path some Android WebViews still request
+  await fs.copyFile(path.join(outDir, "manifest-client.webmanifest"), path.join(outDir, "manifest.webmanifest"));
+  console.log("wrote manifest.webmanifest");
+
   console.log("done");
 }
 
