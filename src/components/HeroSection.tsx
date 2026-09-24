@@ -477,7 +477,7 @@ export default function HeroSection() {
 
   return (
     <motion.section
-      className="relative overflow-x-hidden pt-[calc(4.5rem+env(safe-area-inset-top,0px))] pb-12 md:pb-16 lg:pt-[calc(5.5rem+env(safe-area-inset-top,0px))] lg:pb-24"
+      className="relative overflow-x-hidden pt-[calc(4.5rem+env(safe-area-inset-top,0px))] pb-8 md:pb-10 lg:pt-[calc(5.5rem+env(safe-area-inset-top,0px))] lg:pb-14"
       animate={browseLeaving ? { opacity: 0, y: -18, filter: "blur(4px)" } : { opacity: 1, y: 0, filter: "blur(0px)" }}
       transition={{ duration: MOTION.base, ease: MOTION.ease }}
     >

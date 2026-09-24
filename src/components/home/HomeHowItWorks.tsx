@@ -4,18 +4,24 @@ import { usePrefersReducedMotion } from "@/motion/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
 
 /**
- * Stickify-style scroll reveal for "Trois étapes":
- * opacity 0→1, blur ~14px→0, slight rise — driven by each step’s place in the viewport.
+ * Stickify-style progress from element top vs viewport.
+ * Higher `startMul` / `fullMul` = reveals ~sooner (while still on the hero).
  */
-function stickifyProgress(rectTop: number, vh: number): number {
-  // Enter from below viewport; fully clear near upper-middle (Stickify “sweet spot”).
-  const start = vh * 0.88;
-  const full = vh * 0.36;
+function stickifyProgress(rectTop: number, vh: number, startMul: number, fullMul: number): number {
+  const start = vh * startMul;
+  const full = vh * fullMul;
   const raw = (start - rectTop) / Math.max(start - full, 1);
-  // Smoothstep for a softer ease than linear.
   const t = Math.min(1, Math.max(0, raw));
   return t * t * (3 - 2 * t);
 }
+
+/** Title + step 1: ~30% earlier so they read while the hero is still on screen. */
+const EARLY = { start: 1.18, full: 0.62 } as const;
+/** Steps 2–3: only clear once you scroll into the section. */
+const LATE = [
+  { start: 0.92, full: 0.4 },
+  { start: 0.82, full: 0.34 },
+] as const;
 
 export default function HomeHowItWorks() {
   const { t } = useLanguage();
@@ -65,10 +71,10 @@ export default function HomeHowItWorks() {
       const titleEl = titleRef.current;
       let titleP = 0;
       if (titleEl) {
-        titleP = stickifyProgress(titleEl.getBoundingClientRect().top, vh);
+        titleP = stickifyProgress(titleEl.getBoundingClientRect().top, vh, EARLY.start, EARLY.full);
         section.style.setProperty("--how-title-opacity", titleP.toFixed(3));
         section.style.setProperty("--how-title-blur", ((1 - titleP) * 14).toFixed(2));
-        section.style.setProperty("--how-title-y", ((1 - titleP) * 40).toFixed(1));
+        section.style.setProperty("--how-title-y", ((1 - titleP) * 36).toFixed(1));
       }
 
       let maxP = titleP;
@@ -76,9 +82,10 @@ export default function HomeHowItWorks() {
       for (let i = 0; i < 3; i++) {
         const el = stepRefs.current[i];
         if (!el) continue;
-        const p = stickifyProgress(el.getBoundingClientRect().top, vh);
+        const curve = i === 0 ? EARLY : LATE[i - 1];
+        const p = stickifyProgress(el.getBoundingClientRect().top, vh, curve.start, curve.full);
         maxP = Math.max(maxP, p);
-        if (p > 0.55) onCount = i + 1;
+        if (p > 0.5) onCount = i + 1;
         section.style.setProperty(`--how-step-${i}`, p.toFixed(3));
         section.style.setProperty(`--how-step-${i}-blur`, ((1 - p) * 10).toFixed(2));
         section.style.setProperty(`--how-step-${i}-y`, ((1 - p) * 28).toFixed(1));
@@ -102,7 +109,8 @@ export default function HomeHowItWorks() {
         tracking = !!entry?.isIntersecting;
         if (tracking) measure();
       },
-      { rootMargin: "50% 0px 50% 0px", threshold: 0 },
+      // Track early so hero-overlap still updates opacity
+      { rootMargin: "80% 0px 40% 0px", threshold: 0 },
     );
 
     io.observe(section);
@@ -122,13 +130,17 @@ export default function HomeHowItWorks() {
     <section
       id="how-it-works"
       ref={sectionRef}
-      className="section-pad border-y border-border/70 bg-muted/35 dark:bg-muted/15"
+      className={cn(
+        "border-y border-border/70 bg-muted/35 dark:bg-muted/15",
+        // Overlap hero ~30% earlier so title + step 01 peek while hero is still on screen
+        "-mt-10 pt-8 pb-14 sm:-mt-14 sm:pt-10 sm:pb-20 md:-mt-20 md:pt-12 md:pb-24 lg:-mt-24 lg:pt-14 lg:pb-28",
+      )}
       style={
         {
           ["--how-progress" as string]: reduced ? 1 : 0,
           ["--how-title-opacity" as string]: reduced ? 1 : 0,
           ["--how-title-blur" as string]: reduced ? 0 : 14,
-          ["--how-title-y" as string]: reduced ? 0 : 40,
+          ["--how-title-y" as string]: reduced ? 0 : 36,
           ["--how-step-0" as string]: reduced ? 1 : 0,
           ["--how-step-1" as string]: reduced ? 1 : 0,
           ["--how-step-2" as string]: reduced ? 1 : 0,
@@ -157,7 +169,7 @@ export default function HomeHowItWorks() {
           {t.index.howTitle}
         </h2>
 
-        <ol className="relative mt-14 md:mt-20">
+        <ol className="relative mt-10 md:mt-14">
           <div
             className="pointer-events-none absolute left-[8%] right-[8%] top-[1.35rem] hidden h-[2px] overflow-hidden rounded-full bg-border md:block"
             aria-hidden
