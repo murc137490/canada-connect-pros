@@ -1,11 +1,11 @@
 /**
- * Generate PWA / home-screen icons for client (B&W) and pro tiers.
+ * Generate PWA / home-screen icons for client + paid tiers.
  * Run: node scripts/generate-pwa-tier-icons.mjs
  *
- * Samsung / Android notes:
- * - Never use purpose "any maskable" (breaks some installers → Android robot).
- * - Maskable + any icons must be opaque (no alpha).
- * - Keep maskable artwork inside ~80% safe zone.
+ * Android/Samsung:
+ * - Opaque only (no alpha) for purpose "any" and "maskable"
+ * - Absolute icon URLs with ?v= so installers don't keep a stale B&W glyph
+ * - A counters painted as the tier background (reads as a punched hole)
  */
 import sharp from "sharp";
 import path from "path";
@@ -13,22 +13,18 @@ import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import {
   TIER_THEMES,
+  ICON_ASSET_VER,
   nearDark,
   nearLight,
   sColorAt,
-  lerpRgb,
 } from "./brand-icon-colors.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 const srcLogo = path.join(root, "public", "altshift-logo-transparent.png");
 const outDir = path.join(root, "public");
-/** Absolute icon URLs — Samsung Internet resolves relative paths inconsistently. */
 const ORIGIN = "https://www.altshift.ca";
 
-/**
- * Opaque square: gradient S, black A, solid tier background (Android-safe).
- */
 async function recolorLogo(theme) {
   const { data, info } = await sharp(srcLogo).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const out = Buffer.from(data);
@@ -41,41 +37,26 @@ async function recolorLogo(theme) {
       const g = out[i + 1];
       const b = out[i + 2];
       const alpha = out[i + 3];
-      if (alpha < 20) {
+      if (alpha < 20 || nearDark(r, g, b)) {
+        // Outside + A hole → solid tier background (opaque, Android-safe)
         out[i] = theme.bg[0];
         out[i + 1] = theme.bg[1];
         out[i + 2] = theme.bg[2];
         out[i + 3] = 255;
         continue;
       }
-      if (nearDark(r, g, b)) {
-        out[i] = theme.a[0];
-        out[i + 1] = theme.a[1];
-        out[i + 2] = theme.a[2];
-        out[i + 3] = 255;
-        continue;
-      }
-      if (nearLight(r, g, b)) {
-        const [sr, sg, sb] = sColorAt(theme, x, y, w, h);
+      if (nearLight(r, g, b) || alpha > 8) {
+        const [sr, sg, sb] = sColorAt(theme, x, y, w, h, false);
         out[i] = sr;
         out[i + 1] = sg;
         out[i + 2] = sb;
         out[i + 3] = 255;
-        continue;
       }
-      const lum = (r + g + b) / (3 * 255);
-      const [sr, sg, sb] = sColorAt(theme, x, y, w, h);
-      const mixed = lerpRgb(theme.a, [sr, sg, sb], lum);
-      out[i] = mixed[0];
-      out[i + 1] = mixed[1];
-      out[i + 2] = mixed[2];
-      out[i + 3] = 255;
     }
   }
   return sharp(out, { raw: { width: w, height: h, channels: 4 } });
 }
 
-/** Flatten to opaque RGB PNG (Samsung rejects / mishandles alpha on install icons). */
 async function writeSized(pipeline, size, file, bg) {
   await pipeline
     .clone()
@@ -119,7 +100,7 @@ async function writeMaskable(pipeline, size, file, bg) {
 
 function iconEntry(src, sizes, purpose) {
   return {
-    src: `${ORIGIN}${src}`,
+    src: `${ORIGIN}${src}?v=${ICON_ASSET_VER}`,
     sizes,
     type: "image/png",
     purpose,

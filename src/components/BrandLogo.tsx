@@ -1,4 +1,5 @@
-import { useBrandLogoSrc, useBrandTier } from "@/contexts/BrandTierContext";
+import { useTheme } from "next-themes";
+import { brandLogoPathFor, useBrandTier } from "@/contexts/BrandTierContext";
 import { BRAND_ICON_CACHE_VER } from "@/lib/pwaIconTheme";
 
 type BrandLogoProps = {
@@ -7,24 +8,32 @@ type BrandLogoProps = {
   withWordmark?: boolean;
   wordmarkClassName?: string;
   /**
-   * Kept for call-site compatibility. Assets are black A + gradient S —
-   * no invert, so the A never flips to white.
+   * auto — follow color scheme (light page → darker S; dark page → bright/tier S)
+   * onDark — force bright S (footer)
+   * onLight — force darker S
+   *
+   * A is always transparent so it reads as the page background
+   * (white in light mode, black in dark mode).
    */
   tone?: "auto" | "onDark" | "onLight";
 };
 
 /**
- * AltShift SA monogram — black A + gradient S (tier colors when subscribed).
+ * AltShift SA monogram — see-through A, gradient S (tier colors when subscribed).
  */
 export default function BrandLogo({
   className = "h-8 w-8",
   withWordmark = false,
   wordmarkClassName = "font-heading text-sm sm:text-[15px] font-extrabold tracking-tight text-foreground",
+  tone = "auto",
 }: BrandLogoProps) {
   const tier = useBrandTier();
-  const src = useBrandLogoSrc();
-  // Cache-bust so Android Chrome / Samsung don't keep a stale B&W mark.
-  const href = `${src}?v=${BRAND_ICON_CACHE_VER}&t=${tier}`;
+  const { resolvedTheme } = useTheme();
+  const isLightUi =
+    tone === "onLight" ? true : tone === "onDark" ? false : resolvedTheme !== "dark";
+
+  const src = brandLogoPathFor(tier, isLightUi ? "onLight" : "onDark");
+  const href = `${src}?v=${BRAND_ICON_CACHE_VER}&t=${tier}&s=${isLightUi ? "l" : "d"}`;
 
   return (
     <span className="inline-flex items-center gap-2 min-w-0">

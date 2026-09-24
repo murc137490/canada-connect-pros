@@ -42,6 +42,21 @@ export default defineConfig(() => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,woff2}"],
         runtimeCaching: [
           {
+            // Always revalidate manifests + PWA/brand icons so Android gets the current tier.
+            urlPattern: ({ url }) =>
+              url.pathname.endsWith(".webmanifest") ||
+              url.pathname.includes("/pwa-") ||
+              url.pathname.includes("/brand-logo-") ||
+              url.pathname.includes("/favicon"),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "altshift-brand-icons",
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
             urlPattern: ({ url }) =>
               url.hostname.endsWith("supabase.co") ||
               url.hostname.includes("squareup.com") ||

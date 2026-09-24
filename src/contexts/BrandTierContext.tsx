@@ -19,7 +19,15 @@ export function useBrandTier(): PwaIconTier {
   return useContext(BrandTierContext);
 }
 
-export function useBrandLogoSrc(): string {
-  const tier = useBrandTier();
-  return PWA_ICON_THEMES[tier]?.brandLogo ?? PWA_ICON_THEMES.client.brandLogo;
+/**
+ * Transparent-A monogram path.
+ * @param surface onDark = bright S (footer); onLight = darker S; auto = caller decides via theme
+ */
+export function brandLogoPathFor(
+  tier: PwaIconTier,
+  surface: "onDark" | "onLight" | "auto" = "auto",
+): string {
+  const theme = PWA_ICON_THEMES[tier] ?? PWA_ICON_THEMES.client;
+  if (surface === "onLight") return theme.brandLogoOnLight;
+  return theme.brandLogo;
 }

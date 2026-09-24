@@ -1,18 +1,13 @@
 /**
- * Transparent SA cutout favicons + in-app brand marks per tier (gradient S, black A).
+ * Transparent SA cutout favicons + in-app brand marks per tier.
+ * A is punched through (alpha 0) so it inherits the page background.
  * Run: node scripts/generate-favicons.mjs
  */
 import sharp from "sharp";
 import path from "path";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
-import {
-  TIER_THEMES,
-  nearDark,
-  nearLight,
-  sColorAt,
-  lerpRgb,
-} from "./brand-icon-colors.mjs";
+import { TIER_THEMES, nearDark, nearLight, sColorAt } from "./brand-icon-colors.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -56,7 +51,12 @@ function pngIco(buffers) {
   return out;
 }
 
-async function cutoutForTier(theme) {
+/**
+ * @param {import('./brand-icon-colors.mjs').TierTheme} theme
+ * @param {{ forLightSurface?: boolean }} [opts]
+ */
+async function cutoutForTier(theme, opts = {}) {
+  const forLight = Boolean(opts.forLightSurface);
   const { data, info } = await sharp(srcLogo).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const out = Buffer.alloc(data.length);
   const w = info.width;
@@ -87,33 +87,25 @@ async function cutoutForTier(theme) {
         continue;
       }
 
+      // A counters + source A fill → fully transparent (see-through)
       if (nearDark(r, g, b)) {
-        out[i] = theme.a[0];
-        out[i + 1] = theme.a[1];
-        out[i + 2] = theme.a[2];
-        out[i + 3] = 255;
+        out[i] = 0;
+        out[i + 1] = 0;
+        out[i + 2] = 0;
+        out[i + 3] = 0;
         mark(x, y);
         continue;
       }
 
-      if (nearLight(r, g, b)) {
-        const [sr, sg, sb] = sColorAt(theme, x, y, w, h);
+      if (nearLight(r, g, b) || a > 8) {
+        const [sr, sg, sb] = sColorAt(theme, x, y, w, h, forLight);
+        const edge = nearLight(r, g, b) ? 255 : a;
         out[i] = sr;
         out[i + 1] = sg;
         out[i + 2] = sb;
-        out[i + 3] = 255;
+        out[i + 3] = edge;
         mark(x, y);
-        continue;
       }
-
-      const lum = (r + g + b) / (3 * 255);
-      const [sr, sg, sb] = sColorAt(theme, x, y, w, h);
-      const mixed = lerpRgb(theme.a, [sr, sg, sb], lum);
-      out[i] = mixed[0];
-      out[i + 1] = mixed[1];
-      out[i + 2] = mixed[2];
-      out[i + 3] = a;
-      if (a > 8) mark(x, y);
     }
   }
 
@@ -142,25 +134,32 @@ async function writeSized(pipeline, size, file) {
   return buf;
 }
 
+async function writeBrand(pipeline, file) {
+  await pipeline
+    .clone()
+    .resize(256, 256, {
+      fit: "contain",
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png({ compressionLevel: 9 })
+    .toFile(path.join(outDir, file));
+  console.log("wrote", file);
+}
+
 async function main() {
   let clientIcoPngs = [];
 
   for (const theme of TIER_THEMES) {
-    const cutout = await cutoutForTier(theme);
+    const cutoutDark = await cutoutForTier(theme, { forLightSurface: false });
+    const cutoutLight = await cutoutForTier(theme, { forLightSurface: true });
 
-    await cutout
-      .clone()
-      .resize(256, 256, {
-        fit: "contain",
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-      })
-      .png({ compressionLevel: 9 })
-      .toFile(path.join(outDir, `brand-logo-${theme.id}.png`));
-    console.log("wrote", `brand-logo-${theme.id}.png`);
+    await writeBrand(cutoutDark, `brand-logo-${theme.id}.png`);
+    await writeBrand(cutoutLight, `brand-logo-${theme.id}-on-light.png`);
 
     const icoPngs = [];
     for (const size of [16, 32, 48, 64, 192]) {
-      const buf = await writeSized(cutout, size, `favicon-${theme.id}-${size}.png`);
+      // Favicons: dark-surface palette (tabs are usually dark chrome) with transparent A
+      const buf = await writeSized(cutoutDark, size, `favicon-${theme.id}-${size}.png`);
       if (size === 16 || size === 32 || size === 48) icoPngs.push(buf);
     }
 
@@ -170,13 +169,13 @@ async function main() {
 
     if (theme.id === "client") {
       clientIcoPngs = icoPngs;
-      await writeSized(cutout, 32, "favicon-32.png");
-      await writeSized(cutout, 64, "favicon-64.png");
-      await writeSized(cutout, 192, "favicon-192.png");
-      await writeSized(cutout, 16, "favicon-16.png");
-      await writeSized(cutout, 48, "favicon-48.png");
-      await writeSized(cutout, 32, "favicon.png");
-      await cutout.clone().png().toFile(path.join(outDir, "favicon-cutout.png"));
+      await writeSized(cutoutDark, 32, "favicon-32.png");
+      await writeSized(cutoutDark, 64, "favicon-64.png");
+      await writeSized(cutoutDark, 192, "favicon-192.png");
+      await writeSized(cutoutDark, 16, "favicon-16.png");
+      await writeSized(cutoutDark, 48, "favicon-48.png");
+      await writeSized(cutoutDark, 32, "favicon.png");
+      await cutoutDark.clone().png().toFile(path.join(outDir, "favicon-cutout.png"));
       console.log("wrote favicon-cutout.png");
     }
   }

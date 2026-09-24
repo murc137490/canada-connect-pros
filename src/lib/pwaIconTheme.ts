@@ -6,7 +6,7 @@ export type PwaIconTier = "client" | ProPlanId;
 export const BRAND_TIER_STORAGE_KEY = "altshift-brand-tier";
 
 /** Bump when icon assets change so Android/Chrome drop cached glyphs. */
-export const BRAND_ICON_CACHE_VER = "9";
+export const BRAND_ICON_CACHE_VER = "10";
 
 export type PwaIconTheme = {
   id: PwaIconTier;
@@ -15,14 +15,14 @@ export type PwaIconTheme = {
   appleTouch: string;
   icon192: string;
   icon512: string;
-  /** Transparent SA cutout for desktop tabs. */
   faviconIco: string;
   favicon32: string;
   favicon64: string;
   favicon192: string;
-  /** Transparent SA mark for in-app BrandLogo. */
+  /** Transparent A cutout — bright S for dark surfaces. */
   brandLogo: string;
-  /** Static file under /public — Android needs a real URL, not a blob: manifest. */
+  /** Transparent A cutout — darker S for light surfaces. */
+  brandLogoOnLight: string;
   manifestHref: string;
 };
 
@@ -39,6 +39,7 @@ export const PWA_ICON_THEMES: Record<PwaIconTier, PwaIconTheme> = {
     favicon64: "/favicon-client-64.png",
     favicon192: "/favicon-client-192.png",
     brandLogo: "/brand-logo-client.png",
+    brandLogoOnLight: "/brand-logo-client-on-light.png",
     manifestHref: "/manifest-client.webmanifest",
   },
   starter: {
@@ -53,6 +54,7 @@ export const PWA_ICON_THEMES: Record<PwaIconTier, PwaIconTheme> = {
     favicon64: "/favicon-starter-64.png",
     favicon192: "/favicon-starter-192.png",
     brandLogo: "/brand-logo-starter.png",
+    brandLogoOnLight: "/brand-logo-starter-on-light.png",
     manifestHref: "/manifest-starter.webmanifest",
   },
   growth: {
@@ -67,6 +69,7 @@ export const PWA_ICON_THEMES: Record<PwaIconTier, PwaIconTheme> = {
     favicon64: "/favicon-growth-64.png",
     favicon192: "/favicon-growth-192.png",
     brandLogo: "/brand-logo-growth.png",
+    brandLogoOnLight: "/brand-logo-growth-on-light.png",
     manifestHref: "/manifest-growth.webmanifest",
   },
   pro: {
@@ -81,6 +84,7 @@ export const PWA_ICON_THEMES: Record<PwaIconTier, PwaIconTheme> = {
     favicon64: "/favicon-pro-64.png",
     favicon192: "/favicon-pro-192.png",
     brandLogo: "/brand-logo-pro.png",
+    brandLogoOnLight: "/brand-logo-pro-on-light.png",
     manifestHref: "/manifest-pro.webmanifest",
   },
 };
@@ -146,8 +150,8 @@ function upsertIconLink(attrs: { rel: string; sizes?: string; type?: string; hre
 
 /**
  * Apply tier chrome sitewide.
- * Desktop: transparent cutout favicons.
- * Android/Samsung: also set opaque 192/512 rel=icon (installers ignore alpha cutouts).
+ * Forces a fresh <link rel="manifest"> so Android Chrome/Samsung re-read tier icons
+ * before Add to Home screen.
  */
 export function applyPwaIconTheme(tier: PwaIconTier) {
   if (typeof document === "undefined") return;
@@ -156,7 +160,7 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
   upsertIconLink({ rel: "icon", href: theme.faviconIco, type: "image/x-icon" });
   upsertIconLink({ rel: "icon", sizes: "32x32", type: "image/png", href: theme.favicon32 });
   upsertIconLink({ rel: "icon", sizes: "64x64", type: "image/png", href: theme.favicon64 });
-  // Opaque 192/512 — Samsung Internet / Android Chrome ignore alpha cutouts for tabs & install
+  // Opaque install icons — Android ignores transparent cutouts for homescreen
   upsertIconLink({ rel: "icon", sizes: "192x192", type: "image/png", href: theme.icon192 });
   upsertIconLink({ rel: "icon", sizes: "512x512", type: "image/png", href: theme.icon512 });
 
@@ -183,11 +187,10 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
     root.dataset.pwaTier = tier;
   }
 
-  let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
-  if (!link) {
-    link = document.createElement("link");
-    link.rel = "manifest";
-    document.head.appendChild(link);
-  }
-  link.href = `${theme.manifestHref}?v=${BRAND_ICON_CACHE_VER}`;
+  // Remount manifest link — required for Android to pick up a different tier's icons
+  document.querySelectorAll('link[rel="manifest"]').forEach((el) => el.remove());
+  const link = document.createElement("link");
+  link.rel = "manifest";
+  link.href = `${abs(theme.manifestHref)}?v=${BRAND_ICON_CACHE_VER}&t=${tier}`;
+  document.head.appendChild(link);
 }

@@ -5,5 +5,5 @@ export const PREMIERE_FAVICON_DATA_URI =
 /** Prefer this name going forward. */
 export const ALTSHIFT_FAVICON_DATA_URI = PREMIERE_FAVICON_DATA_URI;
 
-/** Public path to the SA monogram (dark A, light S, transparent). */
+/** Public path to the SA monogram (transparent A cutout). */
 export const ALTSHIFT_LOGO_PATH = "/brand-logo-client.png";
