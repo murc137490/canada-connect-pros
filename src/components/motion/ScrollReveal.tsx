@@ -13,29 +13,28 @@ type Props = {
   once?: boolean;
   /** How much of the element must be visible ("some", "all", or 0–1 fraction). */
   amount?: "some" | "all" | number;
-  /** Shrink/expand the viewport for enter/leave. Defaults to 80% active viewport zone with 20% fade buffer. */
+  /** Shrink/expand the viewport for enter/leave. */
   margin?: string;
 };
 
 /**
- * Appear / disappear when scrolling in and out of view.
- * Middle ~60% of the screen displays clear, active content; the top/bottom ~20%
- * provides the smooth fade-in / fade-away transition zone.
+ * Stickify-style scroll appear: opacity + blur + slight rise.
+ * Clears in the middle of the viewport; softens again when leaving (unless once).
  */
 export default function ScrollReveal({
   className,
   children,
   delay = 0,
-  y = 10,
+  y = 28,
   once = false,
-  amount = "some",
-  margin = "-20% 0px",
+  amount = 0.35,
+  margin = "-12% 0px -18% 0px",
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, {
     once,
     amount,
-    margin: margin as "-20% 0px",
+    margin: margin as "-12% 0px -18% 0px",
   });
   const reduced = usePrefersReducedMotion();
 
@@ -47,9 +46,13 @@ export default function ScrollReveal({
     <motion.div
       ref={ref}
       className={cn(className)}
-      initial={{ opacity: 0, y }}
-      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: Math.round(y * 0.45) }}
-      transition={{ duration: 0.2, delay, ease: MOTION.ease }}
+      initial={{ opacity: 0, y, filter: "blur(14px)", scale: 0.98 }}
+      animate={
+        inView
+          ? { opacity: 1, y: 0, filter: "blur(0px)", scale: 1 }
+          : { opacity: 0, y: Math.round(y * 0.55), filter: "blur(10px)", scale: 0.985 }
+      }
+      transition={{ duration: 0.55, delay, ease: MOTION.ease }}
     >
       {children}
     </motion.div>

@@ -12,7 +12,7 @@ export default function HomeCategories() {
   return (
     <section id="categories" className="section-pad">
       <div className="container-page">
-        <ScrollReveal y={14}>
+        <ScrollReveal>
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <h2 className="font-display text-display-md text-foreground max-w-[16ch]">
               {t.index.categoriesTitle}
@@ -27,7 +27,7 @@ export default function HomeCategories() {
           </div>
         </ScrollReveal>
 
-        <ScrollReveal y={14} delay={0.03}>
+        <ScrollReveal delay={0.03}>
           <div className="mt-10 -mx-5 flex gap-3 overflow-x-auto px-5 pb-2 snap-x snap-mandatory md:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {cats.map((cat) => {
               const name = getCategoryName(cat, locale);
