@@ -7,45 +7,39 @@ export type PwaIconTheme = {
   themeColor: string;
   backgroundColor: string;
   appleTouch: string;
-  icons: Array<{ src: string; sizes: string; type: string; purpose: "any" | "maskable" }>;
+  /** Static file under /public — Android needs a real URL, not a blob: manifest. */
+  manifestHref: string;
 };
 
-const BASE_MANIFEST = {
-  name: "AltShift",
-  short_name: "AltShift",
-  description:
-    "Describe your need and receive quotes from trusted local service professionals across Quebec and Canada.",
-  display: "standalone",
-  orientation: "any",
-  start_url: "/",
-  scope: "/",
-  id: "/",
-  lang: "fr",
-  dir: "ltr",
-  categories: ["business", "lifestyle"],
-} as const;
-
-function themeFor(id: PwaIconTier, themeColor: string, backgroundColor: string): PwaIconTheme {
-  const prefix = `/pwa-${id}`;
-  return {
-    id,
-    themeColor,
-    backgroundColor,
-    appleTouch: `${prefix}-apple-touch.png`,
-    icons: [
-      { src: `${prefix}-192x192.png`, sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: `${prefix}-512x512.png`, sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: `${prefix}-maskable-192x192.png`, sizes: "192x192", type: "image/png", purpose: "maskable" },
-      { src: `${prefix}-maskable-512x512.png`, sizes: "512x512", type: "image/png", purpose: "maskable" },
-    ],
-  };
-}
-
 export const PWA_ICON_THEMES: Record<PwaIconTier, PwaIconTheme> = {
-  client: themeFor("client", "#0a0a0a", "#0a0a0a"),
-  starter: themeFor("starter", "#1e3a8a", "#0f172a"),
-  growth: themeFor("growth", "#047857", "#022c22"),
-  pro: themeFor("pro", "#6d28d9", "#1e1b4b"),
+  client: {
+    id: "client",
+    themeColor: "#0a0a0a",
+    backgroundColor: "#0a0a0a",
+    appleTouch: "/pwa-client-apple-touch.png",
+    manifestHref: "/manifest-client.webmanifest",
+  },
+  starter: {
+    id: "starter",
+    themeColor: "#1e3a8a",
+    backgroundColor: "#0f172a",
+    appleTouch: "/pwa-starter-apple-touch.png",
+    manifestHref: "/manifest-starter.webmanifest",
+  },
+  growth: {
+    id: "growth",
+    themeColor: "#047857",
+    backgroundColor: "#022c22",
+    appleTouch: "/pwa-growth-apple-touch.png",
+    manifestHref: "/manifest-growth.webmanifest",
+  },
+  pro: {
+    id: "pro",
+    themeColor: "#6d28d9",
+    backgroundColor: "#1e1b4b",
+    appleTouch: "/pwa-pro-apple-touch.png",
+    manifestHref: "/manifest-pro.webmanifest",
+  },
 };
 
 export function resolvePwaIconTier(paidTier: ProPlanId | null | undefined): PwaIconTier {
@@ -53,42 +47,34 @@ export function resolvePwaIconTier(paidTier: ProPlanId | null | undefined): PwaI
   return "client";
 }
 
-let manifestObjectUrl: string | null = null;
+function abs(path: string): string {
+  if (typeof window === "undefined") return path;
+  try {
+    return new URL(path, window.location.origin).href;
+  } catch {
+    return path;
+  }
+}
 
-/** Update apple-touch-icon + web manifest icons for the current user’s tier (before install). */
+/** Update apple-touch-icon + web manifest for the current user’s tier (before install). */
 export function applyPwaIconTheme(tier: PwaIconTier) {
   if (typeof document === "undefined") return;
   const theme = PWA_ICON_THEMES[tier] ?? PWA_ICON_THEMES.client;
 
-  // Apple home-screen icon
   let apple = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
   if (!apple) {
     apple = document.createElement("link");
     apple.rel = "apple-touch-icon";
     document.head.appendChild(apple);
   }
-  apple.href = theme.appleTouch;
+  // Absolute URL — some WebViews resolve relative links against the wrong base.
+  apple.href = abs(theme.appleTouch);
 
-  // Theme color meta (status bar / install chrome)
   document.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
   const meta = document.createElement("meta");
   meta.name = "theme-color";
   meta.content = theme.themeColor;
   document.head.appendChild(meta);
-
-  const manifest = {
-    ...BASE_MANIFEST,
-    theme_color: theme.themeColor,
-    background_color: theme.backgroundColor,
-    icons: theme.icons,
-  };
-
-  if (manifestObjectUrl) {
-    URL.revokeObjectURL(manifestObjectUrl);
-    manifestObjectUrl = null;
-  }
-  const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
-  manifestObjectUrl = URL.createObjectURL(blob);
 
   let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
   if (!link) {
@@ -96,5 +82,6 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
     link.rel = "manifest";
     document.head.appendChild(link);
   }
-  link.href = manifestObjectUrl;
+  // Bust caches so Android Chrome re-reads icons after deploy / tier change.
+  link.href = `${theme.manifestHref}?v=3`;
 }

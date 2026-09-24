@@ -16,11 +16,14 @@ export default defineConfig(() => ({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      // Static /manifest-*.webmanifest files — blob manifests break Android icons.
+      manifest: false,
       includeAssets: [
         "favicon.ico",
         "favicon-32.png",
         "favicon-64.png",
         "apple-touch-icon.png",
+        "manifest-*.webmanifest",
         "pwa-192x192.png",
         "pwa-512x512.png",
         "pwa-maskable-192x192.png",
@@ -30,48 +33,6 @@ export default defineConfig(() => ({
         "pwa-growth-*.png",
         "pwa-pro-*.png",
       ],
-      manifest: {
-        name: "AltShift",
-        short_name: "AltShift",
-        description:
-          "Describe your need and receive quotes from trusted local service professionals across Quebec and Canada.",
-        theme_color: "#0a0a0a",
-        background_color: "#f7f4ef",
-        display: "standalone",
-        orientation: "any",
-        start_url: "/",
-        scope: "/",
-        id: "/",
-        lang: "fr",
-        dir: "ltr",
-        categories: ["business", "lifestyle"],
-        icons: [
-          {
-            src: "/pwa-192x192.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "/pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "/pwa-maskable-192x192.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "maskable",
-          },
-          {
-            src: "/pwa-maskable-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
-        ],
-      },
       workbox: {
         // Main App chunk exceeds Workbox default 2 MiB precache limit.
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,

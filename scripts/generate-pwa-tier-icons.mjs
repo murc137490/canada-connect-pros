@@ -4,6 +4,7 @@
  */
 import sharp from "sharp";
 import path from "path";
+import fs from "fs/promises";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -93,6 +94,38 @@ async function writeMaskable(pipeline, size, file, bg) {
   console.log("wrote", file);
 }
 
+async function writeManifest(theme) {
+  const id = theme.id;
+  const prefix = `/pwa-${id}`;
+  const manifest = {
+    name: "AltShift",
+    short_name: "AltShift",
+    description:
+      "Describe your need and receive quotes from trusted local service professionals across Quebec and Canada.",
+    start_url: "/",
+    scope: "/",
+    id: "/",
+    display: "standalone",
+    orientation: "any",
+    lang: "fr",
+    dir: "ltr",
+    background_color: `#${theme.bg.map((n) => n.toString(16).padStart(2, "0")).join("")}`,
+    theme_color: theme.theme,
+    categories: ["business", "lifestyle"],
+    icons: [
+      { src: `${prefix}-192x192.png`, sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: `${prefix}-512x512.png`, sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: `${prefix}-maskable-192x192.png`, sizes: "192x192", type: "image/png", purpose: "maskable" },
+      { src: `${prefix}-maskable-512x512.png`, sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: `${prefix}-192x192.png`, sizes: "192x192", type: "image/png", purpose: "any maskable" },
+      { src: `${prefix}-512x512.png`, sizes: "512x512", type: "image/png", purpose: "any maskable" },
+    ],
+  };
+  const file = `manifest-${id}.webmanifest`;
+  await fs.writeFile(path.join(outDir, file), `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log("wrote", file);
+}
+
 async function main() {
   for (const theme of THEMES) {
     const logo = await recolorLogo(theme);
@@ -102,6 +135,7 @@ async function main() {
     await writeMaskable(logo, 192, `${base}-maskable-192x192.png`, theme.bg);
     await writeMaskable(logo, 512, `${base}-maskable-512x512.png`, theme.bg);
     await writeSized(logo, 180, `${base}-apple-touch.png`);
+    await writeManifest(theme);
   }
 
   // Default install assets = client B&W

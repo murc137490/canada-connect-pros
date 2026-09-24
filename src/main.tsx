@@ -1,8 +1,12 @@
 import { registerSW } from "virtual:pwa-register";
+import { applyPwaIconTheme } from "./lib/pwaIconTheme";
 import { silenceClientDiagnostics } from "./lib/silenceClientDiagnostics";
 import { SAFE_USER_ERROR, readUiLocale } from "./lib/userFacingError";
 
 silenceClientDiagnostics();
+
+// Default B&W install icons before auth resolves (Android reads manifest early).
+applyPwaIconTheme("client");
 
 registerSW({ immediate: true });
 
