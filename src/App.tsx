@@ -49,6 +49,7 @@ import MonitorAdminGuard from "@/components/MonitorAdminGuard";
 import AdminMemberIdGate from "@/components/admin/AdminMemberIdGate";
 import AdminAcceptPros from "./pages/AdminAcceptPros";
 import PrivateNoIndex from "@/components/PrivateNoIndex";
+import PwaIconTheme from "@/components/PwaIconTheme";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +75,7 @@ const App = () => (
         <BrowserRouter>
           <LanguageProvider>
             <AuthProvider>
+            <PwaIconTheme />
             <AuthHashErrorToast />
             <HashScroll />
             <LegacyHostRedirect />
