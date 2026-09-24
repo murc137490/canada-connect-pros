@@ -109,5 +109,5 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
     document.head.appendChild(link);
   }
   // Bust caches so Android Chrome / Samsung Internet re-reads icons after deploy / tier change.
-  link.href = `${theme.manifestHref}?v=4`;
+  link.href = `${theme.manifestHref}?v=5`;
 }

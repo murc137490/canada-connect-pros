@@ -4,19 +4,19 @@ type BrandLogoProps = {
   withWordmark?: boolean;
   wordmarkClassName?: string;
   /**
-   * auto — light mode: black mark; dark mode: white mark
-   * onDark — white mark (footer, dark surfaces)
-   * onLight — black mark (forced light-surface look)
+   * auto — light mode: light A / dark S; dark mode: dark A / light S
+   * onDark — dark A / light S (footer, dark surfaces)
+   * onLight — light A / dark S (forced light-surface look)
    */
   tone?: "auto" | "onDark" | "onLight";
 };
 
 /**
- * AltShift AS monogram (white mark on transparent).
- * Inverted for light surfaces so the mark reads dark.
+ * AltShift SA monogram.
+ * Base asset is dark A + light S; inverted for light mode.
  */
 export default function BrandLogo({
-  className = "h-10 w-10",
+  className = "h-8 w-8",
   withWordmark = false,
   wordmarkClassName = "font-heading text-sm sm:text-[15px] font-extrabold tracking-tight text-foreground",
   tone = "auto",

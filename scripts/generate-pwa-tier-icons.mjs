@@ -14,7 +14,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
-const srcLogo = path.join(root, "public", "altshift-logo.png");
+const srcLogo = path.join(root, "public", "altshift-logo-transparent.png");
 const outDir = path.join(root, "public");
 /** Absolute icon URLs — Samsung Internet resolves relative paths inconsistently. */
 const ORIGIN = "https://www.altshift.ca";
@@ -23,28 +23,28 @@ const ORIGIN = "https://www.altshift.ca";
 
 /** @type {Theme[]} */
 const THEMES = [
-  // Normal users — black & white only (white mark, black A counter for contrast)
-  { id: "client", bg: [10, 10, 10], s: [245, 245, 245], a: [10, 10, 10], theme: "#0a0a0a" },
-  // Starter — blue tier
-  { id: "starter", bg: [15, 23, 42], s: [96, 165, 250], a: [248, 250, 252], theme: "#1e3a8a" },
-  // Growth — green / teal
+  // Client — S-dominant SA: light S, dark A on black
+  { id: "client", bg: [10, 10, 10], s: [210, 210, 210], a: [32, 32, 32], theme: "#0a0a0a" },
+  // Starter — blue S, light A
+  { id: "starter", bg: [15, 23, 42], s: [96, 165, 250], a: [226, 232, 240], theme: "#1e3a8a" },
+  // Growth — mint S, light A
   { id: "growth", bg: [2, 44, 34], s: [52, 211, 153], a: [236, 253, 245], theme: "#047857" },
-  // Pro — purple mark on deep indigo
+  // Pro — purple S, orange A accent
   { id: "pro", bg: [30, 27, 75], s: [192, 132, 252], a: [251, 146, 60], theme: "#6d28d9" },
 ];
 
-function nearWhite(r, g, b) {
-  return r > 200 && g > 200 && b > 200;
+function nearLight(r, g, b) {
+  return (r + g + b) / 3 > 160;
 }
 function nearBlack(r, g, b) {
-  return r + g + b < 80;
+  return r + g + b < 90;
 }
 
 /**
- * Source art is white AS mark on black (or transparent).
- * - transparent / black → theme background
- * - white / light mark → theme.s (tier accent)
- * - mid anti-alias → blend toward theme.s
+ * Source: SA monogram — dark A + light S on transparent.
+ * - transparent → theme background
+ * - dark A → theme.a
+ * - light S → theme.s
  */
 async function recolorLogo(theme) {
   const { data, info } = await sharp(srcLogo).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -54,25 +54,32 @@ async function recolorLogo(theme) {
     const g = out[i + 1];
     const b = out[i + 2];
     const alpha = out[i + 3];
-    if (alpha < 20 || nearBlack(r, g, b)) {
+    if (alpha < 20) {
       out[i] = theme.bg[0];
       out[i + 1] = theme.bg[1];
       out[i + 2] = theme.bg[2];
       out[i + 3] = 255;
       continue;
     }
-    if (nearWhite(r, g, b)) {
+    if (nearBlack(r, g, b)) {
+      out[i] = theme.a[0];
+      out[i + 1] = theme.a[1];
+      out[i + 2] = theme.a[2];
+      out[i + 3] = 255;
+      continue;
+    }
+    if (nearLight(r, g, b)) {
       out[i] = theme.s[0];
       out[i + 1] = theme.s[1];
       out[i + 2] = theme.s[2];
       out[i + 3] = 255;
       continue;
     }
-    // Anti-aliased edge: mix accent into background by luminance
+    // Edge anti-alias: mix A ↔ S by luminance
     const lum = (r + g + b) / (3 * 255);
-    out[i] = Math.round(theme.bg[0] * (1 - lum) + theme.s[0] * lum);
-    out[i + 1] = Math.round(theme.bg[1] * (1 - lum) + theme.s[1] * lum);
-    out[i + 2] = Math.round(theme.bg[2] * (1 - lum) + theme.s[2] * lum);
+    out[i] = Math.round(theme.a[0] * (1 - lum) + theme.s[0] * lum);
+    out[i + 1] = Math.round(theme.a[1] * (1 - lum) + theme.s[1] * lum);
+    out[i + 2] = Math.round(theme.a[2] * (1 - lum) + theme.s[2] * lum);
     out[i + 3] = 255;
   }
   return sharp(out, { raw: { width: info.width, height: info.height, channels: 4 } });
@@ -82,7 +89,10 @@ async function recolorLogo(theme) {
 async function writeSized(pipeline, size, file, bg) {
   await pipeline
     .clone()
-    .resize(size, size, { fit: "cover" })
+    .resize(size, size, {
+      fit: "contain",
+      background: { r: bg[0], g: bg[1], b: bg[2], alpha: 1 },
+    })
     .flatten({ background: { r: bg[0], g: bg[1], b: bg[2] } })
     .png({ compressionLevel: 9, adaptiveFiltering: true })
     .toFile(path.join(outDir, file));
@@ -95,7 +105,10 @@ async function writeMaskable(pipeline, size, file, bg) {
   const inner = size - pad * 2;
   const innerBuf = await pipeline
     .clone()
-    .resize(inner, inner, { fit: "cover" })
+    .resize(inner, inner, {
+      fit: "contain",
+      background: { r: bg[0], g: bg[1], b: bg[2], alpha: 1 },
+    })
     .flatten({ background: { r: bg[0], g: bg[1], b: bg[2] } })
     .png()
     .toBuffer();
