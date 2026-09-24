@@ -66,26 +66,14 @@ function abs(path: string): string {
   }
 }
 
-function upsertSizedIcon(sizes: string, href: string) {
-  let el = document.querySelector<HTMLLinkElement>(`link[rel="icon"][sizes="${sizes}"]`);
-  if (!el) {
-    el = document.createElement("link");
-    el.rel = "icon";
-    el.setAttribute("sizes", sizes);
-    document.head.appendChild(el);
-  }
-  el.type = "image/png";
-  el.href = href;
-}
-
 /** Update apple-touch-icon + web manifest for the current user’s tier (before install). */
 export function applyPwaIconTheme(tier: PwaIconTier) {
   if (typeof document === "undefined") return;
   const theme = PWA_ICON_THEMES[tier] ?? PWA_ICON_THEMES.client;
 
-  // Samsung Internet often reads <link rel="icon"> for Add to Home before the manifest.
-  upsertSizedIcon("192x192", abs(theme.icon192));
-  upsertSizedIcon("512x512", abs(theme.icon512));
+  // Do not overwrite <link rel="icon"> with opaque PWA squares — those become the
+  // browser tab glyph and hide the transparent SA cutout favicons in index.html.
+  // Install icons live in the webmanifest (+ apple-touch-icon below).
 
   let apple = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
   if (!apple) {
@@ -120,5 +108,5 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
     document.head.appendChild(link);
   }
   // Bust caches so Android Chrome / Samsung Internet re-reads icons after deploy / tier change.
-  link.href = `${theme.manifestHref}?v=5`;
+  link.href = `${theme.manifestHref}?v=6`;
 }
