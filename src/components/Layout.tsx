@@ -216,10 +216,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen w-full min-w-0 max-w-none flex-col m-0 p-0">
       {!isProProfilePage && (
       <header
-        className={`fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top,0px)] transition-all duration-300 site-header ${
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled ? "site-header--compact" : ""
         }`}
       >
+        {/* Separate from frosted header so iOS notch isn't painted cream/white over tier chrome. */}
+        <div className="site-header-safe" aria-hidden />
+        <div className="site-header">
         <div className={`container-page flex items-center gap-3 transition-all duration-300 ${scrolled ? "h-12" : "h-14"}`}>
           <Link
             to="/"
@@ -351,6 +354,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
         )}
+        </div>
       </header>
       )}
 

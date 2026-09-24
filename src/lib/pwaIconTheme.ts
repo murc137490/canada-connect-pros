@@ -102,6 +102,17 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
   meta.content = theme.themeColor;
   document.head.appendChild(meta);
 
+  // iOS PWA uses black-translucent status bar — the header used to paint cream into the
+  // notch. Drive a dedicated safe-area strip via CSS instead.
+  const root = document.documentElement;
+  if (tier === "client") {
+    root.style.removeProperty("--pwa-chrome-color");
+    root.removeAttribute("data-pwa-tier");
+  } else {
+    root.style.setProperty("--pwa-chrome-color", theme.themeColor);
+    root.dataset.pwaTier = tier;
+  }
+
   let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
   if (!link) {
     link = document.createElement("link");

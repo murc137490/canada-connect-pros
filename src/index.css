@@ -256,10 +256,14 @@
   .font-display {
     font-family: 'Instrument Serif', Georgia, serif;
   }
+  .site-header-safe {
+    height: env(safe-area-inset-top, 0px);
+    background-color: var(--pwa-chrome-color, hsl(var(--background)));
+  }
   .site-header {
     @apply border-b border-transparent bg-background/75 backdrop-blur-md;
   }
-  .site-header--compact {
+  .site-header--compact .site-header {
     @apply border-border/50 bg-background/90;
   }
   .cta-arrow {
