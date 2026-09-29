@@ -10,7 +10,7 @@ export const BRAND_NAME = "AltShift";
 export const SITE_URL = "https://www.altshift.ca";
 
 export const PRIVACY_CONTACT = {
-  name: "REVIEW_REQUIRED",
+  name: "Privacy Officer",
   title: "Privacy contact / Responsable de la protection des renseignements personnels",
   email: "support@altshift.ca",
 } as const;

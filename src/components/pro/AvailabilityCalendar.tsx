@@ -53,6 +53,8 @@ export interface AvailabilityCalendarProps {
   onNavigateBeyondScheduleWindow?: () => void;
   /** Optional min date for booking (YYYY-MM-DD). Days before this are not clickable and shown as unavailable. */
   minBookingDate?: string;
+  /** Optional: dates that look weekday-open but have no remaining bookable slots (e.g. today after hours). */
+  exhaustedDates?: string[];
   /** Optional: highlight the currently selected date in the calendar. */
   selectedDateStr?: string | null;
 }
@@ -76,6 +78,7 @@ export default function AvailabilityCalendar({
   scheduleWindowEndDateStr,
   onNavigateBeyondScheduleWindow,
   minBookingDate,
+  exhaustedDates = [],
   selectedDateStr = null,
 }: AvailabilityCalendarProps) {
   const { t } = useLanguage();
@@ -101,6 +104,7 @@ export default function AvailabilityCalendar({
   const availableDays = availableWeekdayIndices(availability);
   const busySet = new Set(busyDates);
   const overridesSet = new Set(availableDateOverrides);
+  const exhaustedSet = new Set(exhaustedDates);
 
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -206,7 +210,15 @@ export default function AvailabilityCalendar({
     const hasOverride = overridesSet.has(dateStr);
     const unavailEntry = unavailableDates[dateStr] as UnavailableDayStored | undefined;
     const wholeDayUnavail = unavailEntry != null && isWholeDayUnavailable(unavailEntry);
-    const isAvailable = isPast || isBeyondWindow ? false : hasOverride ? true : wholeDayUnavail ? false : isAvailableByWeekday;
+    const isExhausted = exhaustedSet.has(dateStr);
+    const isAvailable =
+      isPast || isBeyondWindow || isExhausted
+        ? false
+        : hasOverride
+          ? true
+          : wholeDayUnavail
+            ? false
+            : isAvailableByWeekday;
     const isBusy = busySet.has(dateStr);
     days.push({
       date: d,

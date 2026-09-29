@@ -380,7 +380,7 @@ BEGIN
   ) VALUES (
     v_pro_id, v_client_uid, 5,
     'Fast response, very clean work',
-    'Alex arrived right on time, explained the issue with our kitchen faucet, and had it fixed within an hour. Excellent experience booking through Première Services!',
+    'Alex arrived right on time, explained the issue with our kitchen faucet, and had it fixed within an hour. Excellent experience booking through AltShift!',
     now() - interval '9 days'
   );
 

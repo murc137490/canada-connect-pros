@@ -172,6 +172,7 @@ async function geocodeViaEdgeOnce(address: string): Promise<GeocodeLocation | nu
         apikey: SUPABASE_ANON,
       },
       body: JSON.stringify({ address }),
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as GeocodeLocation & { error?: string; postal?: string | null };
@@ -190,14 +191,11 @@ async function geocodeViaEdgeOnce(address: string): Promise<GeocodeLocation | nu
   }
 }
 
-/** Edge with short backoff — retry network/5xx; one delayed retry on 404 (provider throttle). */
+/** Edge with short backoff — retry network/5xx once, then fail fast for UX. */
 async function geocodeViaEdge(address: string): Promise<GeocodeLocation | null> {
   const first = await geocodeViaEdgeOnce(address);
   if (first) return first;
-  await sleep(700);
-  const second = await geocodeViaEdgeOnce(address);
-  if (second) return second;
-  await sleep(1200);
+  await sleep(400);
   return geocodeViaEdgeOnce(address);
 }
 
@@ -233,7 +231,7 @@ async function geocodeViaGoogleClient(address: string): Promise<GeocodeLocation 
 
   try {
     for (const url of urls) {
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
       const data = (await res.json()) as { status: string; results?: GoogleResult[] };
       if (data.status !== "OK" || !data.results?.length) continue;
 
@@ -453,23 +451,38 @@ export async function geocodePostalToLocation(postalOrAddress: string): Promise<
   if (existing) return existing;
 
   const work = (async (): Promise<GeocodeLocation | null> => {
-    const viaEdge = await geocodeViaEdge(trimmed);
-    if (viaEdge) {
-      if (wanted && viaEdge.postal) {
-        const got = compactPostal(viaEdge.postal);
+    const accept = (loc: GeocodeLocation | null): GeocodeLocation | null => {
+      if (!loc) return null;
+      if (wanted && loc.postal) {
+        const got = compactPostal(loc.postal);
+        // Exact LDU mismatch → reject. FSA-only / null postal with coords is OK (Granby J2G*).
         if (got.length === 6 && got !== wanted) return null;
       }
-      writeGeoCache(cacheKey, viaEdge);
-      if (wanted) writeGeoCache(wanted, viaEdge);
-      return viaEdge;
+      writeGeoCache(cacheKey, loc);
+      if (wanted) writeGeoCache(wanted, loc);
+      return loc;
+    };
+
+    const viaEdge = accept(await geocodeViaEdge(trimmed));
+    if (viaEdge) return viaEdge;
+
+    const viaClient = accept(await geocodeViaGoogleClient(trimmed));
+    if (viaClient) return viaClient;
+
+    // Full LDU failed — try FSA (first 3 chars) so Granby J2G* still resolves a city pin.
+    if (wanted && wanted.length === 6) {
+      const fsa = wanted.slice(0, 3);
+      const fsaLoc = accept(await geocodeViaEdge(`${fsa}, QC, Canada`))
+        ?? accept(await geocodeViaGoogleClient(`${fsa}, Quebec, Canada`));
+      if (fsaLoc) {
+        const withWanted = { ...fsaLoc, postal: `${wanted.slice(0, 3)} ${wanted.slice(3)}` };
+        writeGeoCache(cacheKey, withWanted);
+        writeGeoCache(wanted, withWanted);
+        return withWanted;
+      }
     }
 
-    const viaClient = await geocodeViaGoogleClient(trimmed);
-    if (viaClient) {
-      writeGeoCache(cacheKey, viaClient);
-      if (wanted) writeGeoCache(wanted, viaClient);
-    }
-    return viaClient;
+    return null;
   })();
 
   inflightGeo.set(cacheKey, work);

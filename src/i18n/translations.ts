@@ -653,9 +653,9 @@ export const translations = {
       bookingBirthday: "Birthday",
       bookingAddress: "Address",
       bookingAddressPlaceholder: "Start typing your address...",
-      bookingAddressAutocompleteNote: "Address can be autocompleted if you add Google Places API key (optional).",
+      bookingAddressAutocompleteNote: "Start typing your street address, or enter it manually.",
       bookingAddressNoPlaces:
-        "Add VITE_GOOGLE_PLACES_API_KEY or VITE_GOOGLE_MAPS_API_KEY in .env and enable Places API in Google Cloud Console for address suggestions.",
+        "Type your full street address, city, and postal code. Suggestions appear when address lookup is available.",
       continueToPayment: "Continue to payment",
       bookingContinueToConfirm: "Continue to confirm",
       bookingConfirmRequestTitle: "Confirm booking request",
@@ -2514,9 +2514,9 @@ export const translations = {
       bookingBirthday: "Date de naissance",
       bookingAddress: "Adresse",
       bookingAddressPlaceholder: "Commencez à taper votre adresse...",
-      bookingAddressAutocompleteNote: "L'adresse peut être complétée automatiquement avec une clé API Google Places (facultatif).",
+      bookingAddressAutocompleteNote: "Commencez à saisir votre adresse, ou entrez-la manuellement.",
       bookingAddressNoPlaces:
-        "Ajoutez VITE_GOOGLE_PLACES_API_KEY ou VITE_GOOGLE_MAPS_API_KEY dans .env et activez l'API Places dans Google Cloud pour les suggestions d'adresse.",
+        "Saisissez votre adresse complète, la ville et le code postal. Des suggestions apparaissent lorsque la recherche d’adresse est disponible.",
       continueToPayment: "Continuer vers le paiement",
       bookingContinueToConfirm: "Continuer",
       bookingConfirmRequestTitle: "Confirmer la demande",

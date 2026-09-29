@@ -557,6 +557,100 @@ export default function ProProfilePage() {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
   })();
+  const weekdayKeyFromDateStr = (dateStr: string) => {
+    const d = new Date(`${dateStr}T12:00:00`);
+    // JS getDay: 0=Sun..6=Sat, while our availability keys are "sun".."sat"
+    return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][d.getDay()] as keyof AvailabilityState;
+  };
+
+  const getBookableTimeOptionsForDate = useCallback(
+    (dateStr: string) => {
+      if (!pro || !dateStr) return [] as string[];
+
+      const weekly = parseAvailabilityToWeekly(pro.availability ?? null);
+      const weekdayKey = weekdayKeyFromDateStr(dateStr);
+      const dayState = weekly[weekdayKey];
+
+      const isDayOverride = (pro.available_date_overrides ?? []).includes(dateStr);
+
+      const exceptions = pro.unavailable_dates?.[dateStr];
+      if (isWholeDayUnavailable(exceptions)) return [];
+
+      const exceptionSlots = getUnavailableSlots(exceptions);
+
+      const parseHHMMToMinutes = (s: string) => {
+        const m = s.match(/^\s*(\d{1,2}):(\d{2})/);
+        if (!m) return null;
+        return Number(m[1]) * 60 + Number(m[2]);
+      };
+
+      const scheduleStartMin = isDayOverride ? 9 * 60 : parseHHMMToMinutes(dayState.start);
+      const scheduleEndMin = isDayOverride ? 17 * 60 : parseHHMMToMinutes(dayState.end);
+      if (!isDayOverride && !dayState.available) return [];
+      if (scheduleStartMin == null || scheduleEndMin == null || scheduleEndMin <= scheduleStartMin) return [];
+      const newBookingDuration = selectedBookingService?.duration_minutes ?? 60;
+
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const isToday = dateStr === todayStr;
+
+      const candidateStarts = new Set<string>();
+      for (let startMin = scheduleStartMin; startMin + newBookingDuration <= scheduleEndMin; startMin += 60) {
+        const hh = String(Math.floor(startMin / 60)).padStart(2, "0");
+        const mm = String(startMin % 60).padStart(2, "0");
+        candidateStarts.add(`${hh}:${mm}`);
+      }
+
+      const candidates = Array.from(candidateStarts).sort();
+
+      const filteredByExceptions = candidates.filter((time) => {
+        const startMin = parseHHMMToMinutes(time);
+        if (startMin == null) return false;
+        const endMin = startMin + newBookingDuration;
+
+        for (const slot of exceptionSlots) {
+          const slotStart = parseHHMMToMinutes(slot.start);
+          const slotEnd = parseHHMMToMinutes(slot.end);
+          if (slotStart == null || slotEnd == null) continue;
+          const overlaps = startMin < slotEnd && endMin > slotStart;
+          if (overlaps) return false;
+        }
+        return true;
+      });
+
+      const bookingsForDate = proBookings.filter((b) => {
+        const dateFromPreferred = b.preferred_date ? String(b.preferred_date) : null;
+        const dateFromCreatedAt = b.created_at ? String(b.created_at).slice(0, 10) : null;
+        return (dateFromPreferred ?? dateFromCreatedAt) === dateStr;
+      });
+
+      const bookedRanges = bookingsForDate
+        .map((b) => {
+          const raw = b.preferred_time ? String(b.preferred_time) : b.created_at ? String(b.created_at).slice(11, 16) : "";
+          const start = parseHHMMToMinutes(raw);
+          if (start == null) return null;
+          const duration = b.service_duration_minutes ?? 60;
+          return { start, end: start + duration };
+        })
+        .filter((x): x is { start: number; end: number } => !!x);
+
+      const filteredByBookings = filteredByExceptions.filter((time) => {
+        const startMin = parseHHMMToMinutes(time);
+        if (startMin == null) return false;
+        const endMin = startMin + newBookingDuration;
+        return !bookedRanges.some((booked) => startMin < booked.end && endMin > booked.start);
+      });
+
+      return filteredByBookings.filter((time) => {
+        if (!isToday) return true;
+        const startMin = parseHHMMToMinutes(time);
+        if (startMin == null) return false;
+        return startMin > nowMinutes;
+      });
+    },
+    [pro, selectedBookingService?.duration_minutes, proBookings, todayStr],
+  );
+
   const handleCalendarDayClick = (dateStr: string, isAvailableByWeekday: boolean) => {
     if (dateStr < todayStr) {
       toast({ title: t.auth.toastError, description: t.terms.bookingDateNotInPast ?? "You cannot book a date in the past.", variant: "destructive" });
@@ -576,107 +670,39 @@ export default function ProProfilePage() {
       });
       return;
     }
+    const slots = getBookableTimeOptionsForDate(dateStr);
+    if (slots.length === 0) {
+      toast({
+        title: locale === "fr" ? "Aucune plage disponible" : "No available times",
+        description:
+          locale === "fr"
+            ? "Il ne reste plus d’heures pour cette journée. Choisissez un autre jour."
+            : "No remaining times for this day. Please choose another day.",
+        duration: 8000,
+      });
+      return;
+    }
     setSelectedBookingDate(dateStr);
     setSelectedBookingTime(null);
     setBookingDialogOpen(true);
   };
 
-  const weekdayKeyFromDateStr = (dateStr: string) => {
-    const d = new Date(`${dateStr}T12:00:00`);
-    // JS getDay: 0=Sun..6=Sat, while our availability keys are "sun".."sat"
-    return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][d.getDay()] as keyof AvailabilityState;
-  };
+  const bookingTimeOptions = useMemo(
+    () => (selectedBookingDate ? getBookableTimeOptionsForDate(selectedBookingDate) : []),
+    [selectedBookingDate, getBookableTimeOptionsForDate],
+  );
 
-  const bookingTimeOptions = useMemo(() => {
-    if (!pro || !selectedBookingDate) return [];
-
+  const exhaustedBookingDates = useMemo(() => {
+    if (!pro) return [] as string[];
+    // Only need today: later days aren't exhausted by clock time.
+    const slots = getBookableTimeOptionsForDate(todayStr);
     const weekly = parseAvailabilityToWeekly(pro.availability ?? null);
-    const weekdayKey = weekdayKeyFromDateStr(selectedBookingDate);
-    const dayState = weekly[weekdayKey];
-
-    const isDayOverride = (pro.available_date_overrides ?? []).includes(selectedBookingDate);
-
-    const exceptions = pro.unavailable_dates?.[selectedBookingDate];
-    if (isWholeDayUnavailable(exceptions)) return [];
-
-    const exceptionSlots = getUnavailableSlots(exceptions);
-
-    const parseHHMMToMinutes = (s: string) => {
-      const m = s.match(/^\s*(\d{1,2}):(\d{2})/);
-      if (!m) return null;
-      return Number(m[1]) * 60 + Number(m[2]);
-    };
-
-    const scheduleStartMin = isDayOverride ? 9 * 60 : parseHHMMToMinutes(dayState.start);
-    const scheduleEndMin = isDayOverride ? 17 * 60 : parseHHMMToMinutes(dayState.end);
-    if (!isDayOverride && !dayState.available) return [];
-    if (scheduleStartMin == null || scheduleEndMin == null || scheduleEndMin <= scheduleStartMin) return [];
-    const newBookingDuration = selectedBookingService?.duration_minutes ?? 60;
-
-    const now = new Date();
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    const isToday = selectedBookingDate === todayStr;
-
-    const candidateStarts = new Set<string>();
-    for (let startMin = scheduleStartMin; startMin + newBookingDuration <= scheduleEndMin; startMin += 60) {
-      const hh = String(Math.floor(startMin / 60)).padStart(2, "0");
-      const mm = String(startMin % 60).padStart(2, "0");
-      const label = `${hh}:${mm}`;
-      candidateStarts.add(label);
-    }
-
-    const candidates = Array.from(candidateStarts).sort();
-
-    // Remove time slots that overlap with unavailable exceptions.
-    const filteredByExceptions = candidates.filter((time) => {
-      const startMin = parseHHMMToMinutes(time);
-      if (startMin == null) return false;
-      const endMin = startMin + newBookingDuration;
-
-      for (const slot of exceptionSlots) {
-        const slotStart = parseHHMMToMinutes(slot.start);
-        const slotEnd = parseHHMMToMinutes(slot.end);
-        if (slotStart == null || slotEnd == null) continue;
-        const overlaps = startMin < slotEnd && endMin > slotStart;
-        if (overlaps) return false;
-      }
-      return true;
-    });
-
-    // Remove starts that overlap existing bookings for this date.
-    const bookingsForDate = proBookings.filter((b) => {
-      const dateFromPreferred = b.preferred_date ? String(b.preferred_date) : null;
-      const dateFromCreatedAt = b.created_at ? String(b.created_at).slice(0, 10) : null;
-      return (dateFromPreferred ?? dateFromCreatedAt) === selectedBookingDate;
-    });
-
-    const bookedRanges = bookingsForDate
-      .map((b) => {
-        const raw = b.preferred_time ? String(b.preferred_time) : b.created_at ? String(b.created_at).slice(11, 16) : "";
-        const start = parseHHMMToMinutes(raw);
-        if (start == null) return null;
-        const duration = b.service_duration_minutes ?? 60;
-        return { start, end: start + duration };
-      })
-      .filter((x): x is { start: number; end: number } => !!x);
-
-    const filteredByBookings = filteredByExceptions.filter((time) => {
-      const startMin = parseHHMMToMinutes(time);
-      if (startMin == null) return false;
-      const endMin = startMin + newBookingDuration;
-      return !bookedRanges.some((booked) => startMin < booked.end && endMin > booked.start);
-    });
-
-    // If booking for today, don't allow selecting times in the past.
-    const filteredByNow = filteredByBookings.filter((time) => {
-      if (!isToday) return true;
-      const startMin = parseHHMMToMinutes(time);
-      if (startMin == null) return false;
-      return startMin > nowMinutes;
-    });
-
-    return filteredByNow;
-  }, [pro, selectedBookingDate, selectedBookingService?.duration_minutes, proBookings, todayStr]);
+    const weekdayKey = weekdayKeyFromDateStr(todayStr);
+    const dayOpen =
+      (pro.available_date_overrides ?? []).includes(todayStr) ||
+      (!isWholeDayUnavailable(pro.unavailable_dates?.[todayStr]) && weekly[weekdayKey]?.available);
+    return dayOpen && slots.length === 0 ? [todayStr] : [];
+  }, [pro, todayStr, getBookableTimeOptionsForDate]);
 
   useEffect(() => {
     if (!selectedBookingTime) return;
@@ -1515,6 +1541,7 @@ export default function ProProfilePage() {
                   busyDates={busyDatesList}
                   unavailableDates={pro.unavailable_dates ?? {}}
                   availableDateOverrides={pro.available_date_overrides ?? []}
+                  exhaustedDates={exhaustedBookingDates}
                   onDayClick={handleCalendarDayClick}
                   availableDayColor={sidebarPrimary}
                   arrowsWhite

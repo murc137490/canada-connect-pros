@@ -198,7 +198,10 @@ export default function MakeRequest() {
     setPostalLookup((prev) => ({ ...prev, status: "loading" }));
     const timeout = window.setTimeout(() => {
       void (async () => {
-        const location = await geocodePostalToLocation(formatCanadianPostalInput(postalCode));
+        const location = await Promise.race([
+          geocodePostalToLocation(formatCanadianPostalInput(postalCode)),
+          new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 18000)),
+        ]);
         if (!active) return;
         if (!location) {
           setPostalLookup({ status: "not-found", city: null, province: null, label: "", lat: null, lng: null });

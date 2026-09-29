@@ -35,7 +35,7 @@ You may not: arrange off-platform payments with providers introduced through the
 You may be asked to upload a government-issued ID image for booking verification. That image is stored securely for Platform verification. The Service Provider assigned to your booking generally sees that your identity has been verified (“Identity verified”), not the ID image itself. Providers must not request copies of your ID outside Platform processes.
 
 5B. CANCELLATION POLICY (SHOWN BEFORE YOU CONTINUE)
-Each professional sets a cancellation policy for their bookings (or per service). The policy for THIS booking is displayed clearly above these Terms (free cancellation; OR a fee if you cancel less than 24 hours before the service — fixed amount or percentage; OR no cancellation / full charge). By continuing, you acknowledge that specific policy. Whether a fee is enforceable is subject to applicable law [LEGAL_REVIEW_REQUIRED]. Platform-wide Terms still apply for disputes and support.
+Each professional sets a cancellation policy for their bookings (or per service). The policy for THIS booking is displayed clearly above these Terms (free cancellation; OR a fee if you cancel less than 24 hours before the service — fixed amount or percentage; OR no cancellation / full charge). By continuing, you acknowledge that specific policy. Enforceability of any fee is subject to applicable law. Platform-wide Terms still apply for disputes and support.
 
 6. ACCEPTANCE
 By continuing, you confirm that you have read and accepted these Terms as they apply to your booking, including the cancellation policy shown for this professional.
@@ -68,7 +68,7 @@ Vous ne devez pas : organiser des paiements hors plateforme avec des fournisseur
 On peut vous demander de téléverser une image de pièce d’identité. Elle est conservée de façon sécurisée pour la vérification par la Plateforme. Le professionnel voit en principe que votre identité a été vérifiée (« Identité vérifiée »), et non l’image elle-même.
 
 5B. POLITIQUE D’ANNULATION (AFFICHÉE AVANT DE CONTINUER)
-Chaque professionnel définit une politique d’annulation. Celle de CETTE réservation est affichée clairement au-dessus (gratuite; OU frais si annulation moins de 24 h — montant fixe ou pourcentage; OU aucune annulation / frais complets). En continuant, vous reconnaissez cette politique. [LEGAL_REVIEW_REQUIRED — opposabilité.]
+Chaque professionnel définit une politique d’annulation. Celle de CETTE réservation est affichée clairement au-dessus (gratuite; OU frais si annulation moins de 24 h — montant fixe ou pourcentage; OU aucune annulation / frais complets). En continuant, vous reconnaissez cette politique. L’opposabilité de tout frais est assujettie au droit applicable.
 
 6. ACCEPTATION
 En continuant, vous confirmez avoir lu et accepté ces Conditions, y compris la politique d’annulation affichée.
@@ -110,7 +110,7 @@ You agree not to: solicit or accept off-platform payment for work that was **sol
 You must: follow safety standards; disclose risks where relevant; refuse unsafe work conditions.
 
 7A. CLIENT IDENTITY STATUS
-When a Client completes booking identity verification, you generally see a status such as “Identity verified,” not the government ID image. Do not request that clients send ID images outside Platform processes. LEGAL_REVIEW_REQUIRED if a future process requires image display.
+When a Client completes booking identity verification, you generally see a status such as “Identity verified,” not the government ID image. Do not request that clients send ID images outside Platform processes..
 
 8. YOUR LIABILITY
 You are responsible for: service quality; damages caused during your services; compliance with laws and regulations.
@@ -132,7 +132,7 @@ En continuant, vous confirmez avoir lu et accepté ces conditions professionnell
 export const TERMS_FULL_SECTIONS = [
   {
     title: "TERMS OF SERVICE",
-    body: `Last updated: ${LAST_UPDATED}\n\nBooking issue help (not an unlimited satisfaction guarantee)\n\nIf a service booked through AltShift is not performed substantially according to the agreed booking, AltShift may help review the issue through the claims process. Possible outcomes are case-by-case and not automatic (correction, replacement where available, partial or full refund in serious cases). Submitting a claim does not guarantee a refund. Final legal wording: LEGAL_REVIEW_REQUIRED.`,
+    body: `Last updated: ${LAST_UPDATED}\n\nBooking issue help (not an unlimited satisfaction guarantee)\n\nIf a service booked through AltShift is not performed substantially according to the agreed booking, AltShift may help review the issue through the claims process. Possible outcomes are case-by-case and not automatic (correction, replacement where available, partial or full refund in serious cases). Submitting a claim does not guarantee a refund. `,
   },
   {
     title: "1. INTRODUCTION",
@@ -164,11 +164,11 @@ export const TERMS_FULL_SECTIONS = [
   },
   {
     title: "7A. BOOKING IDENTITY VERIFICATION",
-    body: `Clients may be asked to upload a government-issued ID image for booking verification. That image is stored securely for Platform verification processes. Service Providers assigned to a booking generally see a verification status (“Identity verified”) rather than the ID image. The Platform does not use facial recognition or biometric matching. Retention of ID images is configurable and subject to LEGAL_REVIEW_REQUIRED. The Platform does not guarantee that an ID is valid or current.`,
+    body: `Clients may be asked to upload a government-issued ID image for booking verification. That image is stored securely for Platform verification processes. Service Providers assigned to a booking generally see a verification status (“Identity verified”) rather than the ID image. The Platform does not use facial recognition or biometric matching. Retention of ID images is configurable and subject to applicable retention requirements. The Platform does not guarantee that an ID is valid or current.`,
   },
   {
     title: "8. PAYMENTS",
-    body: `Payments are typically processed through Square (including Square Connect when a Service Provider has connected their Square account). The Platform does not operate a traditional escrow account merely by using Square. Customer-facing invoices may show a five percent (5%) AltShift platform fee on the service subtotal, plus applicable taxes. Internal application-fee settings on Square Connect are an implementation detail and are not a published “Square list price.” Refunds are handled case-by-case and are not automatic. LEGAL_REVIEW_REQUIRED for legal characterization of the payment flow.`,
+    body: `Payments are typically processed through Square (including Square Connect when a Service Provider has connected their Square account). The Platform does not operate a traditional escrow account merely by using Square. Customer-facing invoices may show a five percent (5%) AltShift platform fee on the service subtotal, plus applicable taxes. Internal application-fee settings on Square Connect are an implementation detail and are not a published “Square list price.” Refunds are handled case-by-case and are not automatic..`,
   },
   {
     title: "8A. PRE-EXISTING CLIENTS, NEW PLATFORM CLIENTS, AND FEES (SERVICE PROVIDERS)",
@@ -294,7 +294,7 @@ export const TERMS_PROVIDER_AGREEMENT = [
 export const TERMS_FULL_SECTIONS_FR = [
   {
     title: "CONDITIONS D'UTILISATION",
-    body: `Dernière mise à jour : ${LAST_UPDATED_FR}\n\nAide en cas de problème de réservation (pas une garantie de satisfaction illimitée)\n\nSi un service réservé via AltShift n’est pas réalisé substantiellement conformément à la réservation, AltShift peut aider à examiner le problème via la procédure de réclamation. Les résultats sont au cas par cas et non automatiques. Déposer une réclamation ne garantit pas un remboursement. LEGAL_REVIEW_REQUIRED.`,
+    body: `Dernière mise à jour : ${LAST_UPDATED_FR}\n\nAide en cas de problème de réservation (pas une garantie de satisfaction illimitée)\n\nSi un service réservé via AltShift n’est pas réalisé substantiellement conformément à la réservation, AltShift peut aider à examiner le problème via la procédure de réclamation. Les résultats sont au cas par cas et non automatiques. Déposer une réclamation ne garantit pas un remboursement..`,
   },
   {
     title: "1. INTRODUCTION",
@@ -326,11 +326,11 @@ export const TERMS_FULL_SECTIONS_FR = [
   },
   {
     title: "7A. VÉRIFICATION D'IDENTITÉ (RÉSERVATIONS)",
-    body: `Les Clients peuvent être invités à téléverser une image d'une pièce d'identité officielle. Cette image est conservée de façon sécurisée pour les processus de vérification de la Plateforme. Les Fournisseurs de services voient en principe un statut (« Identité vérifiée ») plutôt que l’image. La Plateforme n’utilise pas la reconnaissance faciale ni l’appariement biométrique. La rétention est configurable (LEGAL_REVIEW_REQUIRED). La Plateforme ne garantit pas qu’une pièce d’identité est valide ou à jour.`,
+    body: `Les Clients peuvent être invités à téléverser une image d'une pièce d'identité officielle. Cette image est conservée de façon sécurisée pour les processus de vérification de la Plateforme. Les Fournisseurs de services voient en principe un statut (« Identité vérifiée ») plutôt que l’image. La Plateforme n’utilise pas la reconnaissance faciale ni l’appariement biométrique. La rétention est configurable . La Plateforme ne garantit pas qu’une pièce d’identité est valide ou à jour.`,
   },
   {
     title: "8. PAIEMENTS",
-    body: `Les paiements sont généralement traités via Square (y compris Square Connect lorsque le fournisseur a lié son compte). La Plateforme n’exploite pas un compte de séquestre (escrow) du seul fait d’utiliser Square. Les factures peuvent afficher des frais de plateforme de cinq pour cent (5 %) sur le sous-total du service, plus taxes applicables. Les remboursements sont traités au cas par cas et ne sont pas automatiques. LEGAL_REVIEW_REQUIRED pour la qualification juridique du flux de paiement.`,
+    body: `Les paiements sont généralement traités via Square (y compris Square Connect lorsque le fournisseur a lié son compte). La Plateforme n’exploite pas un compte de séquestre (escrow) du seul fait d’utiliser Square. Les factures peuvent afficher des frais de plateforme de cinq pour cent (5 %) sur le sous-total du service, plus taxes applicables. Les remboursements sont traités au cas par cas et ne sont pas automatiques..`,
   },
   {
     title: "8A. CLIENTS PRÉEXISTANTS, NOUVEAUX CLIENTS DE LA PLATEFORME ET FRAIS (FOURNISSEURS DE SERVICES)",

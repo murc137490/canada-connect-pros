@@ -1,6 +1,6 @@
 /**
  * Draft Privacy Policy — FR/EN.
- * LEGAL_REVIEW_REQUIRED (LR-003). Placeholders must not be treated as counsel-approved.
+ * (LR-003). Placeholders must not be treated as counsel-approved.
  */
 import { LEGAL_ENTITY_NAME, PRIVACY_CONTACT, SUPPORT_EMAIL } from "@/config/legalConfig";
 
@@ -16,9 +16,7 @@ export const PRIVACY_SECTIONS_EN: PrivacySection[] = [
     body: `This Privacy Policy describes how ${LEGAL_ENTITY_NAME} (“AltShift”, “we”, “us”) collects and uses personal information when you use https://www.altshift.ca and related services.
 
 Privacy contact: ${PRIVACY_CONTACT.title} — ${PRIVACY_CONTACT.name} — ${PRIVACY_CONTACT.email}
-Support: ${SUPPORT_EMAIL}
-
-[REVIEW_REQUIRED — LR-001 / LR-002: confirm legal entity name and privacy contact identity.]`,
+Support: ${SUPPORT_EMAIL}`,
   },
   {
     title: "2. Information we collect",
@@ -31,9 +29,7 @@ Support: ${SUPPORT_EMAIL}
 • Identity-verification images (e.g. government ID for bookings or pro applications)
 • Reviews, ratings, and claim/dispute materials (including evidence photos)
 • Support/AI chat content you send to Help
-• Technical data (device/browser, cookies/local storage preferences, logs)
-
-[REVIEW_REQUIRED — confirm exhaustive categories with counsel.]`,
+• Technical data (device/browser, cookies/local storage preferences, logs)`,
   },
   {
     title: "3. Purposes of use",
@@ -47,9 +43,7 @@ Support: ${SUPPORT_EMAIL}
 • Meet legal, tax, and accounting obligations
 • Send operational emails/SMS where enabled
 
-We do not sell personal information.
-
-[REVIEW_REQUIRED — Law 25 purposes / consent mapping.]`,
+We do not sell personal information.`,
   },
   {
     title: "4. Disclosure",
@@ -60,23 +54,17 @@ We do not sell personal information.
 • Platform administrators for verification, moderation, and claims
 • Authorities when required by law
 
-Identity verification: professionals generally see that a client’s identity has been verified for a booking (“Identité vérifiée”), not the government ID image itself, unless a future counsel-approved process requires otherwise.
-
-[REVIEW_REQUIRED — LR-007.]`,
+Identity verification: professionals generally see that a client’s identity has been verified for a booking (“Identité vérifiée”), not the government ID image itself, unless a future counsel-approved process requires otherwise.`,
   },
   {
     title: "5. Storage, security, and retention",
     body: `Information is stored using third-party infrastructure (including Supabase storage and databases). We apply access controls and aim to keep sensitive files (such as government ID images and claim evidence) in private storage with authenticated access.
 
-Retention periods for identity documents, financial records, and claims evidence are configurable and subject to legal retention duties.
-
-[REVIEW_REQUIRED — LR-013: approve retention schedules.]`,
+Retention periods for identity documents, financial records, and claims evidence are configurable and subject to legal retention duties.`,
   },
   {
     title: "6. Cross-border processing",
-    body: `Some providers may process data outside Quebec/Canada. See our internal third-party inventory and ask support for current vendor list.
-
-[REVIEW_REQUIRED — LR-018: transfers / DPAs.]`,
+    body: `Some providers may process data outside Quebec/Canada. See our internal third-party inventory and ask support for current vendor list.`,
   },
   {
     title: "7. Cookies and similar technologies",
@@ -84,15 +72,11 @@ Retention periods for identity documents, financial records, and claims evidence
   },
   {
     title: "8. AI / automated processing",
-    body: `Our Help assistant may send the text of your support conversation to an AI provider to generate answers about AltShift. Do not paste government IDs, passwords, or full payment card details into chat. AI answers are informational and may be incomplete.
-
-[REVIEW_REQUIRED — LR for automated decision disclosures if expanded.]`,
+    body: `Our Help assistant may send the text of your support conversation to an AI provider to generate answers about AltShift. Do not paste government IDs, passwords, or full payment card details into chat. AI answers are informational and may be incomplete.`,
   },
   {
     title: "9. Access, correction, and deletion",
-    body: `You may request access to or correction of your personal information, or request account/data deletion, via Dashboard (deletion request) or by emailing ${PRIVACY_CONTACT.email}. Some records (e.g. invoices, fraud/security logs) may be retained where required.
-
-[REVIEW_REQUIRED — LR-013.]`,
+    body: `You may request access to or correction of your personal information, or request account/data deletion, via Dashboard (deletion request) or by emailing ${PRIVACY_CONTACT.email}. Some records (e.g. invoices, fraud/security logs) may be retained where required.`,
   },
   {
     title: "10. Children",
@@ -100,9 +84,7 @@ Retention periods for identity documents, financial records, and claims evidence
   },
   {
     title: "11. Changes",
-    body: `We may update this Policy. The “Last updated” date will change. Material changes may require renewed notice or acceptance where appropriate.
-
-[REVIEW_REQUIRED — notice process.]`,
+    body: `We may update this Policy. The “Last updated” date will change. Material changes may require renewed notice or acceptance where appropriate.`,
   },
   {
     title: "12. Contact",
@@ -118,9 +100,7 @@ export const PRIVACY_SECTIONS_FR: PrivacySection[] = [
     body: `La présente Politique de confidentialité décrit comment ${LEGAL_ENTITY_NAME} (« AltShift », « nous ») recueille et utilise des renseignements personnels lorsque vous utilisez https://www.altshift.ca et les services connexes.
 
 Contact confidentialité : ${PRIVACY_CONTACT.title} — ${PRIVACY_CONTACT.name} — ${PRIVACY_CONTACT.email}
-Soutien : ${SUPPORT_EMAIL}
-
-[REVIEW_REQUIRED — LR-001 / LR-002 : confirmer la dénomination légale et l’identité du contact.]`,
+Soutien : ${SUPPORT_EMAIL}`,
   },
   {
     title: "2. Renseignements recueillis",
@@ -133,39 +113,29 @@ Soutien : ${SUPPORT_EMAIL}
 • Images de vérification d’identité (ex. pièce d’identité)
 • Avis, réclamations et preuves
 • Contenu d’assistance / clavardage d’aide
-• Données techniques (appareil, cookies/préférences, journaux)
-
-[REVIEW_REQUIRED.]`,
+• Données techniques (appareil, cookies/préférences, journaux)`,
   },
   {
     title: "3. Fins d’utilisation",
     body: `Nous utilisons les renseignements pour : gérer les comptes; exploiter la place de marché; traiter les paiements; vérifier l’identité; fournir du soutien et examiner les réclamations; assurer la sécurité; respecter des obligations légales/fiscales; envoyer des communications opérationnelles.
 
-Nous ne vendons pas les renseignements personnels.
-
-[REVIEW_REQUIRED — Loi 25.]`,
+Nous ne vendons pas les renseignements personnels.`,
   },
   {
     title: "4. Communication",
     body: `Nous pouvons communiquer des renseignements au professionnel ou client concerné par une réservation; à Square; aux fournisseurs d’infrastructure (hébergement, courriel, SMS, cartes, IA d’aide); aux administrateurs; aux autorités lorsque la loi l’exige.
 
-Vérification d’identité : les professionnels voient en principe que l’identité du client a été vérifiée (« Identité vérifiée »), et non l’image de la pièce d’identité, sauf processus futur approuvé.
-
-[REVIEW_REQUIRED — LR-007.]`,
+Vérification d’identité : les professionnels voient en principe que l’identité du client a été vérifiée (« Identité vérifiée »), et non l’image de la pièce d’identité, sauf processus futur approuvé.`,
   },
   {
     title: "5. Conservation, sécurité et rétention",
     body: `Les renseignements sont hébergés via des fournisseurs (dont Supabase). Les fichiers sensibles (pièces d’identité, preuves de réclamation) sont destinés à un stockage privé avec accès authentifié.
 
-Les durées de rétention sont configurables et assujetties aux obligations légales.
-
-[REVIEW_REQUIRED — LR-013.]`,
+Les durées de rétention sont configurables et assujetties aux obligations légales.`,
   },
   {
     title: "6. Traitement hors Québec / Canada",
-    body: `Certains fournisseurs peuvent traiter des données hors Québec/Canada. Voir l’inventaire interne des tiers ou écrivez au soutien.
-
-[REVIEW_REQUIRED — LR-018.]`,
+    body: `Certains fournisseurs peuvent traiter des données hors Québec/Canada. Voir l’inventaire interne des tiers ou écrivez au soutien.`,
   },
   {
     title: "7. Témoins (cookies)",
@@ -173,15 +143,11 @@ Les durées de rétention sont configurables et assujetties aux obligations lég
   },
   {
     title: "8. IA / traitement automatisé",
-    body: `L’assistant d’aide peut transmettre le texte de votre conversation à un fournisseur d’IA. N’y collez pas de pièces d’identité, mots de passe ou numéros de carte. Les réponses sont informatives.
-
-[REVIEW_REQUIRED.]`,
+    body: `L’assistant d’aide peut transmettre le texte de votre conversation à un fournisseur d’IA. N’y collez pas de pièces d’identité, mots de passe ou numéros de carte. Les réponses sont informatives.`,
   },
   {
     title: "9. Accès, rectification et suppression",
-    body: `Vous pouvez demander l’accès, la rectification ou la suppression via le Tableau de bord (demande de suppression) ou ${PRIVACY_CONTACT.email}. Certains dossiers peuvent être conservés lorsque requis.
-
-[REVIEW_REQUIRED — LR-013.]`,
+    body: `Vous pouvez demander l’accès, la rectification ou la suppression via le Tableau de bord (demande de suppression) ou ${PRIVACY_CONTACT.email}. Certains dossiers peuvent être conservés lorsque requis.`,
   },
   {
     title: "10. Mineurs",

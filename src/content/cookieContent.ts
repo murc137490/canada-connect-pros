@@ -1,6 +1,6 @@
 /**
  * Draft Cookie Policy — FR/EN.
- * LEGAL_REVIEW_REQUIRED (LR-004).
+ * (LR-004).
  */
 import { PRIVACY_CONTACT, SUPPORT_EMAIL } from "@/config/legalConfig";
 
@@ -15,9 +15,7 @@ export const COOKIE_SECTIONS_EN: CookieSection[] = [
     title: "1. Overview",
     body: `This Cookie Policy explains how AltShift uses cookies and similar technologies (including local storage) on https://www.altshift.ca.
 
-Contact: ${PRIVACY_CONTACT.email} · Support: ${SUPPORT_EMAIL}
-
-[REVIEW_REQUIRED — LR-004.]`,
+Contact: ${PRIVACY_CONTACT.email} · Support: ${SUPPORT_EMAIL}`,
   },
   {
     title: "2. Categories",
@@ -43,9 +41,7 @@ export const COOKIE_SECTIONS_FR: CookieSection[] = [
     title: "1. Aperçu",
     body: `La présente politique explique comment AltShift utilise les témoins et technologies similaires (dont le stockage local) sur https://www.altshift.ca.
 
-Contact : ${PRIVACY_CONTACT.email} · Soutien : ${SUPPORT_EMAIL}
-
-[REVIEW_REQUIRED — LR-004.]`,
+Contact : ${PRIVACY_CONTACT.email} · Soutien : ${SUPPORT_EMAIL}`,
   },
   {
     title: "2. Catégories",

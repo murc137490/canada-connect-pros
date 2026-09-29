@@ -7217,8 +7217,8 @@ export default function Dashboard() {
 
         {user && !proProfile && !proProfileLoading && !isAdminDashboardShell && (
           <div className="mt-8 pt-6 border-t flex justify-center">
-            <LiquidButton type="button" variant="secondary" whiteUntilHover onClick={() => setProProfileEditorOpen(true)}>
-              {t.joinPros.completeProfile}
+            <LiquidButton type="button" variant="secondary" whiteUntilHover onClick={() => navigate("/join-pros")}>
+              {t.joinPros.becomePro}
             </LiquidButton>
           </div>
         )}

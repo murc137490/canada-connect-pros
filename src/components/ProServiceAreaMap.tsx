@@ -318,8 +318,8 @@ export default function ProServiceAreaMap({
           <Label>{radiusLabel}</Label>
           <p className="text-sm text-muted-foreground">
             {!GOOGLE_PLACES_KEY
-              ? "Add VITE_GOOGLE_MAPS_API_KEY or VITE_GOOGLE_PLACES_API_KEY to .env to show the map."
-              : "Map could not be loaded. Set your location and radius above - the form will still work. In Google Cloud Console, enable Maps JavaScript API and Places API, add your site to HTTP referrers, and enable billing."}
+              ? "Set your location and travel radius above — the map is optional and the form still works."
+              : "Map could not be loaded. Set your location and radius above - the form will still work."}
           </p>
           <div className="flex flex-wrap gap-2">
             {RADIUS_OPTIONS_KM.map((km) => (
@@ -396,7 +396,7 @@ export default function ProServiceAreaMap({
             {mapError ? (
               <p className="text-sm text-muted-foreground rounded-lg border border-border bg-muted/30 p-3 min-h-[16rem] flex items-center">
                 {!GOOGLE_PLACES_KEY
-                  ? "Add VITE_GOOGLE_MAPS_API_KEY or VITE_GOOGLE_PLACES_API_KEY to .env to show the map."
+                  ? "Map preview is unavailable — you can still set radius and address above."
                   : "Map could not load. You can still set radius and address above."}
               </p>
             ) : (
