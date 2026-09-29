@@ -14,6 +14,7 @@ import { canSubmitProReview } from "@/lib/reviewGuards";
 import { shouldBlurClientReviewOfProForViewer } from "@/lib/reviewBlind";
 import { REVIEWS_CHANGED_EVENT } from "@/lib/fetchPendingReviewNotices";
 import BlurredReviewContent from "@/components/reviews/BlurredReviewContent";
+import { withAltShiftBrand } from "@/lib/publicBrand";
 
 interface Review {
   id: string;
@@ -87,9 +88,13 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
 
       enriched.push({
         ...r,
+        title: withAltShiftBrand(r.title),
+        content: withAltShiftBrand(r.content),
         reviewer_name: profile?.full_name || "Anonymous",
         photos: photos || [],
-        response: response || null,
+        response: response
+          ? { ...response, content: withAltShiftBrand(response.content) ?? response.content }
+          : null,
       });
     }
 
