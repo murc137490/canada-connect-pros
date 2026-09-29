@@ -5,7 +5,7 @@ import Layout from "@/components/Layout";
 import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { isDemoAccount, isDemoProProfile } from "@/lib/demoAccount";
+import { isDemoAccount, isDemoClientAccount, isDemoProProfile } from "@/lib/demoAccount";
 import { publicShareUrl, slugifyShareName } from "@/lib/proShareSlug";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7326,7 +7326,7 @@ export default function Dashboard() {
             </DialogContent>
           </Dialog>
 
-        {user && !proProfile && !proProfileLoading && !isAdminDashboardShell && (
+        {user && !proProfile && !proProfileLoading && !isAdminDashboardShell && !isDemoClientAccount(user.email) && (
           <div className="mt-8 pt-6 border-t flex justify-center">
             <LiquidButton type="button" variant="secondary" whiteUntilHover onClick={() => navigate("/join-pros")}>
               {t.joinPros.becomePro}

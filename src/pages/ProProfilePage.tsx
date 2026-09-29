@@ -24,6 +24,7 @@ import StarRating from "@/components/pro/StarRating";
 import LicenseBadge from "@/components/pro/LicenseBadge";
 import ReviewSection from "@/components/pro/ReviewSection";
 import AvailabilityCalendar, { type UnavailableDatesMap } from "@/components/pro/AvailabilityCalendar";
+import { bookableStartTimes, bookingSlotDurationMinutes } from "@/lib/bookingDaySlots";
 import { isWholeDayUnavailable, getUnavailableSlots, getUnavailableNote } from "@/lib/unavailableDates";
 import type { UnavailableDayStored } from "@/lib/unavailableDates";
 import { parseAvailabilityToWeekly } from "@/components/pro/ProScheduleEditor";
@@ -233,10 +234,21 @@ export default function ProProfilePage() {
   const [selectedBookingDate, setSelectedBookingDate] = useState<string | null>(null);
   const [selectedBookingTime, setSelectedBookingTime] = useState<string | null>(null);
   const [selectedBookingService, setSelectedBookingService] = useState<typeof services[0] | null>(null);
+  const [slotClock, setSlotClock] = useState(0);
   const [clientInvoiceAddress, setClientInvoiceAddress] = useState<string | null>(null);
   const [allServicesModalOpen, setAllServicesModalOpen] = useState(false);
   const viewRecordedRef = useRef(false);
   const pageContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setSlotClock((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!bookingDialogOpen || services.length !== 1 || selectedBookingService) return;
+    setSelectedBookingService(services[0] ?? null);
+  }, [bookingDialogOpen, services, selectedBookingService]);
 
   const bookingServiceMode = useMemo(() => {
     if (!pro || !selectedBookingService) return "workspace" as const;
@@ -588,20 +600,21 @@ export default function ProProfilePage() {
       const scheduleEndMin = isDayOverride ? 17 * 60 : parseHHMMToMinutes(dayState.end);
       if (!isDayOverride && !dayState.available) return [];
       if (scheduleStartMin == null || scheduleEndMin == null || scheduleEndMin <= scheduleStartMin) return [];
-      const newBookingDuration = selectedBookingService?.duration_minutes ?? 60;
+      const newBookingDuration = bookingSlotDurationMinutes(
+        selectedBookingService?.duration_minutes,
+        services.map((s) => s.duration_minutes),
+      );
 
       const now = new Date();
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
       const isToday = dateStr === todayStr;
 
-      const candidateStarts = new Set<string>();
-      for (let startMin = scheduleStartMin; startMin + newBookingDuration <= scheduleEndMin; startMin += 60) {
-        const hh = String(Math.floor(startMin / 60)).padStart(2, "0");
-        const mm = String(startMin % 60).padStart(2, "0");
-        candidateStarts.add(`${hh}:${mm}`);
-      }
-
-      const candidates = Array.from(candidateStarts).sort();
+      const candidates = bookableStartTimes({
+        scheduleStartMin,
+        scheduleEndMin,
+        durationMin: newBookingDuration,
+        nowMinutes: isToday ? nowMinutes : null,
+      });
 
       const filteredByExceptions = candidates.filter((time) => {
         const startMin = parseHHMMToMinutes(time);
@@ -641,14 +654,9 @@ export default function ProProfilePage() {
         return !bookedRanges.some((booked) => startMin < booked.end && endMin > booked.start);
       });
 
-      return filteredByBookings.filter((time) => {
-        if (!isToday) return true;
-        const startMin = parseHHMMToMinutes(time);
-        if (startMin == null) return false;
-        return startMin > nowMinutes;
-      });
+      return filteredByBookings;
     },
-    [pro, selectedBookingService?.duration_minutes, proBookings, todayStr],
+    [pro, selectedBookingService?.duration_minutes, services, proBookings, todayStr, slotClock],
   );
 
   const handleCalendarDayClick = (dateStr: string, isAvailableByWeekday: boolean) => {
@@ -684,6 +692,7 @@ export default function ProProfilePage() {
     }
     setSelectedBookingDate(dateStr);
     setSelectedBookingTime(null);
+    if (services.length === 1) setSelectedBookingService(services[0] ?? null);
     setBookingDialogOpen(true);
   };
 
@@ -1542,6 +1551,7 @@ export default function ProProfilePage() {
                   unavailableDates={pro.unavailable_dates ?? {}}
                   availableDateOverrides={pro.available_date_overrides ?? []}
                   exhaustedDates={exhaustedBookingDates}
+                  dayHasBookableSlot={(dateStr) => getBookableTimeOptionsForDate(dateStr).length > 0}
                   onDayClick={handleCalendarDayClick}
                   availableDayColor={sidebarPrimary}
                   arrowsWhite
@@ -1600,11 +1610,9 @@ export default function ProProfilePage() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={bookingDialogOpen} onOpenChange={(open) => {
+            <Dialog open={bookingDialogOpen} onOpenChange={(open) => {
               setBookingDialogOpen(open);
-              if (open) {
-                setSelectedBookingService(prev => prev ?? services[0] ?? null);
-              } else {
+              if (!open) {
                 setBookingTermsAccepted(false);
                 setBookingCancelPolicyAccepted(false);
                 setBookingCancelPolicyDetailsOpen(false);
@@ -1647,7 +1655,10 @@ export default function ProProfilePage() {
                   <>
                     {services.length >= 1 && (
                       <div className="space-y-2 mb-4">
-                        <Label className="text-white">{t.profile?.servicesOffered ?? "Service"}</Label>
+                        <Label className="text-white">
+                          {t.profile?.servicesOffered ?? "Service"}
+                          {services.length > 1 ? " *" : ""}
+                        </Label>
                         <div className="space-y-2">
                           {services.map((svc, index) => {
                             const price = svc.custom_price_min ?? svc.custom_price_max ?? 0;
@@ -1657,6 +1668,7 @@ export default function ProProfilePage() {
                               <button
                                 key={`${svc.category_slug}-${svc.service_slug}-${index}`}
                                 type="button"
+                                aria-pressed={isSelected}
                                 onClick={() => setSelectedBookingService(svc)}
                                 className={`w-full text-left rounded-lg border-2 px-3 py-2.5 text-sm transition-colors ${isSelected ? "border-white bg-white/20 text-white" : "border-gray-600 bg-gray-800/50 text-white/90 hover:bg-gray-700/50"}`}
                               >
@@ -1666,6 +1678,11 @@ export default function ProProfilePage() {
                             );
                           })}
                         </div>
+                        {services.length > 1 && !selectedBookingService ? (
+                          <p className="text-sm text-amber-200" role="alert">
+                            {t.terms.bookingSelectServiceFirst ?? "Please select a service first."}
+                          </p>
+                        ) : null}
                       </div>
                     )}
                     <div className="space-y-2">
@@ -1969,6 +1986,7 @@ export default function ProProfilePage() {
                       accepted={bookingTermsAccepted}
                       onAcceptedChange={setBookingTermsAccepted}
                       inDialog
+                      submitDisabled={services.length >= 1 && !selectedBookingService}
                       submitLabel={t.terms.continueToVerification ?? "Continue"}
                       onSubmit={() => {
                         if (!bookingCancelPolicyAccepted) {

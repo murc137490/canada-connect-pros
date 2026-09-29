@@ -1,7 +1,7 @@
 /**
  * Server-side geocode proxy for Canadian postals.
  * Full LDU: Google (exact / formatted match) → geocoder.ca (retry on throttle) → Photon exact postcode.
- * Never Zippopotam for 6-char LDUs (FSA centroid = same pin for every H3Z*).
+ * Zippopotam FSA centroid runs only after those exact sources miss, and is not cached as the LDU.
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
@@ -629,7 +629,22 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Do NOT Zippopotam full LDUs — that returns one FSA pin (looks like H3Z 1A1 for all H3Z*).
+      // Exact LDU unknown (e.g. J2G 1A1). FSA centroid so the city still resolves.
+      // Not written to the LDU cache — a later exact hit must not be pinned to this centroid.
+      const viaFsa = await geocodeZippopotamFsa(compact.slice(0, 3));
+      if (viaFsa) {
+        const spaced = spacedPostal(compact);
+        const out: GeoOut = {
+          ...viaFsa,
+          postal: spaced,
+          formattedAddress: [viaFsa.city, viaFsa.province, spaced, "Canada"].filter(Boolean).join(", "),
+          source: "zippopotam-fsa",
+        };
+        return new Response(JSON.stringify(out), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       return new Response(JSON.stringify({ error: "not_found", reason: "ldu_unresolved" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { LiquidButton } from "@/components/ui/liquid-button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { isDemoClientAccount } from "@/lib/demoAccount";
 import { useToast } from "@/hooks/use-toast";
 import { Check } from "lucide-react";
 import SpotlightCard from "@/components/SpotlightCard";
@@ -144,7 +146,10 @@ export default function ProPlansContent({
   onSelectPlan,
 }: ProPlansContentProps = {}) {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { toast } = useToast();
+  const showProfileCta =
+    showCompleteProfileCta && !(isDemoClientAccount(user?.email) && !hasProProfile);
   const plans = t.plans;
   const starterFeatures = plans?.starterFeatures ?? [];
   const growthFeatures = plans?.growthFeatures ?? [];
@@ -269,7 +274,7 @@ export default function ProPlansContent({
         </div>
       </section>
 
-      {showCompleteProfileCta && (
+      {showProfileCta && (
         <div className="mt-12 text-center">
           <LiquidButton size="lg" asChild whiteUntilHover>
             <Link to={profileCtaHref}>

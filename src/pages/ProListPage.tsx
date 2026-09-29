@@ -22,7 +22,7 @@ import ServiceJobsList from "@/components/services/ServiceJobsList";
 export default function ProListPage() {
   const { categorySlug, serviceSlug } = useParams<{ categorySlug: string; serviceSlug: string }>();
   const { locale, t } = useLanguage();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -64,6 +64,10 @@ export default function ProListPage() {
   }, [user]);
 
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
     const fetchPros = async () => {
       setLoading(true);
       if (jobsMode) {
@@ -150,7 +154,7 @@ export default function ProListPage() {
     };
 
     fetchPros();
-  }, [categorySlug, serviceSlug, jobsMode]);
+  }, [categorySlug, serviceSlug, jobsMode, authLoading, isShowcaseUser, t.common.proFallback]);
 
   useEffect(() => {
     if (!categorySlug || !serviceSlug || !service) return;
