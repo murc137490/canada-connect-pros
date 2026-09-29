@@ -163,7 +163,7 @@ function parseGoogleResult(first: GoogleResult): GeocodeLocation | null {
 
 type EdgeGeoAttempt = { loc: GeocodeLocation | null; notFound: boolean };
 
-async function geocodeViaEdgeOnce(address: string): Promise<EdgeGeoAttempt> {
+async function geocodeViaEdgeOnce(address: string, timeoutMs = 10000): Promise<EdgeGeoAttempt> {
   if (!SUPABASE_URL || !SUPABASE_ANON) return { loc: null, notFound: false };
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/geocode`, {
@@ -174,7 +174,7 @@ async function geocodeViaEdgeOnce(address: string): Promise<EdgeGeoAttempt> {
         apikey: SUPABASE_ANON,
       },
       body: JSON.stringify({ address }),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) return { loc: null, notFound: res.status === 404 || res.status === 400 };
     const data = (await res.json()) as GeocodeLocation & { error?: string; postal?: string | null };
@@ -513,7 +513,11 @@ export async function geocodePostalToLocation(postalOrAddress: string): Promise<
       return loc;
     };
 
-    const viaEdge = accept(await geocodeViaEdge(trimmed));
+    // One short edge attempt for a full LDU. A hung geocode function must not eat the
+    // make-request 18s budget before the FSA fallback runs.
+    const viaEdge = accept(
+      wanted ? (await geocodeViaEdgeOnce(trimmed, 8000)).loc : await geocodeViaEdge(trimmed),
+    );
     if (viaEdge) return viaEdge;
 
     const viaClient = accept(await geocodeViaGoogleClient(trimmed));
@@ -524,7 +528,7 @@ export async function geocodePostalToLocation(postalOrAddress: string): Promise<
       const fsa = wanted.slice(0, 3);
       const fsaLoc =
         accept(await geocodeViaZippopotamFsa(fsa)) ??
-        accept(await geocodeViaEdge(fsa)) ??
+        accept((await geocodeViaEdgeOnce(fsa, 5000)).loc) ??
         accept(await geocodeViaGoogleClient(`${fsa}, Quebec, Canada`));
       if (fsaLoc) {
         const withWanted = { ...fsaLoc, postal: `${wanted.slice(0, 3)} ${wanted.slice(3)}` };
