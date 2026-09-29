@@ -22,6 +22,8 @@ interface TermsAcceptanceProps {
   submitLabel?: string;
   inDialog?: boolean;
   bookingId?: string | null;
+  /** Extra gate (for example a required service) so Continue stays disabled with the terms checkbox on. */
+  submitDisabled?: boolean;
 }
 
 export default function TermsAcceptance({
@@ -32,6 +34,7 @@ export default function TermsAcceptance({
   submitLabel,
   inDialog = false,
   bookingId = null,
+  submitDisabled = false,
 }: TermsAcceptanceProps) {
   const { t, locale } = useLanguage();
   const { user } = useAuth();
@@ -128,7 +131,7 @@ export default function TermsAcceptance({
       </div>
 
       {onSubmit && (
-        <Button type="button" className="w-full" disabled={!canSubmit} onClick={onSubmit}>
+        <Button type="button" className="w-full" disabled={!canSubmit || submitDisabled} onClick={onSubmit}>
           {submitLabel ?? t.terms.requestBooking}
         </Button>
       )}

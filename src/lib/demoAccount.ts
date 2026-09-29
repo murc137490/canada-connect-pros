@@ -13,9 +13,15 @@ export const DEMO_PRO_BUSINESS_NAME = "Rivera Home Services";
 export const DEMO_PRO_PHONE = "514-555-0142";
 export const DEMO_CLIENT_PHONE = "514-555-0198";
 
-/**
- * Checks if an email belongs to a designated demo / advertising account.
- */
+/** Demo client walkthrough account (not the showcase pro login). */
+export function isDemoClientAccount(email?: string | null): boolean {
+  if (!email || typeof email !== "string") return false;
+  const em = email.toLowerCase().trim();
+  if (em === DEMO_PRO_EMAIL || em.startsWith("demo.pro@") || em.startsWith("demo-pro@")) return false;
+  return isDemoAccount(em);
+}
+
+/** True for a designated demo / advertising account (client or pro). */
 export function isDemoAccount(email?: string | null): boolean {
   if (!email || typeof email !== "string") return false;
   const em = email.toLowerCase().trim();
