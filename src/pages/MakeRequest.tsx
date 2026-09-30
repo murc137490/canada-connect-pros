@@ -93,6 +93,7 @@ export default function MakeRequest() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
+<<<<<<< HEAD
   const serviceSlug = searchParams.get("service_slug");
   const serviceContext = useMemo(
     () => serviceSlug ? getAllServices().find((service) => service.slug === serviceSlug) ?? null : null,
@@ -112,6 +113,14 @@ export default function MakeRequest() {
   const [submitting, setSubmitting] = useState(false);
   const [description, setDescription] = useState("");
   const [postalCode, setPostalCode] = useState("");
+  useEffect(() => {
+    const desc = searchParams.get("description")?.trim() ?? "";
+    const postal = searchParams.get("postal")?.trim() ?? "";
+    if (desc) setDescription((prev) => (prev.trim() ? prev : desc));
+    if (postal) {
+      setPostalCode((prev) => (prev.trim() ? prev : formatCanadianPostalInput(postal)));
+    }
+  }, [searchParams]);
   const [category, setCategory] = useState<string>(initialServiceCategory);
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
@@ -194,12 +203,14 @@ export default function MakeRequest() {
     if (authLoading) return;
     if (!user) {
       allowLeaveRef.current = true;
-      navigate("/auth?mode=login&redirect=/make-request", { replace: true });
+      const query = searchParams.toString();
+      const next = `/make-request${query ? `?${query}` : ""}`;
+      navigate(`/auth?mode=login&redirect=${encodeURIComponent(next)}`, { replace: true });
       return;
     }
     refreshDrafts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, navigate, authLoading]);
+  }, [user, navigate, authLoading, searchParams]);
 
   useEffect(() => {
     if (description.trim().length > 20) {
