@@ -39,6 +39,10 @@ verify_jwt = false
 [functions.telnyx-voice-webhook]
 verify_jwt = false
 
+# Hourly 24h booking SMS reminders (auth via x-booking-reminder-secret).
+[functions.booking-sms-reminders]
+verify_jwt = false
+
 # Uses in-function auth or x-email-pipeline-secret so it can be called by app sessions,
 # scheduled reminders, database webhooks, or server-side automations.
 [functions.send-app-email]

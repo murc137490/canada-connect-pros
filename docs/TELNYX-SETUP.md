@@ -22,21 +22,23 @@ Support line: **+1 450 800 3177** (`tel:+14508003177`).
 
 ## 2. Supabase Edge secrets
 
-Dashboard → Project → Edge Functions → Secrets (or CLI):
+Dashboard → Project → Edge Functions → Secrets (or ask the Supabase AI assistant to set them):
 
-```bash
-supabase secrets set TELNYX_API_KEY="KEY016…"
-supabase secrets set TELNYX_SMS_FROM="+14508003177"
-supabase secrets set TELNYX_VERIFY_PROFILE_ID="490001a0-efd0-69b0-00b0-e8f55033656f"
+```text
+TELNYX_API_KEY=<your key>
+TELNYX_SMS_FROM=+14508003177
+TELNYX_VERIFY_PROFILE_ID=490001a0-efd0-69b0-00b0-e8f55033656f
+BOOKING_REMINDER_SECRET=<same secret scheduled in cron booking-sms-reminders-hourly>
 ```
 
 | Secret | Used by |
 | --- | --- |
 | `TELNYX_API_KEY` | `booking-sms-notify`, `telnyx-verify`, `telnyx-voice-webhook` |
-| `TELNYX_SMS_FROM` | `booking-sms-notify` (E.164 From) |
+| `TELNYX_SMS_FROM` | `booking-sms-notify` |
 | `TELNYX_VERIFY_PROFILE_ID` | `telnyx-verify` |
+| `BOOKING_REMINDER_SECRET` | `booking-sms-notify` (reminder), `booking-sms-reminders` |
 
-Twilio secrets (`TWILIO_*`) still work as fallback if Telnyx is unset.
+See also `docs/TELNYX-SMS-VOICE.md`.
 
 ## 3. Deploy functions
 

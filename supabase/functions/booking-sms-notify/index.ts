@@ -1,15 +1,16 @@
 /**
- * Sends SMS for Pro-tier pros when enabled.
+ * Sends SMS for bookings (confirmation + reminder).
  * Prefers Telnyx when configured; falls back to Twilio.
  *
- * Secrets (Telnyx — preferred):
- *   TELNYX_API_KEY, TELNYX_SMS_FROM (E.164, e.g. +14508003177)
- * Secrets (Twilio — fallback):
- *   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_SMS_FROM
+ * Recipients (when phone on file):
+ * - Client
+ * - Pro (profiles.phone via pro user_id, else pro_profiles.phone)
+ *
+ * Gate: Pro subscription_tier must be "pro".
  *
  * POST JSON:
- * - { "booking_id": "<uuid>", "event": "confirmation" } — caller must be the booking's client (Bearer session).
- * - { "booking_id": "<uuid>", "event": "reminder" } — requires header `x-booking-reminder-secret` matching BOOKING_REMINDER_SECRET.
+ * - { "booking_id": "<uuid>", "event": "confirmation" } — Bearer = booking client
+ * - { "booking_id": "<uuid>", "event": "reminder" } — header x-booking-reminder-secret
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -18,7 +19,8 @@ import { sendTelnyxSms, telnyxSmsConfigured } from "../_shared/telnyxSms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-booking-reminder-secret",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-booking-reminder-secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -34,7 +36,46 @@ function twilioSmsConfigured(): boolean {
   );
 }
 
+async function sendTwilioSms(
+  to: string,
+  text: string,
+): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
+  const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
+  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN")!;
+  const fromNum = Deno.env.get("TWILIO_SMS_FROM")!;
+  const form = new URLSearchParams();
+  form.set("To", to);
+  form.set("From", fromNum);
+  form.set("Body", text);
+  const twRes = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${basicAuth(accountSid, authToken)}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: form.toString(),
+    },
+  );
+  const twData = await twRes.json().catch(() => ({}));
+  if (!twRes.ok) {
+    return { ok: false, error: (twData as { message?: string }).message ?? "twilio_error" };
+  }
+  return { ok: true, sid: (twData as { sid?: string }).sid ?? "" };
+}
+
 type EventType = "confirmation" | "reminder";
+
+type BookingRow = {
+  id: string;
+  client_id: string;
+  pro_profile_id: string;
+  status: string | null;
+  preferred_date: string | null;
+  preferred_time: string | null;
+  sms_reminder_sent_at?: string | null;
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -69,7 +110,6 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const bookingId = typeof body.booking_id === "string" ? body.booking_id.trim() : "";
   const event = (body.event === "reminder" ? "reminder" : "confirmation") as EventType;
-
   if (!bookingId) {
     return new Response(JSON.stringify({ error: "Missing booking_id" }), {
       status: 400,
@@ -112,17 +152,29 @@ Deno.serve(async (req) => {
     }
   }
 
-  const { data: booking, error: bErr } = await admin
-    .from("bookings")
-    .select("id, client_id, pro_profile_id, status, preferred_date, preferred_time")
-    .eq("id", bookingId)
-    .maybeSingle();
-
-  if (bErr || !booking) {
-    return new Response(JSON.stringify({ error: "Booking not found" }), {
-      status: 404,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  let booking: BookingRow | null = null;
+  {
+    const withCol = await admin
+      .from("bookings")
+      .select("id, client_id, pro_profile_id, status, preferred_date, preferred_time, sms_reminder_sent_at")
+      .eq("id", bookingId)
+      .maybeSingle();
+    if (!withCol.error && withCol.data) {
+      booking = withCol.data as BookingRow;
+    } else {
+      const fb = await admin
+        .from("bookings")
+        .select("id, client_id, pro_profile_id, status, preferred_date, preferred_time")
+        .eq("id", bookingId)
+        .maybeSingle();
+      if (fb.error || !fb.data) {
+        return new Response(JSON.stringify({ error: "Booking not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      booking = { ...(fb.data as BookingRow), sms_reminder_sent_at: null };
+    }
   }
 
   if (event === "confirmation" && booking.client_id !== userId) {
@@ -134,7 +186,7 @@ Deno.serve(async (req) => {
 
   const { data: proRow } = await admin
     .from("pro_profiles")
-    .select("business_name, subscription_tier")
+    .select("business_name, subscription_tier, user_id, phone")
     .eq("id", booking.pro_profile_id)
     .maybeSingle();
 
@@ -146,78 +198,95 @@ Deno.serve(async (req) => {
     });
   }
 
-  const { data: profile } = await admin
+  const { data: clientProfile } = await admin
     .from("profiles")
     .select("phone, full_name")
     .eq("user_id", booking.client_id)
     .maybeSingle();
 
-  const rawPhone = typeof profile?.phone === "string" ? profile.phone.trim() : "";
-  const to = toE164NorthAmerica(rawPhone);
-  if (!to) {
-    return new Response(JSON.stringify({ ok: true, skipped: true, reason: "no_client_phone" }), {
+  let proPhoneRaw = typeof proRow?.phone === "string" ? proRow.phone.trim() : "";
+  if (!proPhoneRaw && proRow?.user_id) {
+    const { data: proUserProfile } = await admin
+      .from("profiles")
+      .select("phone")
+      .eq("user_id", proRow.user_id)
+      .maybeSingle();
+    proPhoneRaw = typeof proUserProfile?.phone === "string" ? proUserProfile.phone.trim() : "";
+  }
+
+  const clientTo = toE164NorthAmerica(
+    typeof clientProfile?.phone === "string" ? clientProfile.phone.trim() : "",
+  );
+  const proTo = toE164NorthAmerica(proPhoneRaw);
+
+  if (!clientTo && !proTo) {
+    return new Response(JSON.stringify({ ok: true, skipped: true, reason: "no_phones" }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
   const biz = proRow?.business_name ?? "your professional";
+  const clientName = (clientProfile?.full_name as string | undefined)?.trim() || "your client";
   const datePart = booking.preferred_date ? String(booking.preferred_date) : "";
   const timePart = booking.preferred_time ? String(booking.preferred_time).slice(0, 5) : "";
+  const when = `${datePart ? ` on ${datePart}` : ""}${timePart ? ` at ${timePart}` : ""}`;
 
-  const bodyText =
+  const clientText =
     event === "reminder"
-      ? `Reminder: appointment with ${biz}${datePart ? ` on ${datePart}` : ""}${timePart ? ` at ${timePart}` : ""}. Reply STOP to opt out.`
-      : `Booking confirmed with ${biz}${datePart ? ` on ${datePart}` : ""}${timePart ? ` at ${timePart}` : ""}. AltShift.`;
+      ? `Reminder: appointment with ${biz}${when}. AltShift. Reply STOP to opt out.`
+      : `Booking confirmed with ${biz}${when}. AltShift.`;
+  const proText =
+    event === "reminder"
+      ? `Reminder: job with ${clientName}${when}. AltShift. Reply STOP to opt out.`
+      : `New booking with ${clientName}${when}. AltShift.`;
 
-  if (useTelnyx) {
-    const result = await sendTelnyxSms({ to, text: bodyText });
-    if (!result.ok) {
-      console.error("Telnyx SMS error", result.status, result.error);
-      return new Response(JSON.stringify({ ok: false, provider: "telnyx", error: result.error }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+  type SendResult = {
+    role: "client" | "pro";
+    to: string;
+    ok: boolean;
+    id?: string;
+    error?: string;
+    provider: string;
+  };
+  const results: SendResult[] = [];
+
+  async function sendOne(role: "client" | "pro", to: string, text: string) {
+    if (useTelnyx) {
+      const result = await sendTelnyxSms({ to, text });
+      results.push({
+        role,
+        to,
+        ok: result.ok,
+        id: result.ok ? result.id : undefined,
+        error: result.ok ? undefined : result.error,
+        provider: "telnyx",
       });
+      return;
     }
-    return new Response(JSON.stringify({ ok: true, provider: "telnyx", id: result.id }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const result = await sendTwilioSms(to, text);
+    results.push({
+      role,
+      to,
+      ok: result.ok,
+      id: result.ok ? result.sid : undefined,
+      error: result.ok ? undefined : result.error,
+      provider: "twilio",
     });
   }
 
-  const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
-  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN")!;
-  const fromNum = Deno.env.get("TWILIO_SMS_FROM")!;
-  const auth = basicAuth(accountSid, authToken);
-  const form = new URLSearchParams();
-  form.set("To", to);
-  form.set("From", fromNum);
-  form.set("Body", bodyText);
+  if (clientTo) await sendOne("client", clientTo, clientText);
+  if (proTo && proTo !== clientTo) await sendOne("pro", proTo, proText);
 
-  const twRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: form.toString(),
-  });
+  const anyOk = results.some((r) => r.ok);
+  const anyFail = results.some((r) => !r.ok);
 
-  const twData = await twRes.json().catch(() => ({}));
-  if (!twRes.ok) {
-    console.error("Twilio SMS error", twRes.status, twData);
-    return new Response(
-      JSON.stringify({
-        ok: false,
-        provider: "twilio",
-        error: (twData as { message?: string }).message ?? "twilio_error",
-      }),
-      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+  if (event === "reminder" && anyOk) {
+    await admin.from("bookings").update({ sms_reminder_sent_at: new Date().toISOString() }).eq("id", bookingId);
   }
 
   return new Response(
-    JSON.stringify({ ok: true, provider: "twilio", sid: (twData as { sid?: string }).sid }),
-    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    JSON.stringify({ ok: anyOk && !anyFail ? true : anyOk, partial: anyOk && anyFail, results }),
+    { status: anyOk ? 200 : 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
 });
