@@ -25,14 +25,190 @@ function extractCallerPhone(headers: SipHeader[] | undefined): string | null {
   return toE164NorthAmerica(m[1]) ?? toE164NorthAmerica(m[1].replace(/\D/g, "").slice(-10));
 }
 
-/** Edge Deno WebSocket only accepts protocol strings, not a { headers } options object. */
-function openRealtimeSideband(apiKey: string, callId: string): WebSocket {
-  const url = `wss://api.openai.com/v1/realtime?call_id=${encodeURIComponent(callId)}`;
-  return new WebSocket(url, [
-    "realtime",
-    `openai-insecure-api-key.${apiKey}`,
-    "openai-beta.realtime-v1",
-  ]);
+const OPENING_LINE =
+  "Bienvenue à AltShift. Welcome to AltShift. Préférez-vous le français? Or would you prefer English?";
+
+type RealtimeSocket = {
+  readyState: number;
+  send(data: string): void;
+  close(): void;
+  onmessage: ((ev: { data: string }) => void) | null;
+  onclose: (() => void) | null;
+  onerror: (() => void) | null;
+  onopen: (() => void) | null;
+};
+
+/** Client frame. Servers reject unmasked client frames. */
+function maskFrame(payload: Uint8Array, opcode = 0x1): Uint8Array {
+  const mask = crypto.getRandomValues(new Uint8Array(4));
+  const header = [0x80 | opcode];
+  if (payload.length < 126) header.push(0x80 | payload.length);
+  else if (payload.length < 65536) header.push(0x80 | 126, (payload.length >> 8) & 0xff, payload.length & 0xff);
+  else throw new Error("frame_too_large");
+  const frame = new Uint8Array(header.length + 4 + payload.length);
+  frame.set(header);
+  frame.set(mask, header.length);
+  for (let i = 0; i < payload.length; i++) frame[header.length + 4 + i] = payload[i] ^ mask[i % 4];
+  return frame;
+}
+
+function maskTextFrame(text: string, opcode = 0x1): Uint8Array {
+  return maskFrame(new TextEncoder().encode(text), opcode);
+}
+
+async function writeAll(conn: Deno.Conn, bytes: Uint8Array) {
+  let off = 0;
+  while (off < bytes.length) {
+    const n = await conn.write(bytes.subarray(off));
+    if (n <= 0) throw new Error("socket_write_failed");
+    off += n;
+  }
+}
+
+/**
+ * Deno's WebSocket constructor cannot set Authorization, and the
+ * insecure-api-key subprotocol is rejected. That left the model silent
+ * until the caller spoke. Handshake over TLS with the Bearer header.
+ */
+async function openRealtimeSideband(apiKey: string, callId: string): Promise<RealtimeSocket> {
+  const path = `/v1/realtime?call_id=${encodeURIComponent(callId)}`;
+  let lastDetail = "no_attempt";
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    let conn: Deno.Conn | null = null;
+    try {
+      conn = await Deno.connectTls({ hostname: "api.openai.com", port: 443 });
+      const key = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
+      const req =
+        `GET ${path} HTTP/1.1\r\n` +
+        `Host: api.openai.com\r\n` +
+        `Upgrade: websocket\r\n` +
+        `Connection: Upgrade\r\n` +
+        `Sec-WebSocket-Key: ${key}\r\n` +
+        `Sec-WebSocket-Version: 13\r\n` +
+        `Authorization: Bearer ${apiKey}\r\n\r\n`;
+      await writeAll(conn, new TextEncoder().encode(req));
+
+      const buf: number[] = [];
+      const tmp = new Uint8Array(2048);
+      let headerEnd = -1;
+      while (headerEnd < 0) {
+        const n = await conn.read(tmp);
+        if (n === null) throw new Error("socket_closed_during_handshake");
+        for (let i = 0; i < n; i++) buf.push(tmp[i]);
+        for (let i = 0; i < buf.length - 3; i++) {
+          if (buf[i] === 13 && buf[i + 1] === 10 && buf[i + 2] === 13 && buf[i + 3] === 10) {
+            headerEnd = i;
+            break;
+          }
+        }
+        if (buf.length > 8192) break;
+      }
+      const head = new TextDecoder().decode(new Uint8Array(buf.slice(0, Math.max(headerEnd, 0))));
+      const statusLine = head.split("\r")[0] ?? "";
+      if (headerEnd < 0 || !/^HTTP\/1\.[01] 101\b/.test(statusLine)) {
+        lastDetail = head.slice(0, 180).replace(/\s+/g, " ");
+        console.error("sideband handshake", attempt, lastDetail);
+        try { conn.close(); } catch { /* ignore */ }
+        await new Promise((r) => setTimeout(r, 250 * attempt));
+        continue;
+      }
+      let pending = new Uint8Array(buf.slice(headerEnd + 4));
+
+      const socket: RealtimeSocket = {
+        readyState: WebSocket.OPEN,
+        onmessage: null,
+        onclose: null,
+        onerror: null,
+        onopen: null,
+        send(data: string) {
+          writeAll(conn!, maskTextFrame(data)).catch((e) => {
+            console.error("sideband send", e);
+            socket.onerror?.();
+          });
+        },
+        close() {
+          socket.readyState = WebSocket.CLOSED;
+          try { conn?.close(); } catch { /* ignore */ }
+        },
+      };
+
+      const readLoop = async () => {
+        let textBuf = "";
+        const chunks: Uint8Array[] = pending.length ? [pending] : [];
+        pending = new Uint8Array();
+        const pull = async (n: number): Promise<Uint8Array | null> => {
+          let have = chunks.reduce((s, c) => s + c.length, 0);
+          while (have < n) {
+            const block = new Uint8Array(4096);
+            const got = await conn!.read(block);
+            if (got === null) return null;
+            chunks.push(block.subarray(0, got));
+            have += got;
+          }
+          const merged = new Uint8Array(have);
+          let o = 0;
+          for (const c of chunks) {
+            merged.set(c, o);
+            o += c.length;
+          }
+          const out = merged.subarray(0, n);
+          chunks.length = 0;
+          if (n < merged.length) chunks.push(merged.subarray(n));
+          return out;
+        };
+        try {
+          while (socket.readyState === WebSocket.OPEN) {
+            const h = await pull(2);
+            if (!h) break;
+            const opcode = h[0] & 0x0f;
+            let len = h[1] & 0x7f;
+            if (len === 126) {
+              const ext = await pull(2);
+              if (!ext) break;
+              len = (ext[0] << 8) | ext[1];
+            } else if (len === 127) {
+              const ext = await pull(8);
+              if (!ext) break;
+              len = Number((ext[4] << 24) | (ext[5] << 16) | (ext[6] << 8) | ext[7]);
+            }
+            const payload = len ? await pull(len) : new Uint8Array();
+            if (!payload) break;
+            if (opcode === 0x9) {
+              await writeAll(conn!, maskFrame(payload, 0xa));
+              continue;
+            }
+            if (opcode === 0x8) break;
+            if (opcode === 0x1 || opcode === 0x0) {
+              const fin = (h[0] & 0x80) !== 0;
+              const piece = new TextDecoder().decode(payload);
+              if (opcode === 0x1) textBuf = piece;
+              else textBuf += piece;
+              if (fin) {
+                socket.onmessage?.({ data: textBuf });
+                textBuf = "";
+              }
+            }
+          }
+        } catch (e) {
+          console.error("sideband read", e);
+          socket.onerror?.();
+        } finally {
+          socket.readyState = WebSocket.CLOSED;
+          try { conn?.close(); } catch { /* ignore */ }
+          socket.onclose?.();
+        }
+      };
+      void readLoop();
+      console.log("sideband open", attempt);
+      return socket;
+    } catch (e) {
+      lastDetail = e instanceof Error ? e.message : String(e);
+      console.error("sideband connect", attempt, lastDetail);
+      try { conn?.close(); } catch { /* ignore */ }
+      await new Promise((r) => setTimeout(r, 250 * attempt));
+    }
+  }
+  throw new Error(`sideband_upgrade_failed ${lastDetail}`);
 }
 
 async function acceptRealtime(apiKey: string, callId: string, deskSessionId: string, callerPhone: string | null) {
@@ -41,7 +217,7 @@ async function acceptRealtime(apiKey: string, callId: string, deskSessionId: str
     `\n\nCurrent front_desk session_id (pass to EVERY tool): ${deskSessionId}` +
     `\nPhone line: +1 450 800 3177.` +
     (callerPhone ? `\nInbound caller phone (already stored): ${callerPhone}. Call identify_caller early.` : "") +
-    `\nNothing has been spoken yet. You are the first voice. SPEAK IMMEDIATELY, one turn: "Bienvenue à AltShift. Préférez-vous le français? Or would you prefer English?" Then wait.`;
+    `\nNothing has been spoken yet. Do not wait for the caller. SPEAK IMMEDIATELY, one turn: "${OPENING_LINE}" Then wait.`;
 
   const res = await fetch(`${OPENAI_API}/realtime/calls/${encodeURIComponent(callId)}/accept`, {
     method: "POST",
@@ -95,31 +271,42 @@ async function runTool(name: string, argsJson: string, deskSessionId: string): P
 }
 
 async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: string) {
-  const ws = openRealtimeSideband(apiKey, callId);
+  const ws = await openRealtimeSideband(apiKey, callId);
 
-  await new Promise<void>((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error("ws_timeout")), 10000);
-    ws.onopen = () => {
-      clearTimeout(t);
-      resolve();
-    };
-    ws.onerror = () => {
-      clearTimeout(t);
-      reject(new Error("ws_error"));
-    };
-  });
+  if (ws.readyState === WebSocket.CONNECTING) {
+    await new Promise<void>((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error("ws_timeout")), 8000);
+      ws.onopen = () => {
+        clearTimeout(t);
+        resolve();
+      };
+      ws.onerror = () => {
+        clearTimeout(t);
+        reject(new Error("ws_error"));
+      };
+    });
+  }
 
   const send = (obj: Record<string, unknown>) => {
     if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
   };
 
-  send({
-    type: "response.create",
-    response: {
-      instructions:
-        'Speak now, one continuous greeting, warm and natural. You are the first voice on the call: "Bienvenue à AltShift. Préférez-vous le français? Or would you prefer English?" Then wait briefly for the caller.',
-    },
-  });
+  let spoken = false;
+  let attempts = 0;
+  const greet = (reason: string) => {
+    if (spoken || attempts >= 2) return;
+    attempts += 1;
+    console.log("sideband greeting", reason);
+    send({
+      type: "response.create",
+      response: {
+        instructions:
+          `Speak now. Do not wait for the caller. One continuous greeting: "${OPENING_LINE}" Then wait.`,
+      },
+    });
+  };
+  greet("open");
+  const retryGreeting = setTimeout(() => greet("retry"), 1200);
 
   await new Promise<void>((resolve) => {
     const hardStop = setTimeout(() => {
@@ -137,6 +324,22 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
         return;
       }
       const type = String(msg.type ?? "");
+      if (
+        type === "response.created" ||
+        type === "response.audio.delta" ||
+        type === "response.output_audio.delta"
+      ) {
+        spoken = true;
+        clearTimeout(retryGreeting);
+      }
+      if (type === "error") {
+        console.log("sideband error", JSON.stringify(msg).slice(0, 400));
+        spoken = false;
+        greet("error");
+      }
+      if (type === "session.created" || type === "session.updated") {
+        console.log("sideband", type);
+      }
       if (type === "session.ended" || type === "response.done" && String((msg as { response?: { status?: string } }).response?.status) === "failed") {
         /* keep listening */
       }
@@ -167,10 +370,12 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
 
     ws.onclose = () => {
       clearTimeout(hardStop);
+      clearTimeout(retryGreeting);
       resolve();
     };
     ws.onerror = () => {
       clearTimeout(hardStop);
+      clearTimeout(retryGreeting);
       resolve();
     };
   });
