@@ -253,7 +253,7 @@ export function ProProfileEditorDialog({
   const [pageBackgroundColor, setPageBackgroundColor] = useState(DEFAULT_PRO_PAGE_COLOR_SCHEME.background);
   const [pageHeaderText, setPageHeaderText] = useState("");
   const [proServiceTags, setProServiceTags] = useState<string[]>([]);
-  const { accountFields, setAccountFields, loaded: profileDataLoaded, hasExistingProfile, proEdit } =
+  const { accountFields, setAccountFields, loaded: profileDataLoaded, hasExistingProfile, proEdit, phoneOnFile } =
     useLoadExistingProProfile(user?.id, !!user);
   const [profileApplied, setProfileApplied] = useState(false);
   const [existingPersonalPhotoUrl, setExistingPersonalPhotoUrl] = useState<string | null>(null);
@@ -547,7 +547,7 @@ export function ProProfileEditorDialog({
         .from("profiles")
         .update({
           full_name: accountFields.full_name.trim() || form.firstNameOrBusiness.trim() || null,
-          phone: phoneNorm || null,
+          ...(phoneOnFile ? {} : { phone: phoneNorm || null }),
           birthday: birthdaySave,
           email_language: accountFields.email_language,
           postal_code: postalNorm || null,
@@ -590,7 +590,7 @@ export function ProProfileEditorDialog({
         service_radius_km: offersTravel ? serviceAreaValue.service_radius_km : null,
         availability: availabilityStr,
         price_min: priceMin,
-        phone: phoneNorm || null,
+        ...(phoneOnFile ? {} : { phone: phoneNorm || null }),
         email_language: accountFields.email_language,
         profile_last_edited_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -628,6 +628,7 @@ export function ProProfileEditorDialog({
         const { updated_at: _, ...insertPayload } = payload;
         const row = {
           ...insertPayload,
+          ...(phoneOnFile ? { phone: phoneNorm || null } : {}),
           user_id: user.id,
           is_verified: false,
         };
@@ -998,9 +999,14 @@ export function ProProfileEditorDialog({
                 id="acc-phone"
                 type="tel"
                 value={accountFields.phone}
+                readOnly={phoneOnFile}
+                className={phoneOnFile ? "bg-muted" : undefined}
                 onChange={(e) => setAccountFields((p) => ({ ...p, phone: formatCanadianPhone(e.target.value) }))}
                 placeholder="(450) 123-4567"
               />
+              {phoneOnFile ? (
+                <p className="text-xs text-muted-foreground">{t.dashboard?.securityPhoneLockedHint}</p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="acc-postal">{t.dashboard?.accountPostalCode ?? "Postal code"}</Label>
