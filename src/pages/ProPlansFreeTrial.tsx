@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { startGrowthTrial, type TrialSource } from "@/lib/trialCheckout";
+import { ensureApplePaySdkLoadedSoon } from "@/lib/applePaySdk";
 import { resolveSquareWebConfig } from "@/lib/squareWebConfig";
 import { PaymentProcessingOverlay } from "@/components/PaymentProcessingOverlay";
 
@@ -52,7 +53,9 @@ export default function ProPlansFreeTrial() {
     let cancelled = false;
     setConfigLoading(true);
     void (async () => {
+      const sdkReady = ensureApplePaySdkLoadedSoon();
       const cfg = await resolveSquareWebConfig();
+      await sdkReady;
       if (cancelled) return;
       if (cfg) {
         setApplicationId(cfg.applicationId);

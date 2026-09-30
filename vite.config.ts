@@ -1,7 +1,22 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from "vite-plugin-pwa";
+import fs from "fs";
 import path from "path";
+
+/** Unknown URLs that are not rewritten still boot the SPA, with HTTP 404. */
+function spa404Plugin(): Plugin {
+  return {
+    name: "altshift-spa-404",
+    apply: "build",
+    closeBundle() {
+      const dist = path.resolve(__dirname, "dist");
+      const indexPath = path.join(dist, "index.html");
+      if (!fs.existsSync(indexPath)) return;
+      fs.copyFileSync(indexPath, path.join(dist, "404.html"));
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
@@ -86,6 +101,7 @@ export default defineConfig(() => ({
         enabled: false,
       },
     }),
+    spa404Plugin(),
   ],
   resolve: {
     alias: {

@@ -7,6 +7,7 @@ import { GooglePayWalletSlot } from "@/components/GooglePayWalletSlot";
 import { PaymentProcessingOverlay } from "@/components/PaymentProcessingOverlay";
 import { computePlanChangePreview, type PlanPreviewOk, type PlanPreviewResult, type ProPlanId } from "@/lib/proPlanPreview";
 import { PLAN_CHECKOUT_SESSION_ERROR, submitPlanCheckout } from "@/lib/planCheckoutSubmit";
+import { ensureApplePaySdkLoadedSoon } from "@/lib/applePaySdk";
 import { resolveSquareWebConfig } from "@/lib/squareWebConfig";
 import { cn } from "@/lib/utils";
 
@@ -91,7 +92,9 @@ export default function ProPlanCheckoutExperience({
     let cancelled = false;
     setConfigLoading(true);
     void (async () => {
+      const sdkReady = ensureApplePaySdkLoadedSoon();
       const cfg = await resolveSquareWebConfig();
+      await sdkReady;
       if (cancelled) return;
       if (cfg) {
         setApplicationId(cfg.applicationId);

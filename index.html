@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script src="/boot/theme-init.js"></script>
     <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#f7f4ef" media="(prefers-color-scheme: light)" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -18,15 +19,25 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon-client-192.png" />
     <link rel="apple-touch-icon" href="/pwa-client-apple-touch.png" />
     <link rel="manifest" href="/manifest-client.webmanifest?v=10" />
-    <title>AltShift</title>
-    <meta name="description" content="Describe your need and receive quotes from trusted local service professionals across Quebec and Canada." />
-    <meta name="author" content="Services AltShift Inc." />
-    <meta property="og:title" content="AltShift" />
-    <meta property="og:description" content="A modern marketplace for local service professionals. Post a request, compare quotes, book with confidence." />
+    <title>AltShift | Professionnels de services locaux</title>
+    <meta name="description" content="Décrivez votre besoin et recevez des soumissions de professionnels de confiance au Québec et au Canada." />
+    <meta name="author" content="Les Services AltShift Inc." />
+    <meta property="og:title" content="AltShift | Professionnels de services locaux" />
+    <meta property="og:description" content="Décrivez votre besoin et recevez des soumissions de professionnels de confiance au Québec et au Canada." />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://www.altshift.ca" />
+    <meta property="og:site_name" content="AltShift" />
+    <meta property="og:url" content="https://www.altshift.ca/" />
+    <meta property="og:image" content="https://www.altshift.ca/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="AltShift" />
+    <meta property="og:locale" content="fr_CA" />
+    <meta property="og:locale:alternate" content="en_CA" />
     <link rel="canonical" href="https://www.altshift.ca/" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="AltShift | Professionnels de services locaux" />
+    <meta name="twitter:description" content="Décrivez votre besoin et recevez des soumissions de professionnels de confiance au Québec et au Canada." />
+    <meta name="twitter:image" content="https://www.altshift.ca/og-image.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -34,25 +45,17 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/boot/long-shadow.css" />
-    <!-- Apple Pay JS 1.2+: required for Apple Pay on non-Safari desktop (QR → iPhone iOS 18+). -->
-    <script src="https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js" crossorigin="anonymous"></script>
-    <script>
-      try {
-        var theme = localStorage.getItem("altshift-theme");
-        var dark =
-          theme === "dark" ||
-          ((theme === "system" || theme === null) &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches);
-        document.documentElement.setAttribute("data-boot-theme", dark ? "dark" : "light");
-      } catch (e) {
-        document.documentElement.setAttribute("data-boot-theme", "light");
-      }
-    </script>
     <style>
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
       }
 
       #altshift-boot {
@@ -87,6 +90,14 @@
         --boot-fg: #ffffff;
       }
 
+      html[data-boot-theme="dark"] body {
+        background: #0a0a0a;
+      }
+
+      html[data-boot-theme="light"] body {
+        background: #f7f4ef;
+      }
+
       #altshift-boot.is-done {
         opacity: 0;
         visibility: hidden;
@@ -116,7 +127,7 @@
         line-height: 0.92;
         letter-spacing: -0.02em;
         text-align: center;
-        /* Original Première size + 5% */
+        /* Boot wordmark size */
         font-size: clamp(2.625rem, 8.4vw, 5.5125rem);
         color: var(--boot-fg);
         font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
@@ -188,13 +199,7 @@
     </style>
   </head>
 
-  <body style="min-height:100vh;margin:0;padding:0;">
-    <script>
-      (function () {
-        var dark = document.documentElement.getAttribute("data-boot-theme") === "dark";
-        document.body.style.background = dark ? "#0a0a0a" : "#f7f4ef";
-      })();
-    </script>
+  <body>
 
     <div id="altshift-boot" role="status" aria-label="AltShift">
       <main class="site__main">
@@ -206,28 +211,6 @@
 
     <div id="root" style="min-height:100vh;margin:0;padding:0;width:100%;"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      (function () {
-        var boot = document.getElementById("altshift-boot");
-        if (!boot) return;
-
-        var finished = false;
-        var MAX_MS = 11000;
-        var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-        function finish() {
-          if (finished) return;
-          finished = true;
-          boot.classList.add("is-done");
-          window.setTimeout(function () {
-            if (boot.parentNode) boot.parentNode.removeChild(boot);
-          }, 450);
-        }
-
-        window.addEventListener("altshift-app-ready", finish);
-        window.__altshiftMarkAppReady = finish;
-        window.setTimeout(finish, reduceMotion ? 300 : MAX_MS);
-      })();
-    </script>
+    <script src="/boot/dismiss-boot.js"></script>
   </body>
 </html>

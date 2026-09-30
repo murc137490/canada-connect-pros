@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { CANONICAL_ORIGIN } from "@/components/CanonicalUrl";
+import { CANONICAL_ORIGIN } from "@/lib/routeMeta";
 
 const LEGACY_HOSTS = new Set(["premiereservices.ca", "www.premiereservices.ca"]);
 
