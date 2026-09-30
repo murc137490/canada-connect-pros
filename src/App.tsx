@@ -42,7 +42,7 @@ import ConfirmAccountDeletion from "./pages/ConfirmAccountDeletion";
 import GetAppGuide from "./pages/GetAppGuide";
 import AuthHashErrorToast from "@/components/AuthHashErrorToast";
 import HashScroll from "@/components/HashScroll";
-import CanonicalUrl from "@/components/CanonicalUrl";
+import DocumentHead from "@/components/DocumentHead";
 import LegacyHostRedirect from "@/components/LegacyHostRedirect";
 import OAuthCodeForwarder from "@/components/OAuthCodeForwarder";
 import MonitorAdminGuard from "@/components/MonitorAdminGuard";
@@ -81,7 +81,7 @@ const App = () => (
             <HashScroll />
             <LegacyHostRedirect />
             <OAuthCodeForwarder />
-            <CanonicalUrl />
+            <DocumentHead />
             <NotificationProvider>
             <WhatsNewProvider>
             <Routes>

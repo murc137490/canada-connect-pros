@@ -18,6 +18,8 @@ import {
   ShieldCheck, CalendarCheck, CreditCard, ChevronRight, ChevronDown, Share2, Info, X, Heart, Sparkles
 } from "lucide-react";
 import BootLoadingScreen from "@/components/BootLoadingScreen";
+import NotFound from "@/pages/NotFound";
+import { applyDocumentMeta } from "@/lib/routeMeta";
 import { serviceCategories } from "@/data/services";
 import { getCategoryName } from "@/i18n/constants";
 import StarRating from "@/components/pro/StarRating";
@@ -966,6 +968,25 @@ export default function ProProfilePage() {
     return gallery.length > 0 ? gallery : photos;
   }, [photos]);
 
+  useEffect(() => {
+    if (!pro?.business_name) return;
+    const blurb = (mainBio || "").replace(/\s+/g, " ").trim();
+    applyDocumentMeta(
+      {
+        title: `${pro.business_name} | AltShift`,
+        description:
+          blurb.slice(0, 155) ||
+          (locale === "fr"
+            ? `Profil de ${pro.business_name} sur AltShift.`
+            : `${pro.business_name} on AltShift.`),
+        canonicalPath: window.location.pathname || "/",
+        pendingProLookup: false,
+        notFound: false,
+      },
+      locale,
+    );
+  }, [pro, locale, mainBio]);
+
   if (loading) {
     return (
       <Layout>
@@ -977,14 +998,7 @@ export default function ProProfilePage() {
   }
 
   if (!pro) {
-    return (
-      <Layout>
-        <div className="container py-20 text-center">
-          <h1 className="font-heading text-2xl font-bold text-foreground mb-4">Pro not found</h1>
-          <Button asChild><Link to="/services">Browse Services</Link></Button>
-        </div>
-      </Layout>
-    );
+    return <NotFound />;
   }
 
   const initials = fullName.split(" ").map((n) => n[0]).join("").toUpperCase();

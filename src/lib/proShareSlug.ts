@@ -2,13 +2,16 @@ import { SITE_URL } from "@/config/legalConfig";
 
 /** Path segments that must never be used as pro vanity URLs. */
 export const RESERVED_SHARE_SLUGS = new Set([
+  "about",
   "admin",
+  "a-propos",
   "auth",
   "cookies",
   "cookie-policy",
   "confirm-deletion",
   "create-pro-account",
   "dashboard",
+  "get-app",
   "help",
   "join-pros",
   "make-request",

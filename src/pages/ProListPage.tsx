@@ -14,6 +14,7 @@ import ProCard, { type ProCardData } from "@/components/pro/ProCard";
 import StarBorder from "@/components/StarBorder";
 import GradientText from "@/components/GradientText";
 import BootLoadingScreen from "@/components/BootLoadingScreen";
+import NotFound from "@/pages/NotFound";
 import { useToast } from "@/hooks/use-toast";
 import { filterAdvertiseableProIds } from "@/lib/filterAdvertiseablePros";
 import { isDemoAccount, isDemoProProfile } from "@/lib/demoAccount";
@@ -42,6 +43,14 @@ export default function ProListPage() {
   );
 
   useEffect(() => {
+    const known = getAllServices().some((s) => s.slug === serviceSlug && s.categorySlug === categorySlug);
+    if (!known) {
+      setPros([]);
+      setTopPicks([]);
+      setLoading(false);
+      return;
+    }
+
     const fetchPros = async () => {
       setLoading(true);
 
@@ -187,6 +196,10 @@ export default function ProListPage() {
       default: return 0;
     }
   });
+
+  if (!category || !service) {
+    return <NotFound />;
+  }
 
   return (
     <Layout>

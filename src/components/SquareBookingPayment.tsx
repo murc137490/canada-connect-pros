@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { ensureApplePaySdkLoadedSoon } from "@/lib/applePaySdk";
 import { resolveSquareWebConfig } from "@/lib/squareWebConfig";
 import { isDemoAccount, createDemoPaymentMeta } from "@/lib/demoAccount";
 import { PaymentProcessingOverlay } from "@/components/PaymentProcessingOverlay";
@@ -108,7 +109,9 @@ export default function SquareBookingPayment({
     let cancelled = false;
     setConfigLoading(true);
     void (async () => {
+      const sdkReady = ensureApplePaySdkLoadedSoon();
       const cfg = await resolveSquareWebConfig({ preferredLocationId: squareLocationId });
+      await sdkReady;
       if (cancelled) return;
       if (cfg) {
         setApplicationId(cfg.applicationId);

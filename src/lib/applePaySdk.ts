@@ -52,6 +52,20 @@ export function ensureApplePaySdkLoaded(): Promise<boolean> {
 }
 
 /**
+ * Start the Apple Pay JS SDK and continue even if the CDN is slow.
+ * Checkout screens await this before mounting Square, so a hung script cannot block card entry.
+ */
+export function ensureApplePaySdkLoadedSoon(timeoutMs = 4000): Promise<boolean> {
+  if (typeof window === "undefined") return Promise.resolve(false);
+  return Promise.race([
+    ensureApplePaySdkLoaded(),
+    new Promise<boolean>((resolve) => {
+      window.setTimeout(() => resolve(!!getApplePaySession()), timeoutMs);
+    }),
+  ]);
+}
+
+/**
  * True when this browser can present Apple Pay (Safari Wallet, or Apple Pay JS
  * on a third-party desktop browser that supports QR handoff).
  */
