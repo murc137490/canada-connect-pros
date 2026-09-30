@@ -47,6 +47,10 @@ verify_jwt = false
 [functions.openai-live-sip-webhook]
 verify_jwt = false
 
+# Phone front desk tools. The SIP webhook calls this with the service role; demo reads stay inside the function.
+[functions.front-desk-tools]
+verify_jwt = false
+
 # Hourly 24h booking SMS reminders (auth via x-booking-reminder-secret).
 [functions.booking-sms-reminders]
 verify_jwt = false
