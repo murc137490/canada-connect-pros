@@ -73,7 +73,7 @@ export function hasFeaturedPublicProfileLook(tier: ProPlanId | null | undefined)
   return tier === "growth" || tier === "pro";
 }
 
-/** Pro only: SMS booking confirmations + automated reminder pipeline (Twilio). */
+/** Pro only: SMS booking confirmations + automated reminder pipeline (Telnyx preferred, Twilio fallback). */
 export function hasSmsBookingAutomation(tier: ProPlanId | null | undefined): boolean {
   return tier === "pro";
 }

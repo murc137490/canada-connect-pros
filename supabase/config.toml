@@ -31,6 +31,10 @@ verify_jwt = false
 [functions.booking-sms-notify]
 verify_jwt = false
 
+# Telnyx Verify OTP send/check (public shape mirrors twilio-verify; gate callers in product UI).
+[functions.telnyx-verify]
+verify_jwt = false
+
 # Uses in-function auth or x-email-pipeline-secret so it can be called by app sessions,
 # scheduled reminders, database webhooks, or server-side automations.
 [functions.send-app-email]

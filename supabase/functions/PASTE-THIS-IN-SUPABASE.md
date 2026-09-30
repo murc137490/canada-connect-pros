@@ -88,8 +88,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const systemContent = context
-      ? `You are the AltShift AI support assistant for a Canadian home services marketplace. Use the following database results when relevant to answer the user.\n\nDatabase results:\n${context}\n\nBe friendly, helpful, and concise. Phone: +1 450 910 1400. Email: support@altshift.ca. If you don't know something, direct users to contact support.`
-      : `You are the AltShift AI support assistant for a Canadian home services marketplace. Help customers find and hire verified pros. Be friendly and concise. Phone: +1 450 910 1400. Email: support@altshift.ca.`;
+      ? `You are the AltShift AI support assistant for a Canadian home services marketplace. Use the following database results when relevant to answer the user.\n\nDatabase results:\n${context}\n\nBe friendly, helpful, and concise. Phone: +1 450 800 3177. Email: support@altshift.ca. If you don't know something, direct users to contact support.`
+      : `You are the AltShift AI support assistant for a Canadian home services marketplace. Help customers find and hire verified pros. Be friendly and concise. Phone: +1 450 800 3177. Email: support@altshift.ca.`;
 
     const hfResp = await fetch(HF_CHAT_URL, {
       method: "POST",

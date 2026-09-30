@@ -149,8 +149,8 @@ async function chatWithProviderChain(
 
 function staticProviderDownMessage(language: "en" | "fr"): string {
   return language === "fr"
-    ? "L’assistant est temporairement saturé. Écrivez-nous à support@altshift.ca (réponse sous 24 h) ou composez le +1 450 910 1400 (lun–ven, 8 h–20 h HE). Nous sommes là pour vous aider."
-    : "Our AI assistant is temporarily busy. Email support@altshift.ca (we reply within 24 hours) or call +1 450 910 1400 (Mon–Fri, 8am–8pm EST). We’re happy to help.";
+    ? "L’assistant est temporairement saturé. Écrivez-nous à support@altshift.ca (réponse sous 24 h) ou composez le +1 450 800 3177 (lun–ven, 8 h–20 h HE). Nous sommes là pour vous aider."
+    : "Our AI assistant is temporarily busy. Email support@altshift.ca (we reply within 24 hours) or call +1 450 800 3177 (Mon–Fri, 8am–8pm EST). We’re happy to help.";
 }
 
 async function chatWithHf(messages: ChatMsg[], maxTokens: number, temperature: number): Promise<string> {
@@ -361,7 +361,7 @@ ${sessionBlock}
 - Tableau de bord : [Dashboard](/dashboard)
 - App Android (écran d’accueil) : [Android](/get-app/android)
 - App iPhone (écran d’accueil) : [iPhone](/get-app/ios)
-- Support : support@altshift.ca · +1 450 910 1400
+- Support : support@altshift.ca · +1 450 800 3177
 
 **Télécharger / installer l’app AltShift :**
 Il n’y a pas d’App Store ni de Play Store. AltShift s’installe depuis le site (PWA) sur l’écran d’accueil.
@@ -392,7 +392,7 @@ ${sessionBlock}
 - Dashboard: [Dashboard](/dashboard)
 - Android app (home screen): [Android](/get-app/android)
 - iPhone app (home screen): [iPhone](/get-app/ios)
-- Support: support@altshift.ca · +1 450 910 1400 (Mon–Fri, 8am–8pm EST)
+- Support: support@altshift.ca · +1 450 800 3177 (Mon–Fri, 8am–8pm EST)
 
 **Download / install the AltShift app:**
 There is no App Store or Play Store listing. AltShift installs from the website (PWA) onto the home screen.
@@ -428,8 +428,8 @@ Language: **English only** (proper nouns / emails / phone excepted).`;
           : " You must reply only in English.";
       systemContent =
         (context
-          ? `You are the AltShift AI support assistant for a Canadian home services marketplace. Use the following database results when relevant to answer the user.\n\nDatabase results:\n${context}\n\nBe friendly, helpful, and concise. Phone: +1 450 910 1400. Email: support@altshift.ca. If you don't know something, direct users to contact support.`
-          : `You are the AltShift AI support assistant for a Canadian home services marketplace. Help customers find and hire verified pros. Be friendly and concise. Phone: +1 450 910 1400. Email: support@altshift.ca.`) +
+          ? `You are the AltShift AI support assistant for a Canadian home services marketplace. Use the following database results when relevant to answer the user.\n\nDatabase results:\n${context}\n\nBe friendly, helpful, and concise. Phone: +1 450 800 3177. Email: support@altshift.ca. If you don't know something, direct users to contact support.`
+          : `You are the AltShift AI support assistant for a Canadian home services marketplace. Help customers find and hire verified pros. Be friendly and concise. Phone: +1 450 800 3177. Email: support@altshift.ca.`) +
         langInstruction +
         systemExtension;
     }

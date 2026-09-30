@@ -19,10 +19,10 @@ export const PRIVACY_CONTACT = {
 export const SUPPORT_EMAIL = "support@altshift.ca";
 
 /** Public support phone (display). */
-export const SUPPORT_PHONE = "+1 450 910 1400";
+export const SUPPORT_PHONE = "+1 450 800 3177";
 
 /** tel: href for the public support phone. */
-export const SUPPORT_PHONE_TEL = "tel:+14509101400";
+export const SUPPORT_PHONE_TEL = "tel:+14508003177";
 
 /**
  * What "verified" / credential checks mean in the product UI today.

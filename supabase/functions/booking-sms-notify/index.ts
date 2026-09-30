@@ -1,13 +1,20 @@
 /**
- * Sends SMS for Pro-tier pros when enabled (Twilio Messages API).
- * Secrets: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_SMS_FROM (E.164, e.g. +15551234567)
+ * Sends SMS for Pro-tier pros when enabled.
+ * Prefers Telnyx when configured; falls back to Twilio.
+ *
+ * Secrets (Telnyx — preferred):
+ *   TELNYX_API_KEY, TELNYX_SMS_FROM (E.164, e.g. +14508003177)
+ * Secrets (Twilio — fallback):
+ *   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_SMS_FROM
  *
  * POST JSON:
  * - { "booking_id": "<uuid>", "event": "confirmation" } — caller must be the booking's client (Bearer session).
- * - { "booking_id": "<uuid>", "event": "reminder" } — requires header `x-booking-reminder-secret` matching BOOKING_REMINDER_SECRET (cron / automation).
+ * - { "booking_id": "<uuid>", "event": "reminder" } — requires header `x-booking-reminder-secret` matching BOOKING_REMINDER_SECRET.
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { toE164NorthAmerica } from "../_shared/phoneE164.ts";
+import { sendTelnyxSms, telnyxSmsConfigured } from "../_shared/telnyxSms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,14 +26,12 @@ function basicAuth(accountSid: string, authToken: string): string {
   return btoa(`${accountSid}:${authToken}`);
 }
 
-/** Twilio expects E.164; profiles often store local 10-digit numbers. */
-function toE164NorthAmerica(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "");
-  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
-  if (digits.length === 10) return `+1${digits}`;
-  const trimmed = raw.trim();
-  if (trimmed.startsWith("+") && digits.length >= 11) return `+${digits}`;
-  return null;
+function twilioSmsConfigured(): boolean {
+  return !!(
+    Deno.env.get("TWILIO_ACCOUNT_SID")?.trim() &&
+    Deno.env.get("TWILIO_AUTH_TOKEN")?.trim() &&
+    Deno.env.get("TWILIO_SMS_FROM")?.trim()
+  );
 }
 
 type EventType = "confirmation" | "reminder";
@@ -52,6 +57,15 @@ Deno.serve(async (req) => {
     });
   }
 
+  const useTelnyx = telnyxSmsConfigured();
+  const useTwilio = twilioSmsConfigured();
+  if (!useTelnyx && !useTwilio) {
+    return new Response(
+      JSON.stringify({ ok: true, skipped: true, reason: "sms_provider_not_configured" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
   const body = await req.json().catch(() => ({}));
   const bookingId = typeof body.booking_id === "string" ? body.booking_id.trim() : "";
   const event = (body.event === "reminder" ? "reminder" : "confirmation") as EventType;
@@ -64,16 +78,6 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(supabaseUrl, serviceRoleKey);
-
-  const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const fromNum = Deno.env.get("TWILIO_SMS_FROM");
-  if (!accountSid || !authToken || !fromNum) {
-    return new Response(
-      JSON.stringify({ ok: true, skipped: true, reason: "twilio_not_configured" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
 
   let userId: string | null = null;
   if (event === "confirmation") {
@@ -166,6 +170,24 @@ Deno.serve(async (req) => {
       ? `Reminder: appointment with ${biz}${datePart ? ` on ${datePart}` : ""}${timePart ? ` at ${timePart}` : ""}. Reply STOP to opt out.`
       : `Booking confirmed with ${biz}${datePart ? ` on ${datePart}` : ""}${timePart ? ` at ${timePart}` : ""}. AltShift.`;
 
+  if (useTelnyx) {
+    const result = await sendTelnyxSms({ to, text: bodyText });
+    if (!result.ok) {
+      console.error("Telnyx SMS error", result.status, result.error);
+      return new Response(JSON.stringify({ ok: false, provider: "telnyx", error: result.error }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ ok: true, provider: "telnyx", id: result.id }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
+  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN")!;
+  const fromNum = Deno.env.get("TWILIO_SMS_FROM")!;
   const auth = basicAuth(accountSid, authToken);
   const form = new URLSearchParams();
   form.set("To", to);
@@ -187,14 +209,15 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         ok: false,
+        provider: "twilio",
         error: (twData as { message?: string }).message ?? "twilio_error",
       }),
-      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 
-  return new Response(JSON.stringify({ ok: true, sid: (twData as { sid?: string }).sid }), {
-    status: 200,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  return new Response(
+    JSON.stringify({ ok: true, provider: "twilio", sid: (twData as { sid?: string }).sid }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
 });
