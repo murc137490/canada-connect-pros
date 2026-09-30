@@ -1,7 +1,8 @@
 /**
- * Returns TeXML: short French welcome, then Dial OpenAI SIP (TLS + SRTP).
- * The welcome must stay short. TeXML waits until <Say> finishes before <Dial>,
- * and the Realtime sideband speaks the language question as soon as the SIP leg connects.
+ * Returns TeXML that dials OpenAI Realtime SIP (TLS + SRTP).
+ * Do not <Say> here. Telnyx "alice" is a robotic phone voice, and speaking
+ * before <Dial> answers the call so the caller hears ringback before GPT talks.
+ * answerOnBridge keeps the original ring until GPT answers, then GPT speaks.
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
@@ -15,12 +16,9 @@ Deno.serve(async (req) => {
   const sipUri =
     `sip:${PROJECT_ID}@sip.api.openai.com;transport=tls;secure=srtp`;
 
-  // Keep this to one short sentence. A "please wait" line blocks Dial until
-  // speech ends, and callers hang up thinking the line is stuck.
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say language="fr-CA" voice="alice">Bienvenue à AltShift.</Say>
-  <Dial callerId="${CALLER_ID}" timeout="45" timeLimit="3600">
+  <Dial answerOnBridge="true" callerId="${CALLER_ID}" timeout="45" timeLimit="3600">
     <Sip>${sipUri}</Sip>
   </Dial>
 </Response>`;

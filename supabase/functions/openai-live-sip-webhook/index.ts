@@ -41,7 +41,7 @@ async function acceptRealtime(apiKey: string, callId: string, deskSessionId: str
     `\n\nCurrent front_desk session_id (pass to EVERY tool): ${deskSessionId}` +
     `\nPhone line: +1 450 800 3177.` +
     (callerPhone ? `\nInbound caller phone (already stored): ${callerPhone}. Call identify_caller early.` : "") +
-    `\nTeXML already said "Bienvenue à AltShift." SPEAK IMMEDIATELY: "Préférez-vous le français? Or would you prefer English?" Then wait.`;
+    `\nNothing has been spoken yet. You are the first voice. SPEAK IMMEDIATELY, one turn: "Bienvenue à AltShift. Préférez-vous le français? Or would you prefer English?" Then wait.`;
 
   const res = await fetch(`${OPENAI_API}/realtime/calls/${encodeURIComponent(callId)}/accept`, {
     method: "POST",
@@ -113,12 +113,11 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
     if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
   };
 
-  // TeXML already said Bienvenue — continue immediately with language choice (no dead air)
   send({
     type: "response.create",
     response: {
       instructions:
-        'Speak now warmly (do not repeat Bienvenue): "Préférez-vous le français? Or would you prefer English?" Then wait briefly for the caller.',
+        'Speak now, one continuous greeting, warm and natural. You are the first voice on the call: "Bienvenue à AltShift. Préférez-vous le français? Or would you prefer English?" Then wait briefly for the caller.',
     },
   });
 
