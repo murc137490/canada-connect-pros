@@ -1250,6 +1250,32 @@ apple-pay-button {
   }
 }
 
+@keyframes hero-need-wait {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
+
+.hero-need-waiting {
+  animation: hero-need-wait 0.5s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-need-waiting {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .altshift-boot-screen__main {
     padding: 0;
