@@ -74,6 +74,7 @@ function findServiceByName(serviceName: string): { categorySlug: string; service
 export default function HeroSection() {
   const { t, locale } = useLanguage();
   const [query, setQuery] = useState("");
+  const [needNudge, setNeedNudge] = useState(false);
   const [postalCode, setPostalCode] = useState("");
   const [postalResolved, setPostalResolved] = useState<{
     lat: number;
@@ -103,6 +104,28 @@ export default function HeroSection() {
   const [locating, setLocating] = useState(false);
   const [textareaFocused, setTextareaFocused] = useState(false);
   const [browseLeaving, setBrowseLeaving] = useState(false);
+  const needIsWaiting = Boolean(postalResolved) && query.trim().length === 0 && !textareaFocused;
+
+  useEffect(() => {
+    if (!needIsWaiting) {
+      setNeedNudge(false);
+      return;
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let nudgeTimer = 0;
+    const kick = () => {
+      setNeedNudge(true);
+      window.clearTimeout(nudgeTimer);
+      nudgeTimer = window.setTimeout(() => setNeedNudge(false), 520);
+    };
+    const first = window.setTimeout(kick, 450);
+    const interval = window.setInterval(kick, 2600);
+    return () => {
+      window.clearTimeout(first);
+      window.clearInterval(interval);
+      window.clearTimeout(nudgeTimer);
+    };
+  }, [needIsWaiting]);
 
   const goBrowseServices = useCallback(() => {
     if (browseLeaving) return;
@@ -588,7 +611,9 @@ export default function HeroSection() {
                     onFocus={() => setTextareaFocused(true)}
                     onBlur={() => setTextareaFocused(false)}
                     rows={1}
-                    className="w-full min-h-[2.75rem] max-h-32 resize-none overflow-y-auto border border-border/70 bg-muted/40 px-3 py-2.5 pr-10 text-sm text-foreground outline-none transition-[height] duration-300 placeholder:text-muted-foreground/70 focus:border-border focus:bg-background disabled:opacity-50 sm:text-[15px]"
+                    className={`w-full min-h-[2.75rem] max-h-32 resize-none overflow-y-auto border border-border/70 bg-muted/40 px-3 py-2.5 pr-10 text-sm text-foreground outline-none transition-[height] duration-300 placeholder:text-muted-foreground/70 focus:border-border focus:bg-background disabled:opacity-50 sm:text-[15px] ${
+                      needNudge ? "hero-need-waiting" : ""
+                    }`}
                     style={{ overflowWrap: "break-word", borderRadius: "7px" }}
                     disabled={!normalizedPostal || !postalResolved}
                   />
@@ -598,6 +623,21 @@ export default function HeroSection() {
                     </div>
                   )}
                 </div>
+
+                {query.trim() ? (
+                  <div className="space-y-2 pt-0.5">
+                    <p className="text-sm text-foreground">{t.index.heroCantFind}</p>
+                    <Button asChild size="sm" className="h-9">
+                      <Link
+                        to={`/make-request?description=${encodeURIComponent(query.trim())}${
+                          normalizedPostal ? `&postal=${encodeURIComponent(normalizedPostal)}` : ""
+                        }`}
+                      >
+                        {t.index.ctaPublish}
+                      </Link>
+                    </Button>
+                  </div>
+                ) : null}
 
                 {postalResolved ? (
                   <p className="px-0.5 text-xs text-muted-foreground">

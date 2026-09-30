@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -86,12 +86,22 @@ export default function MakeRequest() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [gaugePulse, setGaugePulse] = useState(0);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [description, setDescription] = useState("");
   const [postalCode, setPostalCode] = useState("");
+
+  useEffect(() => {
+    const desc = searchParams.get("description")?.trim() ?? "";
+    const postal = searchParams.get("postal")?.trim() ?? "";
+    if (desc) setDescription((prev) => (prev.trim() ? prev : desc));
+    if (postal) {
+      setPostalCode((prev) => (prev.trim() ? prev : formatCanadianPostalInput(postal)));
+    }
+  }, [searchParams]);
   const [category, setCategory] = useState<string>("Other");
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
@@ -174,12 +184,14 @@ export default function MakeRequest() {
     if (authLoading) return;
     if (!user) {
       allowLeaveRef.current = true;
-      navigate("/auth?mode=login&redirect=/make-request", { replace: true });
+      const query = searchParams.toString();
+      const next = `/make-request${query ? `?${query}` : ""}`;
+      navigate(`/auth?mode=login&redirect=${encodeURIComponent(next)}`, { replace: true });
       return;
     }
     refreshDrafts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, navigate, authLoading]);
+  }, [user, navigate, authLoading, searchParams]);
 
   useEffect(() => {
     if (description.trim().length > 20) {
