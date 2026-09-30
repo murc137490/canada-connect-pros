@@ -96,6 +96,20 @@ grant execute on function public.verify_voice_pin_hash(text, text) to service_ro
 grant execute on function public.hash_voice_pin(text) to service_role;
 grant execute on function public.auth_email_taken(text, uuid) to service_role;
 
+create or replace function public.account_phone_digits(p_phone text)
+returns text
+language sql
+immutable
+set search_path = public
+as $$
+  select case
+    when length(regexp_replace(coalesce(p_phone, ''), '\D', '', 'g')) = 11
+     and left(regexp_replace(coalesce(p_phone, ''), '\D', '', 'g'), 1) = '1'
+      then right(regexp_replace(coalesce(p_phone, ''), '\D', '', 'g'), 10)
+    else regexp_replace(coalesce(p_phone, ''), '\D', '', 'g')
+  end;
+$$;
+
 create or replace function public.profiles_lock_phone_and_pin()
 returns trigger
 language plpgsql
@@ -105,9 +119,8 @@ as $$
 declare
   grant_id uuid;
 begin
-  if old.phone is not null
-     and btrim(old.phone) <> ''
-     and new.phone is distinct from old.phone then
+  if public.account_phone_digits(old.phone) <> ''
+     and public.account_phone_digits(new.phone) is distinct from public.account_phone_digits(old.phone) then
     if auth.role() is distinct from 'service_role' then
       raise exception 'phone_locked' using errcode = 'P0001';
     end if;
@@ -171,9 +184,8 @@ as $$
 declare
   grant_id uuid;
 begin
-  if old.phone is not null
-     and btrim(old.phone) <> ''
-     and new.phone is distinct from old.phone then
+  if public.account_phone_digits(old.phone) <> ''
+     and public.account_phone_digits(new.phone) is distinct from public.account_phone_digits(old.phone) then
     if auth.role() is distinct from 'service_role' then
       raise exception 'phone_locked' using errcode = 'P0001';
     end if;
