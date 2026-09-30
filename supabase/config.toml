@@ -39,6 +39,14 @@ verify_jwt = false
 [functions.telnyx-voice-webhook]
 verify_jwt = false
 
+# Telnyx fetches this TeXML with no Supabase JWT, then dials OpenAI SIP.
+[functions.telnyx-texml-openai]
+verify_jwt = false
+
+# OpenAI Realtime posts call.incoming with no Supabase JWT.
+[functions.openai-live-sip-webhook]
+verify_jwt = false
+
 # Hourly 24h booking SMS reminders (auth via x-booking-reminder-secret).
 [functions.booking-sms-reminders]
 verify_jwt = false
