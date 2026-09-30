@@ -6,8 +6,19 @@ Support line: **+1 450 800 3177** (`tel:+14508003177`).
 ## 1. Portal checklist
 
 1. [Telnyx Mission Control](https://portal.telnyx.com) → create/API key.
-2. Assign **+1 450 800 3177** (or your messaging number) to a **Messaging Profile**.
-3. (Optional OTP) Create a **Verify Profile** and copy its ID.
+2. Messaging profile **AltShift SMS** attached to **+1 450 800 3177**.
+3. Call Control Application **AltShift Support** (webhook → `telnyx-voice-webhook`).
+4. Verify profile **AltShift OTP** (SMS, CA/US, 6-digit).
+
+### Current resource IDs (Sep 2026)
+
+| Resource | ID / value |
+| --- | --- |
+| Phone | `+14508003177` (`3059996860258190883`) |
+| Messaging profile | `4001a0ef-d068-4e9b-9c05-3cc6a39447b6` |
+| Call Control app | `3060031730896340257` |
+| Verify (OTP) profile | `490001a0-efd0-69b0-00b0-e8f55033656f` |
+| Voice webhook | `https://hptzapnrnbqlptrstjxo.supabase.co/functions/v1/telnyx-voice-webhook` |
 
 ## 2. Supabase Edge secrets
 
@@ -16,13 +27,12 @@ Dashboard → Project → Edge Functions → Secrets (or CLI):
 ```bash
 supabase secrets set TELNYX_API_KEY="KEY016…"
 supabase secrets set TELNYX_SMS_FROM="+14508003177"
-# Optional — phone OTP
-supabase secrets set TELNYX_VERIFY_PROFILE_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+supabase secrets set TELNYX_VERIFY_PROFILE_ID="490001a0-efd0-69b0-00b0-e8f55033656f"
 ```
 
 | Secret | Used by |
 | --- | --- |
-| `TELNYX_API_KEY` | `booking-sms-notify`, `telnyx-verify` |
+| `TELNYX_API_KEY` | `booking-sms-notify`, `telnyx-verify`, `telnyx-voice-webhook` |
 | `TELNYX_SMS_FROM` | `booking-sms-notify` (E.164 From) |
 | `TELNYX_VERIFY_PROFILE_ID` | `telnyx-verify` |
 
@@ -31,23 +41,40 @@ Twilio secrets (`TWILIO_*`) still work as fallback if Telnyx is unset.
 ## 3. Deploy functions
 
 ```bash
-supabase functions deploy booking-sms-notify
-supabase functions deploy telnyx-verify
-supabase functions deploy ai-chat-hf
+supabase functions deploy booking-sms-notify --project-ref hptzapnrnbqlptrstjxo
+supabase functions deploy telnyx-verify --project-ref hptzapnrnbqlptrstjxo
+supabase functions deploy telnyx-voice-webhook --project-ref hptzapnrnbqlptrstjxo
 ```
 
+`telnyx-voice-webhook` currently answers and plays a bilingual “setup in progress” greeting. Full AI support (services / booking) is a later iteration.
 ## 4. Cursor MCP (agent can manage Telnyx from chat)
 
-Project file: `.cursor/mcp.json` points at Telnyx’s remote MCP.
+Project file: `.cursor/mcp.json` (gitignored) — remote Telnyx MCP with Bearer header:
 
-1. Cursor **Settings → MCP**
-2. Open the **telnyx** server
-3. Authenticate with your Telnyx API key (Bearer), or set env `TELNYX_API_KEY` for the local `npx @telnyx/mcp` server
+```json
+{
+  "mcpServers": {
+    "telnyx": {
+      "url": "https://api.telnyx.com/v2/mcp",
+      "headers": {
+        "Authorization": "Bearer PASTE_YOUR_TELNYX_API_KEY_HERE"
+      }
+    },
+    "telnyx-docs": {
+      "url": "https://developers.telnyx.com/mcp"
+    }
+  }
+}
+```
+
+1. Paste your API key over `PASTE_YOUR_TELNYX_API_KEY_HERE` (keep the word `Bearer `).
+2. Cursor **Settings → MCP** → reload / enable **telnyx** until it shows connected.
+3. In a new chat, ask e.g. “list my Telnyx phone numbers”.
 
 Remote endpoint: `https://api.telnyx.com/v2/mcp`  
 Docs: https://developers.telnyx.com/development/mcp/remote-mcp
 
-After MCP is connected, you can ask the agent to list numbers, messaging profiles, send test SMS, etc.
+**Note:** MCP lets the agent manage Telnyx (numbers, profiles, etc.). A Path C voice support bot still needs a Call Control Application + public webhook Edge Function — separate from this MCP link.
 
 ## 5. API smoke tests
 

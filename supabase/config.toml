@@ -35,6 +35,10 @@ verify_jwt = false
 [functions.telnyx-verify]
 verify_jwt = false
 
+# Telnyx Call Control webhooks (no Supabase JWT from Telnyx).
+[functions.telnyx-voice-webhook]
+verify_jwt = false
+
 # Uses in-function auth or x-email-pipeline-secret so it can be called by app sessions,
 # scheduled reminders, database webhooks, or server-side automations.
 [functions.send-app-email]
