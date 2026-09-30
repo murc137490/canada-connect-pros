@@ -439,7 +439,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
-            <span>© {new Date().getFullYear()} Services AltShift Inc. {t.footer.rights}</span>
+            <span>© {new Date().getFullYear()} Les Services AltShift Inc. {t.footer.rights}</span>
             <div className="flex flex-wrap gap-3">
               <Link to="/terms" className="hover:text-white/70 transition-colors">{t.footer.termsOfService}</Link>
               <Link to="/privacy" className="hover:text-white/70 transition-colors">

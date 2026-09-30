@@ -46,13 +46,9 @@ export default function TermsOfService() {
                 <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{help.short}</p>
                 <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{help.body}</p>
                 <p className="text-xs text-muted-foreground mt-3">
-                  {locale === "fr"
-                    ? "Libellé final soumis à révision juridique. Voir aussi "
-                    : "Final wording subject to legal review. See also "}
                   <Link to="/privacy" className="underline">
                     {locale === "fr" ? "Confidentialité" : "Privacy"}
                   </Link>
-                  .
                 </p>
               </div>
             </div>

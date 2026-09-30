@@ -7,9 +7,7 @@ import {
   PRIVACY_LAST_UPDATED_FR,
   PRIVACY_SECTIONS_EN,
   PRIVACY_SECTIONS_FR,
-  PRIVACY_VERSION,
 } from "@/content/privacyContent";
-import { LEGAL_DOCUMENT_VERSIONS } from "@/config/legalConfig";
 
 export default function PrivacyPolicy() {
   const { locale, t } = useLanguage();
@@ -29,12 +27,8 @@ export default function PrivacyPolicy() {
           <h1 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-2">
             {locale === "fr" ? "Politique de confidentialité" : "Privacy Policy"}
           </h1>
-          <p className="text-sm text-muted-foreground mb-2">
+          <p className="text-sm text-muted-foreground mb-8">
             {locale === "fr" ? "Dernière mise à jour" : "Last updated"}: {lastUpdated}
-          </p>
-          <p className="text-xs text-muted-foreground mb-8">
-            {locale === "fr" ? "Version" : "Version"}: {PRIVACY_VERSION} (
-            {LEGAL_DOCUMENT_VERSIONS.privacy_policy.hash}) — draft pending legal review
           </p>
           <div className="prose prose-slate dark:prose-invert max-w-none space-y-10">
             {sections.map((section) => (

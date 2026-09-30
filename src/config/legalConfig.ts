@@ -1,13 +1,14 @@
 /**
- * Central product/legal configuration for AltShift (Services AltShift Inc.).
- * Not legal advice. Values marked REVIEW_REQUIRED must be confirmed by the owner / counsel.
+ * Central product/legal configuration for AltShift (Les Services AltShift Inc.).
  */
 
-export const LEGAL_ENTITY_NAME = "Services AltShift Inc.";
+export const LEGAL_ENTITY_NAME = "Les Services AltShift Inc.";
 
 export const BRAND_NAME = "AltShift";
 
 export const SITE_URL = "https://www.altshift.ca";
+
+export const LEGAL_ADDRESS = "1058 impasse de la Bleuetière, J2J 0C4";
 
 export const PRIVACY_CONTACT = {
   name: "Privacy Officer",
@@ -67,14 +68,14 @@ export const SERVICE_RESOLUTION_HELP = {
   },
 } as const;
 
-/** Document versions for acceptance logging (bump when counsel-approved text changes). */
+/** Document versions for acceptance logging (bump when published text changes). */
 export const LEGAL_DOCUMENT_VERSIONS = {
-  website_terms: { version: "2026-03-draft", hash: "terms-2026-03-draft" },
-  client_booking_terms: { version: "2026-03-draft", hash: "client-booking-2026-03-draft" },
-  professional_agreement: { version: "2026-03-draft", hash: "pro-agreement-2026-03-draft" },
-  privacy_policy: { version: "2026-08-draft", hash: "privacy-2026-08-draft" },
+  website_terms: { version: "2026-09", hash: "terms-2026-09" },
+  client_booking_terms: { version: "2026-09", hash: "client-booking-2026-09" },
+  professional_agreement: { version: "2026-09", hash: "pro-agreement-2026-09" },
+  privacy_policy: { version: "2026-09", hash: "privacy-2026-09" },
   cookie_policy: { version: "2026-08-draft", hash: "cookie-2026-08-draft" },
-  cancellation_policy_framework: { version: "2026-08-draft", hash: "cancel-framework-2026-08-draft" },
+  cancellation_policy_framework: { version: "2026-09", hash: "cancel-framework-2026-09" },
 } as const;
 
 export type LegalDocumentType = keyof typeof LEGAL_DOCUMENT_VERSIONS;
