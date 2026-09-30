@@ -142,7 +142,7 @@ export default function ProPlansFreeTrial() {
           ? (gt?.toastStartedBody ?? "Your trial runs until {{date}}.").replace("{{date}}", formatUiDate(trialEnd))
           : undefined,
       });
-      navigate("/pro-plans");
+      navigate("/subscription-confirmed");
     } catch (e) {
       setError((e as Error).message ?? String(e));
     } finally {

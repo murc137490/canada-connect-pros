@@ -51,6 +51,7 @@ import AdminAcceptPros from "./pages/AdminAcceptPros";
 import PrivateNoIndex from "@/components/PrivateNoIndex";
 import PwaIconTheme from "@/components/PwaIconTheme";
 import AboutUs from "./pages/AboutUs";
+import SubscriptionConfirmed from "./pages/SubscriptionConfirmed";
 
 const queryClient = new QueryClient();
 
@@ -97,6 +98,7 @@ const App = () => (
               <Route path="/pro-plans/freetrial" element={<MonitorAdminGuard><ProPlansFreeTrial /></MonitorAdminGuard>} />
               <Route path="/pro-plans" element={<MonitorAdminGuard><ProPlansManagement /></MonitorAdminGuard>} />
               <Route path="/pro-plans/cancel" element={<MonitorAdminGuard><ProPlanCancel /></MonitorAdminGuard>} />
+              <Route path="/subscription-confirmed" element={<SubscriptionConfirmed />} />
               <Route path="/pro-plans/checkout" element={<Navigate to="/pro-plans" replace />} />
               <Route path="/create-pro-account" element={<MonitorAdminGuard><CreateProAccount /></MonitorAdminGuard>} />
               <Route path="/pro-onboarding/start" element={<MonitorAdminGuard><ProOnboardingStart /></MonitorAdminGuard>} />

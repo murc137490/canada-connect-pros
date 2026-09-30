@@ -92,6 +92,14 @@
   ],
   "rewrites": [
     {
+      "source": "/subscription-confirmed",
+      "destination": "/subscription-confirmed.html"
+    },
+    {
+      "source": "/subscription-confirmed/",
+      "destination": "/subscription-confirmed.html"
+    },
+    {
       "source": "/((?!\\.well-known(?:/|$)|.*\\..*).*)",
       "destination": "/index.html"
     }
