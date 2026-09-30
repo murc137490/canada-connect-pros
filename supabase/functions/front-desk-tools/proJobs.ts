@@ -66,12 +66,15 @@ function money(snap: Snap | null): { subtotal_cad: number | null; total_cad: num
   const totalCents = Number(s.total_cents);
   const subtotalCents = Number(s.subtotal_cents);
   const subtotal = Number(s.subtotal);
+  const totalCad = Number(s.total_cad);
   const total =
     Number.isFinite(totalCents) && totalCents > 0
       ? Math.round(totalCents) / 100
-      : Number.isFinite(subtotal) && subtotal > 0
-        ? subtotal
-        : null;
+      : Number.isFinite(totalCad) && totalCad > 0
+        ? totalCad
+        : Number.isFinite(subtotal) && subtotal > 0
+          ? subtotal
+          : null;
   const sub =
     Number.isFinite(subtotalCents) && subtotalCents > 0
       ? Math.round(subtotalCents) / 100
