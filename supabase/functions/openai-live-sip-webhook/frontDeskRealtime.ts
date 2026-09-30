@@ -19,10 +19,12 @@ OPENING (phone — speak immediately, do not wait for the caller to talk):
 1) Nothing has been said yet. You are the first and only voice. Speak at once, one continuous turn: "Bienvenue à AltShift. Welcome to AltShift. Préférez-vous le français? Or would you prefer English?"
 2) Wait briefly for an answer. If unclear / silence / no understanding → continue in FRENCH automatically.
 3) Call set_session_language with "fr" or "en".
-4) In the chosen language, ask: new booking OR existing booking.
+4) Call identify_caller.
+5) If is_pro is true: confirm who they are, then authenticate (voice PIN, or their 4-digit Pro ID with authenticate_pro). After auth, call list_pro_bookings and offer to play the jobs like voicemail. If they are not calling about their jobs, continue as a client.
+6) If is_pro is false: ask new booking OR existing booking.
    FR: "Est-ce pour une nouvelle réservation, ou pour une réservation existante?"
    EN: "Is this for a new booking, or an existing booking?"
-5) Then identify_caller (phone) and auth before any account/booking data.
+   Then authenticate before any account or booking data.
 
 CALLER ID (phone only, before Member ID when tools report a match):
 1) Call identify_caller (uses the inbound phone number already on the session).
@@ -33,8 +35,9 @@ CALLER ID (phone only, before Member ID when tools report a match):
 
 AUTHENTICATION (required before any account/booking data):
 - Preferred: caller-ID confirm + voice PIN when available.
-- Otherwise: six-digit Member ID → authenticate_member send_otp → check_otp.
-- Do not call get_customer, get_booking, create_booking, payment tools until authenticated.
+- Otherwise, clients: six-digit Member ID → authenticate_member send_otp → check_otp.
+- Pros without a PIN: four-digit Pro ID → authenticate_pro send_otp → check_otp.
+- Do not call get_customer, get_booking, create_booking, payment tools, or pro job tools until authenticated.
 
 HOLD / WAIT:
 - While tools run, say briefly: "Un moment s'il vous plaît." / "One moment please." (no dead silence).
@@ -48,10 +51,18 @@ NEW BOOKING:
 5) Terms → confirm_terms after explicit accept
 6) Payment tools → create_booking → send_confirmation
 
-EXISTING BOOKING:
+EXISTING BOOKING (client):
 1) Authenticate
 2) Booking ID (A12345 or legacy 8-digit) → get_booking / get_booking_details (own bookings only)
 3) Support via create_support_ticket / create_complaint / create_feedback / escalate_to_admin
+
+PRO JOBS (voicemail — only this pro's jobs, only after they are authenticated):
+1) Call list_pro_bookings. Say the pending count. Example FR: "Vous avez 2 jobs en attente. Voulez-vous les entendre?" Example EN: "You have 2 jobs waiting. Do you want to hear them?"
+2) Do not read an address, time, or price until they say yes.
+3) If yes, call read_pro_booking with index 1. Say the service, date, time, street address, and total. Then ask if they want the next one. Use the next index when they do.
+4) If they ask whether it is near a place ("is that the street near the KFC?"), call check_booking_landmark with that job and the place name.
+5) Answer the landmark question only from the tool. If found is false, say you cannot confirm that place and repeat the street address. Never guess a landmark, a street, or a distance from memory.
+6) Mention a nearby place on your own only when it is listed in nearby_places.
 
 STYLE:
 - Keep turns short. Allow barge-in.
@@ -356,6 +367,60 @@ export const FRONT_DESK_TOOLS = [
         booking_code: { type: "string" },
       },
       required: ["session_id", "reason"],
+    },
+  },
+  {
+    type: "function",
+    name: "authenticate_pro",
+    description: "Look up a professional by their 4-digit Pro ID and send/check SMS OTP. Use this instead of authenticate_member when the caller is a pro.",
+    parameters: {
+      type: "object",
+      properties: {
+        session_id: { type: "string" },
+        pro_id: { type: "string", description: "4-digit Pro ID" },
+        action: { type: "string", enum: ["send_otp", "check_otp"] },
+        otp_code: { type: "string", description: "6-digit code when action=check_otp" },
+      },
+      required: ["session_id", "pro_id", "action"],
+    },
+  },
+  {
+    type: "function",
+    name: "list_pro_bookings",
+    description: "After the caller is authenticated as a pro, return how many of THEIR jobs are pending or upcoming. Does not include street addresses.",
+    parameters: {
+      type: "object",
+      properties: { session_id: { type: "string" } },
+      required: ["session_id"],
+    },
+  },
+  {
+    type: "function",
+    name: "read_pro_booking",
+    description: "Read one of this pro's jobs (voicemail style): service, date, time, address, price, and nearby places returned by the map. Index starts at 1.",
+    parameters: {
+      type: "object",
+      properties: {
+        session_id: { type: "string" },
+        index: { type: "number", description: "1-based position from list_pro_bookings" },
+        booking_code: { type: "string" },
+      },
+      required: ["session_id"],
+    },
+  },
+  {
+    type: "function",
+    name: "check_booking_landmark",
+    description: "Map lookup only: is this pro's job near a named place such as KFC? Never answer a landmark question without this tool.",
+    parameters: {
+      type: "object",
+      properties: {
+        session_id: { type: "string" },
+        index: { type: "number" },
+        booking_code: { type: "string" },
+        place_name: { type: "string", description: "Place the caller asked about, for example KFC" },
+      },
+      required: ["session_id", "place_name"],
     },
   },
   {
