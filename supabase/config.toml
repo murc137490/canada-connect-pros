@@ -51,6 +51,10 @@ verify_jwt = false
 [functions.account-deletion]
 verify_jwt = false
 
+# Session checked inside the function. Phone, email, and voice PIN changes require a code.
+[functions.account-security]
+verify_jwt = false
+
 # Uses in-function auth because the Dashboard sends the current session token manually.
 [functions.referral-invite]
 verify_jwt = false
