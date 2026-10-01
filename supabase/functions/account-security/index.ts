@@ -62,11 +62,25 @@ function sixDigitCode(): string {
   return String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
 }
 
+const CONSUMER_FROM_DOMAINS = new Set([
+  "gmail.com",
+  "googlemail.com",
+  "yahoo.com",
+  "yahoo.ca",
+  "hotmail.com",
+  "outlook.com",
+  "live.com",
+  "icloud.com",
+  "aol.com",
+  "proton.me",
+  "protonmail.com",
+]);
+
 function effectiveFromEmail(configured: string): string {
   const trimmed = configured.trim();
   const at = trimmed.lastIndexOf("@");
   const domain = at >= 0 ? trimmed.slice(at + 1).toLowerCase() : "";
-  if (!trimmed || domain === "altshift.ca") return VERIFIED_FROM_EMAIL;
+  if (!trimmed || CONSUMER_FROM_DOMAINS.has(domain) || domain === "altshift.ca") return VERIFIED_FROM_EMAIL;
   return trimmed;
 }
 
