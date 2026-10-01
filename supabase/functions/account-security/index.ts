@@ -7,6 +7,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { toE164NorthAmerica } from "../_shared/phoneE164.ts";
+import { sendTelnyxSms, telnyxSmsConfigured } from "../_shared/telnyxSms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +16,8 @@ const corsHeaders = {
 };
 
 const TELNYX_API = "https://api.telnyx.com/v2";
+/** Resend verifies premiereservices.ca. altshift.ca is not a sending domain on that account. */
+const VERIFIED_FROM_EMAIL = "support@premiereservices.ca";
 
 type Purpose = "change_email" | "change_phone" | "change_pin";
 type Channel = "sms" | "email";
@@ -55,22 +58,27 @@ function isChannel(value: string): value is Channel {
   return value === "sms" || value === "email";
 }
 
-async function sendSms(to: string): Promise<{ ok: boolean; error?: string }> {
-  const apiKey = Deno.env.get("TELNYX_API_KEY")?.trim();
-  const verifyProfileId = Deno.env.get("TELNYX_VERIFY_PROFILE_ID")?.trim();
-  if (!apiKey || !verifyProfileId) return { ok: false, error: "sms_not_configured" };
-  const res = await fetch(`${TELNYX_API}/verifications/sms`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({ phone_number: to, verify_profile_id: verifyProfileId }),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { errors?: { detail?: string }[] };
-    return { ok: false, error: body.errors?.[0]?.detail ?? "sms_failed" };
+function sixDigitCode(): string {
+  return String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
+}
+
+function effectiveFromEmail(configured: string): string {
+  const trimmed = configured.trim();
+  const at = trimmed.lastIndexOf("@");
+  const domain = at >= 0 ? trimmed.slice(at + 1).toLowerCase() : "";
+  if (!trimmed || domain === "altshift.ca") return VERIFIED_FROM_EMAIL;
+  return trimmed;
+}
+
+async function sendSmsCode(to: string, code: string, language: "en" | "fr"): Promise<{ ok: boolean; error?: string }> {
+  if (!telnyxSmsConfigured()) return { ok: false, error: "sms_not_configured" };
+  const text = language === "fr"
+    ? `AltShift : votre code est ${code}. Il expire dans 10 minutes.`
+    : `AltShift: your code is ${code}. It expires in 10 minutes.`;
+  const sent = await sendTelnyxSms({ to, text });
+  if (!sent.ok) {
+    console.error("account sms failed", sent.status);
+    return { ok: false, error: "sms_failed" };
   }
   return { ok: true };
 }
@@ -99,8 +107,9 @@ async function checkSms(to: string, code: string): Promise<boolean> {
 async function sendEmailCode(to: string, code: string, language: "en" | "fr"): Promise<{ ok: boolean; error?: string }> {
   const key = Deno.env.get("RESEND_API_KEY")?.trim();
   if (!key) return { ok: false, error: "email_not_configured" };
-  const fromEmail = Deno.env.get("FROM_EMAIL") ?? "support@altshift.ca";
+  const fromEmail = effectiveFromEmail(Deno.env.get("FROM_EMAIL") ?? VERIFIED_FROM_EMAIL);
   const fromName = Deno.env.get("FROM_NAME") ?? "AltShift";
+  const replyTo = Deno.env.get("REPLY_TO_EMAIL") ?? "support@altshift.ca";
   const subject = language === "fr" ? "Votre code AltShift" : "Your AltShift code";
   const line = language === "fr"
     ? "Utilisez ce code pour confirmer le changement sur votre compte AltShift. Il expire dans 10 minutes."
@@ -116,11 +125,15 @@ async function sendEmailCode(to: string, code: string, language: "en" | "fr"): P
     body: JSON.stringify({
       from: `${fromName} <${fromEmail}>`,
       to: [to],
+      reply_to: replyTo,
       subject,
       html,
     }),
   });
-  if (!res.ok) return { ok: false, error: "email_failed" };
+  if (!res.ok) {
+    console.error("account email failed", res.status);
+    return { ok: false, error: "email_failed" };
+  }
   return { ok: true };
 }
 
@@ -186,15 +199,14 @@ Deno.serve(async (req) => {
     if ((count ?? 0) >= 8) return json({ error: "rate_limited" }, 429);
 
     const destination = channel === "sms" ? phoneE164! : user.email;
-    let codeHash: string | null = null;
+    const code = sixDigitCode();
+    const { data: hashed, error: hashErr } = await admin.rpc("hash_voice_pin", { p_pin: code });
+    if (hashErr || !hashed) return json({ error: "code_failed" }, 500);
+    const codeHash = String(hashed);
     if (channel === "sms") {
-      const sent = await sendSms(phoneE164!);
+      const sent = await sendSmsCode(phoneE164!, code, language);
       if (!sent.ok) return json({ error: sent.error ?? "sms_failed" }, 502);
     } else {
-      const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, "0");
-      const { data: hashed, error: hashErr } = await admin.rpc("hash_voice_pin", { p_pin: code });
-      if (hashErr || !hashed) return json({ error: "code_failed" }, 500);
-      codeHash = String(hashed);
       const sent = await sendEmailCode(user.email, code, language);
       if (!sent.ok) return json({ error: sent.error ?? "email_failed" }, 502);
     }
@@ -237,14 +249,14 @@ Deno.serve(async (req) => {
   if (Number(challenge.attempts ?? 0) >= 5) return json({ error: "too_many_attempts" }, 400);
 
   let passed = false;
-  if (channel === "sms") {
-    passed = await checkSms(String(challenge.destination), code);
-  } else {
+  if (challenge.code_hash) {
     const { data: okCode } = await admin.rpc("verify_voice_pin_hash", {
       p_hash: challenge.code_hash,
       p_pin: code,
     });
     passed = okCode === true;
+  } else if (channel === "sms") {
+    passed = await checkSms(String(challenge.destination), code);
   }
   if (!passed) {
     await admin
