@@ -5378,6 +5378,18 @@ export default function Dashboard() {
                 <Label htmlFor="acc-name">{t.dashboard.accountName}</Label>
                 <Input id="acc-name" value={accountForm.full_name} onChange={(e) => setAccountForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Ryan Smith" />
               </div>
+              <AccountSecuritySection
+                email={user.email ?? ""}
+                phone={accountForm.phone}
+                showPhone={!isAdminAccountView}
+                onPhoneChanged={(phone) => {
+                  setAccountForm((prev) => ({ ...prev, phone }));
+                  setProfile((prev) => (prev ? { ...prev, phone } : prev));
+                }}
+                onEmailChanged={() => {
+                  void supabase.auth.refreshSession();
+                }}
+              />
               {!isAdminAccountView ? (
                 <>
               <div className="space-y-2">
@@ -5421,18 +5433,6 @@ export default function Dashboard() {
               )}
                 </>
               ) : null}
-              <AccountSecuritySection
-                email={user.email ?? ""}
-                phone={accountForm.phone}
-                showPhone={!isAdminAccountView}
-                onPhoneChanged={(phone) => {
-                  setAccountForm((prev) => ({ ...prev, phone }));
-                  setProfile((prev) => (prev ? { ...prev, phone } : prev));
-                }}
-                onEmailChanged={() => {
-                  void supabase.auth.refreshSession();
-                }}
-              />
               <div className="space-y-2">
                 <Label>{t.auth.emailLanguageLabel}</Label>
                 <div className="grid grid-cols-2 gap-2" role="group" aria-label={t.auth.emailLanguageLabel}>

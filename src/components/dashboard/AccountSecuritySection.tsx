@@ -93,6 +93,8 @@ export function AccountSecuritySection({
       code_expired: copy.securityCodeExpired,
       too_many_attempts: copy.securityTooManyAttempts,
       invalid_pin: copy.securityInvalidPin,
+      phone_locked: copy.securityPhoneHint,
+      pin_locked: copy.securityPinHint,
       invalid_phone: copy.securityInvalidPhone,
       invalid_email: copy.securityInvalidEmail,
       same_email: copy.securitySameEmail,
@@ -187,6 +189,16 @@ export function AccountSecuritySection({
 
   return (
     <div className="space-y-4 rounded-lg border border-border/80 bg-muted/20 p-4">
+      <div className="space-y-2 border-b border-border/70 pb-4">
+        <Label>{copy.securityPinTitle}</Label>
+        <p className="text-sm text-foreground">
+          {loadingStatus ? copy.securityPinLoading : status.has_voice_pin ? copy.securityPinSet : copy.securityPinMissing}
+        </p>
+        <p className="text-xs text-muted-foreground">{copy.securityPinHint}</p>
+        <Button type="button" variant="outline" onClick={() => open("change_pin", null)}>
+          {status.has_voice_pin ? copy.securityChangePin : copy.securitySetPin}
+        </Button>
+      </div>
       {showPhone ? (
         <div className="space-y-2">
           <Label htmlFor="acc-phone-locked">{copy.accountPhone}</Label>
@@ -221,17 +233,6 @@ export function AccountSecuritySection({
         <p className="text-xs text-muted-foreground">
           {!loadingStatus && !status.can_sms ? copy.securityEmailNeedsPhone : copy.securityEmailHint}
         </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label>{copy.securityPinTitle}</Label>
-        <p className="text-sm text-foreground">
-          {loadingStatus ? copy.securityPinLoading : status.has_voice_pin ? copy.securityPinSet : copy.securityPinMissing}
-        </p>
-        <p className="text-xs text-muted-foreground">{copy.securityPinHint}</p>
-        <Button type="button" variant="outline" onClick={() => open("change_pin", null)}>
-          {status.has_voice_pin ? copy.securityChangePin : copy.securitySetPin}
-        </Button>
       </div>
 
       <Dialog open={purpose !== null} onOpenChange={(openDialog) => { if (!openDialog) close(); }}>
