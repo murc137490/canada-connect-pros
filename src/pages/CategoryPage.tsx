@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useScrollRestore } from "@/hooks/useScrollRestore";
 import Layout from "@/components/Layout";
 import { serviceCategories } from "@/data/services";
@@ -13,6 +13,8 @@ import CategoryLottie from "@/components/CategoryLottie";
 
 export default function CategoryPage() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const modeSearch = searchParams.get("mode") === "client" ? "?mode=client" : "";
   const { locale, t } = useLanguage();
   const category = serviceCategories.find((c) => c.slug === slug);
   const visual = getCategoryVisual(slug ?? "");
@@ -58,7 +60,7 @@ export default function CategoryPage() {
 
         <div className="container relative z-10 py-12 md:py-16">
           <Link
-            to="/services"
+            to={{ pathname: "/services", search: modeSearch }}
             className="mb-5 inline-flex items-center gap-2 text-sm text-white/80 transition-colors hover:text-white"
           >
             <ArrowLeft size={16} />
@@ -111,7 +113,7 @@ export default function CategoryPage() {
                     transition={{ type: "spring", stiffness: 380, damping: 24 }}
                   >
                     <Link
-                      to={`/services/${category.slug}/${svc.slug}/pros`}
+                      to={`/services/${category.slug}/${svc.slug}/pros${modeSearch}`}
                       className="group flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:border-secondary/50 hover:shadow-md"
                     >
                       <div className="min-w-0">

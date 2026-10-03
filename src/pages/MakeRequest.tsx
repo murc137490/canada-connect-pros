@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import TimingAndDateFields from "@/components/job-request/TimingAndDateFields";
 import { supabase } from "@/integrations/supabase/client";
+import { getAllServices } from "@/data/services";
 import { createLocalDateTime, schedulingDbFieldsFromFormState } from "@/lib/jobRequestScheduling";
 import {
   formatCanadianPostalInput,
@@ -89,15 +90,29 @@ function mapsEmbedUrl(lat: number, lng: number, hl: "en" | "fr"): string {
 export default function MakeRequest() {
   const { t, locale } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
+  const serviceSlug = searchParams.get("service_slug");
+  const serviceContext = useMemo(
+    () => serviceSlug ? getAllServices().find((service) => service.slug === serviceSlug) ?? null : null,
+    [serviceSlug],
+  );
+  const initialServiceCategory = serviceContext
+    ? /plumb/i.test(serviceContext.subcategory) ? "Plumbing"
+      : /heating|cooling/i.test(serviceContext.subcategory) ? "HVAC"
+        : /clean/i.test(serviceContext.subcategory) ? "Cleaning"
+          : /moving/i.test(serviceContext.category) ? "Moving"
+            : /furniture|assembly/i.test(serviceContext.name) ? "Furniture Assembly"
+              : "Handyman"
+    : "Other";
   const [step, setStep] = useState(1);
   const [gaugePulse, setGaugePulse] = useState(0);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [description, setDescription] = useState("");
   const [postalCode, setPostalCode] = useState("");
-  const [category, setCategory] = useState<string>("Other");
+  const [category, setCategory] = useState<string>(initialServiceCategory);
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
   const [timing, setTiming] = useState("");
@@ -515,6 +530,8 @@ export default function MakeRequest() {
         client_id: user.id,
         description: description.trim(),
         category: category || aiCategory,
+        category_slug: serviceContext?.categorySlug ?? null,
+        service_slug: serviceContext?.slug ?? null,
         postal_code: normalizedPostal,
         city: location.city,
         province: location.province,
@@ -837,6 +854,7 @@ export default function MakeRequest() {
                     id="category"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
+                    disabled={!!serviceContext}
                     className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground"
                   >
                     {CATEGORIES.map((c) => (
@@ -845,6 +863,7 @@ export default function MakeRequest() {
                       </option>
                     ))}
                   </select>
+                  {serviceContext && <p className="text-xs text-muted-foreground">{locale === "fr" ? `Service visé : ${serviceContext.fr ?? serviceContext.name}` : `For: ${serviceContext.name}`}</p>}
                 </div>
 
                 <div className="space-y-3">

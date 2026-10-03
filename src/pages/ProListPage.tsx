@@ -17,6 +17,7 @@ import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { useToast } from "@/hooks/use-toast";
 import { filterAdvertiseableProIds } from "@/lib/filterAdvertiseablePros";
 import { isDemoAccount, isDemoProProfile } from "@/lib/demoAccount";
+import ServiceJobsList from "@/components/services/ServiceJobsList";
 
 export default function ProListPage() {
   const { categorySlug, serviceSlug } = useParams<{ categorySlug: string; serviceSlug: string }>();
@@ -25,6 +26,10 @@ export default function ProListPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const clientMode = searchParams.get("mode") === "client";
+  const [viewerIsVerifiedPro, setViewerIsVerifiedPro] = useState(false);
+  const [viewerProLoading, setViewerProLoading] = useState(!!user);
+  const jobsMode = viewerIsVerifiedPro && !clientMode;
   const isShowcaseUser =
     isDemoAccount(user?.email) ||
     searchParams.get("showcase") === "1" ||
@@ -42,8 +47,31 @@ export default function ProListPage() {
   );
 
   useEffect(() => {
+    let active = true;
+    if (!user) {
+      setViewerIsVerifiedPro(false);
+      setViewerProLoading(false);
+      return () => { active = false; };
+    }
+    setViewerProLoading(true);
+    void supabase.from("pro_profiles").select("is_verified").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (active) {
+        setViewerIsVerifiedPro(data?.is_verified === true);
+        setViewerProLoading(false);
+      }
+    });
+    return () => { active = false; };
+  }, [user]);
+
+  useEffect(() => {
     const fetchPros = async () => {
       setLoading(true);
+      if (jobsMode) {
+        setPros([]);
+        setTopPicks([]);
+        setLoading(false);
+        return;
+      }
 
       // Find pro_profiles that have this service
       const { data: proServices } = await supabase
@@ -122,7 +150,7 @@ export default function ProListPage() {
     };
 
     fetchPros();
-  }, [categorySlug, serviceSlug]);
+  }, [categorySlug, serviceSlug, jobsMode]);
 
   useEffect(() => {
     if (!categorySlug || !serviceSlug || !service) return;
@@ -193,7 +221,7 @@ export default function ProListPage() {
       <div className="bg-primary text-primary-foreground">
         <div className="container py-10">
           <Link
-            to={category ? `/services/${category.slug}` : "/services"}
+            to={{ pathname: category ? `/services/${category.slug}` : "/services", search: clientMode ? "?mode=client" : "" }}
             className="inline-flex items-center gap-2 text-sm text-primary-foreground/70 hover:text-primary-foreground mb-4"
           >
             <ArrowLeft size={16} /> {t.common.backTo} {category ? getCategoryName(category, locale) : t.nav?.services ?? "Services"}
@@ -208,11 +236,24 @@ export default function ProListPage() {
       </div>
 
       <div className="container py-8">
+        {viewerProLoading ? (
+          <BootLoadingScreen fullScreen={false} label={t.common?.loading ?? "Loading"} />
+        ) : jobsMode ? (
+          service ? <ServiceJobsList categorySlug={categorySlug ?? ""} serviceSlug={service.slug} /> : null
+        ) : (
+        <>
         {/* Sort/filter bar */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-sm text-muted-foreground">
             {pros.length} {pros.length !== 1 ? t.services.professionalsAvailablePlural : t.services.professionalsAvailable} {t.services.available}
           </p>
+          {service && (
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/make-request?category_slug=${encodeURIComponent(categorySlug ?? "")}&service_slug=${encodeURIComponent(service.slug)}`}>
+                {locale === "fr" ? "Demander un devis" : "Request a quote"}
+              </Link>
+            </Button>
+          )}
           <div className="flex items-center gap-2">
             <SlidersHorizontal size={16} className="text-muted-foreground" />
             <Select value={sortBy} onValueChange={setSortBy}>
@@ -301,6 +342,8 @@ export default function ProListPage() {
               </StarBorder>
             )}
           </>
+        )}
+        </>
         )}
       </div>
     </Layout>

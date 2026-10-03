@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef, type MouseEvent } from "react";
-import { useSearchParams, Link, useLocation, useNavigate } from "react-router-dom";
+import { useSearchParams, Link, useLocation } from "react-router-dom";
 import { searchProsByBusinessOrName, type ProBusinessSearchHit } from "@/lib/searchProBusiness";
 import { useScrollRestore } from "@/hooks/useScrollRestore";
 import Layout from "@/components/Layout";
@@ -35,12 +35,12 @@ export default function Services() {
   const { locale, t } = useLanguage();
   const { toast } = useToast();
   const location = useLocation();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [verifiedPro, setVerifiedPro] = useState(false);
   const fromBrowsePros = Boolean((location.state as { fromBrowsePros?: boolean } | null)?.fromBrowsePros);
   const [searchParams] = useSearchParams();
   const clientMode = searchParams.get("mode") === "client";
+  const modeSearch = clientMode ? "?mode=client" : "";
   const initialQuery = searchParams.get("q") || "";
   const [query, setQuery] = useState(initialQuery);
   const [proNameMatches, setProNameMatches] = useState<ProBusinessSearchHit[]>([]);
@@ -56,10 +56,9 @@ export default function Services() {
       if (!active) return;
       const isVerified = data?.is_verified === true;
       setVerifiedPro(isVerified);
-      if (isVerified && !clientMode) navigate("/dashboard?jobs=1#dashboard-open-leads", { replace: true });
     });
     return () => { active = false; };
-  }, [clientMode, navigate, user]);
+  }, [user]);
 
   const [postalCode, setPostalCode] = useState("");
   const [postalResolved, setPostalResolved] = useState<{
@@ -344,14 +343,18 @@ export default function Services() {
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         transition={{ duration: MOTION.reveal, ease: MOTION.ease }}
       >
-        {verifiedPro && clientMode && (
+        {verifiedPro && (
           <div className="border-b border-primary/20 bg-primary/5">
             <div className="container flex flex-wrap items-center justify-between gap-3 py-3">
               <p className="text-sm font-medium text-foreground">
-                {locale === "fr" ? "Mode client : découvrez les professionnels réservables." : "Client mode: browse professionals you can book."}
+                {clientMode
+                  ? (locale === "fr" ? "Mode client : découvrez les professionnels réservables." : "Client mode: browse professionals you can book.")
+                  : (locale === "fr" ? "Demandes de travaux : choisissez un service pour voir les demandes correspondantes." : "Available jobs: choose a service to see matching requests.")}
               </p>
-              <Link className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" to="/dashboard?jobs=1#dashboard-open-leads">
-                {locale === "fr" ? "Voir les demandes disponibles" : "View available jobs"}
+              <Link className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" to={clientMode ? "/services" : "/services?mode=client"}>
+                {clientMode
+                  ? (locale === "fr" ? "Demandes disponibles" : "Available jobs")
+                  : (locale === "fr" ? "Mode client" : "Client mode")}
               </Link>
             </div>
           </div>
@@ -517,7 +520,7 @@ export default function Services() {
                   {filtered.map((s) => (
                     <Link
                       key={`${s.category}-${s.slug}`}
-                      to={`/services/${s.categorySlug}/${s.slug}`}
+                      to={`/services/${s.categorySlug}/${s.slug}${modeSearch}`}
                       onClick={guardClick}
                       className="rounded-xl border-2 border-primary/60 bg-card p-4 flex items-center justify-between cursor-pointer hover:border-primary hover:shadow-md transition-all text-foreground dark:text-white dark:border-primary/80 dark:hover:border-primary"
                     >
@@ -567,7 +570,7 @@ export default function Services() {
                         transition={{ delay: i * 0.05, duration: 0.45 }}
                       >
                         <Link
-                          to={`/services/${s.categorySlug}/${s.slug}`}
+                          to={`/services/${s.categorySlug}/${s.slug}${modeSearch}`}
                           onClick={guardClick}
                           className="group relative block overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-lg"
                         >
@@ -611,6 +614,7 @@ export default function Services() {
                       locked={!canBrowseServices}
                       onGuardClick={guardClick}
                       servicesLabel={t.services.servicesCount}
+                      search={modeSearch}
                     />
                   ))}
                 </div>

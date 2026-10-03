@@ -15,6 +15,7 @@ type Props = {
   locked?: boolean;
   onGuardClick?: (e: MouseEvent) => void;
   servicesLabel: string;
+  search?: string;
 };
 
 export default function ServiceCategoryTile({
@@ -23,6 +24,7 @@ export default function ServiceCategoryTile({
   locked,
   onGuardClick,
   servicesLabel,
+  search = "",
 }: Props) {
   const { locale } = useLanguage();
   const [hover, setHover] = useState(false);
@@ -46,7 +48,7 @@ export default function ServiceCategoryTile({
       )}
     >
       <Link
-        to={`/services/${category.slug}`}
+        to={{ pathname: `/services/${category.slug}`, search }}
         onClick={onGuardClick}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}

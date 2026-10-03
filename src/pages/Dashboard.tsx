@@ -715,6 +715,26 @@ export default function Dashboard() {
     return () => window.removeEventListener(BROWSE_POSTAL_CHANGED_EVENT, onBrowsePostal);
   }, []);
   const [selectedJobForQuote, setSelectedJobForQuote] = useState<JobRequest | null>(null);
+  const requestedQuoteJobRef = useRef<string | null>(null);
+  useEffect(() => {
+    const quoteJobId = searchParams.get("quoteJob");
+    if (!quoteJobId) {
+      requestedQuoteJobRef.current = null;
+      return;
+    }
+    if (!user || !proProfile?.is_verified || requestedQuoteJobRef.current === quoteJobId) return;
+    requestedQuoteJobRef.current = quoteJobId;
+    void supabase.from("job_requests")
+      .select(JOB_REQUESTS_LEADS_SELECT_FULL)
+      .eq("id", quoteJobId)
+      .eq("status", "open")
+      .gte("created_at", new Date(Date.now() - OPEN_LEADS_MAX_AGE_MS).toISOString())
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setSelectedJobForQuote(data as unknown as JobRequest);
+        else requestedQuoteJobRef.current = null;
+      });
+  }, [proProfile?.is_verified, searchParams, user]);
   const [quotePrice, setQuotePrice] = useState("");
   const [quoteEstimatedTime, setQuoteEstimatedTime] = useState("");
   const [quoteEstimatedDate, setQuoteEstimatedDate] = useState<Date | undefined>(undefined);
@@ -7339,9 +7359,6 @@ export default function Dashboard() {
           >
             <div className="mb-3 flex items-center justify-between gap-2">
               <h3 className="font-heading font-bold text-foreground">{t.dashboard.availableJobsPanelTitle}</h3>
-              <Link to="/services?mode=client" className="shrink-0 text-xs font-semibold text-primary underline-offset-4 hover:underline">
-                {locale === "fr" ? "Mode client" : "Client mode"}
-              </Link>
             </div>
             {renderAvailableJobsBody()}
           </aside>
@@ -7473,6 +7490,11 @@ export default function Dashboard() {
             setQuoteEstimatedHours("");
             setQuoteTimeFrom("");
             setQuoteTimeTo("");
+            if (searchParams.has("quoteJob")) {
+              const next = new URLSearchParams(searchParams);
+              next.delete("quoteJob");
+              setSearchParams(next, { replace: true });
+            }
           }
         }}
       >
