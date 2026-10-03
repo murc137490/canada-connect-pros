@@ -356,7 +356,7 @@ export default function AvailabilityCalendar({
                   isInteractiveUpgrade && "cursor-pointer opacity-70 hover:ring-1 hover:ring-amber-500/50",
                   !day.date && "invisible",
                   isAvailable && !availableDayColor && "bg-primary text-primary-foreground border border-primary/30 shadow-[0_0_0_0.5px_rgba(0,0,0,0.06)]",
-                  isUnavailable && "bg-slate-300/80 dark:bg-slate-600/90 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-500",
+                  isUnavailable && "bg-slate-200 text-slate-700 border border-slate-300",
                   isBeyond && "line-through opacity-60",
                   isToday && "ring-2 ring-offset-1 ring-amber-500 dark:ring-amber-400 font-semibold shadow-[0_0_0_2px_rgba(245,158,11,0.5)]",
                   // Calendar "selected day" outline: white in dark mode, black in light mode.
@@ -389,7 +389,7 @@ export default function AvailabilityCalendar({
           <span className="text-foreground font-medium">{t.dashboard.calendarLegendAvailable}</span>
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded border border-slate-300 dark:border-slate-500 bg-slate-300/80 dark:bg-slate-600/90" />
+          <span className="w-4 h-4 rounded border border-slate-300 bg-slate-200" />
           <span className="text-muted-foreground">{t.dashboard.calendarLegendUnavailable}</span>
         </span>
       </div>

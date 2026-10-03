@@ -39,8 +39,6 @@ export default function MemberIdSettings({
           available: "Disponible — confirmez pour l’adopter.",
           saved: "Member ID mis à jour",
           pinTitle: "NIP vocal (téléphone)",
-          pinHint:
-            "4 ou 5 chiffres. Quand vous appelez le Front Desk depuis votre numéro enregistré, l’IA demande si c’est bien vous, puis ce NIP.",
           pinSave: "Enregistrer le NIP",
           pinClear: "Supprimer le NIP",
           pinMismatch: "Les NIP ne correspondent pas.",
@@ -58,8 +56,6 @@ export default function MemberIdSettings({
           available: "Available — confirm to claim it.",
           saved: "Member ID updated",
           pinTitle: "Voice PIN (phone)",
-          pinHint:
-            "4–6 digits. When you call Front Desk from your account phone number, the AI asks if it’s you, then this PIN.",
           pinSave: "Save PIN",
           pinClear: "Remove PIN",
           pinMismatch: "PINs do not match.",
@@ -221,7 +217,6 @@ export default function MemberIdSettings({
 
       <div className="border-t pt-4 space-y-2">
         <Label>{copy.pinTitle}</Label>
-        <p className="text-xs text-muted-foreground">{copy.pinHint}</p>
         <p className="text-sm font-medium">
           {pinLoading ? "…" : hasPin ? copy.pinStatusOn : copy.pinStatusOff}
         </p>
