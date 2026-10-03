@@ -1,9 +1,9 @@
-import { Moon, Sun } from "lucide-react";
+import { Coffee, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-/** Toggles light/dark. Default app theme follows the OS (`system`). */
+/** Cycles light, cream and dark. Default app theme follows the OS (`system`). */
 export default function AnimatedThemeToggler({ className = "" }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -26,29 +26,19 @@ export default function AnimatedThemeToggler({ className = "" }: { className?: s
     );
   }
 
-  const isDark = resolvedTheme === "dark";
+  const currentTheme = resolvedTheme ?? "light";
+  const nextTheme = currentTheme === "light" ? "cream" : currentTheme === "cream" ? "dark" : "light";
+  const ThemeIcon = currentTheme === "dark" ? Moon : currentTheme === "cream" ? Coffee : Sun;
 
   return (
     <button
       type="button"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={() => setTheme(nextTheme)}
       className={buttonClassName}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={`Current theme: ${currentTheme}. Switch to ${nextTheme} theme`}
+      title={`Switch to ${nextTheme} theme`}
     >
-      <Sun
-        size={16}
-        className={cn(
-          "absolute transition-all duration-300",
-          isDark ? "rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100"
-        )}
-      />
-      <Moon
-        size={16}
-        className={cn(
-          "absolute transition-all duration-300",
-          isDark ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-0 opacity-0"
-        )}
-      />
+      <ThemeIcon size={16} className="transition-transform duration-300" aria-hidden="true" />
     </button>
   );
 }

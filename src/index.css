@@ -95,6 +95,31 @@
     --sidebar-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 16%;
   }
+
+  .cream {
+    color-scheme: light;
+    /* Warm paper and parchment surfaces with the existing dark ink palette. */
+    --background: 38 42% 92%;
+    --foreground: 222 32% 12%;
+    --card: 42 52% 97%;
+    --card-foreground: 222 32% 12%;
+    --popover: 42 52% 97%;
+    --popover-foreground: 222 32% 12%;
+    --primary: 222 68% 20%;
+    --primary-foreground: 40 30% 98%;
+    --secondary: 34 24% 83%;
+    --secondary-foreground: 222 32% 16%;
+    --muted: 36 32% 87%;
+    --muted-foreground: 220 12% 36%;
+    --accent: 24 82% 47%;
+    --accent-foreground: 0 0% 100%;
+    --border: 34 24% 79%;
+    --input: 34 24% 79%;
+    --ring: 222 68% 20%;
+    --sidebar-background: 38 36% 89%;
+    --sidebar-foreground: 222 32% 12%;
+    --sidebar-border: 34 24% 79%;
+  }
 }
 
 @layer base {
@@ -146,6 +171,15 @@
   .dark #root {
     color: hsl(var(--foreground));
     background: hsl(var(--background));
+  }
+  .cream body,
+  .cream .bg-gradient-page,
+  .cream #root {
+    color: hsl(var(--foreground));
+    background: hsl(var(--background));
+  }
+  .cream .bg-white {
+    background-color: hsl(var(--card));
   }
 
   /* Wealthsimple-style glass support panel */

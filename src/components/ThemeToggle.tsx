@@ -1,23 +1,25 @@
-import { Moon, Sun } from "lucide-react";
+import { Coffee, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 
-/** Toggles light/dark. Default app theme follows the OS (`system`). */
+/** Cycles light, cream and dark. Default app theme follows the OS (`system`). */
 export default function ThemeToggle({ className = "" }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
+  const currentTheme = resolvedTheme ?? "light";
+  const nextTheme = currentTheme === "light" ? "cream" : currentTheme === "cream" ? "dark" : "light";
+  const ThemeIcon = currentTheme === "dark" ? Moon : currentTheme === "cream" ? Coffee : Sun;
 
   return (
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={() => setTheme(nextTheme)}
       className={`h-9 w-9 ${className}`}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={`Current theme: ${currentTheme}. Switch to ${nextTheme} theme`}
+      title={`Switch to ${nextTheme} theme`}
     >
-      <Sun size={16} className="rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon size={16} className="absolute rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-      <span className="sr-only">Toggle theme</span>
+      <ThemeIcon size={16} aria-hidden="true" />
+      <span className="sr-only">Switch to {nextTheme} theme</span>
     </Button>
   );
 }
