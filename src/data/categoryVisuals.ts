@@ -13,13 +13,13 @@ export type CategoryVisual = {
   blurbFr: string;
 };
 
-/** Request large JPEG crops suitable for retina / wide category heroes. */
-export function unsplashUrl(photoId: string, w = 2400) {
-  return `https://images.unsplash.com/${photoId}?auto=format&fit=crop&w=${w}&q=90&fm=jpg`;
+/** Display-sized JPEG crops. Heroes top out at 1600w; cards use a smaller src. */
+export function unsplashUrl(photoId: string, w = 1280) {
+  return `https://images.unsplash.com/${photoId}?auto=format&fit=crop&w=${w}&q=70&fm=jpg`;
 }
 
 export function unsplashSrcSet(photoId: string) {
-  return [1200, 1800, 2400].map((w) => `${unsplashUrl(photoId, w)} ${w}w`).join(", ");
+  return [640, 960, 1280, 1600].map((w) => `${unsplashUrl(photoId, w)} ${w}w`).join(", ");
 }
 
 function visual(
@@ -28,7 +28,7 @@ function visual(
 ): CategoryVisual {
   return {
     photoId,
-    image: unsplashUrl(photoId, 2400),
+    image: unsplashUrl(photoId, 1280),
     imageSrcSet: unsplashSrcSet(photoId),
     ...fields,
   };
@@ -121,7 +121,7 @@ export const popularServicePhotoIds: Record<string, string> = {
 };
 
 export const popularServiceVisuals: Record<string, string> = Object.fromEntries(
-  Object.entries(popularServicePhotoIds).map(([slug, id]) => [slug, unsplashUrl(id, 1600)])
+  Object.entries(popularServicePhotoIds).map(([slug, id]) => [slug, unsplashUrl(id, 960)])
 );
 
 export function popularServiceSrcSet(slug: string): string | undefined {

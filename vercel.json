@@ -5,6 +5,31 @@
   "outputDirectory": "dist",
   "headers": [
     {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self' https://*.squareup.com https://*.squareupsandbox.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://*.squarecdn.com https://applepay.cdn-apple.com https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.gstatic.com https://pay.google.com https://payments.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.squarecdn.com; font-src 'self' data: https://fonts.gstatic.com https://square-fonts-production-f.squarecdn.com https://d1g145x70srn7h.cloudfront.net; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.squareup.com https://*.squareupsandbox.com https://*.squarecdn.com https://o160250.ingest.sentry.io https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://pay.google.com https://payments.google.com https://www.google.com https://applepay.cdn-apple.com https://apple-pay-gateway.apple.com https://apple-pay-gateway-cert.apple.com; frame-src 'self' https://*.squarecdn.com https://*.squareup.com https://*.squareupsandbox.com https://www.google.com https://maps.google.com https://pay.google.com https://payments.google.com https://applepay.cdn-apple.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "accelerometer=(), autoplay=(self), camera=(), clipboard-read=(self), clipboard-write=(self), display-capture=(), fullscreen=(self), geolocation=(self), gyroscope=(), magnetometer=(), microphone=(), payment=(self), publickey-credentials-get=(), serial=(), usb=(), interest-cohort=()"
+        }
+      ]
+    },
+    {
       "source": "/.well-known/apple-developer-merchantid-domain-association",
       "headers": [
         {
@@ -68,6 +93,51 @@
           "value": "public, max-age=86400, must-revalidate"
         }
       ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/boot/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/og-image.png",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/((?!assets/|boot/|\\.well-known(?:/|$)|.*\\.).*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     }
   ],
   "redirects": [
@@ -91,9 +161,34 @@
     }
   ],
   "rewrites": [
-    {
-      "source": "/((?!\\.well-known(?:/|$)|.*\\..*).*)",
-      "destination": "/index.html"
-    }
+    { "source": "/services/:categorySlug/:serviceSlug/pros", "destination": "/index.html" },
+    { "source": "/services/:categorySlug/:serviceSlug", "destination": "/index.html" },
+    { "source": "/services/:slug", "destination": "/index.html" },
+    { "source": "/pros/:proId", "destination": "/index.html" },
+    { "source": "/join-pros/plans", "destination": "/index.html" },
+    { "source": "/join-pros", "destination": "/index.html" },
+    { "source": "/pro-plans/freetrial", "destination": "/index.html" },
+    { "source": "/pro-plans/checkout", "destination": "/index.html" },
+    { "source": "/pro-plans/cancel", "destination": "/index.html" },
+    { "source": "/pro-plans/trial", "destination": "/index.html" },
+    { "source": "/pro-plans", "destination": "/index.html" },
+    { "source": "/pro-onboarding/start", "destination": "/index.html" },
+    { "source": "/pro-onboarding/tier", "destination": "/index.html" },
+    { "source": "/create-pro-account", "destination": "/index.html" },
+    { "source": "/admin/:section", "destination": "/index.html" },
+    { "source": "/make-request", "destination": "/index.html" },
+    { "source": "/a-propos", "destination": "/index.html" },
+    { "source": "/get-app/:platform", "destination": "/index.html" },
+    { "source": "/get-app", "destination": "/index.html" },
+    { "source": "/help/dashboard-guide", "destination": "/index.html" },
+    { "source": "/privacy-policy", "destination": "/index.html" },
+    { "source": "/politique-de-confidentialite", "destination": "/index.html" },
+    { "source": "/cookie-policy", "destination": "/index.html" },
+    { "source": "/phone-preview", "destination": "/index.html" },
+    { "source": "/reset-password", "destination": "/index.html" },
+    { "source": "/confirm-deletion", "destination": "/index.html" },
+    { "source": "/pay/apple-handoff/:handoffId", "destination": "/index.html" },
+    { "source": "/auth/callback", "destination": "/index.html" },
+    { "source": "/([A-Za-z0-9]+)", "destination": "/index.html" }
   ]
 }

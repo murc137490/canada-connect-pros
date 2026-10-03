@@ -7,8 +7,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getCategoryName } from "@/i18n/constants";
 import { getSubcategoryName, getServiceName } from "@/i18n/serviceTranslations";
 import { ArrowLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
+import NotFound from "@/pages/NotFound";
 import CategoryLottie from "@/components/CategoryLottie";
 
 export default function CategoryPage() {
@@ -20,16 +20,7 @@ export default function CategoryPage() {
   useScrollRestore(slug ? `altshift:scroll:/services/${slug}` : "altshift:scroll:/services/category");
 
   if (!category) {
-    return (
-      <Layout>
-        <div className="container py-20 text-center">
-          <h1 className="font-heading mb-4 text-2xl font-bold text-foreground">{t.services.categoryNotFound}</h1>
-          <Button asChild>
-            <Link to="/services">{t.services.backToServices}</Link>
-          </Button>
-        </div>
-      </Layout>
-    );
+    return <NotFound />;
   }
 
   const totalServices = category.subcategories.reduce((a, s) => a + s.services.length, 0);
@@ -46,6 +37,7 @@ export default function CategoryPage() {
             srcSet={visual.imageSrcSet}
             sizes="100vw"
             alt=""
+            decoding="async"
             className="h-full w-full object-cover"
           />
           <div
