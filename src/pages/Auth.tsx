@@ -176,7 +176,7 @@ export default function Auth() {
               setLoading(false);
               return;
             }
-            // Staff admin: prompt for 6-digit Member ID now
+            // Staff admin: prompt for their four-digit Member ID now
             const expected = String(prof?.public_user_number ?? "").trim();
             setAdminVerifyUser({
               userId: signedIn.id,
@@ -213,10 +213,10 @@ export default function Auth() {
     e.preventDefault();
     if (!adminVerifyUser) return;
     const entered = normalizeMemberIdInput(verifyMemberIdInput);
-    if (!/^[0-9]{6}$/.test(entered)) {
+    if (!/^[0-9]{4,5}$/.test(entered)) {
       toast({
         title: t.auth.toastError,
-        description: locale === "fr" ? "Entrez un Member ID à 6 chiffres." : "Enter a 6-digit Member ID.",
+        description: locale === "fr" ? "Entrez un Member ID à 4 chiffres." : "Enter a four-digit Member ID.",
         variant: "destructive",
       });
       return;
@@ -346,8 +346,8 @@ export default function Auth() {
                     </CardTitle>
                     <CardDescription>
                       {locale === "fr"
-                        ? "Entrez votre Member ID à 6 chiffres pour accéder aux outils d'administration."
-                        : "Enter your 6-digit Member ID to access administrative tools."}
+                        ? "Entrez votre Member ID à 4 chiffres pour accéder aux outils d'administration."
+                        : "Enter your four-digit Member ID to access administrative tools."}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 pt-2">
@@ -360,7 +360,7 @@ export default function Auth() {
                           id="adminVerifyCode"
                           inputMode="numeric"
                           autoComplete="one-time-code"
-                          maxLength={6}
+                          maxLength={5}
                           autoFocus
                           placeholder="000000"
                           className="font-mono tracking-widest text-center text-2xl h-12 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-white/60 bg-background dark:bg-card"

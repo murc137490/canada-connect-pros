@@ -108,7 +108,7 @@
 - **`premiere-pro-onboarding-v1`**, **`premiere_dash_tour_${userId}`**, **`premiere_whats_new_read_ids`**: Tour completion flags and read announcement IDs.
 
 #### Browser `sessionStorage`
-- **`premiere_admin_member_verified`**: Stores `${userId}:${memberId}` for verifying 6-digit staff admin login session (`src/lib/adminMemberGate.ts`). *(Essential)*
+- **`premiere_admin_member_verified`**: Stores `${userId}:${memberId}` for verifying 4–5 digit staff admin login session (`src/lib/adminMemberGate.ts`). *(Essential)*
 - **`premiere_booking_checkout_resume`**: Temporary booking state and payment intent metadata during checkout (`src/lib/bookingCheckoutResume.ts`). *(Essential)*
 - **`premiere_geocode_cache_v1`**: Cached postal code to latitude/longitude geocode responses (`src/lib/geocode.ts`).
 - **`premiere_oauth_redirect`**: Target URL path for navigation after Google OAuth return (`src/lib/oauthRedirect.ts`).
@@ -363,7 +363,7 @@ Language: **English only** (proper nouns / URLs excepted).
 | `premiere-support-history-v2` | `localStorage` | Array of AI chat message objects (up to 10 threads) | **Preference / State** (Customer support history) |
 | `premiere-support-active-id-v2` | `localStorage` | Active AI chat thread UUID | **Preference / State** |
 | `job_request_drafts_${userId}` | `localStorage` | JSON array of in-progress job request drafts | **Preference / State** (User draft persistence) |
-| `premiere_admin_member_verified` | `sessionStorage` | String: `${userId}:${memberId}` (verifies 6-digit admin gate) | **Essential** (Session administrative security) |
+| `premiere_admin_member_verified` | `sessionStorage` | String: `${userId}:${memberId}` (verifies 4–5 digit admin gate) | **Essential** (Session administrative security) |
 | `premiere_booking_checkout_resume`| `sessionStorage` | In-flight booking checkout metadata | **Essential** (Checkout session) |
 | `premiere_geocode_cache_v1` | `sessionStorage` | JSON map of cached postal code to lat/lng coordinates | **Performance Cache** |
 | `premiere_oauth_redirect` | `sessionStorage` | Relative URL path for post-OAuth navigation | **Essential** (Auth routing) |
@@ -515,7 +515,7 @@ Table: storage.objects (Bucket Policies)
 ### Multi-Factor Authentication (MFA)
 - **MFA / TOTP / WebAuthn Enforcement:** **NOT FOUND IN CODE**.
   - Neither Supabase MFA (`auth.mfa.*`) nor TOTP/two-factor authentication is enforced for user accounts or administrator accounts.
-  - Staff Platform Administrators are subject to an application-level gate (`src/components/admin/AdminMemberIdGate.tsx`; `src/pages/Auth.tsx`) requiring entry of their 6-digit `public_user_number` ("Member ID"). This is stored in plaintext in `public.profiles.public_user_number` and stored in `sessionStorage` (`premiere_admin_member_verified`). It is **not** cryptographic MFA.
+  - Staff Platform Administrators are subject to an application-level gate (`src/components/admin/AdminMemberIdGate.tsx`; `src/pages/Auth.tsx`) requiring entry of their 4–5 digit `public_user_number` ("Member ID"). This is stored in plaintext in `public.profiles.public_user_number` and stored in `sessionStorage` (`premiere_admin_member_verified`). It is **not** cryptographic MFA.
   - The Super Administrator (`murc137490@gmail.com`) is explicitly exempt from the Member ID requirement.
 
 ### Encryption Assessment

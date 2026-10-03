@@ -44,9 +44,12 @@ See also `docs/TELNYX-SMS-VOICE.md`.
 
 ```bash
 supabase functions deploy booking-sms-notify --project-ref hptzapnrnbqlptrstjxo
+supabase functions deploy booking-sms-reminders --project-ref hptzapnrnbqlptrstjxo
 supabase functions deploy telnyx-verify --project-ref hptzapnrnbqlptrstjxo
 supabase functions deploy telnyx-voice-webhook --project-ref hptzapnrnbqlptrstjxo
 ```
+
+**Pro-tier only (automatic):** SMS confirmation on book, reminders at 24/48/72h (pro preference), and review-request SMS after a completed job. Cron job `booking-sms-reminders-hourly` calls `booking-sms-reminders`.
 
 `telnyx-voice-webhook` currently answers and plays a bilingual “setup in progress” greeting. Full AI support (services / booking) is a later iteration.
 ## 4. Cursor MCP (agent can manage Telnyx from chat)

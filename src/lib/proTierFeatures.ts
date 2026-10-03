@@ -73,12 +73,12 @@ export function hasFeaturedPublicProfileLook(tier: ProPlanId | null | undefined)
   return tier === "growth" || tier === "pro";
 }
 
-/** Pro only: SMS booking confirmations + automated reminder pipeline (Telnyx preferred, Twilio fallback). */
+/** Pro only: SMS booking confirmations + automated reminder + review-request pipeline (Telnyx preferred, Twilio fallback). */
 export function hasSmsBookingAutomation(tier: ProPlanId | null | undefined): boolean {
   return tier === "pro";
 }
 
-/** Pro only: booking-flow AI assistant (service context via ai-chat-hf). */
+/** Pro only: booking-flow AI assistant + post-booking Q&A (Gemini via ai-chat-hf, HF fallback). */
 export function hasBookingAssistantAI(tier: ProPlanId | null | undefined): boolean {
   return tier === "pro";
 }

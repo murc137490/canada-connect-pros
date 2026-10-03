@@ -66,6 +66,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import AvailabilityCalendar from "@/components/pro/AvailabilityCalendar";
 import ProBookingRequestCard from "@/components/pro/ProBookingRequestCard";
 import ProBookingRequestDetailDialog from "@/components/pro/ProBookingRequestDetailDialog";
+import ProSmsAutomationSettings from "@/components/dashboard/ProSmsAutomationSettings";
+import BookingAssistantChat from "@/components/dashboard/BookingAssistantChat";
+import MemberIdSettings from "@/components/dashboard/MemberIdSettings";
 import ClientBookingPayDialog from "@/components/ClientBookingPayDialog";
 import DashboardReviewsPanel from "@/components/dashboard/DashboardReviewsPanel";
 import { DashboardTour, DashboardTourHelpButton } from "@/components/dashboard/DashboardTour";
@@ -178,7 +181,10 @@ import {
   hasFullScheduleCalendarAccess,
   hasFeaturedPublicProfileLook,
   hasGrowthServiceExtras,
+  hasSmsBookingAutomation,
+  hasBookingAssistantAI,
   isPaidSubscriptionPlanId,
+  normalizeProTier,
   scheduleRollingWindowEndDateStr,
 } from "@/lib/proTierFeatures";
 import { formatProResponseDuration } from "@/lib/bookingResponseTime";
@@ -641,6 +647,7 @@ export default function Dashboard() {
       service_duration_minutes?: number | null;
       invoice_snapshot?: unknown;
       public_booking_code?: string | null;
+      pro_subscription_tier?: string | null;
     }[]
   >([]);
   const [bookingPaymentsById, setBookingPaymentsById] = useState<
@@ -692,6 +699,15 @@ export default function Dashboard() {
   const [availableJobsNoCoordsBanner, setAvailableJobsNoCoordsBanner] = useState(false);
   const [mobileJobsOpen, setMobileJobsOpen] = useState(false);
   const [browsePostalTick, setBrowsePostalTick] = useState(0);
+
+  useEffect(() => {
+    if (searchParams.get("jobs") !== "1" || !proProfile?.is_verified) return;
+    setMobileJobsOpen(true);
+    const timer = window.setTimeout(() => {
+      document.getElementById("dashboard-open-leads")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [searchParams, proProfile?.is_verified]);
 
   useEffect(() => {
     const onBrowsePostal = () => setBrowsePostalTick((n) => n + 1);
@@ -2420,24 +2436,37 @@ export default function Dashboard() {
         const [{ data: pros }, reviewsRes] = await Promise.all([
           supabase
             .from("pro_profiles")
-            .select("id, business_name, service_at_workspace_only, business_address")
+            .select("id, business_name, service_at_workspace_only, business_address, subscription_tier")
             .in("id", proIds),
           supabase.from("reviews").select("pro_profile_id").eq("reviewer_id", user.id),
         ]);
-        const meta: Record<string, { name: string; ws: boolean | null; addr: string | null }> = {};
-        (pros || []).forEach((p: { id: string; business_name: string; service_at_workspace_only?: boolean | null; business_address?: string | null }) => {
-          meta[p.id] = {
-            name: p.business_name || "",
-            ws: p.service_at_workspace_only ?? null,
-            addr: typeof p.business_address === "string" && p.business_address.trim() ? p.business_address.trim() : null,
-          };
-        });
+        const meta: Record<
+          string,
+          { name: string; ws: boolean | null; addr: string | null; tier: string | null }
+        > = {};
+        (pros || []).forEach(
+          (p: {
+            id: string;
+            business_name: string;
+            service_at_workspace_only?: boolean | null;
+            business_address?: string | null;
+            subscription_tier?: string | null;
+          }) => {
+            meta[p.id] = {
+              name: p.business_name || "",
+              ws: p.service_at_workspace_only ?? null,
+              addr: typeof p.business_address === "string" && p.business_address.trim() ? p.business_address.trim() : null,
+              tier: typeof p.subscription_tier === "string" ? p.subscription_tier : null,
+            };
+          },
+        );
         setClientBookings(
           rows.map((r) => ({
             ...r,
             business_name: meta[r.pro_profile_id]?.name ?? "",
             pro_service_at_workspace_only: meta[r.pro_profile_id]?.ws ?? null,
             pro_business_address: meta[r.pro_profile_id]?.addr ?? null,
+            pro_subscription_tier: meta[r.pro_profile_id]?.tier ?? null,
           })),
         );
         setReviewedProIds(
@@ -2687,7 +2716,7 @@ export default function Dashboard() {
       const { data: proData, error: proError } = await supabase
         .from("pro_profiles")
         .select(
-          "id, business_name, availability, is_verified, price_min, price_max, subscription_tier, page_template, page_primary_color, page_secondary_color, page_accent_color, page_background_color, page_header_text, unavailable_dates, available_date_overrides, primary_category_slug, referral_invite_panel_enabled, square_location_id, share_slug, service_at_workspace_only, offers_workspace, offers_travel, business_address, latitude, longitude, service_radius_km, booking_cancel_policy, booking_cancel_fee_percent"
+          "id, business_name, availability, is_verified, price_min, price_max, subscription_tier, page_template, page_primary_color, page_secondary_color, page_accent_color, page_background_color, page_header_text, unavailable_dates, available_date_overrides, primary_category_slug, referral_invite_panel_enabled, square_location_id, share_slug, service_at_workspace_only, offers_workspace, offers_travel, business_address, latitude, longitude, service_radius_km, booking_cancel_policy, booking_cancel_fee_percent, pro_member_id"
         )
         .eq("user_id", user.id)
         .single();
@@ -5480,9 +5509,27 @@ export default function Dashboard() {
                   className={hasSavedBirthday ? "bg-muted" : undefined}
                 />
               {(profile as { public_user_number?: string | null } | null)?.public_user_number ? (
-                <p className="text-xs text-muted-foreground font-mono">
-                  {t.dashboard.accountMemberId ?? "Member ID"}: {(profile as { public_user_number: string }).public_user_number}
-                </p>
+                <MemberIdSettings
+                  currentMemberId={(profile as { public_user_number: string }).public_user_number}
+                  locale={locale === "fr" ? "fr" : "en"}
+                  onChanged={(next) => {
+                    setProfile((prev) => (prev ? { ...prev, public_user_number: next } : prev));
+                  }}
+                  proMemberId={
+                    proProfile && (proProfile as { pro_member_id?: string | null }).pro_member_id != null
+                      ? String((proProfile as { pro_member_id?: string | null }).pro_member_id ?? "")
+                      : proProfile
+                        ? ""
+                        : null
+                  }
+                  onProMemberChanged={
+                    proProfile
+                      ? (next) => {
+                          setProProfile((prev) => (prev ? { ...prev, pro_member_id: next } : prev));
+                        }
+                      : undefined
+                  }
+                />
               ) : null}
               </div>
               {proProfile && !isAdminDashboardShell && (
@@ -5958,6 +6005,15 @@ export default function Dashboard() {
                     {proBookings.slice(1).map((b) => renderProBookingRequestCard(b))}
                   </ul>
                 ) : null}
+                {proProfile?.id ? (
+                  <div className="mt-6">
+                    <ProSmsAutomationSettings
+                      proProfileId={proProfile.id}
+                      locale={locale === "fr" ? "fr" : "en"}
+                      enabled={hasSmsBookingAutomation(subscriptionTierNormalized)}
+                    />
+                  </div>
+                ) : null}
                 <div className="flex justify-center">
                   <DashboardTourHelpButton onClick={() => replayDashTour("bookings")} />
                 </div>
@@ -6076,6 +6132,15 @@ export default function Dashboard() {
                     <ul className="mt-3 space-y-3">
                       {proBookings.slice(1).map((b) => renderProBookingRequestCard(b))}
                     </ul>
+                  ) : null}
+                  {proProfile?.id ? (
+                    <div className="mt-6">
+                      <ProSmsAutomationSettings
+                        proProfileId={proProfile.id}
+                        locale={locale === "fr" ? "fr" : "en"}
+                        enabled={hasSmsBookingAutomation(subscriptionTierNormalized)}
+                      />
+                    </div>
                   ) : null}
                 </div>
 
@@ -6227,6 +6292,14 @@ export default function Dashboard() {
                                 <p className="text-sm font-semibold text-foreground mb-2">{t.dashboard.quotesReceivedTitle}</p>
                                 <ul className="space-y-2">
                                   {quotes.map((q) => {
+                                    const budget = parseBudgetRange(req.budget_range);
+                                    const quoteCad = q.price_cents != null ? q.price_cents / 100 : null;
+                                    const overBudget = quoteCad != null && budget.max != null && quoteCad > budget.max;
+                                    const budgetClass = quoteCad == null || (budget.min == null && budget.max == null)
+                                      ? "text-foreground"
+                                      : overBudget
+                                        ? "text-red-600 dark:text-red-400"
+                                        : "text-green-700 dark:text-green-400";
                                     const serviceDateRaw =
                                       (typeof q.proposed_service_date === "string" && q.proposed_service_date.trim()
                                         ? q.proposed_service_date.trim().slice(0, 10)
@@ -6244,7 +6317,18 @@ export default function Dashboard() {
                                     <li key={q.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-muted/40">
                                       <div>
                                         <span className="font-medium">{q.business_name || "Pro"}</span>
-                                        {q.price_cents != null && <span className="ml-2">${(q.price_cents / 100).toFixed(0)}</span>}
+                                        {q.price_cents != null && (
+                                          <span
+                                            className={`ml-2 font-semibold ${budgetClass}`}
+                                            title={overBudget
+                                              ? (locale === "fr" ? "Au-dessus du budget indiqué" : "Above the stated budget")
+                                              : (budget.min != null || budget.max != null)
+                                                ? (locale === "fr" ? "Dans ou sous le budget indiqué" : "Within or below the stated budget")
+                                                : undefined}
+                                          >
+                                            ${(q.price_cents / 100).toFixed(0)}
+                                          </span>
+                                        )}
                                         {serviceDateLabel ? (
                                           <span className="text-muted-foreground text-sm ml-2">· {serviceDateLabel}</span>
                                         ) : null}
@@ -6370,6 +6454,28 @@ export default function Dashboard() {
                                     <span className="font-semibold block mb-1">{t.dashboard.workspaceVisitAddressLabel ?? "Visit address"}</span>
                                     {b.pro_business_address}
                                   </div>
+                                ) : null}
+                                {hasBookingAssistantAI(normalizeProTier(b.pro_subscription_tier)) &&
+                                ["pending", "accepted", "completed"].includes(b.status) ? (
+                                  <BookingAssistantChat
+                                    enabled
+                                    bookingId={b.id}
+                                    proProfileId={b.pro_profile_id}
+                                    locale={locale === "fr" ? "fr" : "en"}
+                                    viewerRole="client"
+                                    businessName={b.business_name || "your professional"}
+                                    appointmentSummary={[
+                                      b.preferred_date
+                                        ? new Date(String(b.preferred_date) + "T12:00:00").toLocaleDateString(undefined, {
+                                            dateStyle: "medium",
+                                          })
+                                        : null,
+                                      b.preferred_time ? String(b.preferred_time).slice(0, 5) : null,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                                    serviceLabel={b.service_slug ?? null}
+                                  />
                                 ) : null}
                               </div>
                               <div className="flex flex-wrap gap-2 shrink-0">
@@ -6721,8 +6827,8 @@ export default function Dashboard() {
                   <Input
                     id="admin-member-filter"
                     value={adminProMemberFilter}
-                    onChange={(e) => setAdminProMemberFilter(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="123456"
+                    onChange={(e) => setAdminProMemberFilter(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                    placeholder="12345"
                     className="font-mono mt-1"
                     inputMode="numeric"
                   />
@@ -7231,7 +7337,12 @@ export default function Dashboard() {
             data-tour="available-jobs"
             className="mt-8 hidden w-full max-w-4xl mx-auto lg:mt-0 lg:mx-0 lg:block lg:w-80 lg:max-w-none lg:shrink-0 lg:fixed lg:right-4 lg:top-24 lg:z-30 max-h-[min(70vh,calc(100vh-8rem))] lg:max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border bg-card p-4 shadow-sm scroll-mt-24"
           >
-            <h3 className="font-heading font-bold text-foreground mb-3">{t.dashboard.availableJobsPanelTitle}</h3>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h3 className="font-heading font-bold text-foreground">{t.dashboard.availableJobsPanelTitle}</h3>
+              <Link to="/services?mode=client" className="shrink-0 text-xs font-semibold text-primary underline-offset-4 hover:underline">
+                {locale === "fr" ? "Mode client" : "Client mode"}
+              </Link>
+            </div>
             {renderAvailableJobsBody()}
           </aside>
           <AvailableJobsFab
@@ -7671,6 +7782,28 @@ export default function Dashboard() {
         }
         canSeePhone={proBookingDetail ? proMaySeeClientContactInDetail(proBookingDetail) : false}
         statusLabel={proBookingDetail ? proBookingStatusLabel(proBookingDetail.status) : undefined}
+        assistantSlot={
+          proBookingDetail && hasBookingAssistantAI(subscriptionTierNormalized) ? (
+            <BookingAssistantChat
+              enabled
+              bookingId={proBookingDetail.id}
+              proProfileId={proProfile?.id}
+              locale={locale === "fr" ? "fr" : "en"}
+              viewerRole="pro"
+              businessName={proProfile?.business_name || "your business"}
+              appointmentSummary={[
+                proBookingDetail.preferred_date
+                  ? new Date(String(proBookingDetail.preferred_date) + "T12:00:00").toLocaleDateString(undefined, {
+                      dateStyle: "medium",
+                    })
+                  : null,
+                proBookingDetail.preferred_time ? String(proBookingDetail.preferred_time).slice(0, 5) : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            />
+          ) : null
+        }
       />
       {user ? (
         <ClientBookingPayDialog

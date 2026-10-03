@@ -34,7 +34,7 @@ function json(body: unknown, status = 200) {
 }
 
 function isMemberId(v: string) {
-  return /^[0-9]{6}$/.test(v.trim());
+  return /^[0-9]{4}$/.test(v.trim());
 }
 
 Deno.serve(async (req) => {
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
     if (!email.includes("@") || password.length < 8) {
       return json({ error: "Valid email and password (8+ chars) required" }, 400);
     }
-    if (!isMemberId(memberId)) return json({ error: "Member ID must be exactly 6 digits" }, 400);
+    if (!isMemberId(memberId)) return json({ error: "Member ID must be exactly 4 digits" }, 400);
 
     const { data: existingMember } = await admin
       .from("profiles")

@@ -58,7 +58,7 @@ Same person can be both client and pro (same auth user; separate `pro_profiles` 
 |--------|----------|---------|
 | **Sign up (email)** | Requires full name, email, **10-digit Canadian phone**, password, preferred email language EN/FR; optional referral code. Calls `supabase.auth.signUp` with metadata. Phone written to `profiles` after signup if user id exists. Links to `/terms` and `/privacy` (no `legal_document_acceptances` insert on signup found). | `src/pages/Auth.tsx`, `src/contexts/AuthContext.tsx` |
 | **Sign up / login (Google)** | `signInWithOAuth({ provider: "google" })` → `/auth/callback` PKCE exchange | `AuthContext.tsx`, `AuthCallback.tsx` |
-| **Login (email/password)** | Email or name → password; staff admins (not super admin) must enter 6-digit Member ID matching `profiles.public_user_number` | `Auth.tsx`, `adminMemberGate.ts` |
+| **Login (email/password)** | Email or name → password; staff admins (not super admin) must enter their 4–5 digit Member ID matching `profiles.public_user_number` | `Auth.tsx`, `adminMemberGate.ts` |
 | **Logout** | `supabase.auth.signOut()`; clears admin member-ID session flag | `AuthContext.tsx`, `Layout.tsx` |
 | **Email verification** | Supabase Auth confirmation; templates exist under `supabase/email-templates/` and `send-app-email` types `auth_*`. **No in-app invoke of `send-app-email` found under `src/`.** Actual Auth email delivery depends on Supabase Auth / Resend project configuration (see Section 20). | Templates + docs |
 | **Phone verification (OTP)** | Edge `twilio-verify` exists. **No frontend caller found under `src/`.** | `supabase/functions/twilio-verify/` |

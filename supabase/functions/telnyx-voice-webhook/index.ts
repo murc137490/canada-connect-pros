@@ -1,26 +1,22 @@
 /**
- * Telnyx Call Control webhook (Path C support line).
- * Answers inbound calls and plays a short bilingual greeting.
- * Full AI support bot (services / booking) can be layered on later.
+ * Telnyx Call Control → AltShift Front Desk (GPT-Live path).
+ * Welcome + A/B menu. Full natural-language booking uses /front-desk (WebRTC)
+ * or OpenAI Realtime SIP trunk (configure separately). Tools live in front-desk-tools.
  *
- * Secrets optional: TELNYX_API_KEY (required to answer/speak)
- * Configure Call Control Application webhook_event_url to this function URL.
- *
- * JWT must be disabled at the gateway (see supabase/config.toml) — Telnyx posts without a Supabase JWT.
+ * Secrets: TELNYX_API_KEY, FRONT_DESK_SECRET (optional), OPENAI_API_KEY (optional flag)
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const TELNYX_API = "https://api.telnyx.com/v2";
 
-const GREETING_EN =
-  "Thank you for calling AltShift. Our AI support assistant is being set up. Please visit altshift.ca for services and bookings, or email support at support@altshift.ca. Goodbye.";
-const GREETING_FR =
-  "Merci d'avoir appelé AltShift. Notre assistant de soutien par IA est en cours de configuration. Visitez altshift.ca pour les services et réservations, ou écrivez à support@altshift.ca. Au revoir.";
+const WELCOME =
+  "Welcome to Alt Shift. Pour le français, dites français. Press 1 or say A to book a new service. Press 2 or say B for an existing booking. For the full voice assistant in your browser, visit altshift.ca slash front-desk.";
 
 async function telnyxCommand(callControlId: string, command: string, body: Record<string, unknown> = {}) {
   const apiKey = Deno.env.get("TELNYX_API_KEY")?.trim();
   if (!apiKey) {
-    console.error("TELNYX_API_KEY missing — cannot run call command", command);
+    console.error("TELNYX_API_KEY missing", command);
     return;
   }
   const res = await fetch(`${TELNYX_API}/calls/${callControlId}/actions/${command}`, {
@@ -33,15 +29,12 @@ async function telnyxCommand(callControlId: string, command: string, body: Recor
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const text = await res.text();
-    console.error(`telnyx ${command} failed`, res.status, text);
+    console.error(`telnyx ${command} failed`, res.status, await res.text());
   }
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204 });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { status: 204 });
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
@@ -59,7 +52,6 @@ Deno.serve(async (req) => {
   const eventType = payload?.data?.event_type ?? "";
   const call = payload?.data?.payload ?? {};
   const callControlId = String(call.call_control_id ?? "");
-
   console.log("telnyx voice event", eventType, callControlId || "(no id)");
 
   if (!callControlId) {
@@ -69,18 +61,68 @@ Deno.serve(async (req) => {
     });
   }
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
   if (eventType === "call.initiated") {
-    // direction may be incoming
     await telnyxCommand(callControlId, "answer", {});
   } else if (eventType === "call.answered") {
-    const bilingual = `${GREETING_EN} ${GREETING_FR}`;
+    if (supabaseUrl && serviceKey) {
+      try {
+        const admin = createClient(supabaseUrl, serviceKey);
+        await admin.from("front_desk_sessions").insert({
+          channel: "phone",
+          language: "en",
+          call_control_id: callControlId,
+          draft: {},
+        });
+      } catch (e) {
+        console.error("front_desk session create", e);
+      }
+    }
     await telnyxCommand(callControlId, "speak", {
-      payload: bilingual,
+      payload: WELCOME,
       voice: "female",
       language: "en-US",
     });
   } else if (eventType === "call.speak.ended") {
-    await telnyxCommand(callControlId, "hangup", {});
+    await telnyxCommand(callControlId, "gather", {
+      minimum_digits: 1,
+      maximum_digits: 1,
+      timeout_millis: 12000,
+      valid_digits: "12",
+      inter_digit_timeout_millis: 4000,
+    });
+  } else if (eventType === "call.gather.ended") {
+    const digits = String(call.digits ?? call.digit ?? "");
+    if (digits === "1") {
+      await telnyxCommand(callControlId, "speak", {
+        payload:
+          "New service. Please give me your four or five digit member ID using your keypad, then we will text a verification code. For natural speech booking with GPT Live, open altshift.ca slash front-desk on your phone browser.",
+        voice: "female",
+        language: "en-US",
+      });
+    } else if (digits === "2") {
+      await telnyxCommand(callControlId, "speak", {
+        payload:
+          "Existing booking. After member ID verification, enter your booking I D — a letter followed by five digits, for example A one two three four five. Or use the Front Desk page for full voice help.",
+        voice: "female",
+        language: "en-US",
+      });
+    } else {
+      await telnyxCommand(callControlId, "speak", {
+        payload: "I did not get that. Goodbye.",
+        voice: "female",
+        language: "en-US",
+      });
+    }
+  } else if (eventType === "call.hangup" || eventType === "call.bridged") {
+    // no-op
+  }
+
+  // Hang up after second speak waves when no further gather planned
+  if (eventType === "call.speak.ended" && call.client_state) {
+    /* reserved */
   }
 
   return new Response(JSON.stringify({ ok: true }), {

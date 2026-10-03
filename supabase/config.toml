@@ -67,3 +67,23 @@ verify_jwt = false
 
 [functions.square-oauth-disconnect]
 verify_jwt = false
+
+# Front Desk GPT-Live: mint ephemeral OpenAI Realtime secrets (key stays server-side).
+[functions.front-desk-session]
+verify_jwt = false
+
+# Front Desk tool executor (Member ID+OTP, bookings, tickets). Auth via JWT or FRONT_DESK_SECRET.
+[functions.front-desk-tools]
+verify_jwt = false
+
+# OpenAI GPT-Live SIP inbound (live.transport.incoming). No Supabase JWT from OpenAI.
+[functions.openai-live-sip-webhook]
+verify_jwt = false
+
+# TeXML that dials OpenAI SIP (TLS + SRTP).
+[functions.telnyx-texml-openai]
+verify_jwt = false
+
+# RBQ registry verification requires an authenticated professional account.
+[functions.verify-rbq-license]
+verify_jwt = true

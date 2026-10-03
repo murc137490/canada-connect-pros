@@ -1,21 +1,13 @@
 /**
- * Sends SMS for bookings (confirmation + reminder).
- * Prefers Telnyx when configured; falls back to Twilio.
- *
- * Recipients (when phone on file):
- * - Client
- * - Pro (profiles.phone via pro user_id, else pro_profiles.phone)
- *
- * Gate: Pro subscription_tier must be "pro".
- *
- * POST JSON:
- * - { "booking_id": "<uuid>", "event": "confirmation" } — Bearer = booking client
- * - { "booking_id": "<uuid>", "event": "reminder" } — header x-booking-reminder-secret
+ * Pro-tier SMS: confirmation, reminder, review_request.
+ * Recipients: client + pro (review_request = client only).
+ * Templates: pro custom body optional; support footer always appended.
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { toE164NorthAmerica } from "../_shared/phoneE164.ts";
 import { sendTelnyxSms, telnyxSmsConfigured } from "../_shared/telnyxSms.ts";
+import { buildSmsText, type SmsEvent } from "../_shared/bookingSmsTemplates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +15,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-booking-reminder-secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const SITE_URL = (Deno.env.get("SITE_URL") || Deno.env.get("PUBLIC_SITE_URL") || "https://www.altshift.ca").replace(/\/$/, "");
 
 function basicAuth(accountSid: string, authToken: string): string {
   return btoa(`${accountSid}:${authToken}`);
@@ -36,10 +30,7 @@ function twilioSmsConfigured(): boolean {
   );
 }
 
-async function sendTwilioSms(
-  to: string,
-  text: string,
-): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
+async function sendTwilioSms(to: string, text: string): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
   const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
   const authToken = Deno.env.get("TWILIO_AUTH_TOKEN")!;
   const fromNum = Deno.env.get("TWILIO_SMS_FROM")!;
@@ -47,17 +38,14 @@ async function sendTwilioSms(
   form.set("To", to);
   form.set("From", fromNum);
   form.set("Body", text);
-  const twRes = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${basicAuth(accountSid, authToken)}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: form.toString(),
+  const twRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basicAuth(accountSid, authToken)}`,
+      "Content-Type": "application/x-www-form-urlencoded",
     },
-  );
+    body: form.toString(),
+  });
   const twData = await twRes.json().catch(() => ({}));
   if (!twRes.ok) {
     return { ok: false, error: (twData as { message?: string }).message ?? "twilio_error" };
@@ -65,17 +53,11 @@ async function sendTwilioSms(
   return { ok: true, sid: (twData as { sid?: string }).sid ?? "" };
 }
 
-type EventType = "confirmation" | "reminder";
-
-type BookingRow = {
-  id: string;
-  client_id: string;
-  pro_profile_id: string;
-  status: string | null;
-  preferred_date: string | null;
-  preferred_time: string | null;
-  sms_reminder_sent_at?: string | null;
-};
+function parseEvent(raw: unknown): SmsEvent {
+  if (raw === "reminder") return "reminder";
+  if (raw === "review_request") return "review_request";
+  return "confirmation";
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -101,15 +83,15 @@ Deno.serve(async (req) => {
   const useTelnyx = telnyxSmsConfigured();
   const useTwilio = twilioSmsConfigured();
   if (!useTelnyx && !useTwilio) {
-    return new Response(
-      JSON.stringify({ ok: true, skipped: true, reason: "sms_provider_not_configured" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ ok: true, skipped: true, reason: "sms_provider_not_configured" }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   const body = await req.json().catch(() => ({}));
   const bookingId = typeof body.booking_id === "string" ? body.booking_id.trim() : "";
-  const event = (body.event === "reminder" ? "reminder" : "confirmation") as EventType;
+  const event = parseEvent(body.event);
   if (!bookingId) {
     return new Response(JSON.stringify({ error: "Missing booking_id" }), {
       status: 400,
@@ -152,29 +134,19 @@ Deno.serve(async (req) => {
     }
   }
 
-  let booking: BookingRow | null = null;
-  {
-    const withCol = await admin
-      .from("bookings")
-      .select("id, client_id, pro_profile_id, status, preferred_date, preferred_time, sms_reminder_sent_at")
-      .eq("id", bookingId)
-      .maybeSingle();
-    if (!withCol.error && withCol.data) {
-      booking = withCol.data as BookingRow;
-    } else {
-      const fb = await admin
-        .from("bookings")
-        .select("id, client_id, pro_profile_id, status, preferred_date, preferred_time")
-        .eq("id", bookingId)
-        .maybeSingle();
-      if (fb.error || !fb.data) {
-        return new Response(JSON.stringify({ error: "Booking not found" }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      booking = { ...(fb.data as BookingRow), sms_reminder_sent_at: null };
-    }
+  const { data: booking, error: bErr } = await admin
+    .from("bookings")
+    .select(
+      "id, client_id, pro_profile_id, status, preferred_date, preferred_time, sms_reminder_sent_at, sms_review_request_sent_at",
+    )
+    .eq("id", bookingId)
+    .maybeSingle();
+
+  if (bErr || !booking) {
+    return new Response(JSON.stringify({ error: "Booking not found" }), {
+      status: 404,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   if (event === "confirmation" && booking.client_id !== userId) {
@@ -186,7 +158,9 @@ Deno.serve(async (req) => {
 
   const { data: proRow } = await admin
     .from("pro_profiles")
-    .select("business_name, subscription_tier, user_id, phone")
+    .select(
+      "business_name, subscription_tier, user_id, phone, share_slug, sms_confirmation_message_custom, sms_reminder_message_custom, sms_review_request_message_custom",
+    )
     .eq("id", booking.pro_profile_id)
     .maybeSingle();
 
@@ -214,12 +188,16 @@ Deno.serve(async (req) => {
     proPhoneRaw = typeof proUserProfile?.phone === "string" ? proUserProfile.phone.trim() : "";
   }
 
-  const clientTo = toE164NorthAmerica(
-    typeof clientProfile?.phone === "string" ? clientProfile.phone.trim() : "",
-  );
+  const clientTo = toE164NorthAmerica(typeof clientProfile?.phone === "string" ? clientProfile.phone.trim() : "");
   const proTo = toE164NorthAmerica(proPhoneRaw);
 
-  if (!clientTo && !proTo) {
+  if (event === "review_request" && !clientTo) {
+    return new Response(JSON.stringify({ ok: true, skipped: true, reason: "no_client_phone" }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  if (event !== "review_request" && !clientTo && !proTo) {
     return new Response(JSON.stringify({ ok: true, skipped: true, reason: "no_phones" }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -230,25 +208,20 @@ Deno.serve(async (req) => {
   const clientName = (clientProfile?.full_name as string | undefined)?.trim() || "your client";
   const datePart = booking.preferred_date ? String(booking.preferred_date) : "";
   const timePart = booking.preferred_time ? String(booking.preferred_time).slice(0, 5) : "";
-  const when = `${datePart ? ` on ${datePart}` : ""}${timePart ? ` at ${timePart}` : ""}`;
+  const reviewUrl = `${SITE_URL}/dashboard`;
 
-  const clientText =
-    event === "reminder"
-      ? `Reminder: appointment with ${biz}${when}. AltShift. Reply STOP to opt out.`
-      : `Booking confirmed with ${biz}${when}. AltShift.`;
-  const proText =
-    event === "reminder"
-      ? `Reminder: job with ${clientName}${when}. AltShift. Reply STOP to opt out.`
-      : `New booking with ${clientName}${when}. AltShift.`;
+  const custom =
+    event === "confirmation"
+      ? proRow?.sms_confirmation_message_custom
+      : event === "reminder"
+        ? proRow?.sms_reminder_message_custom
+        : proRow?.sms_review_request_message_custom;
 
-  type SendResult = {
-    role: "client" | "pro";
-    to: string;
-    ok: boolean;
-    id?: string;
-    error?: string;
-    provider: string;
-  };
+  const vars = { businessName: biz, clientName, datePart, timePart, reviewUrl };
+  const clientText = buildSmsText({ event, forRole: "client", customBody: custom, vars });
+  const proText = buildSmsText({ event, forRole: "pro", customBody: null, vars });
+
+  type SendResult = { role: "client" | "pro"; to: string; ok: boolean; id?: string; error?: string; provider: string };
   const results: SendResult[] = [];
 
   async function sendOne(role: "client" | "pro", to: string, text: string) {
@@ -276,13 +249,16 @@ Deno.serve(async (req) => {
   }
 
   if (clientTo) await sendOne("client", clientTo, clientText);
-  if (proTo && proTo !== clientTo) await sendOne("pro", proTo, proText);
+  if (event !== "review_request" && proTo && proTo !== clientTo) await sendOne("pro", proTo, proText);
 
   const anyOk = results.some((r) => r.ok);
   const anyFail = results.some((r) => !r.ok);
 
-  if (event === "reminder" && anyOk) {
+  if (anyOk && event === "reminder") {
     await admin.from("bookings").update({ sms_reminder_sent_at: new Date().toISOString() }).eq("id", bookingId);
+  }
+  if (anyOk && event === "review_request") {
+    await admin.from("bookings").update({ sms_review_request_sent_at: new Date().toISOString() }).eq("id", bookingId);
   }
 
   return new Response(

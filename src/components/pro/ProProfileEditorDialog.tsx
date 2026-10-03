@@ -67,6 +67,7 @@ const STORAGE_BUCKET = "pro-photos";
 const VERIFICATION_BUCKET = "pro-verification";
 const MAX_BIO_WORDS = 300;
 const ACCEPT_IMAGES = "image/png,image/jpeg,image/jpg";
+const ACCEPT_VERIFICATION_DOCS = "application/pdf,image/png,image/jpeg,image/webp";
 
 /** All distinct services in a category (flattened across subcategories). */
 function listServicesForPrimaryCategory(categorySlug: string): { slug: string; name: string }[] {
@@ -145,6 +146,13 @@ export function ProProfileEditorDialog({
   const beforeAfterInputRef = useRef<HTMLInputElement>(null);
   const personalPhotoInputRef = useRef<HTMLInputElement>(null);
   const idDocumentInputRef = useRef<HTMLInputElement>(null);
+  const insuranceDocumentInputRef = useRef<HTMLInputElement>(null);
+  const licenseDocumentInputRef = useRef<HTMLInputElement>(null);
+  const [insuranceDocumentFile, setInsuranceDocumentFile] = useState<File | null>(null);
+  const [licenseDocumentFile, setLicenseDocumentFile] = useState<File | null>(null);
+  const [tradeLicenseNumber, setTradeLicenseNumber] = useState("");
+  const [rbqVerification, setRbqVerification] = useState<{ status: "verified" | "needs_review"; reason?: string; official_name?: string; subcategories?: string[] } | null>(null);
+  const [rbqChecking, setRbqChecking] = useState(false);
 
   const [form, setForm] = useState({
     firstNameOrBusiness: "",
@@ -297,6 +305,38 @@ export function ProProfileEditorDialog({
     return urlData.publicUrl;
   };
 
+  const selectedServiceNames = form.selectedServices.map((key) => {
+    const [categorySlug, serviceSlug] = key.split("/");
+    const serviceName = listServicesForPrimaryCategory(categorySlug).find((service) => service.slug === serviceSlug)?.name ?? serviceSlug;
+    return `${categorySlug} ${serviceName}`;
+  });
+  const hasPlumbingServices = selectedServiceNames.some((name) => /plumb|plomberie/i.test(name));
+  const needsTradeLicense = selectedServiceNames.some((name) => /plumb|plomberie|electri|électri|hvac|cvac|heating|roofing|toiture|gas fitting|gaz/i.test(name));
+
+  const verifyRbqLicense = async (proProfileId?: string) => {
+    setRbqChecking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-rbq-license", {
+        body: {
+          license_number: tradeLicenseNumber.trim(),
+          legal_name: form.legalBusinessName.trim() || form.firstNameOrBusiness.trim(),
+          ...(proProfileId ? { pro_profile_id: proProfileId } : {}),
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setRbqVerification(data);
+      return data;
+    } catch (error) {
+      console.error("RBQ verification failed", error);
+      const unavailable = { status: "needs_review" as const, reason: "registry_unavailable" };
+      setRbqVerification(unavailable);
+      return unavailable;
+    } finally {
+      setRbqChecking(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -336,6 +376,16 @@ export function ProProfileEditorDialog({
       toast({
         title: t.createPro.toastRequired,
         description: t.createPro.selectAtLeastOneService ?? "Select at least one service.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (needsTradeLicense && (!tradeLicenseNumber.trim() || (!hasPlumbingServices && !licenseDocumentFile) || !form.insurance || !insuranceDocumentFile)) {
+      toast({
+        title: t.createPro.toastRequired,
+        description: locale === "fr"
+          ? "Les services réglementés nécessitent le numéro de licence applicable, une preuve de licence et un certificat d’assurance pour vérification."
+          : "Regulated services require the applicable licence number, licence evidence, and a certificate of insurance for review.",
         variant: "destructive",
       });
       return;
@@ -518,6 +568,53 @@ export function ProProfileEditorDialog({
       }
 
       if (!profileId) throw new Error("Pro profile not found");
+
+      const uploadVerificationDocument = async (file: File, type: "insurance_certificate" | "trade_license") => {
+        if (file.size > 10 * 1024 * 1024) throw new Error("Verification documents must be 10 MB or smaller.");
+        if (!new Set(["application/pdf", "image/png", "image/jpeg", "image/webp"]).has(file.type)) {
+          throw new Error("Upload a PDF, PNG, JPEG, or WebP verification document.");
+        }
+        const path = `${user.id}/verification/${profileId}/${type}-${Date.now()}-${crypto.randomUUID()}.${ext(file)}`;
+        const storagePath = await uploadFile(path, file, VERIFICATION_BUCKET);
+        const { error } = await supabase.from("pro_verification_documents").insert({
+          pro_profile_id: profileId,
+          document_type: type,
+          storage_path: storagePath,
+          status: "pending_review",
+          extracted_fields: { extraction_status: "not_configured", review_reason: "No insurer/RBQ registry integration is configured." },
+        });
+        if (error) throw error;
+      };
+
+      if (form.insurance && insuranceDocumentFile) {
+        await uploadVerificationDocument(insuranceDocumentFile, "insurance_certificate");
+      }
+      if (needsTradeLicense && (licenseDocumentFile || hasPlumbingServices)) {
+        const normalizedLicenseNumber = tradeLicenseNumber.trim();
+        const { data: existingLicense } = await supabase
+          .from("pro_licenses")
+          .select("id")
+          .eq("pro_profile_id", profileId)
+          .eq("license_number", normalizedLicenseNumber)
+          .maybeSingle();
+        if (!existingLicense) {
+          const { error: licenseError } = await supabase.from("pro_licenses").insert({
+            pro_profile_id: profileId,
+            license_number: normalizedLicenseNumber,
+            license_type: hasPlumbingServices ? "RBQ" : "TRADE",
+            holder_name: form.legalBusinessName.trim() || form.firstNameOrBusiness.trim(),
+            is_verified: false,
+            verification_data: null,
+          });
+          if (licenseError) throw licenseError;
+        }
+        if (licenseDocumentFile) await uploadVerificationDocument(licenseDocumentFile, "trade_license");
+        if (hasPlumbingServices) {
+          // Registry lookup runs again with the saved profile ID; the Edge Function
+          // verifies ownership before persisting its trusted result.
+          await verifyRbqLicense(profileId);
+        }
+      }
 
       const serviceRows = form.selectedServices
         .map((key) => {
@@ -1465,6 +1562,63 @@ export function ProProfileEditorDialog({
                 {t.createPro.insuranceNo}
               </label>
             </div>
+            {form.insurance && (
+              <div className="space-y-2 rounded-lg border border-border p-3">
+                <p className="text-sm text-muted-foreground">
+                  {locale === "fr"
+                    ? "Téléversez votre certificat d’assurance (PDF ou photo). Il sera conservé de façon privée et soumis à une vérification humaine."
+                    : "Upload your certificate of insurance (PDF or photo). It is stored privately and submitted for human review."}
+                </p>
+                <input
+                  ref={insuranceDocumentInputRef}
+                  type="file"
+                  accept={ACCEPT_VERIFICATION_DOCS}
+                  className="hidden"
+                  onChange={(event) => setInsuranceDocumentFile(event.target.files?.[0] ?? null)}
+                />
+                <Button type="button" variant="outline" className="gap-2" onClick={() => insuranceDocumentInputRef.current?.click()}>
+                  <Upload size={16} />
+                  {insuranceDocumentFile?.name ?? (locale === "fr" ? "Ajouter le certificat" : "Add certificate")}
+                </Button>
+                <p className="text-xs text-muted-foreground">{locale === "fr" ? "Statut après l’envoi : À vérifier. Le téléversement ne signifie pas que l’assurance est vérifiée." : "Submission status: Needs review. Uploading does not mean insurance is verified."}</p>
+              </div>
+            )}
+            {needsTradeLicense && (
+              <div className="space-y-2 rounded-lg border border-amber-500/40 p-3">
+                <Label htmlFor="trade-license-number">
+                  {hasPlumbingServices
+                    ? (locale === "fr" ? "Numéro de licence RBQ" : "RBQ licence number")
+                    : (locale === "fr" ? "Numéro de licence professionnelle" : "Professional licence number")}
+                </Label>
+                <Input id="trade-license-number" value={tradeLicenseNumber} onChange={(event) => setTradeLicenseNumber(event.target.value)} placeholder={hasPlumbingServices ? "1234-5678-90" : undefined} />
+                {hasPlumbingServices && (
+                  <>
+                    <Button type="button" variant="outline" disabled={rbqChecking || !/^\d{4}-\d{4}-\d{2}$/.test(tradeLicenseNumber.trim())} onClick={() => void verifyRbqLicense()}>
+                      {rbqChecking ? (locale === "fr" ? "Vérification…" : "Checking…") : (locale === "fr" ? "Vérifier la licence RBQ" : "Verify RBQ licence")}
+                    </Button>
+                    {rbqVerification && (
+                      <p className={`text-sm ${rbqVerification.status === "verified" ? "text-green-700" : "text-amber-700"}`} role="status">
+                        {rbqVerification.status === "verified"
+                          ? (locale === "fr" ? `Licence RBQ vérifiée — sous-catégories : ${rbqVerification.subcategories?.join(", ")}` : `RBQ licence verified — subcategories: ${rbqVerification.subcategories?.join(", ")}`)
+                          : (locale === "fr" ? "Vérification RBQ à examiner. Les sous-catégories et l’admissibilité aux travaux seront examinées." : "RBQ verification needs review. Subcategories and job eligibility require review.")}
+                      </p>
+                    )}
+                  </>
+                )}
+                <input
+                  ref={licenseDocumentInputRef}
+                  type="file"
+                  accept={ACCEPT_VERIFICATION_DOCS}
+                  className="hidden"
+                  onChange={(event) => setLicenseDocumentFile(event.target.files?.[0] ?? null)}
+                />
+                <Button type="button" variant="outline" className="gap-2" onClick={() => licenseDocumentInputRef.current?.click()}>
+                  <Upload size={16} />
+                  {licenseDocumentFile?.name ?? (locale === "fr" ? "Ajouter une preuve de licence" : "Add licence evidence")}
+                </Button>
+                <p className="text-xs text-muted-foreground">{locale === "fr" ? "Le registre public confirme la licence et ses sous-catégories. L’admissibilité à chaque travail peut aussi dépendre du lieu et du travail précis." : "The public registry confirms the licence and its subcategories. Eligibility for each job may also depend on location and the specific work."}</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

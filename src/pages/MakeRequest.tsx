@@ -42,6 +42,11 @@ import {
 import { cn } from "@/lib/utils";
 import { isContentBlocked } from "@/lib/contentModeration";
 import { jobRequestRulesList } from "@/lib/jobRequestRules";
+import {
+  JOB_REQUEST_BUDGET_MIN_BASE,
+  budgetAllInPair,
+  clampBudgetBases,
+} from "@/lib/jobRequestBudget";
 
 const REQUEST_PHOTOS_BUCKET = "job-request-photos";
 const MAX_REQUEST_PHOTOS = 5;
@@ -337,11 +342,40 @@ export default function MakeRequest() {
     return true;
   };
 
+  const budgetLive = useMemo(() => budgetAllInPair(budgetMin, budgetMax), [budgetMin, budgetMax]);
+
+  const setBudgetMinLive = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 6);
+    const next = clampBudgetBases(digits, budgetMax);
+    setBudgetMin(next.min);
+    setBudgetMax(next.max);
+  };
+
+  const setBudgetMaxLive = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 6);
+    const next = clampBudgetBases(budgetMin, digits);
+    setBudgetMin(next.min);
+    setBudgetMax(next.max);
+  };
+
+  const enforceBudgetFloor = () => {
+    const next = clampBudgetBases(budgetMin, budgetMax, { enforceFloor: true });
+    setBudgetMin(next.min);
+    setBudgetMax(next.max);
+  };
+
   const canProceed = () => {
     if (step === 1) {
       return description.trim().length >= 10 && isCompleteCanadianPostal(postalCode) && postalLookup.status === "found";
     }
-    if (step === 2) return true;
+    if (step === 2) {
+      const { minBase, maxBase } = budgetLive;
+      if (minBase == null && maxBase == null) return true; // budget optional
+      if (minBase != null && minBase < JOB_REQUEST_BUDGET_MIN_BASE) return false;
+      if (maxBase != null && maxBase < JOB_REQUEST_BUDGET_MIN_BASE) return false;
+      if (minBase != null && maxBase != null && maxBase < minBase) return false;
+      return true;
+    }
     if (step === 3) return true;
     return false;
   };
@@ -420,8 +454,23 @@ export default function MakeRequest() {
         }
       }
 
-      const minBudget = budgetMin.trim();
-      const maxBudget = budgetMax.trim();
+      const minBudget = budgetLive.minAllIn != null ? String(budgetLive.minAllIn) : "";
+      const maxBudget = budgetLive.maxAllIn != null ? String(budgetLive.maxAllIn) : "";
+      if (
+        (budgetMin.trim() || budgetMax.trim()) &&
+        ((budgetLive.minBase != null && budgetLive.minBase < JOB_REQUEST_BUDGET_MIN_BASE) ||
+          (budgetLive.maxBase != null && budgetLive.maxBase < JOB_REQUEST_BUDGET_MIN_BASE))
+      ) {
+        toast({
+          title: t.makeRequest.toastError,
+          description:
+            t.makeRequest.budgetMinService ??
+            `Service budget must be at least $${JOB_REQUEST_BUDGET_MIN_BASE}.`,
+          variant: "destructive",
+        });
+        goToStep(2);
+        return;
+      }
 
       const uploadedPhotoUrls: string[] = [];
       for (const photo of photos) {
@@ -739,26 +788,6 @@ export default function MakeRequest() {
                     )}
                   </div>
                 </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="space-y-8">
-                <div className="space-y-2">
-                  <Label htmlFor="category">{t.makeRequest.step2Label}</Label>
-                  <select
-                    id="category"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground"
-                  >
-                    {CATEGORIES.map((c) => (
-                      <option key={c.value} value={c.value}>
-                        {t.makeRequest[c.labelKey]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
 
                 <div className="space-y-3">
                   <Label>{t.makeRequest.step4Label}</Label>
@@ -797,9 +826,33 @@ export default function MakeRequest() {
                     </div>
                   ) : null}
                 </div>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-8">
+                <div className="space-y-2">
+                  <Label htmlFor="category">{t.makeRequest.step2Label}</Label>
+                  <select
+                    id="category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground"
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {t.makeRequest[c.labelKey]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
                 <div className="space-y-3">
                   <Label>{t.makeRequest.step5Label}</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t.makeRequest.budgetServiceHint ??
+                      `Enter service budget (min $${JOB_REQUEST_BUDGET_MIN_BASE}). Totals below include taxes + 5% platform fee.`}
+                  </p>
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2">
                       <Label htmlFor="budget-min" className="text-muted-foreground shrink-0">
@@ -811,7 +864,8 @@ export default function MakeRequest() {
                         inputMode="numeric"
                         placeholder={t.makeRequest.step5MinPlaceholder}
                         value={budgetMin}
-                        onChange={(e) => setBudgetMin(e.target.value.replace(/[^\d]/g, ""))}
+                        onChange={(e) => setBudgetMinLive(e.target.value)}
+                        onBlur={enforceBudgetFloor}
                         className="w-28"
                       />
                     </div>
@@ -826,11 +880,28 @@ export default function MakeRequest() {
                         inputMode="numeric"
                         placeholder={t.makeRequest.step5MaxPlaceholder}
                         value={budgetMax}
-                        onChange={(e) => setBudgetMax(e.target.value.replace(/[^\d]/g, ""))}
+                        onChange={(e) => setBudgetMaxLive(e.target.value)}
+                        onBlur={enforceBudgetFloor}
                         className="w-28"
                       />
                     </div>
                   </div>
+                  {(budgetLive.minAllIn != null || budgetLive.maxAllIn != null) && (
+                    <div className="rounded-lg border border-primary/25 bg-primary/5 px-3 py-2 text-sm text-foreground">
+                      <span className="font-medium">
+                        {t.makeRequest.budgetAllInLabel ?? "With taxes + 5% platform fee:"}
+                      </span>{" "}
+                      <span className="tabular-nums font-semibold">
+                        {budgetLive.minAllIn != null ? `$${budgetLive.minAllIn}` : "—"}
+                        {" – "}
+                        {budgetLive.maxAllIn != null ? `$${budgetLive.maxAllIn}` : "—"}
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t.makeRequest.budgetAllInHint ??
+                          "Pros see this all-in range. Max cannot be below min; service minimum is $20."}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

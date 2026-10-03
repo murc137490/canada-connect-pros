@@ -51,6 +51,7 @@ import AdminAcceptPros from "./pages/AdminAcceptPros";
 import PrivateNoIndex from "@/components/PrivateNoIndex";
 import PwaIconTheme from "@/components/PwaIconTheme";
 import AboutUs from "./pages/AboutUs";
+import FrontDesk from "./pages/FrontDesk";
 
 const queryClient = new QueryClient();
 
@@ -109,6 +110,7 @@ const App = () => (
               <Route path="/make-request" element={<MonitorAdminGuard><MakeRequest /></MonitorAdminGuard>} />
               <Route path="/admin" element={<Navigate to="/dashboard?tab=admin" replace />} />
               <Route path="/support" element={<Support />} />
+              <Route path="/front-desk" element={<FrontDesk />} />
               <Route path="/about" element={<AboutUs />} />
               <Route path="/a-propos" element={<AboutUs />} />
               <Route path="/get-app" element={<Navigate to="/get-app/android" replace />} />

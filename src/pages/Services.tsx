@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef, type MouseEvent } from "react";
-import { useSearchParams, Link, useLocation } from "react-router-dom";
+import { useSearchParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { searchProsByBusinessOrName, type ProBusinessSearchHit } from "@/lib/searchProBusiness";
 import { useScrollRestore } from "@/hooks/useScrollRestore";
 import Layout from "@/components/Layout";
@@ -28,17 +28,38 @@ import {
 } from "@/lib/browsePostalStorage";
 import { useToast } from "@/hooks/use-toast";
 import { MOTION } from "@/motion/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Services() {
   const { locale, t } = useLanguage();
   const { toast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [verifiedPro, setVerifiedPro] = useState(false);
   const fromBrowsePros = Boolean((location.state as { fromBrowsePros?: boolean } | null)?.fromBrowsePros);
   const [searchParams] = useSearchParams();
+  const clientMode = searchParams.get("mode") === "client";
   const initialQuery = searchParams.get("q") || "";
   const [query, setQuery] = useState(initialQuery);
   const [proNameMatches, setProNameMatches] = useState<ProBusinessSearchHit[]>([]);
   const [proNameSearchLoading, setProNameSearchLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!user) {
+      setVerifiedPro(false);
+      return () => { active = false; };
+    }
+    void supabase.from("pro_profiles").select("id, is_verified").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (!active) return;
+      const isVerified = data?.is_verified === true;
+      setVerifiedPro(isVerified);
+      if (isVerified && !clientMode) navigate("/dashboard?jobs=1#dashboard-open-leads", { replace: true });
+    });
+    return () => { active = false; };
+  }, [clientMode, navigate, user]);
 
   const [postalCode, setPostalCode] = useState("");
   const [postalResolved, setPostalResolved] = useState<{
@@ -323,6 +344,18 @@ export default function Services() {
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         transition={{ duration: MOTION.reveal, ease: MOTION.ease }}
       >
+        {verifiedPro && clientMode && (
+          <div className="border-b border-primary/20 bg-primary/5">
+            <div className="container flex flex-wrap items-center justify-between gap-3 py-3">
+              <p className="text-sm font-medium text-foreground">
+                {locale === "fr" ? "Mode client : découvrez les professionnels réservables." : "Client mode: browse professionals you can book."}
+              </p>
+              <Link className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" to="/dashboard?jobs=1#dashboard-open-leads">
+                {locale === "fr" ? "Voir les demandes disponibles" : "View available jobs"}
+              </Link>
+            </div>
+          </div>
+        )}
         <div className="border-b border-border bg-muted/40">
           <div className="container py-8 md:py-10">
             <div className="flex flex-col gap-6">

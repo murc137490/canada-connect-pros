@@ -29,6 +29,9 @@ Without `TELNYX_API_KEY` + `TELNYX_SMS_FROM`, SMS is skipped; voice cannot answe
 | Event | Who gets SMS | When |
 | --- | --- | --- |
 | Booking confirmation | Client + Pro | On book (Pro-tier listings) |
-| ~24h reminder | Client + Pro | Hourly cron finds appointments 23–25h ahead |
+| Reminder (24 / 48 / 72h) | Client + Pro | Hourly cron; window from pro’s `sms_reminder_hours` |
+| Review request | Client only | After booking `status=completed` and preferred date has passed |
 
-SMS only runs when the Pro’s `subscription_tier` is **`pro`**.
+SMS only runs when the Pro’s `subscription_tier` is **`pro`**. Pros can customize bodies in Dashboard → Bookings; AltShift support footer is always appended.
+
+Booking AI Q&A (Gemini via `ai-chat-hf`, Hugging Face fallback) is also **Pro-only**, on the booking thread for client and pro.

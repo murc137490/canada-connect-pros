@@ -97,24 +97,30 @@ Deno.serve(async (req) => {
     profilesSynced = true;
   }
 
-  // Always pin super-admin Member ID 900366 (reassign conflict if needed).
+  // Keep the super-admin's reserved four-digit Member ID (reassign conflict if needed).
   if (normalizeEmail(user.email) === "murc137490@gmail.com") {
     const { data: conflict } = await admin
       .from("profiles")
       .select("user_id")
-      .eq("public_user_number", "900366")
+      .eq("public_user_number", "3177")
       .neq("user_id", user.id)
       .maybeSingle();
     if (conflict?.user_id) {
-      const fallback = String(100000 + Math.floor(Math.random() * 900000));
-      await admin.from("profiles").update({ public_user_number: fallback }).eq("user_id", conflict.user_id);
+      const { data: fallback, error: allocateError } = await admin.rpc("allocate_public_user_number");
+      if (allocateError || !fallback) {
+        return new Response(JSON.stringify({ error: "member_id_allocation_failed" }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      await admin.from("profiles").update({ public_user_number: String(fallback) }).eq("user_id", conflict.user_id);
     }
-    await admin.from("profiles").update({ public_user_number: "900366", is_platform_admin: true }).eq("user_id", user.id);
+    await admin.from("profiles").update({ public_user_number: "3177", is_platform_admin: true }).eq("user_id", user.id);
     await admin.from("platform_admin_staff").upsert(
       {
         user_id: user.id,
         email: "murc137490@gmail.com",
-        member_id: "900366",
+        member_id: "3177",
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" },

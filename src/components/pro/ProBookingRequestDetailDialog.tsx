@@ -4,6 +4,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { ReactNode } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatDriveDurationLabel } from "@/lib/drivingDistance";
 import { formatBookingTimeRange } from "@/lib/bookingTimeRange";
@@ -21,6 +22,8 @@ type Props = {
   statusLabel?: string;
   /** Pros see status only — never the government ID image. */
   clientIdentityVerified?: boolean;
+  /** Optional Pro-tier booking AI Q&A panel. */
+  assistantSlot?: ReactNode;
 };
 
 export default function ProBookingRequestDetailDialog({
@@ -33,6 +36,7 @@ export default function ProBookingRequestDetailDialog({
   canSeePhone = false,
   statusLabel,
   clientIdentityVerified = false,
+  assistantSlot,
 }: Props) {
   const { t, locale } = useLanguage();
   if (!booking) return null;
@@ -144,6 +148,7 @@ export default function ProBookingRequestDetailDialog({
             </dd>
           </div>
         </dl>
+        {assistantSlot ? <div className="mt-4">{assistantSlot}</div> : null}
       </DialogContent>
     </Dialog>
   );

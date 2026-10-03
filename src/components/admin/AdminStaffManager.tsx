@@ -160,15 +160,15 @@ export default function AdminStaffManager() {
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Member ID (6 {fr ? "chiffres" : "digits"})</Label>
+          <Label>Member ID ({fr ? "4 chiffres" : "4 digits"})</Label>
           <Input
             required
             inputMode="numeric"
-            pattern="[0-9]{6}"
-            maxLength={6}
+            pattern="[0-9]{4,5}"
+            maxLength={5}
             className="font-mono"
             value={form.member_id}
-            onChange={(e) => setForm((p) => ({ ...p, member_id: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
+            onChange={(e) => setForm((p) => ({ ...p, member_id: e.target.value.replace(/\D/g, "").slice(0, 5) }))}
           />
         </div>
         <div className="space-y-1.5">

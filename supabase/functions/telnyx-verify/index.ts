@@ -28,6 +28,17 @@ Deno.serve(async (req) => {
     });
   }
 
+  const expectedServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim() ?? "";
+  const providedBearer = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "").trim() ?? "";
+  const expectedDeskSecret = Deno.env.get("FRONT_DESK_SECRET")?.trim() ?? "";
+  const providedDeskSecret = req.headers.get("x-front-desk-secret")?.trim() ?? "";
+  if (!expectedServiceKey || (providedBearer !== expectedServiceKey && !(expectedDeskSecret && providedDeskSecret === expectedDeskSecret))) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const apiKey = Deno.env.get("TELNYX_API_KEY")?.trim();
   const verifyProfileId = Deno.env.get("TELNYX_VERIFY_PROFILE_ID")?.trim();
 

@@ -20,7 +20,7 @@ type Props = {
 };
 
 /**
- * Staff platform admins must confirm their 6-digit Member ID once per browser session.
+ * Staff platform admins must confirm their four-digit Member ID once per browser session.
  * Super admin (murc137490@gmail.com) is exempt.
  */
 export default function AdminMemberIdGate({ children }: Props) {
@@ -68,7 +68,7 @@ export default function AdminMemberIdGate({ children }: Props) {
         }
         return;
       }
-      if (!/^[0-9]{6}$/.test(memberId)) {
+      if (!/^[0-9]{4,5}$/.test(memberId)) {
         if (!cancelled) {
           setNeedsGate(true);
           setExpectedMemberId(null);
@@ -98,10 +98,10 @@ export default function AdminMemberIdGate({ children }: Props) {
     e.preventDefault();
     if (!user?.id) return;
     const entered = normalizeMemberIdInput(input);
-    if (!/^[0-9]{6}$/.test(entered)) {
+    if (!/^[0-9]{4,5}$/.test(entered)) {
       toast({
         title: fr ? "Member ID invalide" : "Invalid Member ID",
-        description: fr ? "Entrez exactement 6 chiffres." : "Enter exactly 6 digits.",
+        description: fr ? "Entrez 4 chiffres." : "Enter 4 digits.",
         variant: "destructive",
       });
       return;
@@ -149,8 +149,8 @@ export default function AdminMemberIdGate({ children }: Props) {
         <p className="text-sm text-muted-foreground">
           {expectedMemberId
             ? fr
-              ? "Entrez votre Member ID à 6 chiffres pour continuer."
-              : "Enter your 6-digit Member ID to continue."
+              ? "Entrez votre Member ID à 4 chiffres pour continuer."
+              : "Enter your four-digit Member ID to continue."
             : fr
               ? "Aucun Member ID n’est assigné à ce compte. Contactez le super admin."
               : "No Member ID is assigned to this account. Contact the super admin."}
@@ -163,7 +163,7 @@ export default function AdminMemberIdGate({ children }: Props) {
                 id="admin-member-id"
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                maxLength={6}
+                maxLength={5}
                 className="font-mono tracking-widest text-center text-lg"
                 value={input}
                 onChange={(e) => setInput(normalizeMemberIdInput(e.target.value))}
