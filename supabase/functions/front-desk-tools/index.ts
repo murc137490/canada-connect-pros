@@ -200,7 +200,7 @@ async function executeTool(
             is_pro: true,
             has_pin: false,
             business_name: proOnly.business_name,
-            pro_member_id: proOnly.pro_member_id,
+            member_id: proOnly.pro_member_id,
             caller_phone: phone,
           };
         }
@@ -250,7 +250,7 @@ async function executeTool(
       const { caller_guess_user_id: _a, caller_guess_member_id: _b, caller_guess_name: _c, ...rest } =
         session.draft ?? {};
       await patchSession(admin, sessionId, { draft: { ...rest, caller_guess_cleared: true } });
-      return { ok: true, cleared: true, next: "Ask for the four-digit Member ID, look it up, then verify the voice PIN on the keypad. Never send SMS. Pros use their 4-digit Pro ID." };
+      return { ok: true, cleared: true, next: "Ask for the four-digit Member ID, look it up, then verify the voice PIN on the keypad. The same Member ID identifies clients and professionals. Never send SMS." };
     }
 
     case "verify_voice_pin": {

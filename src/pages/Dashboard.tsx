@@ -232,7 +232,7 @@ const CLIENT_REQUEST_FETCH_LIMIT = 200;
 const OPEN_LEADS_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 const JOB_REQUESTS_LEADS_SELECT_FULL =
-  "id, description, category, city, province, postal_code, photo_urls, budget_range, timing, status, created_at, latitude, longitude, preferred_date, preferred_time_window, preferred_datetime, scheduling_mode, time_window_code, range_start_date, range_end_date, exact_time, window_time_start, window_time_end";
+  "id, description, category, city, province, postal_code, photo_urls, budget_range, timing, status, created_at, latitude, longitude, preferred_date, preferred_time_window";
 
 const JOB_REQUESTS_LEADS_SELECT_MINIMAL =
   "id, description, category, city, province, budget_range, timing, status, created_at, latitude, longitude";
@@ -599,9 +599,7 @@ export default function Dashboard() {
     [proProfile, proSubscriptionPlanId]
   );
 
-  const showProReviewSection = Boolean(
-    proProfile?.is_verified && subscriptionTierNormalized && subscriptionTierNormalized !== "hold",
-  );
+  const showProReviewSection = Boolean(proProfile?.is_verified);
 
   const mobilePreviewInitials = useMemo(() => {
     const name = (proProfile?.business_name ?? profile?.full_name ?? "?").trim();
@@ -1691,7 +1689,7 @@ export default function Dashboard() {
         .from("profiles")
         .select("full_name, phone, birthday, email_language, avatar_url, postal_code, address, booking_id_verification_photo_path, is_platform_admin, public_user_number")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       if (data) {
         setProfile(data);
         setAccountForm({
@@ -2739,7 +2737,7 @@ export default function Dashboard() {
           "id, business_name, availability, is_verified, price_min, price_max, subscription_tier, page_template, page_primary_color, page_secondary_color, page_accent_color, page_background_color, page_header_text, unavailable_dates, available_date_overrides, primary_category_slug, referral_invite_panel_enabled, square_location_id, share_slug, service_at_workspace_only, offers_workspace, offers_travel, business_address, latitude, longitude, service_radius_km, booking_cancel_policy, booking_cancel_fee_percent, pro_member_id"
         )
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       let pro = proData as {
         id: string;
         business_name: string;
@@ -2764,7 +2762,7 @@ export default function Dashboard() {
             "id, business_name, availability, is_verified, price_min, price_max, subscription_tier, page_template, page_primary_color, page_secondary_color, page_accent_color, page_background_color, page_header_text, unavailable_dates, available_date_overrides"
           )
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
         pro = { ...(fallback as typeof pro), primary_category_slug: (fallback as { primary_category_slug?: null })?.primary_category_slug ?? null };
       }
       const { data: subRow } = await supabase.from("pro_subscriptions").select("plan_id").eq("user_id", user.id).maybeSingle();
@@ -5528,29 +5526,14 @@ export default function Dashboard() {
                   max={maxBirthdayForMinAge()}
                   className={hasSavedBirthday ? "bg-muted" : undefined}
                 />
-              {(profile as { public_user_number?: string | null } | null)?.public_user_number ? (
-                <MemberIdSettings
-                  currentMemberId={(profile as { public_user_number: string }).public_user_number}
-                  locale={locale === "fr" ? "fr" : "en"}
-                  onChanged={(next) => {
-                    setProfile((prev) => (prev ? { ...prev, public_user_number: next } : prev));
-                  }}
-                  proMemberId={
-                    proProfile && (proProfile as { pro_member_id?: string | null }).pro_member_id != null
-                      ? String((proProfile as { pro_member_id?: string | null }).pro_member_id ?? "")
-                      : proProfile
-                        ? ""
-                        : null
-                  }
-                  onProMemberChanged={
-                    proProfile
-                      ? (next) => {
-                          setProProfile((prev) => (prev ? { ...prev, pro_member_id: next } : prev));
-                        }
-                      : undefined
-                  }
-                />
-              ) : null}
+              <MemberIdSettings
+                currentMemberId={(profile as { public_user_number?: string | null } | null)?.public_user_number ?? null}
+                locale={locale === "fr" ? "fr" : "en"}
+                onChanged={(next) => {
+                  setProfile((prev) => (prev ? { ...prev, public_user_number: next } : prev));
+                  setProProfile((prev) => (prev ? { ...prev, pro_member_id: next } : prev));
+                }}
+              />
               </div>
               {proProfile && !isAdminDashboardShell && (
                 <div className="space-y-2">
@@ -6428,7 +6411,9 @@ export default function Dashboard() {
                         const responseFmt = formatProResponseDuration(b.created_at, b.responded_at, locale);
                         const responseClientLine = responseFmt
                           ? (t.dashboard.clientProResponseLine ?? "").replace("{{value}}", responseFmt)
-                          : t.dashboard.clientProResponsePending ?? "";
+                          : b.status === "pending"
+                            ? t.dashboard.clientProResponsePending ?? ""
+                            : "";
                         const rebookTo =
                           b.service_category_slug && b.service_slug
                             ? `/pros/${b.pro_profile_id}?service=${encodeURIComponent(b.service_category_slug)}/${encodeURIComponent(b.service_slug)}`

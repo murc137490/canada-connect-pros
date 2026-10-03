@@ -70,7 +70,7 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
         .from("public_profiles")
         .select("full_name")
         .eq("user_id", r.reviewer_id)
-        .single();
+        .maybeSingle();
 
       // Get photos
       const { data: photos } = await supabase
@@ -83,7 +83,7 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
         .from("review_responses")
         .select("id, content, created_at")
         .eq("review_id", r.id)
-        .single();
+        .maybeSingle();
 
       enriched.push({
         ...r,

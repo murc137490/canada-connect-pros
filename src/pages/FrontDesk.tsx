@@ -208,12 +208,12 @@ export default function FrontDesk() {
           ) : null}
           <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
             <p>
-              {fr ? "Parcours : 1 = nouvelle réservation · 2 = réservation existante · Member ID à 4 chiffres + code SMS." : "Flow: 1 = new booking · 2 = existing booking · 4-digit Member ID + SMS code."}
+              {fr ? "Parcours : 1 = nouvelle réservation · 2 = réservation existante · Member ID à 4 chiffres + NIP vocal." : "Flow: 1 = new booking · 2 = existing booking · 4-digit Member ID + voice PIN."}
             </p>
             <p>
               {fr
-                ? "Booking ID (Service ID) : lettre + 5 chiffres (ex. A12345). Member ID pro : 4 chiffres."
-                : "Booking ID (Service ID): letter + 5 digits (e.g. A12345). Pro Member ID: 4 digits."}
+                ? "Booking ID (Service ID) : lettre + 5 chiffres (ex. A12345). Member ID : 4 chiffres."
+                : "Booking ID (Service ID): letter + 5 digits (e.g. A12345). Member ID: 4 digits."}
             </p>
             {sessionId ? (
               <p className="font-mono text-[11px]">session: {sessionId}</p>

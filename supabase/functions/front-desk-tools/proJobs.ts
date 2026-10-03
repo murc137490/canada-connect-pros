@@ -491,7 +491,7 @@ type DeskSession = {
 
 async function requirePro(admin: SupabaseClient, session: DeskSession): Promise<ProRow | { error: string; message: string }> {
   if (!session.authenticated || !session.customer_user_id) {
-    return { error: "not_authenticated", message: "Authenticate with a voice PIN or Pro ID plus the text code first." };
+    return { error: "not_authenticated", message: "Authenticate with the account's Member ID and voice PIN on the keypad first." };
   }
   const pro = await findProByUserId(admin, session.customer_user_id);
   if (!pro) return { error: "not_a_pro", message: "This account is not a professional." };
@@ -504,7 +504,7 @@ export async function callerProFields(admin: SupabaseClient, userId: string) {
   return {
     is_pro: true as const,
     business_name: pro.business_name,
-    pro_member_id: pro.pro_member_id,
+    member_id: pro.pro_member_id,
     pro_profile_id: pro.id,
   };
 }
@@ -526,6 +526,13 @@ export async function handleProTool(
   }
 
   if (name === "authenticate_pro") {
+    if (session.channel === "phone") {
+      return {
+        ok: false,
+        error: "phone_otp_disabled",
+        message: "Use the shared Member ID and voice PIN on the keypad. Never send SMS to phone callers.",
+      };
+    }
     const proId = String(args.pro_id ?? "").replace(/\D/g, "").slice(-4).padStart(4, "0");
     const action = String(args.action ?? "send_otp");
     const { data: pro } = await admin
@@ -533,7 +540,7 @@ export async function handleProTool(
       .select("id, user_id, business_name, pro_member_id, phone")
       .eq("pro_member_id", proId)
       .maybeSingle();
-    if (!pro) return { ok: false, error: "pro_not_found", message: "No professional found for that Pro ID." };
+    if (!pro) return { ok: false, error: "pro_not_found", message: "No professional account found for that Member ID." };
     const { data: profile } = await admin
       .from("profiles")
       .select("full_name, phone")

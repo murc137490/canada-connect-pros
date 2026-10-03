@@ -97,7 +97,7 @@ export default function BookingAssistantChat({
         .join("\n");
       const block = [
         `Pro business: ${p?.business_name ?? businessName}`,
-        p?.pro_member_id ? `Pro Member ID (4-digit): ${p.pro_member_id}` : null,
+        p?.pro_member_id ? `Member ID: ${p.pro_member_id}` : null,
         p?.bio ? `Bio: ${String(p.bio).slice(0, 500)}` : null,
         p?.years_experience != null ? `Years experience: ${p.years_experience}` : null,
         p?.primary_category_slug ? `Main category: ${p.primary_category_slug}` : null,

@@ -2,10 +2,11 @@ import { Coffee, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { applySiteTheme, cycleSiteTheme, getActiveSiteTheme, type SiteTheme } from "@/lib/siteTheme";
 
 /** Cycles light, cream and dark. Default app theme follows the OS (`system`). */
 export default function AnimatedThemeToggler({ className = "" }: { className?: string }) {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -26,14 +27,16 @@ export default function AnimatedThemeToggler({ className = "" }: { className?: s
     );
   }
 
-  const currentTheme = resolvedTheme ?? "light";
-  const nextTheme = currentTheme === "light" ? "cream" : currentTheme === "cream" ? "dark" : "light";
+  const contextTheme = theme === "system" ? resolvedTheme : theme;
+  const fallbackTheme: SiteTheme = contextTheme === "dark" || contextTheme === "cream" ? contextTheme : "light";
+  const currentTheme = getActiveSiteTheme(fallbackTheme);
+  const nextTheme = cycleSiteTheme(currentTheme);
   const ThemeIcon = currentTheme === "dark" ? Moon : currentTheme === "cream" ? Coffee : Sun;
 
   return (
     <button
       type="button"
-      onClick={() => setTheme(nextTheme)}
+      onClick={() => applySiteTheme(nextTheme, setTheme)}
       className={buttonClassName}
       aria-label={`Current theme: ${currentTheme}. Switch to ${nextTheme} theme`}
       title={`Switch to ${nextTheme} theme`}

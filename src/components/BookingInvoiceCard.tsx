@@ -189,7 +189,7 @@ export default function BookingInvoiceCard({
                     <InvoiceRow label={t.dashboard.invoiceClientMemberId ?? "Client member ID"} value={norm.client_member_number} mono />
                   ) : null}
                   {norm.pro_member_number ? (
-                    <InvoiceRow label={t.dashboard.invoiceProMemberId ?? "Pro member ID"} value={norm.pro_member_number} mono />
+                    <InvoiceRow label={t.dashboard.invoiceProMemberId ?? "Member ID"} value={norm.pro_member_number} mono />
                   ) : null}
                   <InvoiceRow label={t.dashboard.invoiceSubtotal ?? "Subtotal (before tax)"} value={`$${norm.subtotal.toFixed(2)}`} />
                   <InvoiceRow label={t.dashboard.invoiceGst ?? "GST (5%)"} value={`$${norm.gst.toFixed(2)}`} />

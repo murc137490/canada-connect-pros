@@ -87,7 +87,7 @@ export function buildQuebecBilingualInvoiceHtml(
       <p style="margin:4px 0;"><strong>No de facture :</strong> ${esc(invNo)}</p>
       <p style="margin:4px 0;"><strong>Référence de réservation :</strong> ${esc(bookingRef)}</p>
       ${inv.client_member_number ? `<p style="margin:4px 0;"><strong>No membre client :</strong> ${esc(inv.client_member_number)}</p>` : ""}
-      ${inv.pro_member_number ? `<p style="margin:4px 0;"><strong>No membre professionnel :</strong> ${esc(inv.pro_member_number)}</p>` : ""}
+      ${inv.pro_member_number ? `<p style="margin:4px 0;"><strong>No de membre :</strong> ${esc(inv.pro_member_number)}</p>` : ""}
       ${internalId ? `<p style="margin:2px 0 0;font-size:11px;color:#888;font-family:monospace;">Identifiant système : ${esc(internalId)}</p>` : ""}
       <h3 style="font-size:0.95rem;margin:16px 0 8px;">Fournisseur (prestataire)</h3>
       <p style="margin:4px 0;"><strong>Dénomination légale (ou inscription au REQ) :</strong><br/>${esc(inv.supplier_legal_name)}</p>
@@ -122,7 +122,7 @@ export function buildQuebecBilingualInvoiceHtml(
       <p style="margin:4px 0;"><strong>Invoice number:</strong> ${esc(invNo)}</p>
       <p style="margin:4px 0;"><strong>Booking reference:</strong> ${esc(bookingRef)}</p>
       ${inv.client_member_number ? `<p style="margin:4px 0;"><strong>Client member ID:</strong> ${esc(inv.client_member_number)}</p>` : ""}
-      ${inv.pro_member_number ? `<p style="margin:4px 0;"><strong>Pro member ID:</strong> ${esc(inv.pro_member_number)}</p>` : ""}
+      ${inv.pro_member_number ? `<p style="margin:4px 0;"><strong>Member ID:</strong> ${esc(inv.pro_member_number)}</p>` : ""}
       ${internalId ? `<p style="margin:2px 0 0;font-size:11px;color:#888;font-family:monospace;">System ID: ${esc(internalId)}</p>` : ""}
       <h3 style="font-size:0.95rem;margin:16px 0 8px;">Supplier (service provider)</h3>
       <p style="margin:4px 0;"><strong>Legal business name (or REQ-registered name):</strong><br/>${esc(inv.supplier_legal_name)}</p>

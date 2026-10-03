@@ -285,9 +285,18 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
   };
   let responseActive = false;
   let pendingInterruptedInput: string | null = null;
+  const pendingResponseCreates: Array<Record<string, unknown>> = [];
+  const createResponse = (response?: Record<string, unknown>) => {
+    if (responseActive) {
+      pendingResponseCreates.push(response ?? {});
+      return;
+    }
+    responseActive = true;
+    send({ type: "response.create", ...(response ? { response } : {}) });
+  };
   const sendInput = (text: string) => {
     send({ type: "conversation.item.create", item: { type: "message", role: "user", content: [{ type: "input_text", text }] } });
-    send({ type: "response.create" });
+    createResponse();
   };
   const interruptWithInput = (text: string) => {
     if (!responseActive) { sendInput(text); return; }
@@ -297,7 +306,7 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
     send({ type: "output_audio_buffer.clear" });
   };
   const seenCalls = new Set<string>();
-  let keypadCapture: { digits: string; min: number; max: number; resolve: (digits: string) => void; timer: ReturnType<typeof setTimeout> } | null = null;
+  let keypadCapture: { digits: string; min: number; max: number; resolve: (digits: string) => void; timer: ReturnType<typeof setTimeout>; submitTimer?: ReturnType<typeof setTimeout> } | null = null;
   let otpTarget: { tool: string; args: Record<string, unknown> } | null = null;
   let languageMenuPending = true;
   let lastQuestion = "";
@@ -312,10 +321,10 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
       silenceTimer = null;
       if (silenceStage === 0) {
         silenceStage = 1;
-        send({ type: "response.create", response: { instructions: "The caller has been silent for 7 seconds. Repeat your last question once in the same language, then wait." } });
+        createResponse({ instructions: "The caller has been silent for 7 seconds. Repeat your last question once in the same language, then wait." });
       } else if (silenceStage === 1) {
         silenceStage = 2;
-        send({ type: "response.create", response: { instructions: "The caller has been silent for another 7 seconds. Apologize that you cannot hear them, say goodbye in the current language, then end the call." } });
+        createResponse({ instructions: "The caller has been silent for another 7 seconds. Apologize that you cannot hear them, say goodbye in the current language, then end the call." });
       } else if (silenceStage === 2) {
         hangupStarted = true;
         void fetch(`${OPENAI_API}/realtime/calls/${encodeURIComponent(callId)}/hangup`, { method: "POST", headers: { Authorization: `Bearer ${apiKey}` } }).catch((e) => console.error("silence hangup", e));
@@ -323,17 +332,30 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
     }, 7000);
   };
   const collectKeypad = (min: number, max: number, prompt: string): Promise<string> => {
-    send({ type: "response.create", response: { instructions: prompt } });
+    // Keep the sensitive keypad prompt out of the conversation history and separate
+    // from the unresolved function call until the caller's digits are captured.
+    createResponse({ conversation: "none", instructions: prompt });
     return new Promise((resolve) => {
-      const timer = setTimeout(() => { const digits = keypadCapture?.digits ?? ""; keypadCapture = null; resolve(digits); }, 60_000);
+      const timer = setTimeout(() => {
+        const digits = keypadCapture?.digits ?? "";
+        if (keypadCapture?.submitTimer) clearTimeout(keypadCapture.submitTimer);
+        keypadCapture = null;
+        resolve(digits);
+      }, 60_000);
       keypadCapture = { digits: "", min, max, resolve: (digits) => { clearTimeout(timer); resolve(digits); }, timer };
     });
+  };
+  const stopKeypadPrompt = () => {
+    if (!responseActive) return;
+    send({ type: "response.cancel" });
+    send({ type: "output_audio_buffer.clear" });
   };
   const finishCapture = (digits: string) => {
     const active = keypadCapture;
     if (!active) return;
     keypadCapture = null;
     clearTimeout(active.timer);
+    if (active.submitTimer) clearTimeout(active.submitTimer);
     active.resolve(digits);
   };
   await new Promise<void>((resolve) => {
@@ -360,7 +382,7 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
             if (!pin) break;
             const again = await collectKeypad(4, 6, "Ask the caller to enter the new PIN again on the keypad and press #.");
             confirmed = !!again && pin === again;
-            if (!confirmed) send({ type: "response.create", response: { instructions: "The PIN entries did not match. Ask the caller to try once more." } });
+            if (!confirmed) createResponse({ conversation: "none", instructions: "The PIN entries did not match. Ask the caller to try once more." });
           }
           output = confirmed ? await runTool("set_voice_pin", JSON.stringify({ session_id: deskSessionId, pin }), deskSessionId) : JSON.stringify({ ok: false, error: pin ? "pin_mismatch" : "keypad_timeout" });
         }
@@ -373,7 +395,7 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
         }
       }
       send({ type: "conversation.item.create", item: { type: "function_call_output", call_id: callIdFn, output } });
-      send({ type: "response.create" });
+      createResponse();
     };
     ws.onmessage = async (ev) => {
       let msg: Record<string, unknown>;
@@ -396,6 +418,28 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
           sendInput(nextInput);
           return;
         }
+        if (pendingResponseCreates.length) {
+          const nextResponse = pendingResponseCreates.shift()!;
+          createResponse(nextResponse);
+          return;
+        }
+        if (type === "response.done") {
+          const completedResponse = (msg.response ?? {}) as Record<string, unknown>;
+          const outputItems = Array.isArray(completedResponse.output)
+            ? completedResponse.output as Record<string, unknown>[]
+            : [];
+          const functionCalls = completedResponse.status === "completed"
+            ? outputItems.filter((item) => item.type === "function_call")
+            : [];
+          if (functionCalls.length) {
+            if (silenceTimer) clearTimeout(silenceTimer);
+            silenceTimer = null;
+            for (const item of functionCalls) {
+              await handleFn(String(item.name ?? ""), String(item.call_id ?? ""), String(item.arguments ?? "{}"));
+            }
+            return;
+          }
+        }
         if (silenceStage === 2) {
           hangupStarted = true;
           void fetch(`${OPENAI_API}/realtime/calls/${encodeURIComponent(callId)}/hangup`, { method: "POST", headers: { Authorization: `Bearer ${apiKey}` } }).catch((e) => console.error("silence hangup", e));
@@ -415,7 +459,7 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
         if (otpTarget) {
           if (key === "*" && keypadCapture) { keypadCapture.digits = ""; return; }
           if (key === "#" && keypadCapture && keypadCapture.digits.length < 6) {
-            send({ type: "response.create", response: { instructions: "Ask the caller to continue entering the six-digit code on the keypad." } });
+            createResponse({ instructions: "Ask the caller to continue entering the six-digit code on the keypad." });
             return;
           }
           if (/^[0-9]$/.test(key)) {
@@ -441,13 +485,23 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
           }
         }
         if (keypadCapture) {
-          if (key === "*") keypadCapture.digits = "";
+          if (key === "*") {
+            keypadCapture.digits = "";
+            if (keypadCapture.submitTimer) clearTimeout(keypadCapture.submitTimer);
+            keypadCapture.submitTimer = undefined;
+          }
           else if (key === "#" && keypadCapture.digits.length >= keypadCapture.min) finishCapture(keypadCapture.digits);
           else if (/^[0-9]$/.test(key) && keypadCapture.digits.length < keypadCapture.max) {
+            stopKeypadPrompt();
+            if (keypadCapture.submitTimer) clearTimeout(keypadCapture.submitTimer);
+            keypadCapture.submitTimer = undefined;
             keypadCapture.digits += key;
             if (keypadCapture.digits.length === keypadCapture.max) finishCapture(keypadCapture.digits);
+            else if (keypadCapture.digits.length >= keypadCapture.min) {
+              keypadCapture.submitTimer = setTimeout(() => finishCapture(keypadCapture?.digits ?? ""), 1800);
+            }
           } else if (key === "#") {
-            send({ type: "response.create", response: { instructions: "Ask the caller to enter at least four digits, then press #." } });
+            createResponse({ conversation: "none", instructions: "Ask the caller to enter at least four digits, then press #." });
           }
         } else if (/^[0-9]$/.test(key)) {
           interruptWithInput("The caller pressed keypad key " + key + " while you were speaking. Stop the current question and treat this as their live answer to the most recent numbered menu. Yes is 1 and no is 2 when that was the menu. Continue with the next step without repeating the question. Do not treat menu digits as credentials.");
@@ -456,16 +510,10 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
       }
       if (type === "error") console.log("sideband error", JSON.stringify(msg).slice(0, 400));
       if (type === "session.created" || type === "session.updated") console.log("sideband", type);
-      if (type === "response.function_call_arguments.done") {
-        await handleFn(String(msg.name ?? ""), String(msg.call_id ?? ""), String(msg.arguments ?? "{}"));
-      } else if (type === "response.output_item.done") {
-        const item = (msg.item ?? {}) as Record<string, unknown>;
-        if (item.type === "function_call") await handleFn(String(item.name ?? ""), String(item.call_id ?? ""), String(item.arguments ?? "{}"));
-      }
     };
     // Accepted call instructions configure the opening line, but do not start
     // audio by themselves. Create its first response exactly once.
-    send({ type: "response.create" });
+    createResponse();
     ws.onclose = () => { clearTimeout(hardStop); resolve(); };
     ws.onerror = () => { clearTimeout(hardStop); resolve(); };
   });

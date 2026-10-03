@@ -8,29 +8,20 @@ import { normalizeMemberIdInput } from "@/lib/adminMemberGate";
 import { useToast } from "@/hooks/use-toast";
 
 type Props = {
-  currentMemberId: string;
+  currentMemberId: string | null;
   locale: "en" | "fr";
   onChanged: (next: string) => void;
-  /** When set, also allow editing 4-digit pro Member ID. */
-  proMemberId?: string | null;
-  onProMemberChanged?: (next: string) => void;
 };
 
 export default function MemberIdSettings({
   currentMemberId,
   locale,
   onChanged,
-  proMemberId,
-  onProMemberChanged,
 }: Props) {
   const { toast } = useToast();
-  const [draft, setDraft] = useState(currentMemberId);
+  const [draft, setDraft] = useState(currentMemberId ?? "");
   const [status, setStatus] = useState<"idle" | "checking" | "taken" | "available" | "invalid">("idle");
   const [saving, setSaving] = useState(false);
-
-  const [proDraft, setProDraft] = useState(proMemberId ?? "");
-  const [proStatus, setProStatus] = useState<"idle" | "checking" | "taken" | "available" | "invalid">("idle");
-  const [proSaving, setProSaving] = useState(false);
 
   const [hasPin, setHasPin] = useState(false);
   const [pinDraft, setPinDraft] = useState("");
@@ -42,15 +33,11 @@ export default function MemberIdSettings({
     locale === "fr"
       ? {
           title: "Member ID",
-          hint: "4 chiffres. Confirmez seulement si le numéro est libre — l’ancien redevient disponible.",
           confirm: "Confirmer",
           taken: "Ce Member ID est déjà pris.",
           invalid: "Entrez 4 chiffres.",
           available: "Disponible — confirmez pour l’adopter.",
           saved: "Member ID mis à jour",
-          proTitle: "Member ID pro (4 chiffres)",
-          proHint: "Identifiant pro à 4 chiffres. Doit être libre.",
-          proInvalid: "Entrez exactement 4 chiffres.",
           pinTitle: "NIP vocal (téléphone)",
           pinHint:
             "4 ou 5 chiffres. Quand vous appelez le Front Desk depuis votre numéro enregistré, l’IA demande si c’est bien vous, puis ce NIP.",
@@ -65,15 +52,11 @@ export default function MemberIdSettings({
         }
       : {
           title: "Member ID",
-          hint: "4 digits. Confirm only if free — your previous ID becomes available again.",
           confirm: "Confirm",
           taken: "That Member ID is taken.",
           invalid: "Enter 4 digits.",
           available: "Available — confirm to claim it.",
           saved: "Member ID updated",
-          proTitle: "Pro Member ID (4 digits)",
-          proHint: "4-digit pro ID. Must be available.",
-          proInvalid: "Enter exactly 4 digits.",
           pinTitle: "Voice PIN (phone)",
           pinHint:
             "4–6 digits. When you call Front Desk from your account phone number, the AI asks if it’s you, then this PIN.",
@@ -88,14 +71,9 @@ export default function MemberIdSettings({
         };
 
   useEffect(() => {
-    setDraft(currentMemberId);
+    setDraft(currentMemberId ?? "");
     setStatus("idle");
   }, [currentMemberId]);
-
-  useEffect(() => {
-    setProDraft(proMemberId ?? "");
-    setProStatus("idle");
-  }, [proMemberId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,11 +93,11 @@ export default function MemberIdSettings({
 
   useEffect(() => {
     const normalized = normalizeMemberIdInput(draft);
-    if (!normalized || normalized === normalizeMemberIdInput(currentMemberId)) {
+    if (!normalized || normalized === normalizeMemberIdInput(currentMemberId ?? "")) {
       setStatus("idle");
       return;
     }
-    if (normalized.length < 4 || normalized.length > 5) {
+    if (normalized.length !== 4) {
       setStatus("invalid");
       return;
     }
@@ -144,41 +122,9 @@ export default function MemberIdSettings({
     };
   }, [draft, currentMemberId]);
 
-  useEffect(() => {
-    if (proMemberId == null) return;
-    const digits = proDraft.replace(/\D/g, "").slice(0, 4);
-    if (!digits || digits === proMemberId) {
-      setProStatus("idle");
-      return;
-    }
-    if (digits.length !== 4) {
-      setProStatus("invalid");
-      return;
-    }
-    let cancelled = false;
-    setProStatus("checking");
-    const t = window.setTimeout(() => {
-      void (async () => {
-        const { data, error } = await supabase.rpc("is_pro_member_id_available" as never, {
-          candidate: digits,
-        } as never);
-        if (cancelled) return;
-        if (error) {
-          setProStatus("idle");
-          return;
-        }
-        setProStatus(data === true ? "available" : "taken");
-      })();
-    }, 350);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(t);
-    };
-  }, [proDraft, proMemberId]);
-
   const confirmMember = async () => {
     const normalized = normalizeMemberIdInput(draft);
-    if (normalized.length < 4 || status === "taken" || status === "invalid") return;
+    if (normalized.length !== 4 || status === "taken" || status === "invalid") return;
     setSaving(true);
     const { data, error } = await supabase.rpc("change_my_public_user_number" as never, {
       new_number: normalized,
@@ -197,30 +143,6 @@ export default function MemberIdSettings({
     onChanged(next);
     setDraft(next);
     setStatus("idle");
-    toast({ title: copy.saved });
-  };
-
-  const confirmPro = async () => {
-    const digits = proDraft.replace(/\D/g, "").slice(0, 4);
-    if (digits.length !== 4 || proStatus === "taken" || proStatus === "invalid") return;
-    setProSaving(true);
-    const { data, error } = await supabase.rpc("change_my_pro_member_id" as never, {
-      new_number: digits,
-    } as never);
-    setProSaving(false);
-    const result = data as { ok?: boolean; error?: string; pro_member_id?: string } | null;
-    if (error || !result?.ok) {
-      if (result?.error === "taken") {
-        setProStatus("taken");
-        return;
-      }
-      toast({ title: "Error", description: error?.message ?? result?.error ?? "Failed", variant: "destructive" });
-      return;
-    }
-    const next = String(result.pro_member_id ?? digits);
-    onProMemberChanged?.(next);
-    setProDraft(next);
-    setProStatus("idle");
     toast({ title: copy.saved });
   };
 
@@ -268,7 +190,6 @@ export default function MemberIdSettings({
     <div className="rounded-xl border bg-card p-4 space-y-4">
       <div>
         <Label htmlFor="member-id-edit">{copy.title}</Label>
-        <p className="text-xs text-muted-foreground mt-0.5 mb-2">{copy.hint}</p>
         <div className="flex flex-wrap gap-2 items-start">
           <Input
             id="member-id-edit"
@@ -276,12 +197,12 @@ export default function MemberIdSettings({
             className="font-mono max-w-[10rem]"
             value={draft}
             onChange={(e) => setDraft(normalizeMemberIdInput(e.target.value))}
-            maxLength={5}
+            maxLength={4}
           />
           <Button
             type="button"
             size="sm"
-            disabled={saving || status === "taken" || status === "invalid" || status === "checking" || normalizeMemberIdInput(draft) === normalizeMemberIdInput(currentMemberId)}
+            disabled={saving || status === "taken" || status === "invalid" || status === "checking" || normalizeMemberIdInput(draft) === normalizeMemberIdInput(currentMemberId ?? "")}
             onClick={() => void confirmMember()}
           >
             {saving ? <Loader2 className="size-4 animate-spin" /> : null}
@@ -297,41 +218,6 @@ export default function MemberIdSettings({
           </p>
         ) : null}
       </div>
-
-      {proMemberId != null && onProMemberChanged ? (
-        <div>
-          <Label htmlFor="pro-member-id-edit">{copy.proTitle}</Label>
-          <p className="text-xs text-muted-foreground mt-0.5 mb-2">{copy.proHint}</p>
-          <div className="flex flex-wrap gap-2 items-start">
-            <Input
-              id="pro-member-id-edit"
-              inputMode="numeric"
-              className="font-mono max-w-[8rem]"
-              value={proDraft}
-              onChange={(e) => setProDraft(e.target.value.replace(/\D/g, "").slice(0, 4))}
-              maxLength={4}
-            />
-            <Button
-              type="button"
-              size="sm"
-              disabled={
-                proSaving ||
-                proStatus === "taken" ||
-                proStatus === "invalid" ||
-                proStatus === "checking" ||
-                proDraft.replace(/\D/g, "") === (proMemberId ?? "")
-              }
-              onClick={() => void confirmPro()}
-            >
-              {proSaving ? <Loader2 className="size-4 animate-spin" /> : null}
-              {copy.confirm}
-            </Button>
-          </div>
-          {proStatus === "taken" ? <p className="text-sm text-destructive mt-1.5 font-medium">{copy.taken}</p> : null}
-          {proStatus === "invalid" ? <p className="text-sm text-destructive mt-1.5">{copy.proInvalid}</p> : null}
-          {proStatus === "available" ? <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1.5">{copy.available}</p> : null}
-        </div>
-      ) : null}
 
       <div className="border-t pt-4 space-y-2">
         <Label>{copy.pinTitle}</Label>

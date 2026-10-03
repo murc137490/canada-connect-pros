@@ -1318,3 +1318,17 @@ apple-pay-button {
 .altshift-boot-screen[data-compact='true'] .altshift-boot-screen__main {
   transform: none;
 }
+
+
+/* Keep the cream palette effective against utility classes with fixed colors. */
+.cream .bg-white,
+.cream .bg-gray-50,
+.cream .bg-slate-50 {
+  background-color: hsl(var(--card));
+}
+
+.cream .text-black,
+.cream .text-gray-900,
+.cream .text-slate-900 {
+  color: hsl(var(--foreground));
+}

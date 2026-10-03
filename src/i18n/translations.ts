@@ -1358,7 +1358,7 @@ export const translations = {
       accountBirthdayMinAge: "You must be at least 18 years old.",
       accountMemberId: "Member ID",
       invoiceClientMemberId: "Client member ID",
-      invoiceProMemberId: "Pro member ID",
+      invoiceProMemberId: "Member ID",
       disputePolicyTitle: "Valid disputes only",
       disputePolicyIntro: "We review reports in these categories. Refunds are not guaranteed.",
       disputePolicyNotCovered: "Not covered:",
@@ -3227,7 +3227,7 @@ export const translations = {
       accountBirthdayMinAge: "Vous devez avoir au moins 18 ans.",
       accountMemberId: "ID de membre",
       invoiceClientMemberId: "ID de membre du client",
-      invoiceProMemberId: "ID de membre du pro",
+      invoiceProMemberId: "ID de membre",
       disputePolicyTitle: "Litiges valides seulement",
       disputePolicyIntro:
         "Nous examinons les signalements dans ces catégories. Les remboursements ne sont pas garantis.",

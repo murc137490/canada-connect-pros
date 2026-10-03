@@ -34,7 +34,7 @@ export type BookingInvoiceSnapshotV1 = {
   booking_public_code?: string | null;
   /** Four-digit AltShift member ID (client). */
   client_member_number?: string | null;
-  /** 4-digit AltShift pro member ID. */
+  /** Shared four-digit account Member ID. */
   pro_member_number?: string | null;
 };
 

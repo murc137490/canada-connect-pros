@@ -31,7 +31,7 @@ KEYPAD MENUS: Offer a number for every finite-choice question. Language: 1 Frenc
 
 CALLER ID (phone only; use the matched Member ID to confirm the account):
 1) Call identify_caller (uses the inbound phone number already on the session).
-2) If a client is matched and the result includes a four-digit member_id, say that ID and ask if it is theirs. Press 1 means yes; press 2 means no. Do not ask for their name.
+2) If an account is matched and the result includes a four-digit member_id, say that ID and ask if it is theirs. This is the same ID for clients and professionals. Press 1 means yes; press 2 means no. Do not ask for their name.
 3) If YES / press 1 and has_pin: ask for the voice PIN directly on the keypad → verify_voice_pin. On success they are authenticated.
 4) If YES / press 1 but no PIN is set: do not send SMS; direct the caller to secure account support or the PIN setup flow when available.
 5) If NO / press 2 / wrong person: clear_caller_guess, ask for the four-digit Member ID, call lookup_member_id, then ask for the voice PIN on the keypad.
@@ -40,7 +40,7 @@ CALLER ID (phone only; use the matched Member ID to confirm the account):
 AUTHENTICATION (required before any account/booking data):
 - Preferred: caller-ID confirm + voice PIN when available.
 - Otherwise, clients: exactly four-digit Member ID → lookup_member_id, then verify_voice_pin using the keypad.
-- Pros without a PIN: four-digit Pro ID → authenticate_pro send_otp → check_otp.
+- Clients and professionals use the same four-digit Member ID for the same account. Use identify_caller or lookup_member_id, then verify the voice PIN on the keypad. Never send SMS.
 - Do not call get_customer, get_booking, create_booking, payment tools, or pro job tools until authenticated.
 
 HOLD / WAIT:
@@ -70,7 +70,7 @@ PRO JOBS (voicemail — only this pro's jobs, only after they are authenticated)
 
 STYLE:
 - Keep turns short. Allow barge-in. After each spoken question, wait 7 seconds. If there is silence, repeat the question once and wait another 7 seconds. If silence continues, apologize in the caller’s language, say goodbye, and end the call.
-- Customer Member IDs are exactly four digits; never allocate five digits. Super-admin Member ID is 3177. Pro IDs remain four digits.
+- The account Member ID is exactly four digits for both client and professional roles. Super-admin Member ID is 3177. Do not describe a separate Pro ID.
 `;
 
 export const FRONT_DESK_TOOLS = [
@@ -135,7 +135,7 @@ export const FRONT_DESK_TOOLS = [
     type: "function",
     name: "authenticate_member",
     description:
-      "Look up customer by exactly four-digit Member ID, or the uniquely matched caller phone, and send SMS OTP. Caller enters the code only on the telephone keypad.",
+      "Web/demo only: look up an account by four-digit Member ID or matched phone and send SMS OTP. For phone sessions, never use SMS; use lookup_member_id and keypad voice PIN verification.",
     parameters: {
       type: "object",
       properties: {
@@ -384,12 +384,12 @@ export const FRONT_DESK_TOOLS = [
   {
     type: "function",
     name: "authenticate_pro",
-    description: "Look up a professional by their 4-digit Pro ID and send/check SMS OTP. Use this instead of authenticate_member when the caller is a pro.",
+    description: "Legacy professional OTP verification. For phone callers, do not use this; use the shared four-digit Member ID and keypad voice PIN flow instead.",
     parameters: {
       type: "object",
       properties: {
         session_id: { type: "string" },
-        pro_id: { type: "string", description: "4-digit Pro ID" },
+        pro_id: { type: "string", description: "Legacy alias of the shared 4-digit Member ID" },
         action: { type: "string", enum: ["send_otp"] },
       },
       required: ["session_id", "pro_id", "action"],
