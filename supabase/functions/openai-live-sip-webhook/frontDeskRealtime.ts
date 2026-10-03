@@ -20,20 +20,22 @@ OPENING (phone — speak immediately, do not wait for the caller to talk):
 2) Wait briefly for an answer. If unclear / silence / no understanding → continue in FRENCH automatically. Accept keypad 1 for French or 2 for English.
 3) Call set_session_language with "fr" or "en".
 4) Call identify_caller.
-5) If is_pro is true: confirm who they are, then authenticate (voice PIN, or their 4-digit Pro ID with authenticate_pro). After auth, call list_pro_bookings and offer to play the jobs like voicemail. If they are not calling about their jobs, continue as a client.
-6) If is_pro is false: ask new booking OR existing booking.
+5) If is_pro is true: follow professional authentication and the professional job flow below. If they are not calling about their jobs, continue as a client.
+6) For a matched client account, confirm the Member ID using the caller-ID result before asking for a PIN: say the exact four-digit ID returned by identify_caller and ask "Is that your Member ID? Press 1 for yes or 2 for no." Wait for the key or spoken answer. On yes / key 1, ask for the voice PIN directly on the keypad and call verify_voice_pin; do not ask them to repeat the Member ID. On no / key 2, call clear_caller_guess, ask for the four-digit Member ID, call lookup_member_id, then ask for the voice PIN on the keypad. Never send SMS for client PIN verification.
+7) If is_pro is false: ask new booking OR existing booking.
    FR: "Est-ce pour une nouvelle réservation, ou pour une réservation existante?"
    EN: "Is this for a new booking, or an existing booking?"
    Then authenticate before any account or booking data.
 
-KEYPAD MENUS: Offer a number for every finite-choice question. Language: 1 French, 2 English. New booking: 1. Existing booking: 2. Yes: 1. No: 2. Accept keypad or spoken answers. Do not announce Spanish or Arabic, but continue in either language when used.
+KEYPAD MENUS: Offer a number for every finite-choice question. Language: 1 French, 2 English. New booking: 1. Existing booking: 2. Yes: 1. No: 2. Accept keypad or spoken answers. A keypad number can arrive while you are speaking: stop the current sentence immediately and treat that key as the answer to the current numbered question; do not finish or repeat the interrupted sentence. Do not treat PIN digits as menu answers; PIN capture is handled privately on the keypad. Do not announce Spanish or Arabic, but continue in either language when used.
 
-CALLER ID (phone only, before Member ID when tools report a match):
+CALLER ID (phone only; use the matched Member ID to confirm the account):
 1) Call identify_caller (uses the inbound phone number already on the session).
-2) If matched: ask "Est-ce bien [first name]?" / "Am I speaking with [first name]?"
-3) If YES and has_pin: ask for voice PIN → verify_voice_pin. On success they are authenticated.
-4) If YES but no PIN set: do not send SMS. If no voice PIN exists, direct the caller to secure account support.
-5) If NO / "press 1" / wrong person: clear_caller_guess, then Member ID lookup, then voice PIN entered on the keypad.
+2) If a client is matched and the result includes a four-digit member_id, say that ID and ask if it is theirs. Press 1 means yes; press 2 means no. Do not ask for their name.
+3) If YES / press 1 and has_pin: ask for the voice PIN directly on the keypad → verify_voice_pin. On success they are authenticated.
+4) If YES / press 1 but no PIN is set: do not send SMS; direct the caller to secure account support or the PIN setup flow when available.
+5) If NO / press 2 / wrong person: clear_caller_guess, ask for the four-digit Member ID, call lookup_member_id, then ask for the voice PIN on the keypad.
+6) If no unique phone match or no valid four-digit ID is returned, ask for the Member ID and use lookup_member_id before requesting the keypad PIN.
 
 AUTHENTICATION (required before any account/booking data):
 - Preferred: caller-ID confirm + voice PIN when available.
@@ -89,7 +91,7 @@ export const FRONT_DESK_TOOLS = [
     type: "function",
     name: "identify_caller",
     description:
-      "Look up the inbound caller phone on this session. Returns possible first name + whether a voice PIN is set. Does NOT authenticate by itself.",
+      "Look up the inbound caller phone on this session. Returns a matched four-digit Member ID (when available), match status and whether a voice PIN is set. Confirm the exact Member ID by asking whether it is theirs, with keypad 1 for yes and 2 for no. This does NOT authenticate by itself.",
     parameters: {
       type: "object",
       properties: { session_id: { type: "string" } },
@@ -105,7 +107,7 @@ export const FRONT_DESK_TOOLS = [
   {
     type: "function",
     name: "clear_caller_guess",
-    description: "Caller said it is NOT them (or pressed 1). Clear caller-ID guess and continue with Member ID lookup + voice PIN.",
+    description: "Caller said it is NOT them (or pressed 2). Clear caller-ID guess and continue with Member ID lookup + voice PIN.",
     parameters: {
       type: "object",
       properties: { session_id: { type: "string" } },

@@ -159,12 +159,19 @@ async function executeTool(
       if (!phone) return { ok: false, matched: false, reason: "no_caller_phone" };
       const e164Digits = phone.replace(/\D/g, "");
       const last10 = e164Digits.slice(-10);
-      const { data: profiles } = await admin
-        .from("profiles")
-        .select("user_id, full_name, phone, public_user_number, voice_pin_hash")
-        .not("phone", "is", null)
-        .limit(500);
-      const phoneHits = (profiles ?? []).filter((p) => {
+      const profiles: Array<{ user_id: string; full_name: string | null; phone: string | null; public_user_number: string | null; voice_pin_hash: string | null }> = [];
+      for (let offset = 0; ; offset += 500) {
+        const { data, error } = await admin
+          .from("profiles")
+          .select("user_id, full_name, phone, public_user_number, voice_pin_hash")
+          .not("phone", "is", null)
+          .order("user_id", { ascending: true })
+          .range(offset, offset + 499);
+        if (error) return { ok: false, matched: false, reason: "phone_lookup_failed" };
+        profiles.push(...(data ?? []));
+        if (!data || data.length < 500) break;
+      }
+      const phoneHits = profiles.filter((p) => {
         const pDigits = String(p.phone ?? "").replace(/\D/g, "");
         return pDigits === e164Digits || pDigits.slice(-10) === last10;
       });
@@ -218,9 +225,13 @@ async function executeTool(
         full_name: hit.full_name,
         member_id: hit.public_user_number,
         has_pin: !!(hit.voice_pin_hash && String(hit.voice_pin_hash).length > 0),
-        ask_fr: firstName ? `Est-ce bien ${firstName}?` : "Est-ce bien vous?",
-        ask_en: firstName ? `Am I speaking with ${firstName}?` : "Is this you?",
-        if_not: "If not, say no or press 1.",
+        ask_fr: /^\d{4}$/.test(String(hit.public_user_number ?? ""))
+          ? `Votre numéro de membre est le ${hit.public_user_number}. Est-ce bien le vôtre? Appuyez sur 1 pour oui ou 2 pour non.`
+          : "Je n'ai pas pu confirmer votre numéro de membre par téléphone. Veuillez entrer votre numéro de membre à quatre chiffres.",
+        ask_en: /^\d{4}$/.test(String(hit.public_user_number ?? ""))
+          ? `Your Member ID is ${hit.public_user_number}. Is that yours? Press 1 for yes or 2 for no.`
+          : "I couldn't confirm a Member ID from this phone number. Please enter your four-digit Member ID.",
+        if_not: "If no or keypad 2, clear the caller match and ask for the four-digit Member ID. Yes is keypad 1; no is keypad 2.",
         ...proFields,
       };
     }
@@ -228,7 +239,7 @@ async function executeTool(
     case "lookup_member_id": {
       if (session.channel !== "phone") return { ok: false, error: "phone_channel_required" };
       const memberId = String(args.member_id ?? "").trim();
-      if (!/^\\d{4}$/.test(memberId)) return { ok: false, error: "invalid_member_id" };
+      if (!/^\d{4}$/.test(memberId)) return { ok: false, error: "invalid_member_id" };
       const { data: profile } = await admin.from("profiles").select("user_id, public_user_number, full_name, voice_pin_hash").eq("public_user_number", memberId).maybeSingle();
       if (!profile) return { ok: false, error: "member_not_found" };
       await patchSession(admin, sessionId, { authenticated: false, customer_user_id: null, customer_member_id: null, otp_verified_at: null, draft: { ...session.draft, caller_guess_user_id: profile.user_id, caller_guess_member_id: profile.public_user_number, caller_guess_name: profile.full_name, member_id_lookup: true, pin_attempts: 0 } });

@@ -109,13 +109,18 @@ export async function findProByUserId(admin: SupabaseClient, userId: string): Pr
 
 export async function findProByPhone(admin: SupabaseClient, e164: string): Promise<ProRow | null> {
   const target = digits(e164);
-  const { data } = await admin
-    .from("pro_profiles")
-    .select("id, user_id, business_name, pro_member_id, phone")
-    .not("phone", "is", null)
-    .limit(500);
-  const hit = (data ?? []).find((row) => phonesMatch(String(row.phone ?? ""), target));
-  return (hit as ProRow | undefined) ?? null;
+  for (let offset = 0; ; offset += 500) {
+    const { data, error } = await admin
+      .from("pro_profiles")
+      .select("id, user_id, business_name, pro_member_id, phone")
+      .not("phone", "is", null)
+      .order("id", { ascending: true })
+      .range(offset, offset + 499);
+    if (error || !data?.length) return null;
+    const hit = data.find((row) => phonesMatch(String(row.phone ?? ""), target));
+    if (hit) return hit as ProRow;
+    if (data.length < 500) return null;
+  }
 }
 
 async function clientAddress(admin: SupabaseClient, booking: BookingRow): Promise<string | null> {

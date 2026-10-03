@@ -283,9 +283,18 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
   const send = (obj: Record<string, unknown>) => {
     if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
   };
+  let responseActive = false;
+  let pendingInterruptedInput: string | null = null;
   const sendInput = (text: string) => {
     send({ type: "conversation.item.create", item: { type: "message", role: "user", content: [{ type: "input_text", text }] } });
     send({ type: "response.create" });
+  };
+  const interruptWithInput = (text: string) => {
+    if (!responseActive) { sendInput(text); return; }
+    pendingInterruptedInput = text;
+    // A DTMF menu answer is an intentional interruption, even though it is not speech.
+    send({ type: "response.cancel" });
+    send({ type: "output_audio_buffer.clear" });
   };
   const seenCalls = new Set<string>();
   let keypadCapture: { digits: string; min: number; max: number; resolve: (digits: string) => void; timer: ReturnType<typeof setTimeout> } | null = null;
@@ -370,13 +379,23 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
       let msg: Record<string, unknown>;
       try { msg = JSON.parse(String(ev.data)); } catch { return; }
       const type = String(msg.type ?? "");
+      if (type === "response.created") responseActive = true;
       if (type === "input_audio_buffer.speech_started" || type === "transport.dtmf.received") resetSilence();
       if (type === "input_audio_buffer.speech_started" && languageMenuPending) languageMenuPending = false;
       if (type === "response.output_audio_transcript.done") {
         const transcript = String(msg.transcript ?? "").trim();
         if (transcript.endsWith("?") || transcript.endsWith("？")) lastQuestion = transcript;
       }
-      if (type === "response.done") {
+      if (type === "response.done" || type === "response.cancelled") {
+        responseActive = false;
+        if (pendingInterruptedInput) {
+          const nextInput = pendingInterruptedInput;
+          pendingInterruptedInput = null;
+          if (silenceTimer) clearTimeout(silenceTimer);
+          silenceTimer = null;
+          sendInput(nextInput);
+          return;
+        }
         if (silenceStage === 2) {
           hangupStarted = true;
           void fetch(`${OPENAI_API}/realtime/calls/${encodeURIComponent(callId)}/hangup`, { method: "POST", headers: { Authorization: `Bearer ${apiKey}` } }).catch((e) => console.error("silence hangup", e));
@@ -388,7 +407,7 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
           languageMenuPending = false;
           const language = key === "1" ? "fr" : "en";
           await runTool("set_session_language", JSON.stringify({ session_id: deskSessionId, language }), deskSessionId);
-          sendInput(language === "fr"
+          interruptWithInput(language === "fr"
             ? "The caller pressed 1, which selects French. Continue in French and do not repeat the language menu. Ask whether they are calling about an account."
             : "The caller pressed 2, which selects English. Continue in English and do not repeat the language menu. Ask whether they are calling about an account.");
           return;
@@ -430,8 +449,8 @@ async function sidebandRealtime(apiKey: string, callId: string, deskSessionId: s
           } else if (key === "#") {
             send({ type: "response.create", response: { instructions: "Ask the caller to enter at least four digits, then press #." } });
           }
-        } else if (/^[0-9#*]$/.test(key)) {
-          sendInput("Caller pressed keypad key " + key + ". Interpret this as the answer to the most recent numbered menu. Do not treat menu digits as credentials.");
+        } else if (/^[0-9]$/.test(key)) {
+          interruptWithInput("The caller pressed keypad key " + key + " while you were speaking. Stop the current question and treat this as their live answer to the most recent numbered menu. Yes is 1 and no is 2 when that was the menu. Continue with the next step without repeating the question. Do not treat menu digits as credentials.");
         }
         return;
       }
