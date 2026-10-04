@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { splitBioAndLanguages } from "@/lib/parseBioLanguages";
-import { formatCanadianPhone } from "@/lib/canadianPhone";
+import { formatCanadianPhone, phoneDigits } from "@/lib/canadianPhone";
 import { formatCanadianPostal } from "@/lib/canadianPostal";
 import { parseAvailabilityFromStorage, defaultAvailability, type AvailabilityState } from "@/components/WeekdayAvailability";
 import type { UnavailableDatesMap } from "@/components/pro/AvailabilityCalendar";
@@ -71,6 +71,7 @@ export function useLoadExistingProProfile(userId: string | undefined, enabled: b
   const [loaded, setLoaded] = useState(!enabled);
   const [hasExistingProfile, setHasExistingProfile] = useState(false);
   const [proEdit, setProEdit] = useState<LoadedProEditState | null>(null);
+  const [phoneOnFile, setPhoneOnFile] = useState(false);
 
   useEffect(() => {
     if (!userId || !enabled) {
@@ -88,6 +89,7 @@ export function useLoadExistingProProfile(userId: string | undefined, enabled: b
       if (cancelled) return;
 
       if (userProf) {
+        setPhoneOnFile(phoneDigits(userProf.phone ?? "").length >= 10);
         setAccountFields({
           full_name: userProf.full_name?.trim() ?? "",
           phone: formatCanadianPhone(userProf.phone ?? ""),
@@ -211,5 +213,5 @@ export function useLoadExistingProProfile(userId: string | undefined, enabled: b
     };
   }, [userId, enabled]);
 
-  return { accountFields, setAccountFields, loaded, hasExistingProfile, proEdit };
+  return { accountFields, setAccountFields, loaded, hasExistingProfile, proEdit, phoneOnFile };
 }

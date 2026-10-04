@@ -85,6 +85,7 @@ import ReviewForm from "@/components/pro/ReviewForm";
 const ProProfileEditorDialog = lazy(() => import("@/components/pro/ProProfileEditorDialog"));
 import ClientReviewPhotoPicker from "@/components/dashboard/ClientReviewPhotoPicker";
 import ClickableProfileAvatar from "@/components/dashboard/ClickableProfileAvatar";
+import { AccountSecuritySection } from "@/components/dashboard/AccountSecuritySection";
 import { uploadProfileAvatar, syncProPrimaryPhotoFromAvatar } from "@/lib/uploadProfileAvatar";
 import { uploadClientReviewPhotos, revokePhotoPreviewUrls } from "@/lib/clientReviewPhotos";
 import { notifyReviewsChanged, REVIEWS_CHANGED_EVENT } from "@/lib/fetchPendingReviewNotices";
@@ -3456,7 +3457,6 @@ export default function Dashboard() {
     if (!user) return;
     setAccountSaving(true);
     try {
-      const phone = formatCanadianPhone(accountForm.phone);
       const birthdayRaw = profile?.birthday ? profile.birthday : accountForm.birthday.trim() || null;
       if (birthdayRaw && !profile?.birthday && !isBirthdayAtLeastMinAge(birthdayRaw)) {
         toast({
@@ -3527,7 +3527,6 @@ export default function Dashboard() {
       }
       const { error } = await supabase.from("profiles").update({
         full_name: accountForm.full_name.trim() || null,
-        phone: phone || null,
         birthday,
         email_language: accountForm.email_language,
         postal_code: postalNorm || null,
@@ -3552,7 +3551,6 @@ export default function Dashboard() {
           ? {
               ...prev,
               full_name: savedName || null,
-              phone: phone || null,
               birthday,
               email_language: accountForm.email_language,
               postal_code: postalNorm || null,
@@ -3562,7 +3560,6 @@ export default function Dashboard() {
       );
       setAccountForm((prev) => ({
         ...prev,
-        phone,
         birthday: birthday ?? "",
         postal_code: postalNorm || "",
         address: typeof addressSave === "string" ? addressSave : "",
@@ -5428,19 +5425,20 @@ export default function Dashboard() {
                 <Label htmlFor="acc-name">{t.dashboard.accountName}</Label>
                 <Input id="acc-name" value={accountForm.full_name} onChange={(e) => setAccountForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Ryan Smith" />
               </div>
+              <AccountSecuritySection
+                email={user.email ?? ""}
+                phone={accountForm.phone}
+                showPhone={!isAdminAccountView}
+                onPhoneChanged={(phone) => {
+                  setAccountForm((prev) => ({ ...prev, phone }));
+                  setProfile((prev) => (prev ? { ...prev, phone } : prev));
+                }}
+                onEmailChanged={() => {
+                  void supabase.auth.refreshSession();
+                }}
+              />
               {!isAdminAccountView ? (
                 <>
-              <div className="space-y-2">
-                <Label htmlFor="acc-phone">{t.dashboard.accountPhone}</Label>
-                <Input
-                  id="acc-phone"
-                  type="tel"
-                  inputMode="tel"
-                  value={accountForm.phone}
-                  onChange={(e) => setAccountForm((p) => ({ ...p, phone: formatCanadianPhone(e.target.value) }))}
-                  placeholder="(450) 123-4567"
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="acc-postal">{t.dashboard.accountPostalCode}</Label>
                 <Input
@@ -5482,10 +5480,6 @@ export default function Dashboard() {
               )}
                 </>
               ) : null}
-              <div className="space-y-2">
-                <Label>{t.dashboard.accountEmail}</Label>
-                <Input value={user.email ?? ""} readOnly className="bg-muted" />
-              </div>
               <div className="space-y-2">
                 <Label>{t.auth.emailLanguageLabel}</Label>
                 <div className="grid grid-cols-2 gap-2" role="group" aria-label={t.auth.emailLanguageLabel}>
