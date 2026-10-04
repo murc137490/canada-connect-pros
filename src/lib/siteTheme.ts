@@ -1,6 +1,6 @@
 export type SiteTheme = "dark" | "cream" | "light";
 
-const SITE_THEMES: SiteTheme[] = ["dark", "cream", "light"];
+const SITE_THEMES: SiteTheme[] = ["light", "cream", "dark"];
 
 export function getActiveSiteTheme(fallback: SiteTheme = "light"): SiteTheme {
   if (typeof document === "undefined") return fallback;

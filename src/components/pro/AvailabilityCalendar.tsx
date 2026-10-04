@@ -204,7 +204,7 @@ export default function AvailabilityCalendar({
   for (let d = 1; d <= daysInMonth; d++) {
     const weekday = new Date(year, month, d).getDay();
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    const isPast = !!minBookingDate && dateStr < minBookingDate;
+    const isPast = dateStr < todayStr || (!!minBookingDate && dateStr < minBookingDate);
     const isBeyondWindow = !!(endStr && dateStr > endStr);
     const isAvailableByWeekday = availableDays.has(weekday);
     const hasOverride = overridesSet.has(dateStr);
@@ -358,12 +358,12 @@ export default function AvailabilityCalendar({
                   isAvailable && !availableDayColor && "bg-primary text-primary-foreground border border-primary/30 shadow-[0_0_0_0.5px_rgba(0,0,0,0.06)]",
                   isUnavailable && "bg-slate-200 text-slate-700 border border-slate-300",
                   isBeyond && "line-through opacity-60",
-                  isToday && "ring-2 ring-offset-1 ring-amber-500 dark:ring-amber-400 font-semibold shadow-[0_0_0_2px_rgba(245,158,11,0.5)]",
-                  // Calendar "selected day" outline: white in dark mode, black in light mode.
-                  isSelected && "ring-2 ring-black dark:ring-white ring-offset-2 ring-offset-background"
+                  isToday && "font-semibold",
+                  isSelected && "ring-2 ring-amber-500 ring-offset-2 ring-offset-background"
                 )}
-                style={isAvailable && availableDayColor ? { backgroundColor: availableDayColor, color: "#fff", border: "0.5px solid rgba(255,255,255,0.4)", boxShadow: isToday ? "0 0 0 2px rgba(245,158,11,0.6)" : "none" } : undefined}
+                style={isAvailable && availableDayColor ? { backgroundColor: availableDayColor, color: "#fff", border: "0.5px solid rgba(255,255,255,0.4)" } : undefined}
               >
+                {isToday && <span aria-hidden="true" className="calendar-today-shine" />}
                 <span className={isLarge ? "text-base font-semibold" : ""}>{day.date || ""}</span>
                 {isLarge && dayEvents.length > 0 && (
                   <div className="hidden w-full mt-1 space-y-0.5 overflow-hidden sm:block">

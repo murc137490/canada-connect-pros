@@ -1,4 +1,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700;800&display=swap');
+@keyframes calendar-today-shine {
+  from { transform: translateX(-160%) skewX(-20deg); }
+  to { transform: translateX(260%) skewX(-20deg); }
+}
+
+.calendar-today-shine {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.calendar-today-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.48), transparent);
+  animation: calendar-today-shine 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-today-shine::after { animation: none; }
+}
 
 @tailwind base;
 @tailwind components;
