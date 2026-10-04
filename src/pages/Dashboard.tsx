@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef, startTransition } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, startTransition } from "react";
 import { format } from "date-fns";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -79,7 +79,6 @@ import {
 } from "@/lib/dashboardTutorial";
 import ReviewForm from "@/components/pro/ReviewForm";
 
-const ProProfileEditorDialog = lazy(() => import("@/components/pro/ProProfileEditorDialog"));
 import ClientReviewPhotoPicker from "@/components/dashboard/ClientReviewPhotoPicker";
 import ClickableProfileAvatar from "@/components/dashboard/ClickableProfileAvatar";
 import { uploadProfileAvatar, syncProPrimaryPhotoFromAvatar } from "@/lib/uploadProfileAvatar";
@@ -134,7 +133,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
 import { serviceCategories } from "@/data/services";
-import { PRO_PAGE_COLOR_SCHEMES, getSchemeById, getSchemeIdFromColors } from "@/data/proPageColorSchemes";
+import { DEFAULT_PRO_PAGE_SCHEME_ID, PRO_PAGE_COLOR_SCHEMES, getSchemeById, getSchemeIdFromColors } from "@/data/proPageColorSchemes";
 import { SERVICE_TAG_OPTIONS } from "@/data/serviceTags";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { PRO_BOOKING_SELECT, useProBookingsRealtime, type ProBookingRealtimeRow } from "@/hooks/useProBookingsRealtime";
@@ -151,7 +150,7 @@ import BookingProofUploadDialog from "@/components/BookingProofUploadDialog";
 import BookingClaimDialog from "@/components/BookingClaimDialog";
 import BookingInvoiceCard from "@/components/BookingInvoiceCard";
 import TimingAndDateFields from "@/components/job-request/TimingAndDateFields";
-import AddressInput, { hasGoogleAddressAutocomplete } from "@/components/AddressInput";
+import AddressInput from "@/components/AddressInput";
 import { geocodeAddress } from "@/lib/geocode";
 import { serviceModeNeedsWorkspaceAddress } from "@/lib/serviceWorkspaceLocation";
 import { TIMING_OPTIONS } from "@/data/makeRequestForm";
@@ -543,8 +542,6 @@ export default function Dashboard() {
   const [cachedProVerified, setCachedProVerified] = useState<boolean | null>(() =>
     readDashboardProVerifiedCache(user?.id),
   );
-  const [proProfileEditorOpen, setProProfileEditorOpen] = useState(false);
-  const [proProfileRefreshKey, setProProfileRefreshKey] = useState(0);
   const [proofUploadOpen, setProofUploadOpen] = useState(false);
   const [proofUploadBookingId, setProofUploadBookingId] = useState<string | null>(null);
   const [declineBookingId, setDeclineBookingId] = useState<string | null>(null);
@@ -564,11 +561,11 @@ export default function Dashboard() {
   const [clientReviewPhotoPreviews, setClientReviewPhotoPreviews] = useState<string[]>([]);
   // Pro page aesthetic editing (template + colors) in dashboard
   const [proPageTemplate, setProPageTemplate] = useState<string>("classic");
-  const [proPageColorSchemeId, setProPageColorSchemeId] = useState<string>("navyTeal");
-  const [proPagePrimaryColor, setProPagePrimaryColor] = useState("#1e3a5f");
-  const [proPageSecondaryColor, setProPageSecondaryColor] = useState("#0d9488");
-  const [proPageAccentColor, setProPageAccentColor] = useState("#e0f2f1");
-  const [proPageBackgroundColor, setProPageBackgroundColor] = useState("#f8fafc");
+  const [proPageColorSchemeId, setProPageColorSchemeId] = useState<string>(DEFAULT_PRO_PAGE_SCHEME_ID);
+  const [proPagePrimaryColor, setProPagePrimaryColor] = useState("#31594D");
+  const [proPageSecondaryColor, setProPageSecondaryColor] = useState("#1E3A32");
+  const [proPageAccentColor, setProPageAccentColor] = useState("#D5E6E0");
+  const [proPageBackgroundColor, setProPageBackgroundColor] = useState("#F4F8F6");
   const [proPageHeaderText, setProPageHeaderText] = useState("");
   const [proServiceTags, setProServiceTags] = useState<string[]>([]);
   const [savingProAesthetic, setSavingProAesthetic] = useState(false);
@@ -1841,13 +1838,13 @@ export default function Dashboard() {
     setProPageTemplate(template === "bold" || template === "warm" || template === "minimal" ? "classic" : template);
     setProPageHeaderText(p.page_header_text ?? "");
     const schemeId = getSchemeIdFromColors(p.page_primary_color ?? null, p.page_secondary_color ?? null);
-    setProPageColorSchemeId(schemeId || "navyTeal");
+    setProPageColorSchemeId(schemeId || (p.page_primary_color ? "saved" : DEFAULT_PRO_PAGE_SCHEME_ID));
     if (p.page_primary_color) setProPagePrimaryColor(p.page_primary_color);
     if (p.page_secondary_color) setProPageSecondaryColor(p.page_secondary_color);
     if (p.page_accent_color) setProPageAccentColor(p.page_accent_color);
     if (p.page_background_color) setProPageBackgroundColor(p.page_background_color);
     if (!p.page_primary_color && !p.page_secondary_color) {
-      const def = getSchemeById("navyTeal");
+      const def = getSchemeById(DEFAULT_PRO_PAGE_SCHEME_ID);
       if (def) {
         setProPagePrimaryColor(def.primary);
         setProPageSecondaryColor(def.secondary);
@@ -2879,7 +2876,7 @@ export default function Dashboard() {
         setReviewedClientIds(new Set());
       }
     })();
-  }, [user, proProfileRefreshKey, isMonitorAdmin, platformAdminReady]);
+  }, [user, isMonitorAdmin, platformAdminReady]);
 
   useEffect(() => {
     const p = proProfile as { price_min?: number | null } | null;
@@ -4340,7 +4337,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground leading-relaxed">{t.dashboard.pendingProApprovalHint}</p>
             <p className="text-xs text-muted-foreground leading-relaxed">{t.dashboard.pendingProApprovalRequiresTier}</p>
             <p className="text-xs text-muted-foreground leading-relaxed">{t.dashboard.pendingProApprovalAfterAccept}</p>
-            <LiquidButton type="button" variant="secondary" size="sm" whiteUntilHover className="w-fit" onClick={() => setProProfileEditorOpen(true)}>
+            <LiquidButton type="button" variant="secondary" size="sm" whiteUntilHover className="w-fit" onClick={() => navigate("/create-pro-account")}>
               {t.joinPros.editProfile}
             </LiquidButton>
           </div>
@@ -4475,7 +4472,13 @@ export default function Dashboard() {
                           <p className="text-sm font-medium text-foreground mb-2">{t.createPro.colorSchemeLabel ?? "Color scheme"}</p>
                           <div className="sm:hidden">
                             {(() => {
-                              const selectedScheme = getSchemeById(proPageColorSchemeId) ?? PRO_PAGE_COLOR_SCHEMES[0];
+                              const selectedScheme = getSchemeById(proPageColorSchemeId) ?? {
+                                id: "saved",
+                                primary: proPagePrimaryColor,
+                                secondary: proPageSecondaryColor,
+                                accent: proPageAccentColor,
+                                background: proPageBackgroundColor,
+                              };
                               const selectedLabel =
                                 (t.createPro as Record<string, string>)[`scheme${selectedScheme.id.charAt(0).toUpperCase()}${selectedScheme.id.slice(1)}`] ??
                                 selectedScheme.id;
@@ -5138,9 +5141,6 @@ export default function Dashboard() {
                           className="mt-1 text-white placeholder:text-white/60"
                           textareaRows={3}
                         />
-                        {!hasGoogleAddressAutocomplete() ? (
-                          <p className="text-xs text-neutral-400 mt-1">{t.terms.bookingAddressNoPlaces}</p>
-                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -5413,7 +5413,7 @@ export default function Dashboard() {
                       <span className="italic">{t.dashboard.accountBusinessAddressNotSet}</span>
                     )}
                   </p>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setProProfileEditorOpen(true)}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => navigate("/create-pro-account")}>
                     {t.joinPros?.editProfile ?? "Edit Pro Profile"}
                   </Button>
                 </div>
@@ -5428,9 +5428,6 @@ export default function Dashboard() {
                     className="w-full"
                     textareaRows={4}
                   />
-                  {!hasGoogleAddressAutocomplete() ? (
-                    <p className="text-xs text-muted-foreground">{t.terms.bookingAddressNoPlaces}</p>
-                  ) : null}
                 </div>
               )}
                 </>
@@ -7647,14 +7644,6 @@ export default function Dashboard() {
           ) : null}
         </DialogContent>
       </Dialog>
-      <Suspense fallback={null}>
-        <ProProfileEditorDialog
-          open={proProfileEditorOpen}
-          onOpenChange={setProProfileEditorOpen}
-          allowDirectCreate
-          onSaved={() => setProProfileRefreshKey((k) => k + 1)}
-        />
-      </Suspense>
       <ProBookingRequestDetailDialog
         open={proBookingDetailId != null}
         onOpenChange={(open) => {

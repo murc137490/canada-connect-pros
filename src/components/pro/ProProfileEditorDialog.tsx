@@ -1,14 +1,5 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/animate-ui/components/radix/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -20,7 +11,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { serviceCategories } from "@/data/services";
-import { PRO_PAGE_COLOR_SCHEMES, getSchemeById } from "@/data/proPageColorSchemes";
+import { DEFAULT_PRO_PAGE_SCHEME_ID, PRO_PAGE_COLOR_SCHEMES, getSchemeById, getSchemeIdFromColors } from "@/data/proPageColorSchemes";
 import { SERVICE_TAG_OPTIONS } from "@/data/serviceTags";
 import {
   CANADIAN_LANGUAGES,
@@ -54,14 +45,14 @@ import {
 } from "@/components/ui/dialog";
 import { resolveShareSlugChoices } from "@/lib/resolveShareSlug";
 import { publicShareUrl, slugifyShareName } from "@/lib/proShareSlug";
-import AddressInput, { hasGoogleAddressAutocomplete } from "@/components/AddressInput";
+import AddressInput from "@/components/AddressInput";
+import { SelfieLivenessCapture } from "@/components/pro/SelfieLivenessCapture";
 import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { Loader2, Upload, X, Plus } from "lucide-react";
 import { activatePendingGrowthTrial } from "@/lib/trialCheckout";
 import { referralInvite } from "@/lib/referralInvite";
 import { navigateWithViewTransition } from "@/lib/navigateWithViewTransition";
 import { getProPublicContactBlacklistReasons } from "@/lib/proPublicContactBlacklist";
-import { cn } from "@/lib/utils";
 
 const STORAGE_BUCKET = "pro-photos";
 const VERIFICATION_BUCKET = "pro-verification";
@@ -111,12 +102,23 @@ function omitPrivateDocFields<T extends Record<string, unknown>>(payload: T): Re
   return rest;
 }
 
+function FieldAlert({ field, error }: { field: string; error: { field: string; description: string } | null }) {
+  if (error?.field !== field) return null;
+  return (
+    <p className="text-sm font-medium text-destructive" role="alert">
+      {error.description}
+    </p>
+  );
+}
+
 export type ProProfileEditorDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved?: () => void;
   /** When true, new profiles can be created without ?onboarding=1 (Join Pros flow). */
   allowDirectCreate?: boolean;
+  /** Render as a full page instead of a dialog. */
+  asPage?: boolean;
 };
 
 export function ProProfileEditorDialog({
@@ -124,6 +126,7 @@ export function ProProfileEditorDialog({
   onOpenChange,
   onSaved,
   allowDirectCreate = false,
+  asPage = false,
 }: ProProfileEditorDialogProps) {
   const { user } = useAuth();
   const { t, locale } = useLanguage();
@@ -143,7 +146,6 @@ export function ProProfileEditorDialog({
   const [dayModalNote, setDayModalNote] = useState("");
   const profileInputRef = useRef<HTMLInputElement>(null);
   const beforeAfterInputRef = useRef<HTMLInputElement>(null);
-  const personalPhotoInputRef = useRef<HTMLInputElement>(null);
   const idDocumentInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
@@ -176,11 +178,12 @@ export function ProProfileEditorDialog({
   const [primaryCategorySlug, setPrimaryCategorySlug] = useState("");
   const [serviceDetails, setServiceDetails] = useState<Record<string, { displayName: string; about: string }>>({});
   const [pageTemplate, setPageTemplate] = useState<string>("classic");
-  const [pageColorSchemeId, setPageColorSchemeId] = useState<string>("navyTeal");
-  const [pagePrimaryColor, setPagePrimaryColor] = useState("#1e3a5f");
-  const [pageSecondaryColor, setPageSecondaryColor] = useState("#0d9488");
-  const [pageAccentColor, setPageAccentColor] = useState("#e0f2f1");
-  const [pageBackgroundColor, setPageBackgroundColor] = useState("#f8fafc");
+  const [pageColorSchemeId, setPageColorSchemeId] = useState<string>(DEFAULT_PRO_PAGE_SCHEME_ID);
+  const [pagePrimaryColor, setPagePrimaryColor] = useState("#31594D");
+  const [pageSecondaryColor, setPageSecondaryColor] = useState("#1E3A32");
+  const [pageAccentColor, setPageAccentColor] = useState("#D5E6E0");
+  const [pageBackgroundColor, setPageBackgroundColor] = useState("#F4F8F6");
+  const [fieldError, setFieldError] = useState<{ field: string; description: string } | null>(null);
   const [pageHeaderText, setPageHeaderText] = useState("");
   const [proServiceTags, setProServiceTags] = useState<string[]>([]);
   const { accountFields, setAccountFields, loaded: profileDataLoaded, hasExistingProfile, proEdit } =
@@ -215,6 +218,10 @@ export function ProProfileEditorDialog({
     setAvailableDateOverrides(proEdit.availableDateOverrides);
     setAvailabilityNotYet(proEdit.availabilityNotYet);
     setProServiceTags(proEdit.proServiceTags);
+    setPageColorSchemeId(
+      getSchemeIdFromColors(proEdit.pagePrimaryColor, proEdit.pageSecondaryColor) ||
+        (proEdit.pagePrimaryColor ? "saved" : DEFAULT_PRO_PAGE_SCHEME_ID),
+    );
     setPagePrimaryColor(proEdit.pagePrimaryColor);
     setPageSecondaryColor(proEdit.pageSecondaryColor);
     setPageAccentColor(proEdit.pageAccentColor);
@@ -297,100 +304,92 @@ export function ProProfileEditorDialog({
     return urlData.publicUrl;
   };
 
+  const reportField = (field: string, description: string, title?: string) => {
+    setFieldError({ field, description });
+    toast({ title: title ?? t.createPro.toastRequired, description, variant: "destructive" });
+    window.setTimeout(() => {
+      const el = document.querySelector(`[data-field="${field}"]`);
+      if (!(el instanceof HTMLElement)) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.querySelector<HTMLElement>("input, textarea, select, button")?.focus();
+    }, 40);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!termsAccepted) {
-      toast({ title: t.createPro.toastRequired, description: t.createPro.toastRequiredDesc, variant: "destructive" });
+    const phoneNorm = formatCanadianPhone(accountFields.phone);
+    if (phoneDigits(phoneNorm).length < 10) {
+      reportField("phone", t.dashboard?.accountPhone ?? "Phone");
       return;
     }
-    if (bioOverLimit) {
-      toast({ title: t.createPro.toastBioTooLong, description: t.createPro.toastBioTooLongDesc.replace("{max}", String(MAX_BIO_WORDS)), variant: "destructive" });
-      return;
-    }
-    if (getProPublicContactBlacklistReasons(form.shortBio.trim()).length > 0) {
-      toast({
-        title: t.createPro.publicContactBlockedTitle ?? "Cannot submit",
-        description: t.createPro.publicContactBlockedDesc ?? "",
-        variant: "destructive",
-      });
-      return;
+    const postalNorm = normalizeCanadianPostal(accountFields.postal_code);
+    if (postalNorm.length > 0) {
+      const geo = await geocodePostalToLocation(postalNorm);
+      if (!geo) {
+        reportField("postal", t.dashboard?.accountPostalInvalid ?? "Invalid postal code.");
+        return;
+      }
     }
     if (!form.firstNameOrBusiness.trim()) {
-      toast({ title: t.createPro.toastRequired, description: t.createPro.firstNameOrBusiness + " is required.", variant: "destructive" });
+      reportField("name", t.createPro.firstNameOrBusiness + " is required.");
+      return;
+    }
+    if (!form.businessAddress.trim() || form.businessAddress.trim().length < 8) {
+      reportField("businessAddress", t.createPro.toastBusinessAddressRequired);
+      return;
+    }
+    if (!form.personalPhotoFile && !existingPersonalPhotoUrl) {
+      reportField("selfie", t.createPro.personalPhotoLabel);
+      return;
+    }
+    if (!form.idDocumentFile && !existingIdDocumentUrl) {
+      reportField("idDocument", t.createPro.idDocumentLabel);
       return;
     }
     if (!form.shortBio.trim()) {
-      toast({ title: t.createPro.toastRequired, description: t.createPro.shortBio + " is required.", variant: "destructive" });
+      reportField("shortBio", t.createPro.shortBio + " is required.");
+      return;
+    }
+    if (bioOverLimit) {
+      reportField("shortBio", t.createPro.toastBioTooLongDesc.replace("{max}", String(MAX_BIO_WORDS)), t.createPro.toastBioTooLong);
+      return;
+    }
+    if (getProPublicContactBlacklistReasons(form.shortBio.trim()).length > 0) {
+      reportField("shortBio", t.createPro.publicContactBlockedDesc ?? "", t.createPro.publicContactBlockedTitle ?? "Cannot submit");
       return;
     }
     if (form.yearsExperience == null) {
-      toast({ title: t.createPro.toastRequired, description: t.createPro.yearsExperience + " is required.", variant: "destructive" });
+      reportField("years", t.createPro.yearsExperience + " is required.");
       return;
     }
     if (!primaryCategorySlug) {
-      toast({ title: t.createPro.toastRequired, description: t.createPro.mainCategoryRequired ?? "Choose one main service category.", variant: "destructive" });
+      reportField("category", t.createPro.mainCategoryRequired ?? "Choose one main service category.");
       return;
     }
     if (form.selectedServices.length === 0) {
-      toast({
-        title: t.createPro.toastRequired,
-        description: t.createPro.selectAtLeastOneService ?? "Select at least one service.",
-        variant: "destructive",
-      });
+      reportField("services", t.createPro.selectAtLeastOneService ?? "Select at least one service.");
       return;
     }
     const offCategory = form.selectedServices.some((k) => !k.startsWith(`${primaryCategorySlug}/`));
     if (offCategory) {
-      toast({ title: t.createPro.toastRequired, description: t.createPro.mainCategoryRequired ?? "All services must be under your main category.", variant: "destructive" });
+      reportField("services", t.createPro.mainCategoryRequired ?? "All services must be under your main category.");
       return;
     }
     if (!form.serviceAreas.trim()) {
-      toast({ title: t.createPro.toastRequired, description: t.createPro.serviceAreas + " is required.", variant: "destructive" });
-      return;
-    }
-    if (!form.businessAddress.trim() || form.businessAddress.trim().length < 8) {
-      toast({
-        title: t.createPro.toastRequired,
-        description: t.createPro.toastBusinessAddressRequired,
-        variant: "destructive",
-      });
+      reportField("serviceAreas", t.createPro.serviceAreas + " is required.");
       return;
     }
     if (!form.startingPrice.trim()) {
-      toast({ title: t.createPro.toastRequired, description: t.createPro.startingPrice + " is required.", variant: "destructive" });
+      reportField("startingPrice", t.createPro.startingPrice + " is required.");
       return;
     }
-    const phoneNorm = formatCanadianPhone(accountFields.phone);
-    if (phoneDigits(phoneNorm).length < 10) {
-      toast({
-        title: t.createPro.toastRequired,
-        description: t.dashboard?.accountPhone ?? "Phone",
-        variant: "destructive",
-      });
+    if (!termsAccepted) {
+      reportField("terms", t.createPro.toastRequiredDesc);
       return;
     }
-    const postalNorm = normalizeCanadianPostal(accountFields.postal_code);
     const invoiceAddress = form.businessAddress.trim();
-    if (postalNorm.length > 0) {
-      const geo = await geocodePostalToLocation(postalNorm);
-      if (!geo) {
-        toast({
-          title: t.createPro.toastRequired,
-          description: t.dashboard?.accountPostalInvalid ?? "Invalid postal code.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-    if (!form.personalPhotoFile && !existingPersonalPhotoUrl) {
-      toast({ title: t.createPro.toastRequired, description: t.createPro.personalPhotoLabel, variant: "destructive" });
-      return;
-    }
-    if (!form.idDocumentFile && !existingIdDocumentUrl) {
-      toast({ title: t.createPro.toastRequired, description: t.createPro.idDocumentLabel, variant: "destructive" });
-      return;
-    }
+    setFieldError(null);
     setLoading(true);
     try {
       const priceMin = form.startingPrice ? parseInt(form.startingPrice.replace(/\D/g, ""), 10) || null : null;
@@ -734,30 +733,21 @@ export function ProProfileEditorDialog({
     setDayModalOpen(true);
   };
 
+  const title = isEditMode ? (t.joinPros.editProfile ?? "Edit Pro Profile") : t.createPro.title;
+  const subtitle = isEditMode
+    ? locale === "fr"
+      ? "Modifiez les informations soumises pour approbation, puis enregistrez."
+      : "Update the details you submitted for approval, then save."
+    : t.createPro.subtitle;
+
+  if (!user || (!asPage && !open)) return null;
+
   return (
-    <>
-      <Dialog open={open && Boolean(user)} onOpenChange={onOpenChange}>
-        <DialogContent
-          from="bottom"
-          showCloseButton
-          className={cn(
-            "flex flex-col gap-0 overflow-hidden p-0",
-            "sm:max-w-3xl w-[calc(100%-1.5rem)] max-h-[min(92vh,920px)]",
-            "rounded-2xl sm:rounded-3xl border-border/40 shadow-2xl",
-          )}
-        >
-          <DialogHeader className="shrink-0 space-y-1.5 border-b border-border/50 bg-muted/20 px-5 py-5 sm:px-6 sm:py-6 text-left">
-            <DialogTitle className="font-heading text-xl sm:text-2xl font-bold tracking-tight">
-              {isEditMode ? (t.joinPros.editProfile ?? "Edit Pro Profile") : t.createPro.title}
-            </DialogTitle>
-            <DialogDescription className="text-sm leading-relaxed">
-              {isEditMode
-                ? locale === "fr"
-                  ? "Modifiez les informations soumises pour approbation, puis enregistrez."
-                  : "Update the details you submitted for approval, then save."
-                : t.createPro.subtitle}
-            </DialogDescription>
-          </DialogHeader>
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 md:py-12">
+      <header className="mb-6 space-y-2 border-b border-border/60 pb-5">
+        <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">{title}</h1>
+        <p className="text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
+      </header>
 
           {!profileDataLoaded || onboardingMissingForNew ? (
             <div className="flex flex-1 flex-col items-center justify-center px-2 py-6">
@@ -768,13 +758,7 @@ export function ProProfileEditorDialog({
             </div>
           ) : (
             <>
-              <div
-                className={cn(
-                  "min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 sm:py-6",
-                  "[&_section]:rounded-2xl [&_section]:border-border/50 [&_section]:shadow-sm",
-                  "[&_.rounded-lg]:rounded-2xl",
-                )}
-              >
+              <div className="[&_section]:rounded-2xl [&_section]:border-border/50 [&_section]:shadow-sm">
                 {onboarding ? (
                   <div className="rounded-2xl border border-sky-500/30 bg-sky-500/5 p-4 text-sm text-muted-foreground mb-4">
                     <p className="font-medium text-foreground mb-1">{t.createPro.onboardingBannerTitle}</p>
@@ -796,7 +780,7 @@ export function ProProfileEditorDialog({
                 placeholder="e.g. Ryan Smith"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" data-field="phone">
               <Label htmlFor="acc-phone">{t.dashboard?.accountPhone ?? "Phone"} *</Label>
               <Input
                 id="acc-phone"
@@ -805,8 +789,9 @@ export function ProProfileEditorDialog({
                 onChange={(e) => setAccountFields((p) => ({ ...p, phone: formatCanadianPhone(e.target.value) }))}
                 placeholder="(450) 123-4567"
               />
+              <FieldAlert field="phone" error={fieldError} />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" data-field="postal">
               <Label htmlFor="acc-postal">{t.dashboard?.accountPostalCode ?? "Postal code"}</Label>
               <Input
                 id="acc-postal"
@@ -816,6 +801,7 @@ export function ProProfileEditorDialog({
                 maxLength={7}
                 className="font-mono uppercase tracking-wide"
               />
+              <FieldAlert field="postal" error={fieldError} />
             </div>
             <div className="space-y-2">
               <Label>{t.auth?.emailLanguageLabel ?? "Preferred language"}</Label>
@@ -849,7 +835,7 @@ export function ProProfileEditorDialog({
             </div>
           </section>
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-field="name">
             <Label htmlFor="firstNameOrBusiness">{t.createPro.firstNameOrBusiness} *</Label>
             <Input
               id="firstNameOrBusiness"
@@ -859,6 +845,7 @@ export function ProProfileEditorDialog({
               className="w-full"
               required
             />
+            <FieldAlert field="name" error={fieldError} />
             {form.firstNameOrBusiness.trim() ? (
               <div className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2.5 space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">
@@ -912,7 +899,7 @@ export function ProProfileEditorDialog({
             <p className="text-xs text-muted-foreground">{t.createPro.legalBusinessNameHint}</p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-field="businessAddress">
             <Label htmlFor="businessAddress">{t.createPro.businessAddressInvoiceLabel} *</Label>
             <AddressInput
               id="businessAddress"
@@ -923,9 +910,7 @@ export function ProProfileEditorDialog({
               placeholder="123 Rue Example, Montréal, QC H2X 1Y2"
               textareaRows={3}
             />
-            {!hasGoogleAddressAutocomplete() ? (
-              <p className="text-xs text-muted-foreground">{t.terms.bookingAddressNoPlaces}</p>
-            ) : null}
+            <FieldAlert field="businessAddress" error={fieldError} />
             <p className="text-xs text-muted-foreground">{t.createPro.businessAddressInvoiceHint}</p>
             <p className="text-xs text-muted-foreground">
               {locale === "fr"
@@ -973,37 +958,23 @@ export function ProProfileEditorDialog({
             <p>{t.createPro.securityNotice}</p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-field="selfie">
             <Label>{t.createPro.personalPhotoLabel}</Label>
-            <input
-              ref={personalPhotoInputRef}
-              type="file"
-              accept={ACCEPT_IMAGES}
-              className="hidden"
-              onChange={(e) => setForm((p) => ({ ...p, personalPhotoFile: e.target.files?.[0] ?? null }))}
+            {existingPersonalPhotoUrl && !form.personalPhotoFile ? (
+              <p className="text-xs text-muted-foreground">
+                {locale === "fr" ? "Un selfie est déjà au dossier. Reprenez-le seulement si vous voulez le remplacer." : "A selfie is already on file. Retake it only if you want to replace it."}
+              </p>
+            ) : null}
+            <SelfieLivenessCapture
+              locale={locale === "fr" ? "fr" : "en"}
+              confirmed={!!form.personalPhotoFile}
+              onCapture={(file) => setForm((p) => ({ ...p, personalPhotoFile: file }))}
+              onClear={() => setForm((p) => ({ ...p, personalPhotoFile: null }))}
             />
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => personalPhotoInputRef.current?.click()}
-              >
-                <Upload size={16} /> {t.createPro.chooseFile}
-              </Button>
-              {form.personalPhotoFile && (
-                <span className="text-sm text-muted-foreground truncate">
-                  {form.personalPhotoFile.name}
-                  <button type="button" onClick={() => setForm((p) => ({ ...p, personalPhotoFile: null }))} className="ml-1 text-destructive">
-                    <X size={14} />
-                  </button>
-                </span>
-              )}
-            </div>
+            <FieldAlert field="selfie" error={fieldError} />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-field="idDocument">
             <Label>{t.createPro.idDocumentLabel}</Label>
             <input
               ref={idDocumentInputRef}
@@ -1032,9 +1003,10 @@ export function ProProfileEditorDialog({
               )}
             </div>
             <p className="text-xs text-muted-foreground">PNG, JPG or PDF</p>
+            <FieldAlert field="idDocument" error={fieldError} />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-field="shortBio">
             <Label htmlFor="shortBio">{t.createPro.shortBio} ({wordCount}/{MAX_BIO_WORDS})</Label>
             <Textarea
               id="shortBio"
@@ -1044,9 +1016,10 @@ export function ProProfileEditorDialog({
               className={`w-full resize-y ${bioOverLimit ? "border-destructive" : ""}`}
               required
             />
+            <FieldAlert field="shortBio" error={fieldError} />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-field="years">
             <Label>{t.createPro.yearsExperience} *</Label>
             <select
               className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
@@ -1061,9 +1034,10 @@ export function ProProfileEditorDialog({
                 </option>
               ))}
             </select>
+            <FieldAlert field="years" error={fieldError} />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-field="category">
             <Label>{t.createPro.serviceCategories} *</Label>
             <p className="text-xs text-muted-foreground mb-2">{t.createPro.mainCategoryHelp ?? "Choose the one main area you work in (e.g. Business Services). Then pick subservices and add a custom name and description for your public page."}</p>
             <div className="space-y-3">
@@ -1106,6 +1080,9 @@ export function ProProfileEditorDialog({
                   </div>
                 </div>
               ) : null}
+              <FieldAlert field="category" error={fieldError} />
+              <div data-field="services">
+              <FieldAlert field="services" error={fieldError} />
               {form.selectedServices.length > 0 && (
                 <>
                   <p className="text-xs text-muted-foreground">
@@ -1155,10 +1132,11 @@ export function ProProfileEditorDialog({
                   </div>
                 </>
               )}
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-field="serviceAreas">
             <Label>{t.createPro.serviceAreaMap}</Label>
             <div className="flex flex-col gap-3">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -1201,6 +1179,8 @@ export function ProProfileEditorDialog({
               centerPlaceholder={t.createPro.serviceAreaCentrePlaceholder}
               radiusLabel={t.createPro.serviceRadiusLabel}
               useMyLocationLabel={t.createPro.useMyLocation}
+              locationDeniedLabel={t.createPro.locationDenied}
+              locationFailedLabel={t.createPro.locationFailed}
             />
             <Label htmlFor="serviceAreas" className="mt-2 block">{t.createPro.serviceAreas} *</Label>
             <Input
@@ -1210,9 +1190,10 @@ export function ProProfileEditorDialog({
               placeholder={t.createPro.placeholderPostal}
               required
             />
+            <FieldAlert field="serviceAreas" error={fieldError} />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-field="startingPrice">
             <Label htmlFor="startingPrice">{t.createPro.startingPrice} *</Label>
             <Input
               id="startingPrice"
@@ -1221,6 +1202,7 @@ export function ProProfileEditorDialog({
               placeholder={t.createPro.placeholderPrice}
               required
             />
+            <FieldAlert field="startingPrice" error={fieldError} />
           </div>
 
           <div className="space-y-2">
@@ -1573,23 +1555,22 @@ export function ProProfileEditorDialog({
             )}
           </div>
 
-          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-4">
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/5 p-4" data-field="terms">
             <TermsAcceptance
               variant="pro"
               accepted={termsAccepted}
               onAcceptedChange={setTermsAccepted}
             />
+            <FieldAlert field="terms" error={fieldError} />
           </div>
 
                 </form>
               </div>
 
-              <DialogFooter className="shrink-0 flex-row items-center justify-between gap-3 border-t border-border/50 bg-background px-5 py-4 sm:px-6 sm:py-4">
-                <DialogClose asChild>
-                  <Button type="button" variant="outline" className="rounded-full px-5">
-                    {t.common.cancel}
-                  </Button>
-                </DialogClose>
+              <div className="mt-8 flex flex-col-reverse gap-3 border-t border-border/60 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <Button type="button" variant="outline" className="rounded-full px-5" onClick={() => onOpenChange(false)}>
+                  {t.common.cancel}
+                </Button>
                 <Button
                   type="submit"
                   size="lg"
@@ -1604,12 +1585,10 @@ export function ProProfileEditorDialog({
                       : "Save profile"
                     : t.createPro.submit}
                 </Button>
-              </DialogFooter>
+              </div>
             </>
           )}
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   );
 }
 

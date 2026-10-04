@@ -7,7 +7,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveVerifiedPro } from "@/hooks/useActiveVerifiedPro";
 import { useEffect, useState } from "react";
-import { ProProfileEditorDialog } from "@/components/pro/ProProfileEditorDialog";
 import HomeChapter from "@/components/HomeChapter";
 import { useHomeScrollReveal } from "@/components/useHomeScrollReveal";
 
@@ -16,7 +15,6 @@ export default function JoinPros() {
   const navigate = useNavigate();
   const { t, locale } = useLanguage();
   const [proProfileId, setProProfileId] = useState<string | null>(null);
-  const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const { activeVerifiedPro } = useActiveVerifiedPro(user?.id);
 
   useHomeScrollReveal([user?.id, !!user]);
@@ -177,7 +175,7 @@ export default function JoinPros() {
                   variant="outline"
                   className="gap-2"
                   type="button"
-                  onClick={() => setProfileEditorOpen(true)}
+                  onClick={() => navigate("/create-pro-account")}
                 >
                   {proProfileId ? t.joinPros.editProfile : t.joinPros.completeProfile}
                   <ArrowRight size={18} />
@@ -214,18 +212,6 @@ export default function JoinPros() {
         )}
       </div>
 
-      <ProProfileEditorDialog
-        open={profileEditorOpen}
-        onOpenChange={setProfileEditorOpen}
-        allowDirectCreate
-        onSaved={() => {
-          void (async () => {
-            if (!user) return;
-            const { data } = await supabase.from("pro_profiles").select("id").eq("user_id", user.id).limit(1).maybeSingle();
-            setProProfileId(data?.id ?? null);
-          })();
-        }}
-      />
     </Layout>
   );
 }
