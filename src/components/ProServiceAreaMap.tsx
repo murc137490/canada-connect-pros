@@ -1,8 +1,8 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { reverseGeocode } from "@/lib/geocode";
+import { reverseToAddress, suggestAddresses, type AddressHit } from "@/lib/addressSuggestions";
 import { whenGoogleMapsReady, triggerMapResize } from "@/lib/loadGoogleMapsJs";
 import type { ServiceLocationMode } from "@/lib/serviceLocationMode";
 import { MapPin, Loader2 } from "lucide-react";
@@ -29,6 +29,8 @@ interface ProServiceAreaMapProps {
   locationMode?: ServiceLocationMode;
   workspaceSectionLabel?: string;
   useMyLocationLabel?: string;
+  locationDeniedLabel?: string;
+  locationFailedLabel?: string;
 }
 
 interface GoogleMapsWindow {
@@ -73,13 +75,14 @@ export default function ProServiceAreaMap({
   locationMode: locationModeProp,
   workspaceSectionLabel = "Workspace location (clients come to you)",
   useMyLocationLabel = "Use my current location",
+  locationDeniedLabel = "Allow location to use your current position.",
+  locationFailedLabel = "Could not read your location. Try again.",
 }: ProServiceAreaMapProps) {
   const locationMode: ServiceLocationMode =
     locationModeProp ?? (atWorkspaceOnly ? "workspace" : "travel");
   const showWorkspaceAddress = locationMode === "workspace" || locationMode === "both";
   const showTravelMap = locationMode === "travel" || locationMode === "both";
   const mapRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const mapInstanceRef = useRef<{ setCenter: (c: { lat: number; lng: number }) => void; setZoom: (z: number) => void } | null>(
     null,
   );
@@ -90,58 +93,49 @@ export default function ProServiceAreaMap({
   const [mapLoading, setMapLoading] = useState(false);
   const [mapError, setMapError] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
-  const autocompleteInitRef = useRef(false);
+  const [locationError, setLocationError] = useState("");
+  const [query, setQuery] = useState(value.location ?? "");
+  const [hits, setHits] = useState<AddressHit[]>([]);
+  const suggestRequest = useRef(0);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
-  const bindAutocomplete = useCallback(
-    (input: HTMLInputElement) => {
-      const g = (window as unknown as GoogleMapsWindow).google;
-      if (!g?.maps?.places) return;
-      const autocomplete = new g.maps.places.Autocomplete(input, {
-        types: ["address"],
-        componentRestrictions: { country: ["ca"] },
-        fields: ["formatted_address", "name", "geometry"],
-      });
-      autocomplete.addListener("place_changed", () => {
-        const place = autocomplete.getPlace() as PlaceResult;
-        const loc = place.geometry?.location;
-        if (!loc) return;
-        const lat = loc.lat();
-        const lng = loc.lng();
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.setCenter({ lat, lng });
-          mapInstanceRef.current.setZoom(10);
-        }
-        if (circleRef.current) circleRef.current.setCenter({ lat, lng });
-        onChange({
-          latitude: lat,
-          longitude: lng,
-          service_radius_km: showTravelMap ? value.service_radius_km : null,
-          location: place.formatted_address ?? place.name ?? value.location,
-        });
-        requestAnimationFrame(() => triggerMapResize(mapInstanceRef.current));
-      });
-    },
-    [onChange, showTravelMap, value.service_radius_km, value.location],
-  );
+  useEffect(() => {
+    setQuery(value.location ?? "");
+  }, [value.location]);
 
   useEffect(() => {
-    if (!GOOGLE_PLACES_KEY || !inputRef.current) return;
-    if (autocompleteInitRef.current) return;
+    const q = query.trim();
+    if (q.length < 3) {
+      setHits([]);
+      return;
+    }
+    const requestId = ++suggestRequest.current;
+    const timer = window.setTimeout(() => {
+      void suggestAddresses(q).then((rows) => {
+        if (suggestRequest.current !== requestId) return;
+        setHits(rows);
+      });
+    }, 320);
+    return () => window.clearTimeout(timer);
+  }, [query]);
 
-    let cancelled = false;
-    void whenGoogleMapsReady(GOOGLE_PLACES_KEY)
-      .then(() => {
-        if (cancelled || !inputRef.current || autocompleteInitRef.current) return;
-        autocompleteInitRef.current = true;
-        bindAutocomplete(inputRef.current);
-      })
-      .catch(() => setMapError(true));
-
-    return () => {
-      cancelled = true;
-    };
-  }, [GOOGLE_PLACES_KEY, bindAutocomplete, locationMode]);
+  const chooseHit = (hit: AddressHit) => {
+    setHits([]);
+    setQuery(hit.label);
+    setLocationError("");
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setCenter({ lat: hit.lat, lng: hit.lng });
+      mapInstanceRef.current.setZoom(12);
+    }
+    if (circleRef.current) circleRef.current.setCenter({ lat: hit.lat, lng: hit.lng });
+    onChange({
+      latitude: hit.lat,
+      longitude: hit.lng,
+      service_radius_km: showTravelMap ? value.service_radius_km : null,
+      location: hit.label,
+    });
+    requestAnimationFrame(() => triggerMapResize(mapInstanceRef.current));
+  };
 
   useEffect(() => {
     if (!showTravelMap || !GOOGLE_PLACES_KEY) {
@@ -245,31 +239,60 @@ export default function ProServiceAreaMap({
   };
 
   const handleUseMyLocation = () => {
-    if (!navigator.geolocation) return;
+    if (!window.isSecureContext || !navigator.geolocation) {
+      setLocationError(locationFailedLabel);
+      return;
+    }
     setGettingLocation(true);
+    setLocationError("");
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const addr = await reverseGeocode(lat, lng);
-        onChange({
-          latitude: lat,
-          longitude: lng,
-          service_radius_km: showTravelMap ? value.service_radius_km : null,
-          location: addr ?? value.location,
-        });
-        if (inputRef.current) inputRef.current.value = addr ?? "";
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.setCenter({ lat, lng });
-          mapInstanceRef.current.setZoom(12);
-          triggerMapResize(mapInstanceRef.current);
-        }
-        if (circleRef.current) circleRef.current.setCenter({ lat, lng });
-        setGettingLocation(false);
+      (pos) => {
+        void (async () => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const addr = await reverseToAddress(lat, lng);
+          const label = addr ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          setQuery(label);
+          setHits([]);
+          onChange({
+            latitude: lat,
+            longitude: lng,
+            service_radius_km: showTravelMap ? value.service_radius_km : null,
+            location: label,
+          });
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.setCenter({ lat, lng });
+            mapInstanceRef.current.setZoom(12);
+            triggerMapResize(mapInstanceRef.current);
+          }
+          if (circleRef.current) circleRef.current.setCenter({ lat, lng });
+          setGettingLocation(false);
+        })();
       },
-      () => setGettingLocation(false),
+      (err) => {
+        setGettingLocation(false);
+        setLocationError(err.code === 1 ? locationDeniedLabel : locationFailedLabel);
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 15000 },
     );
   };
+
+  const addressSuggestions = hits.length > 0 ? (
+    <ul className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-md border border-border bg-background shadow-lg" role="listbox">
+      {hits.map((hit) => (
+        <li key={`${hit.lat},${hit.lng},${hit.label}`}>
+          <button
+            type="button"
+            className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => chooseHit(hit)}
+          >
+            {hit.label}
+          </button>
+        </li>
+      ))}
+    </ul>
+  ) : null;
 
   const showFallback = !GOOGLE_PLACES_KEY || mapError;
 
@@ -278,18 +301,26 @@ export default function ProServiceAreaMap({
       <div className="space-y-3">
         <div className="space-y-2">
           <Label>{workspaceSectionLabel}</Label>
-          <Input
-            ref={inputRef}
-            type="text"
-            defaultValue={value.location ?? ""}
-            placeholder={centerPlaceholder}
-            className="w-full"
-            autoComplete="off"
-          />
+          <div className="relative">
+            <Input
+              type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                onChange({ ...value, location: e.target.value });
+              }}
+              placeholder={centerPlaceholder}
+              className="w-full"
+              autoComplete="off"
+              aria-autocomplete="list"
+            />
+            {addressSuggestions}
+          </div>
           <Button type="button" variant="outline" size="sm" className="gap-2" onClick={handleUseMyLocation} disabled={gettingLocation}>
             {gettingLocation ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
             {useMyLocationLabel}
           </Button>
+          {locationError ? <p className="text-sm font-medium text-destructive">{locationError}</p> : null}
         </div>
       </div>
     );
@@ -300,19 +331,26 @@ export default function ProServiceAreaMap({
       <div className="space-y-3">
         <div className="space-y-2">
           <Label>Service area centre</Label>
-          <Input
-            ref={inputRef}
-            type="text"
-            defaultValue={value.location ?? ""}
-            onChange={(e) => onChange({ ...value, location: e.target.value })}
-            placeholder={centerPlaceholder}
-            className="w-full"
-            autoComplete="off"
-          />
+          <div className="relative">
+            <Input
+              type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                onChange({ ...value, location: e.target.value });
+              }}
+              placeholder={centerPlaceholder}
+              className="w-full"
+              autoComplete="off"
+              aria-autocomplete="list"
+            />
+            {addressSuggestions}
+          </div>
           <Button type="button" variant="outline" size="sm" className="gap-2" onClick={handleUseMyLocation} disabled={gettingLocation}>
             {gettingLocation ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
             {useMyLocationLabel}
           </Button>
+          {locationError ? <p className="text-sm font-medium text-destructive">{locationError}</p> : null}
         </div>
         <div className="space-y-2">
           <Label>{radiusLabel}</Label>
@@ -351,18 +389,26 @@ export default function ProServiceAreaMap({
       ) : null}
       <div className="space-y-2">
         <Label>{locationMode === "both" ? workspaceSectionLabel : "Service area centre"}</Label>
-        <Input
-          ref={inputRef}
-          type="text"
-          defaultValue={value.location ?? ""}
-          placeholder={centerPlaceholder}
-          className="w-full"
-          autoComplete="off"
-        />
+        <div className="relative">
+          <Input
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              onChange({ ...value, location: e.target.value });
+            }}
+            placeholder={centerPlaceholder}
+            className="w-full"
+            autoComplete="off"
+            aria-autocomplete="list"
+          />
+          {addressSuggestions}
+        </div>
         <Button type="button" variant="outline" size="sm" className="gap-2" onClick={handleUseMyLocation} disabled={gettingLocation}>
           {gettingLocation ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
           {useMyLocationLabel}
         </Button>
+        {locationError ? <p className="text-sm font-medium text-destructive">{locationError}</p> : null}
       </div>
       {showTravelMap && (
         <>

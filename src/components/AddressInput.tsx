@@ -1,73 +1,14 @@
-import { useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { suggestAddresses, type AddressHit } from "@/lib/addressSuggestions";
 
 const GOOGLE_MAPS_KEY = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_GOOGLE_PLACES_API_KEY) as
   | string
   | undefined;
 
-/** True when Places autocomplete can load (either `VITE_GOOGLE_MAPS_API_KEY` or `VITE_GOOGLE_PLACES_API_KEY`). */
+/** True when a browser Maps key was provided at build time. Suggestions still work without it. */
 export function hasGoogleAddressAutocomplete(): boolean {
   return !!GOOGLE_MAPS_KEY;
-}
-
-function whenGooglePlacesReady(apiKey: string): Promise<void> {
-  const w = window as Window & { google?: { maps?: { places?: unknown } } };
-  if (w.google?.maps?.places) return Promise.resolve();
-
-  const findScript = () =>
-    Array.from(document.querySelectorAll("script")).find((s) =>
-      (s as HTMLScriptElement).src?.includes("maps.googleapis.com/maps/api/js")
-    ) as HTMLScriptElement | undefined;
-
-  const existing = findScript();
-  if (existing) {
-    return new Promise((resolve, reject) => {
-      const win = () => window as Window & { google?: { maps?: { places?: unknown } } };
-      let settled = false;
-      const finishOk = () => {
-        if (settled) return;
-        if (win().google?.maps?.places) {
-          settled = true;
-          resolve();
-        }
-      };
-      const finishLoad = () => {
-        if (settled) return;
-        if (win().google?.maps?.places) {
-          settled = true;
-          resolve();
-        } else {
-          settled = true;
-          reject(new Error("Google Maps Places not available"));
-        }
-      };
-      finishOk();
-      queueMicrotask(finishOk);
-      setTimeout(finishOk, 0);
-      existing.addEventListener("load", finishLoad, { once: true });
-      existing.addEventListener(
-        "error",
-        () => {
-          if (!settled) {
-            settled = true;
-            reject(new Error("Google Maps script error"));
-          }
-        },
-        { once: true }
-      );
-    });
-  }
-
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&loading=async`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Google Maps script failed"));
-    document.head.appendChild(script);
-  });
 }
 
 interface AddressInputProps {
@@ -90,88 +31,64 @@ export default function AddressInput({
   className,
   autoComplete = "off",
   required,
-  textareaRows = 3,
 }: AddressInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const initRef = useRef(false);
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+  const [hits, setHits] = useState<AddressHit[]>([]);
+  const [open, setOpen] = useState(false);
+  const requestRef = useRef(0);
 
   useEffect(() => {
-    if (!GOOGLE_MAPS_KEY || !inputRef.current) return;
-
-    let cancelled = false;
-
-    const initAutocomplete = () => {
-      const w = window as Window & {
-        google?: {
-          maps: {
-            places: {
-              Autocomplete: new (
-                el: HTMLInputElement,
-                o: { types?: string[]; componentRestrictions?: { country: string[] }; fields?: string[] }
-              ) => {
-                getPlace: () => { formatted_address?: string; name?: string };
-                addListener: (e: string, fn: () => void) => void;
-              };
-            };
-          };
-        };
-      };
-      if (cancelled || !w.google?.maps?.places || !inputRef.current || initRef.current) return;
-      initRef.current = true;
-      const autocomplete = new w.google.maps.places.Autocomplete(inputRef.current, {
-        types: ["address"],
-        componentRestrictions: { country: ["ca"] },
-        fields: ["formatted_address", "name", "geometry"],
+    const q = value.trim();
+    if (q.length < 3) {
+      setHits([]);
+      return;
+    }
+    const requestId = ++requestRef.current;
+    const timer = window.setTimeout(() => {
+      void suggestAddresses(q).then((rows) => {
+        if (requestRef.current !== requestId) return;
+        setHits(rows);
+        setOpen(rows.length > 0);
       });
-      autocomplete.addListener("place_changed", () => {
-        const place = autocomplete.getPlace();
-        const addr = place.formatted_address ?? place.name ?? "";
-        if (addr) onChangeRef.current(addr);
-      });
-    };
+    }, 320);
+    return () => window.clearTimeout(timer);
+  }, [value]);
 
-    whenGooglePlacesReady(GOOGLE_MAPS_KEY)
-      .then(() => {
-        if (!cancelled) initAutocomplete();
-      })
-      .catch(() => {
-        initRef.current = false;
-      });
-
-    return () => {
-      cancelled = true;
-      initRef.current = false;
-    };
-  }, [GOOGLE_MAPS_KEY]);
-
-  if (!GOOGLE_MAPS_KEY) {
-    return (
-      <Textarea
+  return (
+    <div className="relative">
+      <Input
         id={id}
+        type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => hits.length && setOpen(true)}
         placeholder={placeholder}
         className={className}
         autoComplete={autoComplete}
         required={required}
-        rows={textareaRows}
+        aria-autocomplete="list"
       />
-    );
-  }
-
-  return (
-    <Input
-      ref={inputRef}
-      id={id}
-      type="text"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className={className}
-      autoComplete={autoComplete}
-      required={required}
-    />
+      {open && hits.length > 0 ? (
+        <ul className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-md border border-border bg-background shadow-lg" role="listbox">
+          {hits.map((hit) => (
+            <li key={`${hit.lat},${hit.lng},${hit.label}`}>
+              <button
+                type="button"
+                className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onChange(hit.label);
+                  setOpen(false);
+                }}
+              >
+                {hit.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
