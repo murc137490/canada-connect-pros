@@ -94,6 +94,13 @@ export const categoryVisuals: Record<string, CategoryVisual> = {
     blurbEn: "Training, massage, therapy, and nutrition.",
     blurbFr: "Entraînement, massage, thérapie et nutrition.",
   }),
+  "beauty-personal-care": visual("photo-1522337360788-8b13dee7a37e", {
+    imageAltEn: "Beauty and personal care services",
+    imageAltFr: "Services de beauté et de soins personnels",
+    accent: "hsl(330 55% 48%)",
+    blurbEn: "Hair, nails, skincare, makeup, and lash and brow services.",
+    blurbFr: "Coiffure, ongles, soins de la peau, maquillage, cils et sourcils.",
+  }),
   moving: visual("photo-1600518464441-9154a4dea21b", {
     imageAltEn: "Moving boxes and helpers",
     imageAltFr: "Boîtes de déménagement",

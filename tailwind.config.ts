@@ -97,6 +97,7 @@ export default {
           lessons: "hsl(var(--cat-lessons))",
           pets: "hsl(var(--cat-pets))",
           wellness: "hsl(var(--cat-wellness))",
+          beauty: "hsl(var(--cat-beauty))",
           cleaning: "hsl(var(--cat-cleaning))",
           outdoor: "hsl(var(--cat-outdoor))",
           automotive: "hsl(var(--cat-automotive))",

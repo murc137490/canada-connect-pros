@@ -58,7 +58,6 @@ export const BILINGUAL_SERVICES: { en: string; fr: string }[] = [
   { en: "Marketing Services", fr: "Services marketing" },
   { en: "IT Support", fr: "Soutien informatique" },
 
-  { en: "Wedding Photographer", fr: "Photographe de mariage" },
   { en: "Event Photographer", fr: "Photographe d'événement" },
   { en: "Videographer", fr: "Vidéaste" },
   { en: "DJ Services", fr: "DJ" },
@@ -81,6 +80,23 @@ export const BILINGUAL_SERVICES: { en: string; fr: string }[] = [
   { en: "Massage Therapy", fr: "Massothérapie" },
   { en: "Therapist / Counselling", fr: "Thérapie / counseling" },
   { en: "Nutritionist", fr: "Nutritionniste" },
+  { en: "Nurse", fr: "Infirmier / infirmière" },
+  { en: "Physiotherapist", fr: "Physiothérapeute" },
+  { en: "Occupational Therapist", fr: "Ergothérapeute" },
+  { en: "Acupuncturist", fr: "Acupuncteur / acupunctrice" },
+  { en: "Chiropractor", fr: "Chiropraticien / chiropraticienne" },
+  { en: "Psychologist", fr: "Psychologue" },
+  { en: "Psychotherapist", fr: "Psychothérapeute" },
+  { en: "Social Worker", fr: "Travailleur social / travailleuse sociale" },
+  { en: "Sexologist", fr: "Sexologue" },
+  { en: "Psychoeducator", fr: "Psychoéducateur / psychoéducatrice" },
+
+  { en: "Barber", fr: "Barbier / barbière" },
+  { en: "Hair Stylist", fr: "Coiffeur / coiffeuse" },
+  { en: "Nail Technician", fr: "Technicien / technicienne en pose d'ongles" },
+  { en: "Esthetician", fr: "Esthéticien / esthéticienne" },
+  { en: "Makeup Artist", fr: "Maquilleur / maquilleuse" },
+  { en: "Lash & Brow Technician", fr: "Technicien / technicienne en cils et sourcils" },
 
   { en: "Local Moving", fr: "Déménagement local" },
   { en: "Long Distance Moving", fr: "Déménagement longue distance" },
@@ -185,7 +201,7 @@ const SERVICE_META: { en: string; categorySlug: string; categoryName: string; su
     subcategory: "Business services",
   })),
 
-  ...["Wedding Photographer", "Event Photographer", "Videographer", "DJ Services", "Catering", "Event Planning", "Entertainer"].map((en) => ({
+  ...["Event Photographer", "Videographer", "DJ Services", "Catering", "Event Planning", "Entertainer"].map((en) => ({
     en,
     categorySlug: "events",
     categoryName: "Events & Entertainment",
@@ -211,6 +227,19 @@ const SERVICE_META: { en: string; categorySlug: string; categoryName: string; su
     categorySlug: "wellness",
     categoryName: "Wellness",
     subcategory: "Wellness",
+  })),
+  ...["Nurse", "Physiotherapist", "Occupational Therapist", "Acupuncturist", "Chiropractor", "Psychologist", "Psychotherapist", "Social Worker", "Sexologist", "Psychoeducator"].map((en) => ({
+    en,
+    categorySlug: "wellness",
+    categoryName: "Wellness",
+    subcategory: "Wellness",
+  })),
+
+  ...["Barber", "Hair Stylist", "Nail Technician", "Esthetician", "Makeup Artist", "Lash & Brow Technician"].map((en) => ({
+    en,
+    categorySlug: "beauty-personal-care",
+    categoryName: "Beauty & Personal Care",
+    subcategory: "Beauty & Personal Care",
   })),
 
   ...["Local Moving", "Long Distance Moving", "Furniture Assembly", "TV Mounting", "Appliance Installation"].map((en) => ({
@@ -238,6 +267,7 @@ function buildServiceCategories(): ServiceCategory[] {
     "lessons",
     "pets",
     "wellness",
+    "beauty-personal-care",
     "moving",
     "security-inspection",
   ];
@@ -290,6 +320,12 @@ function buildServiceCategories(): ServiceCategory[] {
       icon: "Heart",
       color: "category-wellness",
       description: "Fitness, massage, therapy, and nutrition.",
+    },
+    "beauty-personal-care": {
+      name: "Beauty & Personal Care",
+      icon: "Sparkles",
+      color: "category-beauty",
+      description: "Hair, nails, skincare, makeup, and lash and brow services.",
     },
     moving: {
       name: "Moving & Storage",

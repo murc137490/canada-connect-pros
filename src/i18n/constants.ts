@@ -47,6 +47,7 @@ export const SERVICE_CATEGORY_NAMES_FR: Record<string, string> = {
   "lessons": "Cours et tutorat",
   "pets": "Animaux",
   "wellness": "Mieux-être",
+  "beauty-personal-care": "Beauté et soins personnels",
   "moving": "Déménagement et entreposage",
   "security-inspection": "Sécurité et inspection",
 };

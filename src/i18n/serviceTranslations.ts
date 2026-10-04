@@ -22,6 +22,7 @@ export const SERVICE_SUBCATEGORY_NAMES_FR: Record<string, string> = {
   "lessons|Lessons": "Cours et tutorat",
   "pets|Pet care": "Soins aux animaux",
   "wellness|Wellness": "Mieux-être",
+  "beauty-personal-care|Beauty & Personal Care": "Beauté et soins personnels",
   "moving|Moving & install": "Déménagement et installation",
   "security-inspection|Inspection & security": "Inspection et sécurité",
 };
