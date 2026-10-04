@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ProProfileEditorDialog } from "@/components/pro/ProProfileEditorDialog";
 
-/** Deep-link fallback: opens the same pro profile editor dialog (onboarding / promo flows). */
+/** Full-page pro account form. */
 export default function CreateProAccount() {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -29,10 +29,11 @@ export default function CreateProAccount() {
   return (
     <Layout>
       <ProProfileEditorDialog
+        asPage
         open
-        allowDirectCreate={onboarding}
-        onOpenChange={(open) => {
-          if (open) return;
+        allowDirectCreate
+        onOpenChange={(next) => {
+          if (next) return;
           navigate(onboarding ? "/join-pros" : "/dashboard", { replace: true });
         }}
       />

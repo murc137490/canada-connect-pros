@@ -993,8 +993,8 @@ export default function ProProfilePage() {
   const proFeatureTier = effectiveProTier(pro.subscription_tier, proBillingPlanId);
   const canAdvertiseAndBook = isPaidSubscriptionPlanId(proFeatureTier);
   const featuredLook = hasFeaturedPublicProfileLook(proFeatureTier);
-  const pagePrimary = featuredLook ? pro.page_primary_color || "#1e3a5f" : "hsl(var(--primary))";
-  const pageSecondary = featuredLook ? pro.page_secondary_color || "#0d9488" : "hsl(var(--secondary))";
+  const pagePrimary = featuredLook ? pro.page_primary_color || "#31594D" : "hsl(var(--primary))";
+  const pageSecondary = featuredLook ? pro.page_secondary_color || "#1E3A32" : "hsl(var(--secondary))";
   const pageAccent = featuredLook ? pro.page_accent_color || "#e0f2f1" : null;
   const pageBackground = featuredLook ? pro.page_background_color || "#f8fafc" : null;
   const sidebarPrimary = pagePrimary;
@@ -1007,7 +1007,7 @@ export default function ProProfilePage() {
   const accentBorderStyle = actionColor ? { borderColor: actionColor } : undefined;
 
   const brandPrimaryHex = featuredLook
-    ? String(pro.page_primary_color || "#1e3a5f").trim()
+    ? String(pro.page_primary_color || "#31594D").trim()
     : customAccentHex || "#2563eb";
   const brandSecondaryHex =
     featuredLook && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(pageSecondary).trim())

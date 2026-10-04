@@ -38,7 +38,7 @@ function fullScreenPaint(
   secondaryColor: string,
   backgroundColor: string
 ): string {
-  const p = primaryColor || "#1e3a5f";
+  const p = primaryColor || "#31594D";
   const s = (secondaryColor || p).trim() || p;
   const bg = (backgroundColor || "#f1f5f9").trim() || "#f1f5f9";
   if (template === "soft") {
@@ -71,7 +71,7 @@ export default function ProPagePhonePreview({
   const sheetDark = siteTheme === "dark";
   const isSoft = template === "soft";
   const isInteractive = template === "interactive";
-  const calendarColor = primaryColor || "#1e3a5f";
+  const calendarColor = primaryColor || "#31594D";
 
   const statusBarStyle: CSSProperties = {
     // subtle “dynamic island” pill — still reads as generic phone, not a notch row

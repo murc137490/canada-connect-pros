@@ -1,6 +1,6 @@
 /**
- * Predefined color schemes for pro public pages.
- * Keys are used for i18n: createPro.scheme{Id} e.g. schemeNavyTeal
+ * Palettes for “Personalize your page”.
+ * The named color is the page primary. Secondary, accent, and background stay in the same family.
  */
 export interface ProPageColorScheme {
   id: string;
@@ -10,62 +10,64 @@ export interface ProPageColorScheme {
   background: string;
 }
 
+export const DEFAULT_PRO_PAGE_SCHEME_ID = "deepForest";
+
 export const PRO_PAGE_COLOR_SCHEMES: ProPageColorScheme[] = [
   {
-    id: "navyTeal",
-    primary: "#1e3a5f",
-    secondary: "#0d9488",
-    accent: "#e0f2f1",
-    background: "#f8fafc",
+    id: "dustyRose",
+    primary: "#B86F7A",
+    secondary: "#8C4A55",
+    accent: "#F3DDE1",
+    background: "#FBF6F7",
   },
   {
-    id: "forestGreen",
-    primary: "#14532d",
-    secondary: "#22c55e",
-    accent: "#dcfce7",
-    background: "#f0fdf4",
+    id: "burntTerracotta",
+    primary: "#B7654A",
+    secondary: "#8A4530",
+    accent: "#F6E0D8",
+    background: "#FBF6F3",
   },
   {
-    id: "burgundy",
-    primary: "#7f1d1d",
-    secondary: "#b91c1c",
-    accent: "#fef2f2",
-    background: "#fef2f2",
+    id: "antiqueGold",
+    primary: "#B39445",
+    secondary: "#7A6428",
+    accent: "#F3EBD4",
+    background: "#FBF8F1",
   },
   {
-    id: "slateBlue",
-    primary: "#1e293b",
-    secondary: "#3b82f6",
-    accent: "#e0e7ff",
-    background: "#f1f5f9",
+    id: "deepForest",
+    primary: "#31594D",
+    secondary: "#1E3A32",
+    accent: "#D5E6E0",
+    background: "#F4F8F6",
   },
   {
-    id: "warmAmber",
-    primary: "#92400e",
-    secondary: "#d97706",
-    accent: "#fffbeb",
-    background: "#fffbeb",
+    id: "cobaltSlate",
+    primary: "#49658A",
+    secondary: "#2E4460",
+    accent: "#D9E3EF",
+    background: "#F4F7FA",
   },
   {
-    id: "deepPurple",
-    primary: "#4c1d95",
-    secondary: "#7c3aed",
-    accent: "#ede9fe",
-    background: "#f5f3ff",
+    id: "aubergine",
+    primary: "#5A3F61",
+    secondary: "#3D2A43",
+    accent: "#E6DCE8",
+    background: "#F8F5F8",
   },
   {
-    id: "ocean",
-    primary: "#0c4a6e",
-    secondary: "#0ea5e9",
-    accent: "#e0f2fe",
-    background: "#f0f9ff",
+    id: "oxblood",
+    primary: "#682F3B",
+    secondary: "#451E27",
+    accent: "#F0DADF",
+    background: "#FBF6F7",
   },
   {
     id: "charcoal",
-    primary: "#171717",
-    secondary: "#525252",
-    accent: "#fafafa",
-    background: "#fafafa",
+    primary: "#292929",
+    secondary: "#4A4A4A",
+    accent: "#E6E6E6",
+    background: "#F7F7F7",
   },
 ];
 
@@ -78,7 +80,7 @@ export function getSchemeIdFromColors(primary: string | null, secondary: string 
   const p = (primary || "").toLowerCase();
   const s = (secondary || "").toLowerCase();
   const found = PRO_PAGE_COLOR_SCHEMES.find(
-    (scheme) => scheme.primary.toLowerCase() === p && scheme.secondary.toLowerCase() === s
+    (scheme) => scheme.primary.toLowerCase() === p && scheme.secondary.toLowerCase() === s,
   );
   return found?.id ?? null;
 }
