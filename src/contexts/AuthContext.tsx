@@ -126,16 +126,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (emailOrName: string, password: string) => {
-    const input = emailOrName.trim();
-    let email = input;
-    if (!input.includes("@")) {
-      const { data, error: rpcError } = await supabase.rpc("get_email_for_name", { full_name: input });
-      if (rpcError) throw rpcError;
-      const resolved = typeof data === "string" ? data : Array.isArray(data) ? data[0] : (data as { get_email_for_name?: string } | null)?.get_email_for_name;
-      email = (typeof resolved === "string" ? resolved : null) ?? "";
-      if (!email || !email.includes("@")) {
-        throw new Error("Name not found. Sign up first or use your email.");
-      }
+    const email = emailOrName.trim();
+    if (!email.includes("@")) {
+      throw new Error("Please sign in with your email address.");
     }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;

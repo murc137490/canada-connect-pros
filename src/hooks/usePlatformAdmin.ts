@@ -47,9 +47,8 @@ export function usePlatformAdmin() {
     }
     let cancelled = false;
     void (async () => {
-      if (listed) {
-        await supabase.functions.invoke("ensure-platform-admin", { method: "POST" }).catch(() => {});
-      }
+      // Server allowlist / secrets decide; never rely on emails shipped in the JS bundle.
+      await supabase.functions.invoke("ensure-platform-admin", { method: "POST" }).catch(() => {});
       const isAdminProfile = await loadAdminFlag(user.id);
       if (!cancelled) {
         setSyncedFlag(isAdminProfile || listed);

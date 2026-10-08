@@ -1,15 +1,19 @@
-/** Seed monitor emails + supreme super-admin. Dynamic admins use profiles.is_platform_admin. */
+/**
+ * Client-side admin detection uses profiles.is_platform_admin (and related RPCs).
+ * Seed / secret allowlists live only in edge functions (`PLATFORM_ADMIN_EMAILS`) —
+ * do not hardcode admin emails in the browser bundle.
+ */
 
-export const SUPER_ADMIN_EMAIL = "murc137490@gmail.com";
+/** Optional override via Vite env (not required when DB flag is set). */
+export const SUPER_ADMIN_EMAIL = (
+  (import.meta.env.VITE_SUPER_ADMIN_EMAIL as string | undefined) ?? ""
+)
+  .toLowerCase()
+  .trim();
 
-/** Legacy seeded monitor accounts (still valid). */
-export const PLATFORM_ADMIN_ALLOWLIST = [
-  SUPER_ADMIN_EMAIL,
-  "admin1@altshift.ca",
-  "admin2@altshift.ca",
-  "admin3@altshift.ca",
-  "admin4@altshift.ca",
-  "admin5@altshift.ca",
-] as const;
+/** Intentionally empty in the client bundle. */
+export const PLATFORM_ADMIN_ALLOWLIST: readonly string[] = SUPER_ADMIN_EMAIL
+  ? ([SUPER_ADMIN_EMAIL] as const)
+  : ([] as const);
 
-export type PlatformAdminEmail = (typeof PLATFORM_ADMIN_ALLOWLIST)[number];
+export type PlatformAdminEmail = string;
