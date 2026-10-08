@@ -8,6 +8,7 @@ import type { UnavailableDatesMap } from "@/components/pro/AvailabilityCalendar"
 import type { ServiceAreaValue } from "@/components/ProServiceAreaMap";
 import type { LanguageLevel } from "@/i18n/constants";
 import { CANADIAN_LANGUAGES } from "@/i18n/constants";
+import { resolveProPageScheme } from "@/data/proPageColorSchemes";
 
 export type AccountFieldsState = {
   full_name: string;
@@ -186,10 +187,10 @@ export function useLoadExistingProProfile(userId: string | undefined, enabled: b
         availableDateOverrides,
         availabilityNotYet: !pro.availability?.trim(),
         proServiceTags: Array.isArray(pro.service_tags) ? pro.service_tags.filter((t): t is string => typeof t === "string") : [],
-        pagePrimaryColor: (pro as { page_primary_color?: string }).page_primary_color ?? "#1e3a5f",
-        pageSecondaryColor: (pro as { page_secondary_color?: string }).page_secondary_color ?? "#0d9488",
-        pageAccentColor: (pro as { page_accent_color?: string }).page_accent_color ?? "#e0f2f1",
-        pageBackgroundColor: (pro as { page_background_color?: string }).page_background_color ?? "#f8fafc",
+        pagePrimaryColor: resolveProPageScheme((pro as { page_primary_color?: string }).page_primary_color).primary,
+        pageSecondaryColor: resolveProPageScheme((pro as { page_primary_color?: string }).page_primary_color).secondary,
+        pageAccentColor: resolveProPageScheme((pro as { page_primary_color?: string }).page_primary_color).accent,
+        pageBackgroundColor: resolveProPageScheme((pro as { page_primary_color?: string }).page_primary_color).background,
         existingPersonalPhotoUrl: pro.personal_photo_url ?? null,
         existingIdDocumentUrl: pro.id_document_url ?? null,
         existingPrimaryPhotoUrl: primary?.url ?? null,

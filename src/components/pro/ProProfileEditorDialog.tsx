@@ -20,7 +20,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { serviceCategories } from "@/data/services";
-import { PRO_PAGE_COLOR_SCHEMES, getSchemeById } from "@/data/proPageColorSchemes";
+import { PRO_PAGE_COLOR_SCHEMES, DEFAULT_PRO_PAGE_COLOR_SCHEME, getSchemeById, resolveProPageScheme, schemeLabel } from "@/data/proPageColorSchemes";
 import { SERVICE_TAG_OPTIONS } from "@/data/serviceTags";
 import {
   CANADIAN_LANGUAGES,
@@ -184,11 +184,11 @@ export function ProProfileEditorDialog({
   const [primaryCategorySlug, setPrimaryCategorySlug] = useState("");
   const [serviceDetails, setServiceDetails] = useState<Record<string, { displayName: string; about: string }>>({});
   const [pageTemplate, setPageTemplate] = useState<string>("classic");
-  const [pageColorSchemeId, setPageColorSchemeId] = useState<string>("navyTeal");
-  const [pagePrimaryColor, setPagePrimaryColor] = useState("#1e3a5f");
-  const [pageSecondaryColor, setPageSecondaryColor] = useState("#0d9488");
-  const [pageAccentColor, setPageAccentColor] = useState("#e0f2f1");
-  const [pageBackgroundColor, setPageBackgroundColor] = useState("#f8fafc");
+  const [pageColorSchemeId, setPageColorSchemeId] = useState<string>(DEFAULT_PRO_PAGE_COLOR_SCHEME.id);
+  const [pagePrimaryColor, setPagePrimaryColor] = useState(DEFAULT_PRO_PAGE_COLOR_SCHEME.primary);
+  const [pageSecondaryColor, setPageSecondaryColor] = useState(DEFAULT_PRO_PAGE_COLOR_SCHEME.secondary);
+  const [pageAccentColor, setPageAccentColor] = useState(DEFAULT_PRO_PAGE_COLOR_SCHEME.accent);
+  const [pageBackgroundColor, setPageBackgroundColor] = useState(DEFAULT_PRO_PAGE_COLOR_SCHEME.background);
   const [pageHeaderText, setPageHeaderText] = useState("");
   const [proServiceTags, setProServiceTags] = useState<string[]>([]);
   const { accountFields, setAccountFields, loaded: profileDataLoaded, hasExistingProfile, proEdit } =
@@ -227,6 +227,7 @@ export function ProProfileEditorDialog({
     setPageSecondaryColor(proEdit.pageSecondaryColor);
     setPageAccentColor(proEdit.pageAccentColor);
     setPageBackgroundColor(proEdit.pageBackgroundColor);
+    setPageColorSchemeId(resolveProPageScheme(proEdit.pagePrimaryColor).id);
     setExistingPersonalPhotoUrl(proEdit.existingPersonalPhotoUrl);
     setExistingIdDocumentUrl(proEdit.existingIdDocumentUrl);
     setExistingGalleryUrls(proEdit.existingGalleryUrls);
@@ -1475,8 +1476,7 @@ export function ProProfileEditorDialog({
                 {PRO_PAGE_COLOR_SCHEMES.map((scheme) => {
                   const isSelected = pageColorSchemeId === scheme.id;
                   const label =
-                    (t.createPro as Record<string, string>)[`scheme${scheme.id.charAt(0).toUpperCase()}${scheme.id.slice(1)}`] ??
-                    scheme.id;
+                    schemeLabel(scheme, locale);
                   return (
                     <button
                       key={scheme.id}
@@ -1492,13 +1492,13 @@ export function ProProfileEditorDialog({
                         isSelected ? "border-foreground ring-2 ring-foreground/40 ring-offset-2 ring-offset-background" : "border-white/20"
                       }`}
                       style={{
-                        background: `linear-gradient(135deg, ${scheme.primary} 0%, ${scheme.secondary} 62%, ${scheme.accent} 160%)`,
+                        background: `linear-gradient(135deg, ${scheme.primary} 0%, ${scheme.primary} 68%, ${scheme.secondary} 100%)`,
+                                      color: scheme.ink,
                       }}
                       aria-pressed={isSelected}
                     >
-                      <span className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/10" />
                       <span className="relative z-10 flex items-center justify-between gap-2">
-                        <span className="truncate drop-shadow-sm">{label}</span>
+                        <span className="truncate">{label}</span>
                         {isSelected ? (
                           <span className="shrink-0 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-950">
                             {locale === "fr" ? "Choisi" : "Selected"}

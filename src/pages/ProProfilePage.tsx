@@ -75,7 +75,8 @@ import {
 } from "@/lib/clientBookingIdVerification";
 import { useTheme } from "next-themes";
 import { resolveStorageDisplayUrl } from "@/lib/resolveStorageUrl";
-import { isLightHexColor } from "@/lib/contrastOnHex";
+import { bestInkOn, isLightHexColor, readableTextColor } from "@/lib/contrastOnHex";
+import { resolveProPageScheme } from "@/data/proPageColorSchemes";
 import {
   bookingCheckoutLoginPath,
   clearBookingCheckoutResume,
@@ -1003,21 +1004,27 @@ export default function ProProfilePage() {
   const proFeatureTier = effectiveProTier(pro.subscription_tier, proBillingPlanId);
   const canAdvertiseAndBook = isPaidSubscriptionPlanId(proFeatureTier);
   const featuredLook = hasFeaturedPublicProfileLook(proFeatureTier);
-  const pagePrimary = featuredLook ? pro.page_primary_color || "#1e3a5f" : "hsl(var(--primary))";
-  const pageSecondary = featuredLook ? pro.page_secondary_color || "#0d9488" : "hsl(var(--secondary))";
-  const pageAccent = featuredLook ? pro.page_accent_color || "#e0f2f1" : null;
-  const pageBackground = featuredLook ? pro.page_background_color || "#f8fafc" : null;
+  /** Featured palette; saved colours outside the palette resolve to the closest palette colour. */
+  const featuredScheme = featuredLook ? resolveProPageScheme(pro.page_primary_color) : null;
+  const pagePrimary = featuredScheme ? featuredScheme.primary : "hsl(var(--primary))";
+  const pageSecondary = featuredScheme ? featuredScheme.secondary : "hsl(var(--secondary))";
+  const pageAccent = featuredScheme ? featuredScheme.accent : null;
+  const pageBackground = featuredScheme ? featuredScheme.background : null;
+  /** Light palette colours (Dusty Rose, Burnt Terracotta, Antique Gold) need dark text for WCAG AA. */
+  const featuredInkDark = Boolean(featuredScheme && featuredScheme.ink === "#000000" && !pro.banner_image_url);
   const sidebarPrimary = pagePrimary;
   const sidebarSecondary = pageSecondary;
   const sidebarGradient = `linear-gradient(145deg, ${sidebarPrimary} 0%, ${sidebarSecondary} 45%, ${sidebarPrimary} 100%)`;
   const customAccentHex = getAccentHex(pro.pro_accent_color);
   const actionColor = featuredLook ? pagePrimary : customAccentHex;
-  const accentStyle = actionColor ? { color: actionColor } : undefined;
-  const accentBgStyle = actionColor ? { backgroundColor: actionColor } : undefined;
+  const actionInk = actionColor && actionColor.startsWith("#") ? bestInkOn(actionColor) : "#FFFFFF";
+  const accentTextColor = actionColor && actionColor.startsWith("#") ? readableTextColor(actionColor, isDarkMode ? "#1A1A1A" : "#FFFFFF") : actionColor;
+  const accentStyle = accentTextColor ? { color: accentTextColor } : undefined;
+  const accentBgStyle = actionColor ? { backgroundColor: actionColor, color: actionInk } : undefined;
   const accentBorderStyle = actionColor ? { borderColor: actionColor } : undefined;
 
   const brandPrimaryHex = featuredLook
-    ? String(pro.page_primary_color || "#1e3a5f").trim()
+    ? (featuredScheme?.primary ?? "#49658A")
     : customAccentHex || "#2563eb";
   const brandSecondaryHex =
     featuredLook && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(pageSecondary).trim())
@@ -1080,7 +1087,7 @@ export default function ProProfilePage() {
                 <div className="absolute inset-0 bg-black/35" aria-hidden />
               </div>
             )}
-            <div className="relative z-10 px-6 py-8 md:px-8 md:py-10">
+            <div className={cn("relative z-10 px-6 py-8 md:px-8 md:py-10", featuredInkDark && "pro-featured-ink-dark")}>
             {featuredLook && pro.page_header_text && (
               <div className="prose prose-lg md:prose-xl max-w-none mb-8 text-white prose-headings:text-white prose-p:text-white/85 whitespace-pre-wrap">
                 {pro.page_header_text}
@@ -1475,7 +1482,7 @@ export default function ProProfilePage() {
                 <StarBorder as="div" color="rgba(0,0,0,0.08)" speed="4s" thickness={2} className="w-full mb-3" innerClassName="!bg-transparent !border-0 !p-0">
                   <Button
                     className="w-full min-h-12 py-4 text-base font-semibold gap-2 rounded-lg border-2 text-white hover:opacity-90"
-                    style={{ backgroundColor: actionColor || "hsl(var(--primary))", borderColor: actionColor || "hsl(var(--primary))" }}
+                    style={{ backgroundColor: actionColor || "hsl(var(--primary))", borderColor: actionColor || "hsl(var(--primary))", color: actionInk }}
                     onClick={() => {
                       if (services.length > 1) {
                         setAllServicesModalOpen(true);
@@ -1491,7 +1498,7 @@ export default function ProProfilePage() {
                 ) : (
                   <Button
                     className="w-full min-h-12 py-4 text-base font-semibold gap-2 rounded-lg border-2 text-white hover:opacity-90 mb-3"
-                    style={{ backgroundColor: actionColor || "hsl(var(--primary))", borderColor: actionColor || "hsl(var(--primary))" }}
+                    style={{ backgroundColor: actionColor || "hsl(var(--primary))", borderColor: actionColor || "hsl(var(--primary))", color: actionInk }}
                     onClick={() => {
                       if (services.length > 1) {
                         setAllServicesModalOpen(true);
@@ -1601,7 +1608,7 @@ export default function ProProfilePage() {
                         setAllServicesModalOpen(false);
                         setBookingDialogOpen(true);
                       }}
-                      style={actionColor ? { backgroundColor: actionColor, borderColor: actionColor } : undefined}
+                      style={actionColor ? { backgroundColor: actionColor, borderColor: actionColor, color: actionInk } : undefined}
                       className={!actionColor ? "" : "text-white border-2"}
                     >
                       {t.profile?.bookThisService ?? "Book"}

@@ -138,7 +138,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
 import { serviceCategories } from "@/data/services";
-import { PRO_PAGE_COLOR_SCHEMES, getSchemeById, getSchemeIdFromColors } from "@/data/proPageColorSchemes";
+import { PRO_PAGE_COLOR_SCHEMES, DEFAULT_PRO_PAGE_COLOR_SCHEME, getSchemeById, resolveProPageScheme, schemeLabel } from "@/data/proPageColorSchemes";
 import { SERVICE_TAG_OPTIONS } from "@/data/serviceTags";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { PRO_BOOKING_SELECT, useProBookingsRealtime, type ProBookingRealtimeRow } from "@/hooks/useProBookingsRealtime";
@@ -572,11 +572,11 @@ export default function Dashboard() {
   const [clientReviewPhotoPreviews, setClientReviewPhotoPreviews] = useState<string[]>([]);
   // Pro page aesthetic editing (template + colors) in dashboard
   const [proPageTemplate, setProPageTemplate] = useState<string>("classic");
-  const [proPageColorSchemeId, setProPageColorSchemeId] = useState<string>("navyTeal");
-  const [proPagePrimaryColor, setProPagePrimaryColor] = useState("#1e3a5f");
-  const [proPageSecondaryColor, setProPageSecondaryColor] = useState("#0d9488");
-  const [proPageAccentColor, setProPageAccentColor] = useState("#e0f2f1");
-  const [proPageBackgroundColor, setProPageBackgroundColor] = useState("#f8fafc");
+  const [proPageColorSchemeId, setProPageColorSchemeId] = useState<string>(DEFAULT_PRO_PAGE_COLOR_SCHEME.id);
+  const [proPagePrimaryColor, setProPagePrimaryColor] = useState(DEFAULT_PRO_PAGE_COLOR_SCHEME.primary);
+  const [proPageSecondaryColor, setProPageSecondaryColor] = useState(DEFAULT_PRO_PAGE_COLOR_SCHEME.secondary);
+  const [proPageAccentColor, setProPageAccentColor] = useState(DEFAULT_PRO_PAGE_COLOR_SCHEME.accent);
+  const [proPageBackgroundColor, setProPageBackgroundColor] = useState(DEFAULT_PRO_PAGE_COLOR_SCHEME.background);
   const [proPageHeaderText, setProPageHeaderText] = useState("");
   const [proServiceTags, setProServiceTags] = useState<string[]>([]);
   const [savingProAesthetic, setSavingProAesthetic] = useState(false);
@@ -1876,21 +1876,13 @@ export default function Dashboard() {
     const template = p.page_template || "classic";
     setProPageTemplate(template === "bold" || template === "warm" || template === "minimal" ? "classic" : template);
     setProPageHeaderText(p.page_header_text ?? "");
-    const schemeId = getSchemeIdFromColors(p.page_primary_color ?? null, p.page_secondary_color ?? null);
-    setProPageColorSchemeId(schemeId || "navyTeal");
-    if (p.page_primary_color) setProPagePrimaryColor(p.page_primary_color);
-    if (p.page_secondary_color) setProPageSecondaryColor(p.page_secondary_color);
-    if (p.page_accent_color) setProPageAccentColor(p.page_accent_color);
-    if (p.page_background_color) setProPageBackgroundColor(p.page_background_color);
-    if (!p.page_primary_color && !p.page_secondary_color) {
-      const def = getSchemeById("navyTeal");
-      if (def) {
-        setProPagePrimaryColor(def.primary);
-        setProPageSecondaryColor(def.secondary);
-        setProPageAccentColor(def.accent);
-        setProPageBackgroundColor(def.background);
-      }
-    }
+    // Saved colours outside the current palette resolve to the closest palette colour.
+    const scheme = resolveProPageScheme(p.page_primary_color ?? null);
+    setProPageColorSchemeId(scheme.id);
+    setProPagePrimaryColor(scheme.primary);
+    setProPageSecondaryColor(scheme.secondary);
+    setProPageAccentColor(scheme.accent);
+    setProPageBackgroundColor(scheme.background);
     setProServiceTags(Array.isArray(p.service_tags) ? p.service_tags : []);
   }, [proProfile?.id]);
 
@@ -4525,10 +4517,9 @@ export default function Dashboard() {
                           <p className="text-sm font-medium text-foreground mb-2">{t.createPro.colorSchemeLabel ?? "Color scheme"}</p>
                           <div className="sm:hidden">
                             {(() => {
-                              const selectedScheme = getSchemeById(proPageColorSchemeId) ?? PRO_PAGE_COLOR_SCHEMES[0];
+                              const selectedScheme = getSchemeById(proPageColorSchemeId) ?? DEFAULT_PRO_PAGE_COLOR_SCHEME;
                               const selectedLabel =
-                                (t.createPro as Record<string, string>)[`scheme${selectedScheme.id.charAt(0).toUpperCase()}${selectedScheme.id.slice(1)}`] ??
-                                selectedScheme.id;
+                                schemeLabel(selectedScheme, locale);
 
                               return (
                                 <div className="relative">
@@ -4537,13 +4528,13 @@ export default function Dashboard() {
                                     onClick={() => setMobileColorSchemeOpen((open) => !open)}
                                     className="relative min-h-12 w-full overflow-hidden rounded-lg border border-foreground/30 px-3 py-2 text-left text-sm font-semibold text-white shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                     style={{
-                                      background: `linear-gradient(135deg, ${selectedScheme.primary} 0%, ${selectedScheme.secondary} 62%, ${selectedScheme.accent} 160%)`,
+                                      background: `linear-gradient(135deg, ${selectedScheme.primary} 0%, ${selectedScheme.primary} 68%, ${selectedScheme.secondary} 100%)`,
+                                      color: selectedScheme.ink,
                                     }}
                                     aria-expanded={mobileColorSchemeOpen}
                                   >
-                                    <span className="absolute inset-0 bg-black/20" />
                                     <span className="relative z-10 flex items-center justify-between gap-2">
-                                      <span className="truncate drop-shadow-sm">{selectedLabel}</span>
+                                      <span className="truncate">{selectedLabel}</span>
                                       <span className="shrink-0 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-950">
                                         {locale === "fr" ? "Changer" : "Change"}
                                       </span>
@@ -4556,8 +4547,7 @@ export default function Dashboard() {
                                         {PRO_PAGE_COLOR_SCHEMES.map((scheme) => {
                                           const isSelected = proPageColorSchemeId === scheme.id;
                                           const label =
-                                            (t.createPro as Record<string, string>)[`scheme${scheme.id.charAt(0).toUpperCase()}${scheme.id.slice(1)}`] ??
-                                            scheme.id;
+                                            schemeLabel(scheme, locale);
                                           return (
                                             <button
                                               key={scheme.id}
@@ -4586,12 +4576,12 @@ export default function Dashboard() {
                                                 isSelected ? "border-foreground ring-2 ring-foreground/40" : "border-white/20"
                                               }`}
                                               style={{
-                                                background: `linear-gradient(135deg, ${scheme.primary} 0%, ${scheme.secondary} 62%, ${scheme.accent} 160%)`,
+                                                background: `linear-gradient(135deg, ${scheme.primary} 0%, ${scheme.primary} 68%, ${scheme.secondary} 100%)`,
+                                      color: scheme.ink,
                                               }}
                                             >
-                                              <span className="absolute inset-0 bg-black/20" />
                                               <span className="relative z-10 flex items-center justify-between gap-2">
-                                                <span className="truncate drop-shadow-sm">{label}</span>
+                                                <span className="truncate">{label}</span>
                                                 {isSelected ? (
                                                   <span className="shrink-0 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-950">
                                                     {locale === "fr" ? "Choisi" : "Selected"}
@@ -4613,8 +4603,7 @@ export default function Dashboard() {
                             {PRO_PAGE_COLOR_SCHEMES.map((scheme) => {
                               const isSelected = proPageColorSchemeId === scheme.id;
                               const label =
-                                (t.createPro as Record<string, string>)[`scheme${scheme.id.charAt(0).toUpperCase()}${scheme.id.slice(1)}`] ??
-                                scheme.id;
+                                schemeLabel(scheme, locale);
                               return (
                                 <button
                                   key={scheme.id}
@@ -4642,13 +4631,13 @@ export default function Dashboard() {
                                     isSelected ? "border-foreground ring-2 ring-foreground/40 ring-offset-2 ring-offset-background" : "border-white/20"
                                   }`}
                                   style={{
-                                    background: `linear-gradient(135deg, ${scheme.primary} 0%, ${scheme.secondary} 62%, ${scheme.accent} 160%)`,
+                                    background: `linear-gradient(135deg, ${scheme.primary} 0%, ${scheme.primary} 68%, ${scheme.secondary} 100%)`,
+                                      color: scheme.ink,
                                   }}
                                   aria-pressed={isSelected}
                                 >
-                                  <span className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/10" />
                                   <span className="relative z-10 flex items-center justify-between gap-2">
-                                    <span className="truncate drop-shadow-sm">{label}</span>
+                                    <span className="truncate">{label}</span>
                                     {isSelected ? (
                                       <span className="shrink-0 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-950">
                                         {locale === "fr" ? "Choisi" : "Selected"}

@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { Star } from "lucide-react";
 import Iphone from "@/components/Iphone";
 import { cn } from "@/lib/utils";
+import { bestInkOn } from "@/lib/contrastOnHex";
 
 export type TemplateId = "classic" | "soft" | "interactive";
 
@@ -38,7 +39,7 @@ function fullScreenPaint(
   secondaryColor: string,
   backgroundColor: string
 ): string {
-  const p = primaryColor || "#1e3a5f";
+  const p = primaryColor || "#49658A";
   const s = (secondaryColor || p).trim() || p;
   const bg = (backgroundColor || "#f1f5f9").trim() || "#f1f5f9";
   if (template === "soft") {
@@ -71,7 +72,9 @@ export default function ProPagePhonePreview({
   const sheetDark = siteTheme === "dark";
   const isSoft = template === "soft";
   const isInteractive = template === "interactive";
-  const calendarColor = primaryColor || "#1e3a5f";
+  const calendarColor = primaryColor || "#49658A";
+  /** Dark text on light palette colours (Dusty Rose, Burnt Terracotta, Antique Gold) for WCAG AA. */
+  const inkDark = bestInkOn(primaryColor || "#49658A") === "#000000";
 
   const statusBarStyle: CSSProperties = {
     // subtle “dynamic island” pill — still reads as generic phone, not a notch row
@@ -98,7 +101,7 @@ export default function ProPagePhonePreview({
         </div>
 
         {/* Hero (text only — paint shows through) */}
-        <div className="shrink-0 px-3 pb-4 pt-1 text-white">
+        <div className={cn("shrink-0 px-3 pb-4 pt-1 text-white", inkDark && "pro-featured-ink-dark")}>
           <div className="mb-2 text-[8px] opacity-80">← Back</div>
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 shrink-0 rounded-full border-2 border-white/35 bg-white/18" />
@@ -120,7 +123,7 @@ export default function ProPagePhonePreview({
         </div>
 
         <div
-          className="flex shrink-0 items-center justify-between border-t border-white/18 px-3 py-2"
+          className={cn("flex shrink-0 items-center justify-between border-t border-white/18 px-3 py-2", inkDark && "pro-featured-ink-dark")}
           style={{ backgroundColor: hexWithAlpha(calendarColor, 0.28) }}
         >
           <span className="text-[8px] font-medium text-white/95">Availability</span>
