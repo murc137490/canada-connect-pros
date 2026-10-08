@@ -5,6 +5,7 @@ import { Loader2, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import AvatarCircles, { type AvatarItem } from "@/components/AvatarCircles";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { isPubliclyListablePro } from "@/lib/publicProListing";
 
 interface ProItem {
   id: string;
@@ -36,14 +37,34 @@ export default function RecommendationSidebar({
     const fetchSimilarPros = async () => {
       setLoading(true);
 
-      const { data: proData } = await supabase
+      let candidateIds: string[] | null = null;
+      if (categorySlug || serviceSlug) {
+        let svcQuery = supabase.from("pro_services").select("pro_profile_id");
+        if (categorySlug) svcQuery = svcQuery.eq("category_slug", categorySlug);
+        if (serviceSlug) svcQuery = svcQuery.eq("service_slug", serviceSlug);
+        const { data: svcRows } = await svcQuery.limit(80);
+        candidateIds = [...new Set((svcRows ?? []).map((r) => r.pro_profile_id).filter(Boolean))];
+        if (candidateIds.length === 0) {
+          setProfileCards([]);
+          setAvatarItems([]);
+          setTotalCount(0);
+          setLoading(false);
+          return;
+        }
+      }
+
+      let q = supabase
         .from("pro_profiles")
-        .select("id, user_id, business_name")
+        .select("id, user_id, business_name, phone, is_verified")
         .eq("is_verified", true)
         .neq("id", currentProId)
-        .limit(20);
+        .limit(40);
+      if (candidateIds) q = q.in("id", candidateIds);
 
-      if (!proData?.length) {
+      const { data: proDataRaw } = await q;
+      const proData = (proDataRaw ?? []).filter((p) => isPubliclyListablePro(p)).slice(0, 20);
+
+      if (!proData.length) {
         setProfileCards([]);
         setAvatarItems([]);
         setTotalCount(0);
@@ -73,11 +94,11 @@ export default function RecommendationSidebar({
             .from("public_profiles")
             .select("avatar_url")
             .eq("user_id", pro.user_id)
-            .single();
+            .maybeSingle();
           if (profile?.avatar_url) imageUrl = profile.avatar_url;
         }
 
-        allItems.push({ ...pro, imageUrl: imageUrl || PLACEHOLDER_AVATAR });
+        allItems.push({ id: pro.id, user_id: pro.user_id, business_name: pro.business_name, imageUrl: imageUrl || PLACEHOLDER_AVATAR });
         avatarList.push({ imageUrl: imageUrl || PLACEHOLDER_AVATAR, profileUrl: `/pros/${pro.id}` });
       }
 
@@ -88,7 +109,7 @@ export default function RecommendationSidebar({
     };
 
     fetchSimilarPros();
-  }, [currentProId]);
+  }, [currentProId, categorySlug, serviceSlug]);
 
   if (loading) {
     return (

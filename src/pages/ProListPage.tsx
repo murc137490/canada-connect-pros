@@ -17,6 +17,7 @@ import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { useToast } from "@/hooks/use-toast";
 import { filterAdvertiseableProIds } from "@/lib/filterAdvertiseablePros";
 import { isDemoAccount, isDemoProProfile } from "@/lib/demoAccount";
+import { isPubliclyListablePro } from "@/lib/publicProListing";
 import ServiceJobsList from "@/components/services/ServiceJobsList";
 
 export default function ProListPage() {
@@ -104,6 +105,7 @@ export default function ProListPage() {
       const advertiseable = await filterAdvertiseableProIds(proData.map((p) => p.id));
       const filteredProData = proData.filter((p) => {
         if (!isShowcaseUser && isDemoProProfile(p)) return false;
+        if (!isShowcaseUser && !isPubliclyListablePro({ ...p, is_verified: true })) return false;
         return true;
       });
       const listedPros = filteredProData.filter(

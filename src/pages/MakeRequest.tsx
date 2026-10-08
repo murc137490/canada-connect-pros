@@ -361,16 +361,12 @@ export default function MakeRequest() {
 
   const setBudgetMinLive = (raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 6);
-    const next = clampBudgetBases(digits, budgetMax);
-    setBudgetMin(next.min);
-    setBudgetMax(next.max);
+    setBudgetMin(digits);
   };
 
   const setBudgetMaxLive = (raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 6);
-    const next = clampBudgetBases(budgetMin, digits);
-    setBudgetMin(next.min);
-    setBudgetMax(next.max);
+    setBudgetMax(digits);
   };
 
   const enforceBudgetFloor = () => {

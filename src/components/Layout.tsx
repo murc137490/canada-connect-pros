@@ -96,9 +96,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [locale, allServicesCatalog]);
 
   const { activeVerifiedPro, ready: activeVerifiedProReady } = useActiveVerifiedPro(user?.id);
+  const [hasProProfile, setHasProProfile] = useState(false);
   const [proProfileVerified, setProProfileVerified] = useState(false);
   useEffect(() => {
     if (!user) {
+      setHasProProfile(false);
       setProProfileVerified(false);
       return;
     }
@@ -109,6 +111,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         .eq("user_id", user.id)
         .limit(1)
         .maybeSingle();
+      setHasProProfile(!!data);
       setProProfileVerified(!!data?.is_verified);
       try {
         localStorage.setItem(`proProfile:${user.id}`, (!!data).toString());
@@ -199,7 +202,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       ]
     : [
         { label: t.dashboard.myAccount, link: "/dashboard?tab=account", emoji: "👤", show: true },
-        { label: t.dashboard.proProfile, link: "/dashboard?tab=pro", emoji: "💼", show: proProfileVerified },
+        {
+          label: hasProProfile && !proProfileVerified
+            ? (locale === "fr" ? "Profil pro (en attente)" : "Pro profile (pending)")
+            : t.dashboard.proProfile,
+          link: "/dashboard?tab=pro",
+          emoji: "💼",
+          show: hasProProfile,
+        },
         {
           label: t.dashboard.bookings,
           link: "/dashboard?tab=bookings",
@@ -207,9 +217,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           show: true,
           badge: notificationCount > 0 ? notificationCount : undefined,
         },
-        { label: t.dashboard.favorites, link: "/dashboard?tab=favorites", emoji: "❤️", show: true },
+        // Client-only extras stay hidden once the user has a pro application (pending or verified).
+        { label: t.dashboard.favorites, link: "/dashboard?tab=favorites", emoji: "❤️", show: !hasProProfile },
         { label: t.dashboard.reviews, link: "/dashboard?tab=reviews", emoji: "⭐", show: true },
         { label: t.dashboard.invoices, link: "/dashboard?tab=invoices", emoji: "📄", show: true },
+        { label: locale === "fr" ? "Choisir un forfait" : "Choose a plan", link: "/pro-plans", emoji: "💳", show: hasProProfile && !proProfileVerified },
         { label: t.dashboard.admin, link: "/dashboard?tab=admin", emoji: "🛡️", show: false },
       ];
 

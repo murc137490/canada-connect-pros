@@ -360,15 +360,16 @@ type JobQuote = {
 
 /** If optional columns are missing, fall back to smaller selects. */
 async function fetchJobRequestsForClient(userId: string) {
-  const full =
-    "id, description, category, city, province, budget_range, timing, preferred_date, preferred_time_window, preferred_datetime, scheduling_mode, time_window_code, range_start_date, range_end_date, exact_time, window_time_start, window_time_end, status, created_at";
+  // preferred_datetime was never in migrations; avoid a guaranteed 400 on every dashboard load.
+  const withScheduling =
+    "id, description, category, city, province, budget_range, timing, preferred_date, preferred_time_window, scheduling_mode, time_window_code, range_start_date, range_end_date, exact_time, window_time_start, window_time_end, status, created_at";
   const withPreferred =
     "id, description, category, city, province, budget_range, timing, preferred_date, preferred_time_window, status, created_at";
   const base =
     "id, description, category, city, province, budget_range, timing, status, created_at";
   let res = await supabase
     .from("job_requests")
-    .select(full)
+    .select(withScheduling)
     .eq("client_id", userId)
     .order("created_at", { ascending: false });
   if (res.error) {
@@ -6432,7 +6433,7 @@ export default function Dashboard() {
                                   )}
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                  {new Date(b.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })} �{" "}
+                                  {new Date(b.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })} ·{" "}
                                   <span className="font-medium text-foreground/90">{statusLabel}</span>
                                 </p>
                                 <p className="text-xs text-muted-foreground">{responseClientLine}</p>
