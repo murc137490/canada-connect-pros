@@ -26,7 +26,11 @@ const DEFAULT_FROM_EMAIL = "support@altshift.ca";
 /** Optional env-only fallback sender if the primary sender is refused by Resend. */
 const FALLBACK_FROM_EMAIL = Deno.env.get("RESEND_FALLBACK_FROM_EMAIL")?.trim() ?? "";
 const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? DEFAULT_FROM_EMAIL;
-const FROM_NAME = Deno.env.get("FROM_NAME") ?? "AltShift";
+/**
+ * Display name is always the brand. The FROM_NAME secret is ignored on purpose:
+ * it still carries a legacy business name that must not reach customers.
+ */
+const FROM_NAME = "AltShift";
 const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "support@altshift.ca";
 const SITE_URL = trimTrailingSlash(
   Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.altshift.ca",
