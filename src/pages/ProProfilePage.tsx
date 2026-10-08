@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Briefcase, Check,
-  ShieldCheck, CalendarCheck, CreditCard, ChevronRight, ChevronDown, Share2, Info, X, Heart, Sparkles
+  ShieldCheck, CalendarCheck, CreditCard, ChevronRight, ChevronDown, Share2, Info, X, Heart, Sparkles, Clock
 } from "lucide-react";
 import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { serviceCategories } from "@/data/services";
@@ -41,6 +41,8 @@ import { buildClientInvoiceContactBlock } from "@/lib/clientInvoiceContactBlock"
 import type { AvailabilityState } from "@/components/WeekdayAvailability";
 import { isReservedShareSlug, isUuidLike } from "@/lib/proShareSlug";
 import { useAuth } from "@/contexts/AuthContext";
+import { untypedDb } from "@/lib/untypedSupabase";
+import { responseTimeLabel } from "@/lib/growthTools";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { isDemoAccount, isDemoProProfile } from "@/lib/demoAccount";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -499,6 +501,76 @@ export default function ProProfilePage() {
     );
   }, [proId, user?.id, services, searchParams, setSearchParams]);
 
+  /** Book Again (/book-again/:id → ?rebook=id): same service, place and time slot as a past booking. */
+  const [rebookPrefTime, setRebookPrefTime] = useState<string | null>(null);
+  useEffect(() => {
+    const rebookId = searchParams.get("rebook");
+    if (!rebookId || !proId || !user?.id || services.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      const { data } = await untypedDb
+        .from("bookings")
+        .select("id, client_id, pro_profile_id, service_category_slug, service_slug, preferred_time, client_renews_annually")
+        .eq("id", rebookId)
+        .maybeSingle();
+      if (cancelled) return;
+      const b = data as {
+        client_id: string;
+        pro_profile_id: string;
+        service_category_slug: string | null;
+        service_slug: string | null;
+        preferred_time: string | null;
+        client_renews_annually: boolean | null;
+      } | null;
+      if (b && b.client_id === user.id && b.pro_profile_id === proId) {
+        const match = services.find((s) => s.category_slug === b.service_category_slug && s.service_slug === b.service_slug);
+        if (match) setSelectedBookingService(match);
+        const { data: loc } = await untypedDb.from("bookings").select("service_location_choice").eq("id", rebookId).maybeSingle();
+        if (cancelled) return;
+        const choice = (loc as { service_location_choice?: string | null } | null)?.service_location_choice;
+        if (choice === "workspace" || choice === "travel") setBookingLocationChoice(choice);
+        setRebookPrefTime(b.preferred_time ? String(b.preferred_time).slice(0, 5) : null);
+        setBookingClientRenewAnnually(Boolean(b.client_renews_annually));
+        setBookingDialogOpen(true);
+        toast({
+          title: locale === "fr" ? "Réserver à nouveau" : "Book again",
+          description:
+            locale === "fr"
+              ? "Même service et même lieu que votre dernière réservation. Choisissez une date; nous reprenons la même heure si elle est libre."
+              : "Same service and place as your last booking. Pick a date; we'll keep the same time if it's free.",
+        });
+      }
+      setSearchParams(
+        (prev) => {
+          const n = new URLSearchParams(prev);
+          n.delete("rebook");
+          return n;
+        },
+        { replace: true },
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proId, user?.id, services, searchParams, setSearchParams]);
+
+  /** Public response time (Growth/Pro only; the RPC returns nothing for other tiers or too little data). */
+  const [responseTimeText, setResponseTimeText] = useState<string | null>(null);
+  useEffect(() => {
+    if (!proId) return;
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await untypedDb.rpc("pro_response_time_summary", { p_pro_profile_id: proId });
+      if (cancelled || error) return;
+      const row = (Array.isArray(data) ? data[0] : data) as { median_minutes?: number | null; sample_size?: number | null } | null;
+      setResponseTimeText(row?.median_minutes != null ? responseTimeLabel(row.median_minutes, locale === "fr" ? "fr" : "en") : null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [proId, locale]);
+
   useEffect(() => {
     if (!user?.id) {
       setClientInvoiceAddress(null);
@@ -719,6 +791,11 @@ export default function ProProfilePage() {
     if (!selectedBookingTime) return;
     if (!bookingTimeOptions.includes(selectedBookingTime)) setSelectedBookingTime(null);
   }, [bookingTimeOptions, selectedBookingTime]);
+
+  useEffect(() => {
+    if (!rebookPrefTime || !selectedBookingDate || selectedBookingTime) return;
+    if (bookingTimeOptions.includes(rebookPrefTime)) setSelectedBookingTime(rebookPrefTime);
+  }, [rebookPrefTime, selectedBookingDate, selectedBookingTime, bookingTimeOptions]);
 
   const scheduleClientNote = useMemo(() => {
     if (!pro || !selectedBookingDate) return "";
@@ -1147,6 +1224,14 @@ export default function ProProfilePage() {
                     {reviewCount}
                   </span>
                 </div>
+                {responseTimeText ? (
+                  <p
+                    className={cn("mt-1.5 inline-flex items-center gap-1.5 text-sm", featuredLook ? "text-white/85" : "text-neutral-800 dark:text-zinc-300")}
+                    data-testid="pro-response-time"
+                  >
+                    <Clock size={14} aria-hidden /> {responseTimeText}
+                  </p>
+                ) : null}
                 <div className="flex flex-wrap items-center gap-2 mt-3">
                   <button
                     type="button"
@@ -2080,6 +2165,7 @@ export default function ProProfilePage() {
                       <BookingServiceAssistantPanel
                         enabled
                         locale={locale === "fr" ? "fr" : "en"}
+                        proProfileId={pro.id}
                         proBusinessName={pro.business_name}
                         serviceName={serviceLineLabel(selectedBookingService)}
                         serviceDescription={selectedBookingService.description}
