@@ -79,7 +79,7 @@ export default function ProPlansFreeTrial() {
   const bullets = useMemo(
     () => [
       gt?.bullet1 ?? "Growth tier access for leads, client tools, and repeat booking features.",
-      gt?.bullet2 ?? "No public navigation points to this special trial page.",
+      gt?.bullet2 ?? "Save a payment method to start. You will not be charged until the trial ends.",
       gt?.bullet3 ?? "One trial per account, Square payment profile, and network limits.",
     ],
     [gt?.bullet1, gt?.bullet2, gt?.bullet3]

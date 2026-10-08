@@ -29,6 +29,7 @@ function TierCard({
   isCurrent,
   currentPlanLabel,
   onSelect,
+  subscribeLabel,
 }: {
   name: string;
   price: string;
@@ -42,6 +43,7 @@ function TierCard({
   isCurrent?: boolean;
   currentPlanLabel?: string;
   onSelect?: (tier: ProPlanId) => void;
+  subscribeLabel?: string;
 }) {
   const nameEl =
     nameVariant === "starter" ? (
@@ -98,6 +100,13 @@ function TierCard({
       <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border shrink-0">
         {bestFor}
       </p>
+      {interactive && onSelect && !isCurrent ? (
+        <div className="mt-4 shrink-0">
+          <span className="inline-flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">
+            {subscribeLabel ?? "Subscribe"}
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 
@@ -145,7 +154,7 @@ export default function ProPlansContent({
   currentPlanId = null,
   onSelectPlan,
 }: ProPlansContentProps = {}) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
   const showProfileCta =
@@ -195,6 +204,7 @@ export default function ProPlansContent({
             isCurrent={currentPlanId === "starter"}
             currentPlanLabel={plans?.currentPlanBadge}
             onSelect={interactive && onSelectPlan ? handleTierClick : undefined}
+            subscribeLabel={(plans as { subscribeCta?: string } | undefined)?.subscribeCta ?? (locale === "fr" ? "S'abonner" : "Subscribe")}
           />
         </div>
         <div className="min-h-[420px] flex">
@@ -209,6 +219,7 @@ export default function ProPlansContent({
             isCurrent={currentPlanId === "growth"}
             currentPlanLabel={plans?.currentPlanBadge}
             onSelect={interactive && onSelectPlan ? handleTierClick : undefined}
+            subscribeLabel={(plans as { subscribeCta?: string } | undefined)?.subscribeCta ?? (locale === "fr" ? "S'abonner" : "Subscribe")}
           />
         </div>
         <div className="min-h-[420px] flex">
@@ -224,6 +235,7 @@ export default function ProPlansContent({
             isCurrent={currentPlanId === "pro"}
             currentPlanLabel={plans?.currentPlanBadge}
             onSelect={interactive && onSelectPlan ? handleTierClick : undefined}
+            subscribeLabel={(plans as { subscribeCta?: string } | undefined)?.subscribeCta ?? (locale === "fr" ? "S'abonner" : "Subscribe")}
           />
         </div>
       </div>

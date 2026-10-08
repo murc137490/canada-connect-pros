@@ -28,7 +28,7 @@ import { computeNextBillingMomentIso } from "@/lib/proration";
 import { dispatchProPlanPaidEvent } from "@/lib/proPlanPaidEvent";
 
 export default function ProPlansManagement() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { t, locale } = useLanguage();
   const { toast } = useToast();
@@ -76,6 +76,7 @@ export default function ProPlansManagement() {
   }, [user]);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate("/auth?mode=login&redirect=/pro-plans", { replace: true });
       return;
@@ -98,7 +99,7 @@ export default function ProPlansManagement() {
     return () => {
       cancelled = true;
     };
-  }, [user, navigate, refreshPlan]);
+  }, [user, authLoading, navigate, refreshPlan]);
 
   useEffect(() => {
     if (!proChecked || !proProfileId) return;
@@ -204,8 +205,7 @@ export default function ProPlansManagement() {
     }
   };
 
-  if (!user) return null;
-  if (!proChecked) {
+  if (authLoading || !user || !proChecked) {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center">

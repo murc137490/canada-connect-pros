@@ -99,11 +99,11 @@ const App = () => (
               <Route path="/services/:categorySlug/:serviceSlug/pros" element={<ProListPage />} />
               <Route path="/pros/:proId" element={<ProProfilePage />} />
               <Route path="/join-pros" element={<MonitorAdminGuard><JoinPros /></MonitorAdminGuard>} />
-              <Route path="/join-pros/plans" element={<MonitorAdminGuard><ProPlans /></MonitorAdminGuard>} />
-              <Route path="/pro-plans/trial" element={<MonitorAdminGuard><ProPlansFreeTrial /></MonitorAdminGuard>} />
-              <Route path="/pro-plans/freetrial" element={<MonitorAdminGuard><ProPlansFreeTrial /></MonitorAdminGuard>} />
-              <Route path="/pro-plans" element={<MonitorAdminGuard><ProPlansManagement /></MonitorAdminGuard>} />
-              <Route path="/pro-plans/cancel" element={<MonitorAdminGuard><ProPlanCancel /></MonitorAdminGuard>} />
+              <Route path="/join-pros/plans" element={<ProPlans />} />
+              <Route path="/pro-plans/trial" element={<ProPlansFreeTrial />} />
+              <Route path="/pro-plans/freetrial" element={<ProPlansFreeTrial />} />
+              <Route path="/pro-plans" element={<ProPlansManagement />} />
+              <Route path="/pro-plans/cancel" element={<ProPlanCancel />} />
               <Route path="/pro-plans/checkout" element={<Navigate to="/pro-plans" replace />} />
               <Route path="/create-pro-account" element={<MonitorAdminGuard><CreateProAccount /></MonitorAdminGuard>} />
               <Route path="/pro-onboarding/start" element={<MonitorAdminGuard><ProOnboardingStart /></MonitorAdminGuard>} />
