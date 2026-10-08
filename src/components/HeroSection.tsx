@@ -59,15 +59,39 @@ interface SearchResponse {
   }[];
 }
 
-/** Find a service by name (exact or contains match, case-insensitive) for navigation */
+/** Common EN/FR keywords → service/category (so "plumber" finds Plumbing Services). */
+const SERVICE_SEARCH_ALIASES: { keywords: string[]; categorySlug: string; serviceSlug: string }[] = [
+  { keywords: ["plumber", "plumbing", "plombier", "plomberie"], categorySlug: "home-improvement", serviceSlug: "plumbing-services" },
+  { keywords: ["electrician", "electrical", "électricien", "electricien", "électricité", "electricite"], categorySlug: "home-improvement", serviceSlug: "electrical-services" },
+  { keywords: ["hvac", "heating", "cooling", "climatisation", "chauffage"], categorySlug: "home-improvement", serviceSlug: "hvac-services" },
+  { keywords: ["cleaner", "cleaning", "ménage", "menage", "housekeeping"], categorySlug: "cleaning", serviceSlug: "house-cleaning" },
+  { keywords: ["roofer", "roofing", "toiture", "couvreur"], categorySlug: "home-improvement", serviceSlug: "roof-repair" },
+  { keywords: ["painter", "painting", "peintre", "peinture"], categorySlug: "home-improvement", serviceSlug: "interior-painting" },
+  { keywords: ["landscaper", "landscaping", "paysagiste", "aménagement", "amenagement"], categorySlug: "outdoor-seasonal", serviceSlug: "landscaping-services" },
+];
+
+/** Find a service by name, alias keyword, or contains match (case-insensitive). */
 function findServiceByName(serviceName: string): { categorySlug: string; serviceSlug: string } | null {
   const name = serviceName.trim().toLowerCase();
   if (!name) return null;
   const all = getAllServices();
   const exact = all.find((s) => s.name.toLowerCase() === name);
   if (exact) return { categorySlug: exact.categorySlug, serviceSlug: exact.slug };
+  for (const alias of SERVICE_SEARCH_ALIASES) {
+    if (alias.keywords.some((k) => name === k || name.includes(k) || k.includes(name))) {
+      const hit = all.find((s) => s.slug === alias.serviceSlug && s.categorySlug === alias.categorySlug);
+      if (hit) return { categorySlug: hit.categorySlug, serviceSlug: hit.slug };
+      return { categorySlug: alias.categorySlug, serviceSlug: alias.serviceSlug };
+    }
+  }
   const partial = all.find((s) => s.name.toLowerCase().includes(name) || name.includes(s.name.toLowerCase()));
   if (partial) return { categorySlug: partial.categorySlug, serviceSlug: partial.slug };
+  // Also match FR names from bilingual catalog via slugify-ish contains on service name tokens
+  const tokenHit = all.find((s) => {
+    const tokens = s.name.toLowerCase().split(/[^a-z0-9àâäéèêëïîôùûüç]+/i).filter((t) => t.length >= 4);
+    return tokens.some((t) => name.includes(t) || t.includes(name));
+  });
+  if (tokenHit) return { categorySlug: tokenHit.categorySlug, serviceSlug: tokenHit.slug };
   return null;
 }
 
@@ -363,7 +387,20 @@ export default function HeroSection() {
         if (response.ok) {
           setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
           setClarifyingMessage(data.clarifyingMessage ?? null);
-          setBestMatch(data.bestMatch ?? null);
+          let match = data.bestMatch ?? null;
+          if (!match?.serviceSlug) {
+            const local = findServiceByName(cleaned);
+            if (local) {
+              const svc = getAllServices().find((s) => s.slug === local.serviceSlug && s.categorySlug === local.categorySlug);
+              match = {
+                serviceName: svc?.name ?? cleaned,
+                categoryName: svc?.category ?? null,
+                serviceSlug: local.serviceSlug,
+                categorySlug: local.categorySlug,
+              };
+            }
+          }
+          setBestMatch(match);
           const follow =
             Array.isArray(data.followUpMatches) && data.followUpMatches.length > 0
               ? data.followUpMatches
@@ -372,8 +409,21 @@ export default function HeroSection() {
                 : [];
           setFollowUpMatches(follow.filter((x) => x?.serviceSlug));
         } else {
-          setSuggestions([]);
-          setError(true);
+          const local = findServiceByName(cleaned);
+          if (local) {
+            const svc = getAllServices().find((s) => s.slug === local.serviceSlug && s.categorySlug === local.categorySlug);
+            setBestMatch({
+              serviceName: svc?.name ?? cleaned,
+              categoryName: svc?.category ?? null,
+              serviceSlug: local.serviceSlug,
+              categorySlug: local.categorySlug,
+            });
+            setSuggestions([]);
+            setError(false);
+          } else {
+            setSuggestions([]);
+            setError(true);
+          }
         }
       } catch {
         setSuggestions([]);
@@ -444,7 +494,16 @@ export default function HeroSection() {
       });
       if (postalResolved.city) geoParams.set("city", postalResolved.city);
       if (postalResolved.province) geoParams.set("province", postalResolved.province);
-      if (bestMatch || suggestions.length > 0 || followUpMatches.length > 0) {
+      const localService = findServiceByName(q);
+      if (localService) {
+        navigate(`/services/${localService.categorySlug}/${localService.serviceSlug}/pros?${geoParams.toString()}`);
+        return;
+      }
+      if (bestMatch?.categorySlug && bestMatch?.serviceSlug) {
+        navigate(`/services/${bestMatch.categorySlug}/${bestMatch.serviceSlug}/pros?${geoParams.toString()}`);
+        return;
+      }
+      if (bestMatch || suggestions.length > 0 || followUpMatches.length > 0 || proNameMatches.length > 0) {
         navigate(`/services?q=${encodeURIComponent(q)}&${geoParams.toString()}`);
       } else {
         runSearch(q);
@@ -587,6 +646,13 @@ export default function HeroSection() {
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => setTextareaFocused(true)}
                     onBlur={() => setTextareaFocused(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        const form = (e.target as HTMLTextAreaElement).form;
+                        if (form) form.requestSubmit();
+                      }
+                    }}
                     rows={1}
                     className="w-full min-h-[2.75rem] max-h-32 resize-none overflow-y-auto border border-border/70 bg-muted/40 px-3 py-2.5 pr-10 text-sm text-foreground outline-none transition-[height] duration-300 placeholder:text-muted-foreground/70 focus:border-border focus:bg-background disabled:opacity-50 sm:text-[15px]"
                     style={{ overflowWrap: "break-word", borderRadius: "7px" }}
