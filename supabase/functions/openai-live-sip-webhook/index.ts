@@ -14,7 +14,8 @@
  *   OPENAI_API_KEY, SUPABASE_SERVICE_ROLE_KEY (+ SUPABASE_URL)
  *   OPENAI_WEBHOOK_SECRET            whsec_… from the OpenAI webhook settings
  *   OPENAI_WEBHOOK_SIGNATURE_MODE    "log" (default) | "enforce" | "off"
- *   FRONT_DESK_HUMAN_TRANSFER_URI    e.g. tel:+1… or sip:… for live transfer (else callback ticket)
+ *   FRONT_DESK_HUMAN_TRANSFER_URI    live-transfer target (SIP Refer-To): tel:+1… or sip:…@…
+ *                                    (default tel:+14505784500, the team's cell; a number is not a secret)
  *   FRONT_DESK_SIDEBAND_MAX_MS       per-worker budget before relaying (default 140000)
  *   FRONT_DESK_SILENCE_MS            silence before a check-in (default 9000)
  *   FRONT_DESK_TOOL_TIMEOUT_MS       per tool call (default 9000)
@@ -70,6 +71,72 @@ const NO_FILLER = new Set([
 ]);
 /** The keypad language choice (1/2) only counts at the very start of the call. */
 const LANGUAGE_MENU_MS = 20_000;
+
+/* ---------- live transfer to a person (phone only) ---------- */
+/** Default live-transfer target. FRONT_DESK_HUMAN_TRANSFER_URI overrides it. */
+const DEFAULT_TRANSFER_URI = "tel:+14505784500";
+const TRANSFER_URI_RE = /^(tel:\+[1-9]\d{7,14}|sips?:[^\s<>"@]+@[^\s<>"]+)$/i;
+/**
+ * OpenAI's REFER endpoint takes a `target_uri` placed in the SIP Refer-To header
+ * (`tel:+E164` or `sip:user@host`). A bare "+1…" env value is accepted as tel:.
+ */
+export function transferTarget(raw = Deno.env.get("FRONT_DESK_HUMAN_TRANSFER_URI")): string {
+  const value = (raw ?? "").trim();
+  if (!value) return DEFAULT_TRANSFER_URI;
+  const candidate = /^\+[1-9]\d{7,14}$/.test(value) ? `tel:${value}` : value;
+  if (TRANSFER_URI_RE.test(candidate)) return candidate;
+  console.error("FRONT_DESK_HUMAN_TRANSFER_URI has an unsupported format; using the default");
+  return DEFAULT_TRANSFER_URI;
+}
+/** After OpenAI accepts the REFER, the AI leg must drop within this window or we treat the transfer as failed. */
+const TRANSFER_CONFIRM_MS = 8000;
+/** Spoken before the REFER when the model did not already announce the transfer. Never includes a number. */
+const TRANSFER_LINE: Record<DeskLang, string> = {
+  fr: "Je vous transfère à un membre de notre équipe, un instant.",
+  en: "I'm transferring you to a member of our team, one moment.",
+};
+const TRANSFER_TRIGGERS = new Set(["repeated_request", "insistent_or_upset", "unresolved_after_two_attempts"]);
+
+/** Phone version of transfer_to_human: same name and flow, plus the trigger that justifies it. */
+const PHONE_TRANSFER_TOOL = {
+  type: "function",
+  name: "transfer_to_human",
+  description:
+    "Phone only. Transfer this live call to a member of the AltShift team. Use ONLY under the live-transfer rule in your instructions " +
+    "(a second clear request for a person after you offered help or a callback; strong insistence or a clearly upset caller; or two unsuccessful attempts). " +
+    "Never for emergencies (give the 9-1-1 instruction instead). Say the one-line transfer notice first, then call this and stay silent. " +
+    "If the result says the transfer did not go through, apologize and say a member of the team will call back shortly.",
+  parameters: {
+    type: "object",
+    properties: {
+      session_id: { type: "string" },
+      reason: { type: "string", description: "Short neutral summary of what the caller needs. Never include a PIN, card, or phone number." },
+      trigger: {
+        type: "string",
+        enum: ["repeated_request", "insistent_or_upset", "unresolved_after_two_attempts"],
+        description: "Which part of the transfer rule applies.",
+      },
+    },
+    required: ["session_id", "reason", "trigger"],
+  },
+} as const;
+const PHONE_TOOLS = FRONT_DESK_TOOLS.map((t) => (t.name === "transfer_to_human" ? PHONE_TRANSFER_TOOL : t));
+
+const TRANSFER_RULES = `
+
+# Live transfer to a person (phone only)
+A live transfer to a member of the AltShift team is available on this call. It replaces the general hand-off guidance above for transfers.
+Call transfer_to_human when ANY of these is true:
+1. The caller clearly asks for a person (human, agent, someone, « quelqu'un », « un humain », « un agent ») a SECOND time, after you already offered to help or offered a callback. The first time they ask, briefly offer to help yourself or offer a callback (request_callback); if they ask again, or decline the callback and still want a person, transfer (trigger repeated_request).
+2. They insist strongly the first time (for example "I want a human now", "stop, put me through to someone") or are clearly upset, angry or distressed: transfer right away (trigger insistent_or_upset).
+3. You have tried twice and still cannot solve their need (two unsuccessful attempts, or two failed tool results) and they still need help: transfer (trigger unresolved_after_two_attempts).
+Never transfer for an emergency: give the 9-1-1 instruction instead. Do not transfer for a single casual mention, for off-topic requests, or when the caller is satisfied with a callback.
+No identity verification is needed to transfer.
+Before calling transfer_to_human, say exactly one short sentence in the caller's language, and nothing else:
+- FR: « Je vous transfère à un membre de notre équipe, un instant. »
+- EN: "I'm transferring you to a member of our team, one moment."
+Then call transfer_to_human (session_id, a short neutral reason, trigger) and stay silent. Never say, spell, or confirm any phone number for the transfer, even if asked.
+If the result says the transfer did not go through: apologize briefly, say a member of the AltShift team will call back shortly, and ask if there is anything else. Do not try to transfer again.`;
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
@@ -157,7 +224,8 @@ function callInstructions(deskSessionId: string, hasCallerPhone: boolean): strin
     (hasCallerPhone
       ? "\n- The caller's number is known to the system (never read it aloud). Call identify_caller early, once you know why they are calling about an account."
       : "\n- The caller's number is hidden: ask for the four-digit Member ID when account access is needed.") +
-    `\n- The call starts with your greeting: "${PHONE_OPENING_LINE}"`;
+    `\n- The call starts with your greeting: "${PHONE_OPENING_LINE}"` +
+    TRANSFER_RULES;
 }
 
 async function acceptCall(apiKey: string, callId: string, deskSessionId: string, hasCallerPhone: boolean) {
@@ -165,7 +233,7 @@ async function acceptCall(apiKey: string, callId: string, deskSessionId: string,
     type: "realtime",
     model: FRONT_DESK_MODEL,
     instructions: callInstructions(deskSessionId, hasCallerPhone),
-    tools: FRONT_DESK_TOOLS,
+    tools: PHONE_TOOLS,
     tool_choice: "auto",
   };
   const path = `/realtime/calls/${encodeURIComponent(callId)}/accept`;
@@ -231,7 +299,7 @@ function toolFailed(output: string): boolean {
 
 /* ------------------------------------------------------------------ call controller */
 
-type RelayState = { lang: DeskLang; failures: number; hop: number };
+type RelayState = { lang: DeskLang; failures: number; hop: number; transferTried?: boolean };
 
 type ResponseReq = Record<string, unknown> | undefined;
 
@@ -292,6 +360,8 @@ async function runCall(opts: {
   let ws = opts.socket;
   let lang: DeskLang = opts.state.lang;
   let consecutiveFailures = opts.state.failures;
+  /** One live-transfer attempt per call; later requests file a callback instead. */
+  let transferTried = opts.state.transferTried === true;
   const hop = opts.state.hop;
   const tag = `call ${callId.slice(-8)} hop ${hop}`;
 
@@ -324,6 +394,10 @@ async function runCall(opts: {
   let finished = false;
   let hangupTimer: ReturnType<typeof setTimeout> | null = null;
   let reconnects = 0;
+  // Live transfer: while a REFER is pending, a socket close means the call left the AI line.
+  let transferring = false;
+  let transferSocketClosed = false;
+  let onTransferSocketClose: (() => void) | null = null;
 
   type Capture = {
     digits: string;
@@ -482,14 +556,59 @@ async function runCall(opts: {
   };
 
   /* ---------- function calls ---------- */
-  const transferUri = Deno.env.get("FRONT_DESK_HUMAN_TRANSFER_URI")?.trim() || "";
-
   const waitForAudioIdle = async (maxMs: number) => {
     const until = Date.now() + maxMs;
     while ((audioPlaying || busy()) && Date.now() < until) await new Promise((r) => setTimeout(r, 150));
   };
+  /** Let the transfer notice finish playing before the REFER cuts the AI leg. */
+  const waitForSpeechToFinish = async (chars: number) => {
+    await waitForAudioIdle(8000);
+    // Without playback events, estimate the remaining audio (~13 chars/s).
+    if (!sawAudioBufferEvents) await new Promise((r) => setTimeout(r, Math.min(Math.max(chars * 70, 1200), 6000)));
+  };
 
-  const handleFn = async (name: string, args: Record<string, unknown>): Promise<string | null> => {
+  /**
+   * POST /v1/realtime/calls/{id}/refer. OpenAI answers 200 once the REFER is relayed to Telnyx;
+   * Telnyx then drops the AI leg and runs the TeXML referUrl (dial the team). So success = the
+   * sideband closes shortly after. If it stays open, the transfer did not happen.
+   * Returns "transferred" | "call_ended" | a failure code. Logs carry no PII.
+   */
+  const attemptLiveTransfer = async (): Promise<string> => {
+    const target = transferTarget();
+    transferring = true;
+    let resolveLeft: (left: boolean) => void = () => {};
+    const left = new Promise<boolean>((r) => (resolveLeft = r));
+    onTransferSocketClose = () => resolveLeft(true);
+    const started = Date.now();
+    // The caller may have hung up while the notice played: nothing to transfer.
+    const res = transferSocketClosed
+      ? { ok: false, status: 0, text: "" }
+      : await openaiPost(`/realtime/calls/${encodeURIComponent(callId)}/refer`, apiKey, { target_uri: target }, 6000);
+    let outcome: string;
+    if (!res.ok) {
+      outcome = transferSocketClosed ? "call_ended" : `refer_failed_${res.status || "network"}`;
+    } else {
+      console.log(tag, "transfer refer accepted", target.startsWith("tel:") ? "tel" : "sip");
+      const timer = setTimeout(() => resolveLeft(false), TRANSFER_CONFIRM_MS);
+      outcome = (await left) ? "transferred" : "no_handoff";
+      clearTimeout(timer);
+    }
+    transferring = false;
+    onTransferSocketClose = null;
+    console.log(tag, "transfer outcome", outcome, `${Date.now() - started}ms`);
+    if (outcome === "transferred" || outcome === "call_ended") {
+      handedOff = true; // the call left OpenAI; stop driving it
+      await markClosed();
+      finish();
+    }
+    return outcome;
+  };
+
+  const handleFn = async (
+    name: string,
+    args: Record<string, unknown>,
+    ctx: { modelSpoke: boolean; spokenChars: number },
+  ): Promise<string | null> => {
     switch (name) {
       case "verify_voice_pin": {
         const pin = await collectKeypad(4, 6, T.pinPrompt[lang], T.pinReminder[lang]);
@@ -522,20 +641,49 @@ async function runCall(opts: {
         return await runTool(name, args, deskSessionId, 4000);
       }
       case "transfer_to_human": {
-        if (transferUri) {
-          await waitForAudioIdle(6000);
-          const res = await openaiPost(`/realtime/calls/${encodeURIComponent(callId)}/refer`, apiKey, { target_uri: transferUri }, 6000);
-          if (res.ok) {
-            console.log(tag, "referred to human");
-            void runTool("transfer_to_human", { ...args, reason: `${String(args.reason ?? "")} (live transfer attempted)` }, deskSessionId, 5000);
-            handedOff = true; // the call leaves OpenAI; stop driving it
+        const trigger = TRANSFER_TRIGGERS.has(String(args.trigger)) ? String(args.trigger) : "unspecified";
+        const reason = String(args.reason ?? "").slice(0, 400);
+        if (transferTried) {
+          console.log(tag, "transfer skipped", "already_tried");
+          return await runTool("transfer_to_human", { reason }, deskSessionId);
+        }
+        transferTried = true;
+        console.log(tag, "transfer requested", trigger);
+        // From here until the REFER settles: no relay, and a socket close is handled by the transfer.
+        transferring = true;
+        transferSocketClosed = false;
+        let ticket: string;
+        let outcome: string;
+        try {
+          // File the callback ticket first: it is the fallback if the transfer or the team's line fails.
+          const ticketP = runTool("transfer_to_human", { reason: `${reason} (live transfer attempted; trigger: ${trigger})` }, deskSessionId, 5000);
+          if (!ctx.modelSpoke) createResponse(say(TRANSFER_LINE[lang]));
+          await waitForSpeechToFinish(ctx.modelSpoke ? ctx.spokenChars : TRANSFER_LINE[lang].length);
+          ticket = await ticketP;
+          outcome = hungUp || handedOff ? "call_ended" : await attemptLiveTransfer();
+        } finally {
+          transferring = false;
+          onTransferSocketClose = null;
+        }
+        if (outcome === "transferred" || outcome === "call_ended") {
+          if (!handedOff && !hungUp) {
+            handedOff = true;
             await markClosed();
             finish();
-            return null;
           }
-          console.error(tag, "refer failed", res.status);
+          return null;
         }
-        return await runTool("transfer_to_human", args, deskSessionId);
+        const callbackFiled = !toolFailed(ticket);
+        console.log(tag, "transfer fallback", callbackFiled ? "callback_ticket" : "no_ticket");
+        return JSON.stringify({
+          ok: false,
+          error: "transfer_unavailable",
+          live_transfer: false,
+          callback_requested: callbackFiled,
+          message: callbackFiled
+            ? "The transfer did not go through. Apologize briefly, say a member of the AltShift team will call back shortly, and ask if there is anything else. Do not try to transfer again and never read a phone number."
+            : "The transfer did not go through. Apologize briefly and suggest the caller try again a little later or write to AltShift support from the website. Do not try to transfer again.",
+        });
       }
       default:
         return await runTool(name, args, deskSessionId);
@@ -564,14 +712,16 @@ async function runCall(opts: {
           wantsEnd = true;
           continue;
         }
-        let output = await handleFn(name, args);
+        let output = await handleFn(name, args, { modelSpoke, spokenChars });
         if (output === null) return; // transferred away
         if (toolFailed(output)) {
           consecutiveFailures += 1;
           if (consecutiveFailures >= 2) {
             try {
               const parsed = JSON.parse(output);
-              parsed.escalate = "Two attempts have failed. Apologize briefly and offer a callback (request_callback) or a transfer to a person.";
+              parsed.escalate = transferTried || name === "transfer_to_human"
+                ? "Two attempts have failed. Apologize briefly and offer a callback (request_callback)."
+                : "Two attempts have failed. If the caller still needs help, say the one-line transfer notice and call transfer_to_human (trigger unresolved_after_two_attempts). For an emergency, give the 9-1-1 instruction instead.";
               output = JSON.stringify(parsed);
             } catch { /* keep */ }
           }
@@ -599,7 +749,12 @@ async function runCall(opts: {
 
   /* ---------- relay to a fresh worker ---------- */
   const relay = async (reason: string) => {
-    if (relaying || handedOff || hungUp) return;
+    if (relaying || handedOff || hungUp || finished) return;
+    if (transferring) {
+      // Never relay mid-transfer; try again once the REFER settles.
+      timers.push(setTimeout(() => void relay(reason), 1000));
+      return;
+    }
     relaying = true;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -617,7 +772,7 @@ async function runCall(opts: {
           mode,
           call_id: callId,
           desk_session_id: deskSessionId,
-          state: { lang, failures: consecutiveFailures, hop: hop + 1 } satisfies RelayState,
+          state: { lang, failures: consecutiveFailures, hop: hop + 1, transferTried } satisfies RelayState,
         }),
         signal: AbortSignal.timeout(12_000),
       }).then((r) => r.ok).catch(() => false);
@@ -812,6 +967,12 @@ async function runCall(opts: {
       onMessage(raw).catch((e) => console.error(tag, "handler error", errName(e)));
     };
     socket.onclose = async () => {
+      if (transferring) {
+        // Expected when Telnyx takes the call for the transfer: let attemptLiveTransfer settle it.
+        transferSocketClosed = true;
+        onTransferSocketClose?.();
+        return;
+      }
       if (finished || handedOff || hungUp) {
         finish();
         return;
@@ -890,6 +1051,7 @@ async function handleRelay(req: Request, body: Record<string, unknown>, startedA
     lang: s.lang === "en" ? "en" : "fr",
     failures: Number(s.failures ?? 0) || 0,
     hop: Math.min(Number(s.hop ?? 1) || 1, MAX_HOPS + 1),
+    transferTried: s.transferTried === true,
   };
   const running = await startSideband({
     apiKey,

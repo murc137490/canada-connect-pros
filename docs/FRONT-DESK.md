@@ -42,7 +42,7 @@ Web sessions can never be phone sessions, so the voice-PIN tools are phone-only.
 | Barge-in / noise | Server VAD with `interrupt_response`, threshold 0.7, 300 ms prefix, 800 ms silence; near-field noise reduction. Only one response at a time (queued), so the AI does not talk over itself. |
 | Identity | Phone number = hint only. Member ID (4 digits) confirmed with keypad 1/2, then the voice PIN on the keypad (never spoken). No account info before the PIN. No SMS on the phone line. |
 | Guardrails | No invented prices/availability/policies (phone booking is off by default, so no prices are quoted); never reveal other people's data; off-topic and abuse handled politely; emergencies → "hang up and call 9-1-1". |
-| Hand-off | `transfer_to_human`: live SIP REFER if `FRONT_DESK_HUMAN_TRANSFER_URI` is set, otherwise a callback ticket. `request_callback` files a `front_desk_tickets` row (kind `escalation`, subject `callback_request`, max 3 per call). Offered on request, after 2 failed attempts, or when stuck. |
+| Hand-off | `transfer_to_human` (phone): live transfer to the team line via SIP REFER (see *Live transfer* below); a callback ticket is always filed first as the fallback. On the website it only files a callback ticket. `request_callback` files a `front_desk_tickets` row (kind `escalation`, subject `callback_request`, max 3 per call). Offered on request, after 2 failed attempts, or when stuck. |
 | Ending | `end_call` hangs up after the goodbye finishes playing; the session row gets `closed_at`. |
 | Resilience | Timeouts on every external fetch; sideband reconnect (2 tries) on unexpected drops; relay to a fresh worker ~115–135 s into each worker (Edge wall clock); logs contain no phone numbers, PINs or secrets. |
 
@@ -54,7 +54,7 @@ Web sessions can never be phone sessions, so the voice-PIN tools are phone-only.
 | `OPENAI_WEBHOOK_SECRET` | `whsec_…` signing secret of the OpenAI project webhook |
 | `OPENAI_WEBHOOK_SIGNATURE_MODE` | `log` (default: verify and log only), `enforce` (reject bad signatures), `off` |
 | `FRONT_DESK_SECRET` | Optional shared secret for server-side tool calls |
-| `FRONT_DESK_HUMAN_TRANSFER_URI` | Optional `tel:+1…` / `sip:…` target for live transfer |
+| `FRONT_DESK_HUMAN_TRANSFER_URI` | Live-transfer target, `tel:+1…` or `sip:user@host`. Defaults in code to `tel:+14505784500` (used by both `openai-live-sip-webhook` and `telnyx-texml-openai`) |
 | `FRONT_DESK_PHONE_BOOKING` | `1` = allow prices/availability/booking tools on the phone (off by default; the catalogue is still a demo) |
 | `FRONT_DESK_REALTIME_MODEL`, `FRONT_DESK_VOICE` | Override model (`gpt-realtime`) / voice (`marin`) |
 | `FRONT_DESK_TURN_DETECTION` | `semantic` to try semantic VAD (default server VAD) |
@@ -87,6 +87,24 @@ The system prompt lives in `supabase/functions/_shared/frontDeskRealtime.ts` and
 2. Speak English first: the AI should switch to English and stay there. Press 2 at the start: same.
 3. Ask for a price: no number should be invented; it should offer the website or a callback.
 4. Account question: Member ID confirm (1/2) → PIN on keypad → answer. Wrong PIN twice → callback offer.
-5. "I want to talk to someone": callback ticket in `front_desk_tickets` (or live transfer if configured).
+5. "I want to talk to someone": first time the AI offers help or a callback; asked again (or insistent/upset, or two failed attempts) it says "I'm transferring you to a member of our team, one moment" and the call rings the team line. Not answered → bilingual apology + callback ticket.
 6. Mention a gas smell: immediate 9-1-1 sentence.
 7. Stay on the line > 2.5 minutes while using tools: the sideband relay must keep tools working.
+
+## Live transfer to a person (phone only)
+
+**When** (rule given to the model in `openai-live-sip-webhook`, tool arg `trigger`):
+1. `repeated_request`: the caller asks for a person a second time after the AI offered help or a callback (or declines the callback and still wants a person).
+2. `insistent_or_upset`: strong insistence the first time, or a clearly upset/distressed caller.
+3. `unresolved_after_two_attempts`: two unsuccessful attempts / two failed tool results and the caller still needs help.
+Never for emergencies (9-1-1 line instead). One live-transfer attempt per call. The AI says one line first (FR « Je vous transfère à un membre de notre équipe, un instant. » / EN "I'm transferring you to a member of our team, one moment.") and never reads the number.
+
+**How:**
+1. Sideband files the `callback_request` ticket (fallback), lets the notice finish, then `POST /v1/realtime/calls/{call_id}/refer` with `{"target_uri": "tel:+14505784500"}`.
+2. OpenAI sends SIP REFER to Telnyx on the AI leg. The TeXML `<Dial>` carries `referUrl=…/telnyx-texml-openai?stage=refer`, so Telnyx drops the AI leg and fetches new TeXML for the caller: `<Dial callerId="+14508003177" timeout="22">` to the configured number (the Refer-To in the request is never trusted).
+3. `stage=after_transfer`: answered → hang up at the end; no-answer/busy/failed → bilingual "someone will call you back shortly" + hang up.
+4. If OpenAI rejects the REFER, or the AI leg is still up 8 s after it, the AI apologizes and says the team will call back (ticket already filed).
+
+Logs (no PII): `transfer requested <trigger>`, `transfer refer accepted`, `transfer outcome <transferred|no_handoff|refer_failed_<status>|call_ended>`, `texml refer -> transfer to team`, `texml after transfer <DialCallStatus>`.
+
+**Telnyx checks:** the TeXML application's outbound voice profile must allow calls to Canada (+1 450) and have balance; the caller ID +14508003177 is a Telnyx number on the account.
