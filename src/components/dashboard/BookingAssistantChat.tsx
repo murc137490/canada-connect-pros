@@ -224,6 +224,7 @@ export default function BookingAssistantChat({
           language: locale === "fr" ? "fr" : "en",
           system_extension,
           intent: "booking_assistant",
+          booking_id: bookingId,
         }),
       });
 

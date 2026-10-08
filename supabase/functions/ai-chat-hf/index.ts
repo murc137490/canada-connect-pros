@@ -46,6 +46,39 @@ interface ChatRequest {
   conversation_history?: Turn[];
   /** Current app path from the browser (e.g. /dashboard?tab=pro) — not cookies. */
   page_path?: string;
+  /** Booking assistant scope (Pro tier only): the booking being discussed, or the pro being booked. */
+  booking_id?: string;
+  pro_profile_id?: string;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Server-side Pro-tier gate for the booking AI assistant.
+ * - Scoped call (booking_id / pro_profile_id): the pro must be on the Pro plan, and for booking_id the caller
+ *   must be the booking's client or pro (checked with the caller's own session under RLS).
+ * - Unscoped call carrying a system_extension (older app builds): the extension is dropped, so the reply is the
+ *   generic AltShift support assistant, never pro-specific booking help.
+ */
+async function bookingAssistantScope(
+  json: ChatRequest,
+  accessToken: string,
+): Promise<{ allowed: boolean; scoped: boolean; reason?: string }> {
+  const bookingId = typeof json.booking_id === "string" && UUID_RE.test(json.booking_id) ? json.booking_id : null;
+  let proId = typeof json.pro_profile_id === "string" && UUID_RE.test(json.pro_profile_id) ? json.pro_profile_id : null;
+  if (!bookingId && !proId) return { allowed: false, scoped: false, reason: "unscoped" };
+  if (bookingId) {
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false },
+      global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    });
+    const { data: b } = await userClient.from("bookings").select("pro_profile_id").eq("id", bookingId).maybeSingle();
+    if (!b?.pro_profile_id) return { allowed: false, scoped: true, reason: "booking_not_found" };
+    proId = b.pro_profile_id as string;
+  }
+  const { data: tier } = await supabase.rpc("pro_effective_tier", { p_pro_profile_id: proId });
+  if (tier !== "pro") return { allowed: false, scoped: true, reason: "assistant_requires_pro_tier" };
+  return { allowed: true, scoped: true };
 }
 
 type ChatMsg = { role: "system" | "user" | "assistant"; content: string };
@@ -309,6 +342,18 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    let effectiveSystemExtension = systemExtension;
+    if (intent !== "support_help" && (systemExtension || json.intent === "booking_assistant" || json.booking_id || json.pro_profile_id)) {
+      const scope = await bookingAssistantScope(json, accessToken);
+      if (scope.scoped && !scope.allowed) {
+        return new Response(JSON.stringify({ error: scope.reason ?? "forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (!scope.scoped) effectiveSystemExtension = "";
+    }
+
     const pagePathRaw = typeof json.page_path === "string" ? json.page_path.trim().slice(0, 200) : "";
     const pagePath = pagePathRaw.startsWith("/") ? pagePathRaw : null;
 
@@ -431,7 +476,7 @@ Language: **English only** (proper nouns / emails / phone excepted).`;
           ? `You are the AltShift AI support assistant for a Canadian home services marketplace. Use the following database results when relevant to answer the user.\n\nDatabase results:\n${context}\n\nBe friendly, helpful, and concise. Phone: +1 450 800 3177. Email: support@altshift.ca. If you don't know something, direct users to contact support.`
           : `You are the AltShift AI support assistant for a Canadian home services marketplace. Help customers find and hire verified pros. Be friendly and concise. Phone: +1 450 800 3177. Email: support@altshift.ca.`) +
         langInstruction +
-        systemExtension;
+        effectiveSystemExtension;
     }
 
     type HFMsg = { role: "system" | "user" | "assistant"; content: string };

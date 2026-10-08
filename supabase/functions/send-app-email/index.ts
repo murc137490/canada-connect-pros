@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { brandAddress, brandFrom, BRAND_FROM_NAME } from "../_shared/brandSender.ts";
+import { brandAddress, BRAND_FROM_NAME } from "../_shared/brandSender.ts";
+import { isServiceRoleRequest } from "../_shared/internalAuth.ts";
 import { callerIsPlatformModerator, getPlatformAdminEmails } from "../_shared/platformAdmin.ts";
 import {
   emailDetails,
@@ -83,8 +84,10 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const caller = await getCaller(req, supabaseUrl, anonKey);
+    // Internal callers (cron functions such as booking-series-run) use the service-role bearer.
     const hasPipelineSecret =
-      Boolean(EMAIL_PIPELINE_SECRET) && req.headers.get("x-email-pipeline-secret") === EMAIL_PIPELINE_SECRET;
+      isServiceRoleRequest(req) ||
+      (Boolean(EMAIL_PIPELINE_SECRET) && req.headers.get("x-email-pipeline-secret") === EMAIL_PIPELINE_SECRET);
 
     if (!caller && !hasPipelineSecret) return json({ error: "Unauthorized" }, 401);
 
