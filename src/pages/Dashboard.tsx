@@ -133,6 +133,7 @@ function writeDashboardProVerifiedCache(userId: string, verified: boolean) {
   }
 }
 import { supabase } from "@/integrations/supabase/client";
+import { notifyBookingEvent } from "@/lib/bookingEventNotify";
 import { useToast } from "@/hooks/use-toast";
 import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
@@ -3393,6 +3394,7 @@ export default function Dashboard() {
         .eq("id", bookingId);
       if (error) throw error;
       await finalizeSquareBookingPayment(bookingId, "complete");
+      void notifyBookingEvent(bookingId, "confirmed");
       toast({ title: t.dashboard.approveSuccess ?? "Booking accepted." });
       setProBookings((prev) =>
         prev.map((b) =>

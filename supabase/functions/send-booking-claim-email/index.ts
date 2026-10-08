@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { brandAddress, brandFrom, BRAND_FROM_NAME } from "../_shared/brandSender.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,8 +14,8 @@ const SMTP_PORT = Deno.env.get("SMTP_PORT");
 const SMTP_USER = Deno.env.get("SMTP_USER");
 const SMTP_PASS = Deno.env.get("SMTP_PASS");
 
-const FROM_EMAIL = Deno.env.get("CLAIM_FROM_EMAIL") ?? Deno.env.get("FROM_EMAIL") ?? "noreply@example.com";
-const FROM_NAME = Deno.env.get("FROM_NAME") ?? "";
+const FROM_EMAIL = brandAddress(Deno.env.get("CLAIM_FROM_EMAIL") ?? Deno.env.get("FROM_EMAIL"));
+const FROM_NAME = BRAND_FROM_NAME;
 
 const SUPPORT_EMAIL = "support@altshift.ca";
 
@@ -84,7 +85,7 @@ async function sendWithResend(to: string[], subject: string, html: string): Prom
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
+    body: JSON.stringify({ from: brandFrom(FROM_EMAIL), to, subject, html }),
   });
   return res.ok;
 }

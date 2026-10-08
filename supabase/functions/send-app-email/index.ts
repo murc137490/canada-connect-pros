@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { brandAddress, brandFrom, BRAND_FROM_NAME } from "../_shared/brandSender.ts";
 import { callerIsPlatformModerator, getPlatformAdminEmails } from "../_shared/platformAdmin.ts";
 import {
   emailDetails,
@@ -41,8 +42,8 @@ const corsHeaders = {
 };
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "support@altshift.ca";
-const FROM_NAME = Deno.env.get("FROM_NAME") ?? "AltShift";
+const FROM_EMAIL = brandAddress(Deno.env.get("FROM_EMAIL"));
+const FROM_NAME = BRAND_FROM_NAME;
 const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "support@altshift.ca";
 const SITE_URL = trimTrailingSlash(Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.altshift.ca");
 const ADMIN_EMAIL =

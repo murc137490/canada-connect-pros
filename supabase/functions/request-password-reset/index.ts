@@ -12,6 +12,7 @@
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { brandAddress, brandFrom, BRAND_FROM_NAME } from "../_shared/brandSender.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,8 +25,10 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 /** altshift.ca is a verified Resend sending domain. */
 const DEFAULT_FROM_EMAIL = "support@altshift.ca";
 /** Optional env-only fallback sender if the primary sender is refused by Resend. */
-const FALLBACK_FROM_EMAIL = Deno.env.get("RESEND_FALLBACK_FROM_EMAIL")?.trim() ?? "";
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? DEFAULT_FROM_EMAIL;
+const FALLBACK_FROM_EMAIL = (Deno.env.get("RESEND_FALLBACK_FROM_EMAIL") ?? "").trim().toLowerCase().endsWith("@altshift.ca")
+  ? Deno.env.get("RESEND_FALLBACK_FROM_EMAIL")!.trim()
+  : "";
+const FROM_EMAIL = brandAddress(Deno.env.get("FROM_EMAIL"));
 /**
  * Display name is always the brand. The FROM_NAME secret is ignored on purpose:
  * it still carries a legacy business name that must not reach customers.

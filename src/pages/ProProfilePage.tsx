@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyBookingEvent } from "@/lib/bookingEventNotify";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -2535,9 +2536,7 @@ export default function ProProfilePage() {
                             });
                           }
                           if (data?.id && !isDemoAccount(user?.email) && !isDemoProProfile(pro)) {
-                            void supabase.functions.invoke("booking-sms-notify", {
-                              body: { booking_id: data.id, event: "confirmation" },
-                            });
+                            void notifyBookingEvent(data.id, "created");
                           }
                         }}
                         onError={(msg) =>
