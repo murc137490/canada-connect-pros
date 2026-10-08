@@ -2,14 +2,11 @@
 
 export const SUPER_ADMIN_EMAIL = "murc137490@gmail.com";
 
-const PLATFORM_ADMIN_ALLOWLIST = [
-  SUPER_ADMIN_EMAIL,
-  "admin1@altshift.ca",
-  "admin2@altshift.ca",
-  "admin3@altshift.ca",
-  "admin4@altshift.ca",
-  "admin5@altshift.ca",
-] as const;
+/**
+ * Only the super admin is recognised by email. Every other moderator is granted by user id
+ * (profiles.is_platform_admin, managed by the super admin) — never by an email pattern.
+ */
+const PLATFORM_ADMIN_ALLOWLIST = [SUPER_ADMIN_EMAIL] as const;
 
 export function normalizeEmail(email: string | null | undefined): string {
   return (email ?? "").toLowerCase().trim();

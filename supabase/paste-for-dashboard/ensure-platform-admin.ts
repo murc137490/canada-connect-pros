@@ -1,17 +1,12 @@
 /**
  * Paste into Supabase Dashboard → Edge Functions → ensure-platform-admin → index.ts
- * Secret: PLATFORM_ADMIN_EMAILS=admin1@...,admin2@...,admin3@...,admin4@...,admin5@...
+ * Secret: PLATFORM_ADMIN_EMAILS=murc137490@gmail.com (super admin only; other moderators use profiles.is_platform_admin)
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const PLATFORM_ADMIN_ALLOWLIST = [
-  "admin1@altshift.ca",
-  "admin2@altshift.ca",
-  "admin3@altshift.ca",
-  "admin4@altshift.ca",
-  "admin5@altshift.ca",
-] as const;
+/** Super admin only — other moderators are granted by user id (profiles.is_platform_admin). */
+const PLATFORM_ADMIN_ALLOWLIST = ["murc137490@gmail.com"] as const;
 
 const ALLOW_SET = new Set(PLATFORM_ADMIN_ALLOWLIST.map((e) => e.toLowerCase().trim()));
 
@@ -24,7 +19,7 @@ function parsePlatformAdminEmailList(raw: string | undefined): string[] {
   return [...new Set(raw.split(",").map((e) => normalizeEmail(e)).filter(Boolean))];
 }
 
-/** Secret emails intersected with hardcoded allowlist; if secret empty, use all five. */
+/** Secret emails intersected with the allowlist; if secret empty, use the allowlist. */
 function getPlatformAdminEmails(): string[] {
   const fromSecret = parsePlatformAdminEmailList(Deno.env.get("PLATFORM_ADMIN_EMAILS"));
   if (fromSecret.length === 0) return [...PLATFORM_ADMIN_ALLOWLIST];
