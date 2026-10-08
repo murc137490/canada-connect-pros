@@ -3,6 +3,10 @@
  * Welcome + A/B menu. Full natural-language booking uses /front-desk (WebRTC)
  * or OpenAI Realtime SIP trunk (configure separately). Tools live in front-desk-tools.
  *
+ * LEGACY: the live number (+1 450 800 3177) runs through the TeXML app
+ * (telnyx-texml-openai → OpenAI SIP → openai-live-sip-webhook). This Call
+ * Control IVR is only used if a Call Control app is pointed here again.
+ *
  * Secrets: TELNYX_API_KEY, FRONT_DESK_SECRET (optional), OPENAI_API_KEY (optional flag)
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -19,17 +23,21 @@ async function telnyxCommand(callControlId: string, command: string, body: Recor
     console.error("TELNYX_API_KEY missing", command);
     return;
   }
-  const res = await fetch(`${TELNYX_API}/calls/${callControlId}/actions/${command}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    console.error(`telnyx ${command} failed`, res.status, await res.text());
+  try {
+    const res = await fetch(`${TELNYX_API}/calls/${callControlId}/actions/${command}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) console.error(`telnyx ${command} failed`, res.status);
+    await res.body?.cancel();
+  } catch (e) {
+    console.error(`telnyx ${command} error`, e instanceof Error ? e.name : "error");
   }
 }
 
@@ -77,7 +85,7 @@ Deno.serve(async (req) => {
           draft: {},
         });
       } catch (e) {
-        console.error("front_desk session create", e);
+        console.error("front_desk session create", e instanceof Error ? e.name : "error");
       }
     }
     await telnyxCommand(callControlId, "speak", {
@@ -98,7 +106,7 @@ Deno.serve(async (req) => {
     if (digits === "1") {
       await telnyxCommand(callControlId, "speak", {
         payload:
-          "New service. Please give me your four or five digit member ID using your keypad, then we will text a verification code. For natural speech booking with GPT Live, open altshift.ca slash front-desk on your phone browser.",
+          "New service. Please enter your four-digit member ID using your keypad, then we will text a verification code. For natural speech booking with GPT Live, open altshift.ca slash front-desk on your phone browser.",
         voice: "female",
         language: "en-US",
       });
