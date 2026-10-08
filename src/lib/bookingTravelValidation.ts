@@ -34,6 +34,8 @@ export async function checkTravelDistanceForBooking(args: {
   mode: ServiceLocationMode;
   clientChoice: ServiceLocationChoice | null | undefined;
   clientAddressForGeocode: string;
+  /** When set (e.g. browse postal used by the distance preview), skip address geocode. */
+  clientLatLng?: { lat: number; lng: number } | null;
 }): Promise<TravelDistanceCheck> {
   const choice = resolveBookingLocationChoice(args.mode, args.clientChoice);
 
@@ -41,23 +43,29 @@ export async function checkTravelDistanceForBooking(args: {
     return { status: "not_travel" };
   }
 
-  const addr = args.clientAddressForGeocode.trim();
-  if (!addr) {
-    return { status: "error", message: "Add your address in Dashboard → My account before booking travel services." };
-  }
-
   if (args.pro.latitude == null || args.pro.longitude == null) {
     return { status: "error", message: "This professional has not set a service area yet." };
   }
 
-  const clientGeo = await geocodeAddress(addr);
-  if (!clientGeo) {
-    return { status: "error", message: "We could not verify your address. Check it in My account and try again." };
+  let clientLat: number | null = args.clientLatLng?.lat ?? null;
+  let clientLng: number | null = args.clientLatLng?.lng ?? null;
+
+  if (clientLat == null || clientLng == null) {
+    const addr = args.clientAddressForGeocode.trim();
+    if (!addr) {
+      return { status: "error", message: "Add your address in Dashboard → My account before booking travel services." };
+    }
+    const clientGeo = await geocodeAddress(addr);
+    if (!clientGeo) {
+      return { status: "error", message: "We could not verify your address. Check it in My account and try again." };
+    }
+    clientLat = clientGeo.lat;
+    clientLng = clientGeo.lng;
   }
 
   const leg = await fetchDrivingLeg(
     { lat: args.pro.latitude, lng: args.pro.longitude },
-    { lat: clientGeo.lat, lng: clientGeo.lng },
+    { lat: clientLat, lng: clientLng },
   );
   if (!leg) {
     return { status: "error", message: "Could not estimate travel distance. Try again later." };

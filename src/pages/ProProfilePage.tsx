@@ -1081,7 +1081,9 @@ export default function ProProfilePage() {
             )}
             <div className="relative z-10 px-6 py-8 md:px-8 md:py-10">
             {featuredLook && pro.page_header_text && (
-              <div className="prose prose-lg md:prose-xl max-w-none mb-8 text-white prose-headings:text-white prose-p:text-white/85" dangerouslySetInnerHTML={{ __html: pro.page_header_text }} />
+              <div className="prose prose-lg md:prose-xl max-w-none mb-8 text-white prose-headings:text-white prose-p:text-white/85 whitespace-pre-wrap">
+                {pro.page_header_text}
+              </div>
             )}
             <div className="flex flex-wrap items-start gap-4">
               <Avatar className="w-20 h-20 rounded-xl border-2 shrink-0" style={featuredLook ? { borderColor: "rgba(255,255,255,0.55)" } : actionColor ? { borderColor: actionColor } : { borderColor: "#E5E7EB" }}>
@@ -2001,11 +2003,20 @@ export default function ProProfilePage() {
                           return;
                         }
                         if (travelToClientBlocked) {
+                          const km = Math.round(travelToClientPreview?.distanceKm ?? 0);
+                          const radius = pro?.service_radius_km ?? 50;
+                          const duration = travelToClientPreview
+                            ? formatDriveDurationLabel(travelToClientPreview.durationMinutes)
+                            : "-";
                           toast({
                             title: t.auth.toastError,
-                            description:
+                            description: (
                               t.terms.bookingOutsideNoWorkspace ??
-                              "You are outside this professional's service area. Choose at their workspace if available.",
+                              "You are outside this professional's service area. Choose at their workspace if available."
+                            )
+                              .replace("{{km}}", String(km))
+                              .replace("{{radius}}", String(radius))
+                              .replace("{{duration}}", duration),
                             variant: "destructive",
                           });
                           return;
@@ -2243,25 +2254,32 @@ export default function ProProfilePage() {
                           }
                           const svc = selectedBookingService;
                           const mode = effectiveServiceLocationMode(pro, svc);
+                          const browseLoc = getBrowsePostalLocation();
+                          const profileAddr =
+                            clientProfileAddressRaw?.trim() ||
+                            (typeof invProf?.address === "string" ? invProf.address.trim() : "") ||
+                            "";
                           const travelCheck = await checkTravelDistanceForBooking({
                             pro,
                             mode,
                             clientChoice: bookingLocationChoice,
-                            clientAddressForGeocode:
-                              clientProfileAddressRaw?.trim() ||
-                              (typeof invProf?.address === "string" ? invProf.address.trim() : "") ||
-                              "",
+                            clientAddressForGeocode: profileAddr,
+                            // Same origin as the in-dialog distance preview: browse postal first, else profile address.
+                            clientLatLng: browseLoc
+                              ? { lat: browseLoc.lat, lng: browseLoc.lng }
+                              : null,
                           });
                           if (travelCheck.status === "outside_radius") {
-                            throw new Error(
+                            const durationLabel = formatDriveDurationLabel(travelCheck.durationMinutes);
+                            const outsideMsg = (
                               proLocationOffers.offersWorkspace
                                 ? (t.terms.bookingOutsideOfferWorkspace ?? "Outside service area - choose at their workspace.")
-                                    .replace("{{km}}", String(Math.round(travelCheck.distanceKm)))
-                                    .replace("{{radius}}", String(travelCheck.radiusKm))
                                 : (t.terms.bookingOutsideNoWorkspace ?? "Outside this professional's service area.")
-                                    .replace("{{km}}", String(Math.round(travelCheck.distanceKm)))
-                                    .replace("{{radius}}", String(travelCheck.radiusKm)),
-                            );
+                            )
+                              .replace("{{km}}", String(Math.round(travelCheck.distanceKm)))
+                              .replace("{{radius}}", String(travelCheck.radiusKm))
+                              .replace("{{duration}}", durationLabel);
+                            throw new Error(outsideMsg);
                           }
                           if (travelCheck.status === "error") throw new Error(travelCheck.message);
                           const travelSnap =
