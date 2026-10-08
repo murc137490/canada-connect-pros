@@ -20,7 +20,9 @@ const corsHeaders = {
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const FROM_EMAIL = brandAddress(Deno.env.get("FROM_EMAIL"));
 const FROM_NAME = BRAND_FROM_NAME;
-const SITE_URL = (Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.altshift.ca").replace(/\/+$/, "");
+const SITE_URL_RAW = (Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "").replace(/\/+$/, "");
+/** Links must point at the AltShift site even if an old-brand SITE_URL secret is still set. */
+const SITE_URL = /^https:\/\/(www\.)?altshift\.ca$/i.test(SITE_URL_RAW) ? SITE_URL_RAW : "https://www.altshift.ca";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

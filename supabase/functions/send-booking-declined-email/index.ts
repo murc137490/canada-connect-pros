@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
       .eq("id", booking.pro_profile_id)
       .single();
 
-    if (pro?.user_id && pro.user_id !== user.id) {
+    if (!pro?.user_id || pro.user_id !== user.id) {
       return new Response(JSON.stringify({ error: "Forbidden: not your booking" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

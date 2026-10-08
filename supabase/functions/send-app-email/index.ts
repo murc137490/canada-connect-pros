@@ -44,8 +44,10 @@ const corsHeaders = {
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const FROM_EMAIL = brandAddress(Deno.env.get("FROM_EMAIL"));
 const FROM_NAME = BRAND_FROM_NAME;
-const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "support@altshift.ca";
-const SITE_URL = trimTrailingSlash(Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.altshift.ca");
+const REPLY_TO_EMAIL = brandAddress(Deno.env.get("REPLY_TO_EMAIL"));
+const SITE_URL_ENV = trimTrailingSlash(Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "");
+/** Links always point at the AltShift site, even if an old-brand SITE_URL secret is still set. */
+const SITE_URL = /^https:\/\/(www\.)?altshift\.ca$/i.test(SITE_URL_ENV) ? SITE_URL_ENV : "https://www.altshift.ca";
 const ADMIN_EMAIL =
   Deno.env.get("ADMIN_NOTIFICATION_EMAIL") ??
   Deno.env.get("ADMIN_EMAIL") ??
