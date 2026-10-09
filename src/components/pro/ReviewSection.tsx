@@ -39,7 +39,7 @@ interface ReviewSectionProps {
 
 export default function ReviewSection({ proProfileId, proUserId, previewLimit, scrollToId = "reviews" }: ReviewSectionProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { toast } = useToast();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -236,7 +236,7 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
                       <StarRating rating={review.rating} size={14} />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(review.created_at).toLocaleDateString("en-CA", {
+                      {new Date(review.created_at).toLocaleDateString(locale === "fr" ? "fr-CA" : "en-CA", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",

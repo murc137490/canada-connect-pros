@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, Link, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { notifyBookingEvent } from "@/lib/bookingEventNotify";
@@ -37,6 +37,8 @@ import {
 import { buildClientInvoiceContactBlock } from "@/lib/clientInvoiceContactBlock";
 import type { AvailabilityState } from "@/components/WeekdayAvailability";
 import { isReservedShareSlug, isUuidLike } from "@/lib/proShareSlug";
+import { proPublicPath, publicHandleUrl, USERNAME_RE } from "@/lib/publicHandle";
+import NotFound from "./NotFound";
 import { useAuth } from "@/contexts/AuthContext";
 import { untypedDb } from "@/lib/untypedSupabase";
 import { responseTimeLabel } from "@/lib/growthTools";
@@ -111,6 +113,7 @@ import {
 } from "@/lib/proProfileAccess";
 
 interface ProData {
+  share_slug?: string | null;
   id: string;
   user_id: string;
   business_name: string;
@@ -150,11 +153,15 @@ interface ProData {
   booking_cancel_fee_percent?: number | null;
 }
 
-export default function ProProfilePage() {
-  const { proId: proIdParam, shareSlug: shareSlugParam } = useParams<{
+export default function ProProfilePage({ proIdOverride }: { proIdOverride?: string } = {}) {
+  const params = useParams<{
     proId?: string;
     shareSlug?: string;
   }>();
+  /** /<username> resolves the id up front (PublicHandlePage) and passes it in. */
+  const proIdParam = proIdOverride ?? params.proId;
+  const shareSlugParam = proIdOverride ? undefined : params.shareSlug;
+  const location = useLocation();
   const [resolvedProId, setResolvedProId] = useState<string | undefined>(proIdParam);
   const proId = resolvedProId;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -778,7 +785,8 @@ export default function ProProfilePage() {
   const scheduleClientNote = "";
 
   const handleShare = async () => {
-    const url = window.location.href;
+    const slug = (pro?.share_slug ?? "").trim().toLowerCase();
+    const url = slug && USERNAME_RE.test(slug) ? publicHandleUrl(slug) : window.location.href;
     if (navigator.share) {
       try {
         await navigator.share({ title: pro?.business_name ?? "", url });
@@ -827,6 +835,14 @@ export default function ProProfilePage() {
     };
   }, [proIdParam, shareSlugParam]);
 
+  /** Old /pros/:id links forward to the pro's /<username> (keeps query + hash, e.g. ?rebook=, #reviews). */
+  useEffect(() => {
+    if (proIdOverride || !params.proId || !pro || pro.id !== params.proId) return;
+    const target = proPublicPath({ id: pro.id, share_slug: pro.share_slug });
+    if (target.startsWith("/pros/")) return;
+    navigate(`${target}${location.search}${location.hash}`, { replace: true });
+  }, [proIdOverride, params.proId, pro, navigate, location.search, location.hash]);
+
   useEffect(() => {
     if (!proId) return;
     const fetch = async () => {
@@ -838,7 +854,7 @@ export default function ProProfilePage() {
         .select(PUBLIC_PRO_PROFILE_SELECT)
         .eq("id", proId)
         .eq("is_verified", true)
-        .single();
+        .maybeSingle();
 
       if (!proRaw) { setLoading(false); return; }
       const proPublic = proRaw as unknown as ProData & {
@@ -858,7 +874,7 @@ export default function ProProfilePage() {
 
       // Parallel fetches (services loaded with display_name fallback if column missing)
       const [profileRes, photosRes, licensesRes, ratingRes] = await Promise.all([
-        supabase.from("public_profiles").select("full_name, avatar_url").eq("user_id", proData.user_id).single(),
+        supabase.from("public_profiles").select("full_name, avatar_url").eq("user_id", proData.user_id).maybeSingle(),
         supabase.from("pro_photos").select("id, url, caption, is_primary").eq("pro_profile_id", proId).order("is_primary", { ascending: false }),
         supabase.from("pro_licenses").select("license_number, license_type, is_verified").eq("pro_profile_id", proId),
         supabase.rpc("get_pro_avg_rating", { p_pro_profile_id: proId }),
@@ -977,7 +993,7 @@ export default function ProProfilePage() {
   const handleToggleSavePro = async () => {
     if (!proId) return;
     if (!user) {
-      navigate("/auth?mode=login&redirect=" + encodeURIComponent(`/pros/${proId}`));
+      navigate("/auth?mode=login&redirect=" + encodeURIComponent(`${location.pathname}${location.search}`));
       return;
     }
     if (isProSaved) {
@@ -1022,14 +1038,7 @@ export default function ProProfilePage() {
   }
 
   if (!pro) {
-    return (
-      <Layout>
-        <div className="container py-20 text-center">
-          <h1 className="font-heading text-2xl font-bold text-foreground mb-4">Pro not found</h1>
-          <Button asChild><Link to="/services">Browse Services</Link></Button>
-        </div>
-      </Layout>
-    );
+    return <NotFound />;
   }
 
   const initials = fullName.split(" ").map((n) => n[0]).join("").toUpperCase();
@@ -1764,7 +1773,7 @@ export default function ProProfilePage() {
                       {selectedBookingDate && (
                         <div className="space-y-2">
                           <Label htmlFor="booking-time" className="text-white">
-                            Start time *
+                            {locale === "fr" ? "Heure de début *" : "Start time *"}
                           </Label>
                           <select
                             id="booking-time"
@@ -1773,7 +1782,7 @@ export default function ProProfilePage() {
                             className="w-full rounded-md bg-gray-800 border border-gray-600 text-white px-3 py-2"
                           >
                             <option value="" disabled>
-                              Select a start time
+                              {locale === "fr" ? "Choisissez une heure de début" : "Select a start time"}
                             </option>
                             {bookingTimeOptions.length > 0 ? (
                               bookingTimeOptions.map((time) => (
@@ -1783,12 +1792,12 @@ export default function ProProfilePage() {
                               ))
                             ) : (
                               <option value="" disabled>
-                                No available times
+                                {locale === "fr" ? "Aucune plage disponible ce jour-là" : "No available times that day"}
                               </option>
                             )}
                           </select>
                           <p className="text-xs text-white/80">
-                            Choose the hour when the pro should start.
+                            {locale === "fr" ? "Choisissez l’heure à laquelle le pro doit commencer." : "Choose the hour when the pro should start."}
                           </p>
                         </div>
                       )}
@@ -2084,7 +2093,7 @@ export default function ProProfilePage() {
                           return;
                         }
                         if (!selectedBookingTime) {
-                          toast({ title: t.auth.toastError, description: "Please select a start time.", variant: "destructive" });
+                          toast({ title: t.auth.toastError, description: locale === "fr" ? "Choisissez une heure de début." : "Please select a start time.", variant: "destructive" });
                           return;
                         }
                         setBookingStep(2);
@@ -2206,7 +2215,7 @@ export default function ProProfilePage() {
                           return;
                         }
                           if (!selectedBookingTime) {
-                            toast({ title: t.auth.toastError, description: "Please select a start time.", variant: "destructive" });
+                            toast({ title: t.auth.toastError, description: locale === "fr" ? "Choisissez une heure de début." : "Please select a start time.", variant: "destructive" });
                             return;
                           }
                         if (!bookingPhotoWithIdFile && !clientBookingIdPath) {

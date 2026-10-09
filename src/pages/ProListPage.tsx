@@ -115,7 +115,7 @@ export default function ProListPage() {
       const enriched: ProCardData[] = [];
       for (const pro of listedPros) {
         const [profileRes, ratingRes, licenseRes, photosRes] = await Promise.all([
-          supabase.from("public_profiles").select("full_name").eq("user_id", pro.user_id).single(),
+          supabase.from("public_profiles").select("full_name").eq("user_id", pro.user_id).maybeSingle(),
           supabase.rpc("get_pro_avg_rating", { p_pro_profile_id: pro.id }),
           supabase.from("pro_licenses").select("is_verified").eq("pro_profile_id", pro.id).eq("is_verified", true).limit(1),
           supabase.from("pro_photos").select("url, is_primary").eq("pro_profile_id", pro.id).order("is_primary", { ascending: false }).limit(1),
@@ -123,8 +123,9 @@ export default function ProListPage() {
         const primaryPhoto = (photosRes.data as { url: string }[] | null)?.[0];
         enriched.push({
           id: pro.id,
+          shareSlug: (pro as { share_slug?: string | null }).share_slug ?? null,
           businessName: pro.business_name,
-          fullName: profileRes.data?.full_name || t.common.proFallback,
+          fullName: profileRes.data?.full_name || pro.business_name || t.common.proFallback,
           avatarUrl: primaryPhoto?.url ?? null,
           priceMin: pro.price_min ? Number(pro.price_min) : null,
           priceMax: pro.price_max ? Number(pro.price_max) : null,

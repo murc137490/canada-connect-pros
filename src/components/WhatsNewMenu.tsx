@@ -41,7 +41,7 @@ function markAllFeedItemsRead(items: WhatsNewItem[]) {
 }
 
 export default function WhatsNewMenu({ items, variant = "desktop", className }: Props) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { refresh } = useWhatsNew();
   const { isPlatformAdmin, ready: adminReady } = usePlatformAdmin();
   const [open, setOpen] = useState(false);
@@ -146,7 +146,7 @@ export default function WhatsNewMenu({ items, variant = "desktop", className }: 
                       </p>
                     ) : null}
                     <p className="text-[10px] text-muted-foreground mt-1.5">
-                      {new Date(item.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}
+                      {new Date(item.createdAt).toLocaleDateString(locale === "fr" ? "fr-CA" : "en-CA", { dateStyle: "medium" })}
                     </p>
                   </Link>
                 </li>

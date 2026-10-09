@@ -1,33 +1,8 @@
 import { SITE_URL } from "@/config/legalConfig";
+import { RESERVED_HANDLES, isReservedHandle } from "@/lib/publicHandle";
 
-/** Path segments that must never be used as pro vanity URLs. */
-export const RESERVED_SHARE_SLUGS = new Set([
-  "admin",
-  "auth",
-  "cookies",
-  "cookie-policy",
-  "confirm-deletion",
-  "create-pro-account",
-  "dashboard",
-  "help",
-  "join-pros",
-  "make-request",
-  "pay",
-  "phone-preview",
-  "privacy",
-  "privacy-policy",
-  "pro-onboarding",
-  "pro-plans",
-  "pros",
-  "reset-password",
-  "services",
-  "support",
-  "terms",
-  "www",
-  "api",
-  "static",
-  "assets",
-]);
+/** Path segments that must never be used as vanity URLs (shared with usernames). */
+export const RESERVED_SHARE_SLUGS = RESERVED_HANDLES;
 
 /** Normalize a business / person name into a URL slug: "Aymen Services" → "aymenservices". */
 export function slugifyShareName(raw: string): string {
@@ -41,7 +16,7 @@ export function slugifyShareName(raw: string): string {
 }
 
 export function isReservedShareSlug(slug: string): boolean {
-  return RESERVED_SHARE_SLUGS.has(slug.toLowerCase());
+  return isReservedHandle(slug);
 }
 
 export function publicShareUrl(slug: string): string {

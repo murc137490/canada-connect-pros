@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef, type MouseEvent } from "react";
 import { useSearchParams, Link, useLocation } from "react-router-dom";
 import { searchProsByBusinessOrName, type ProBusinessSearchHit } from "@/lib/searchProBusiness";
+import { proPublicPath } from "@/lib/publicHandle";
 import { useScrollRestore } from "@/hooks/useScrollRestore";
 import Layout from "@/components/Layout";
 import { serviceCategories, getAllServices } from "@/data/services";
@@ -495,7 +496,7 @@ export default function Services() {
                       {proNameMatches.map((pro) => (
                         <Link
                           key={pro.proProfileId}
-                          to={`/pros/${pro.proProfileId}`}
+                          to={proPublicPath({ id: pro.proProfileId, share_slug: pro.shareSlug })}
                           className="rounded-xl border-2 border-secondary/50 bg-card p-4 flex items-center justify-between hover:border-secondary hover:shadow-md transition-all"
                         >
                           <div>
