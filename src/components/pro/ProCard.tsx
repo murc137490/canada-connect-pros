@@ -5,8 +5,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import StarRating from "./StarRating";
 import ShinyText from "@/components/ShinyText";
 import { cn } from "@/lib/utils";
+import { proPublicPath } from "@/lib/publicHandle";
 export interface ProCardData {
   id: string;
+  /** Public handle (username); links go to /<handle> when present. */
+  shareSlug?: string | null;
   businessName: string;
   fullName: string;
   avatarUrl?: string | null;
@@ -72,7 +75,7 @@ export default function ProCard({ pro, className, highlight, isFavorite, onFavor
         </button>
       )}
     <Link
-      to={`/pros/${pro.id}`}
+      to={proPublicPath({ id: pro.id, share_slug: pro.shareSlug })}
       className="flex gap-4 flex-1 min-w-0 pr-8"
     >
       <Avatar className="w-16 h-16 shrink-0">

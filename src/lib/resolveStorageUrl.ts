@@ -31,6 +31,9 @@ export function detectBucketAndPath(defaultBucket: string, urlOrPath: string): {
   };
 }
 
+/** Buckets configured as public in Supabase storage. */
+const PUBLIC_BUCKETS = new Set(["pro-photos", "review-photos"]);
+
 /** Signed URL for display (private buckets); falls back to public URL. */
 export async function resolveStorageDisplayUrl(
   bucket: string,
@@ -39,6 +42,10 @@ export async function resolveStorageDisplayUrl(
 ): Promise<string | null> {
   if (!urlOrPath?.trim()) return null;
   const target = detectBucketAndPath(bucket, urlOrPath);
+  // Public buckets: no signing round-trip (anon signing returns 400 and spams the console).
+  if (PUBLIC_BUCKETS.has(target.bucket)) {
+    return supabase.storage.from(target.bucket).getPublicUrl(target.path).data.publicUrl;
+  }
   const { data, error } = await supabase.storage.from(target.bucket).createSignedUrl(target.path, expiresIn);
   if (!error && data?.signedUrl) return data.signedUrl;
   const { data: pub } = supabase.storage.from(target.bucket).getPublicUrl(target.path);

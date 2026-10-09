@@ -39,7 +39,7 @@ interface ReviewSectionProps {
 
 export default function ReviewSection({ proProfileId, proUserId, previewLimit, scrollToId = "reviews" }: ReviewSectionProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { toast } = useToast();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +58,10 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
         .select("*")
         .eq("pro_profile_id", proProfileId)
         .order("created_at", { ascending: false }),
-      supabase.from("client_reviews").select("client_id").eq("pro_profile_id", proProfileId),
+      // client_reviews is not readable logged out (401); only signed-in viewers need it.
+      user
+        ? supabase.from("client_reviews").select("client_id").eq("pro_profile_id", proProfileId)
+        : Promise.resolve({ data: [] as { client_id: string }[] }),
     ]);
     setProClientReviewsGiven(clientReviewsGiven ?? []);
 
@@ -232,7 +235,7 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
                       <StarRating rating={review.rating} size={14} />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(review.created_at).toLocaleDateString("en-CA", {
+                      {new Date(review.created_at).toLocaleDateString(locale === "fr" ? "fr-CA" : "en-CA", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",

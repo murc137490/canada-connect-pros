@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { HelpCircle, X } from "lucide-react";
@@ -239,7 +239,13 @@ function SpotlightCutout({
 
 export function DashboardTour({ userId, segment, open, onClose, onFinished }: Props) {
   const { locale } = useLanguage();
-  const steps = TOUR_STEPS[segment];
+  /** Only steps whose card is on screen (clients don't have the pro-only cards). */
+  const steps = useMemo(() => {
+    const all = TOUR_STEPS[segment];
+    if (!open || typeof document === "undefined") return all;
+    const present = all.filter((st) => queryTourTarget(st.target));
+    return present.length ? present : all;
+  }, [segment, open]);
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<HighlightBox | null>(null);
   const [spotlightReady, setSpotlightReady] = useState(false);

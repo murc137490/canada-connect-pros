@@ -53,6 +53,7 @@ import AdminAcceptPros from "./pages/AdminAcceptPros";
 import PrivateNoIndex from "@/components/PrivateNoIndex";
 import PwaIconTheme from "@/components/PwaIconTheme";
 import AboutUs from "./pages/AboutUs";
+import PublicHandlePage from "./pages/PublicHandlePage";
 import FrontDesk from "./pages/FrontDesk";
 
 const queryClient = new QueryClient();
@@ -138,7 +139,7 @@ const App = () => (
               <Route path="/pay/apple-handoff/:handoffId" element={<><PrivateNoIndex /><ApplePayHandoffPay /></>} />
               <Route path="/auth" element={<><PrivateNoIndex /><Auth /></>} />
               <Route path="/auth/callback" element={<><PrivateNoIndex /><AuthCallback /></>} />
-              <Route path="/:shareSlug" element={<ProProfilePage />} />
+              <Route path="/:shareSlug" element={<PublicHandlePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </WhatsNewProvider>
