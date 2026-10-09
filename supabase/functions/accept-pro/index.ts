@@ -9,8 +9,9 @@ const corsHeaders = {
 };
 
 import { callerIsPlatformModerator } from "../_shared/platformAdmin.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -96,4 +97,4 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}));

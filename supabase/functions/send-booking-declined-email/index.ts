@@ -2,6 +2,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { brandAddress, brandFrom, BRAND_FROM_NAME } from "../_shared/brandSender.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,7 +18,7 @@ const SMTP_PASS = Deno.env.get("SMTP_PASS");
 const FROM_EMAIL = brandAddress(Deno.env.get("BOOKING_DECLINED_FROM_EMAIL") ?? Deno.env.get("FROM_EMAIL"));
 const FROM_NAME = BRAND_FROM_NAME;
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -132,7 +133,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}));
 
 function escapeHtml(s: string): string {
   return s

@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { fetchMyProProfile } from "@/lib/proProfileAccess";
 
 const HOURS_OPTIONS = [24, 48, 72] as const;
 
@@ -80,13 +81,10 @@ export default function ProSmsAutomationSettings({ proProfileId, locale, enabled
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data, error } = await (supabase as any)
-        .from("pro_profiles")
-        .select(
-          "sms_reminder_hours, sms_confirmation_message_custom, sms_reminder_message_custom, sms_review_request_message_custom",
-        )
-        .eq("id", proProfileId)
-        .maybeSingle();
+      // SMS templates are owner-only columns: read through the owner RPC (HIGH 1).
+      const { data, error } = await fetchMyProProfile<ProSmsPrefs>(
+        "sms_reminder_hours, sms_confirmation_message_custom, sms_reminder_message_custom, sms_review_request_message_custom",
+      );
       if (cancelled) return;
       if (!error && data) {
         const row = data as ProSmsPrefs;

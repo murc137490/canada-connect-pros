@@ -9,6 +9,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { toE164NorthAmerica } from "./phoneE164.ts";
 import { callerProFields, findProByPhone, handleProTool } from "./proJobs.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -832,7 +833,7 @@ function timingSafeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -890,4 +891,4 @@ Deno.serve(async (req) => {
     console.error("front-desk-tools failed", e instanceof Error ? e.name : "error");
     return json({ ok: true, result: { ok: false, error: "tool_unavailable" } }, 200);
   }
-});
+}));

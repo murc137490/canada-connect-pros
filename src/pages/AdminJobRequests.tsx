@@ -22,6 +22,7 @@ import { contentUnavailableLabel, isContentBlocked } from "@/lib/contentModerati
 import { purgeStaleJobRequests } from "@/lib/purgeStaleJobRequests";
 import type { JobRemovalReason } from "@/lib/jobRequestRules";
 import StorageDisplayImage from "@/components/StorageDisplayImage";
+import { safeHttpUrl } from "@/lib/safeUrl";
 
 const PHOTOS_BUCKET = "job-request-photos";
 
@@ -245,7 +246,7 @@ export default function AdminJobRequests() {
                           ) : (
                             <a
                               key={`${url}-${i}`}
-                              href={url}
+                              href={safeHttpUrl(url) ?? undefined}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="block h-20 w-20 rounded-md border overflow-hidden"

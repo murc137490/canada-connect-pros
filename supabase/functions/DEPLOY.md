@@ -63,6 +63,6 @@ supabase functions deploy referral-invite
 | `SITE_URL` or `PUBLIC_SITE_URL` | Public site origin for links in emails (e.g. `https://yourdomain.com`) |
 | Email (pick one path) | **Resend:** `RESEND_API_KEY`. **Or SMTP:** `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` |
 
-Apply SQL: `referral_invites` table + triggers (see `supabase/migrations/20260504160000_*` and `supabase/PASTE-REFERRAL-UPDATES.sql`).
+Apply SQL: `referral_invites` table + triggers (see `supabase/migrations/20260504160000_*` and `supabase/_archive/PASTE-REFERRAL-UPDATES.sql`).
 
 **404 / CORS in the browser** almost always means the function name is missing on the project or `VITE_SUPABASE_URL` points at a different Supabase project than where you deployed.

@@ -10,6 +10,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isInternalRequest } from "../_shared/internalAuth.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,7 +45,7 @@ function addDaysYmd(baseYmd: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -107,4 +108,4 @@ Deno.serve(async (req) => {
   }
 
   return json({ ok: true, dry_run: dryRun, local_date: today, local_hour: hour, candidates: rows.length, processed: results.length, results });
-});
+}));

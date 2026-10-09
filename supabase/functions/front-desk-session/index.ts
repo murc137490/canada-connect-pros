@@ -13,6 +13,7 @@ import {
   FRONT_DESK_TOOLS,
   FRONT_DESK_VOICE,
 } from "../_shared/frontDeskRealtime.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +21,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
@@ -142,4 +143,4 @@ Deno.serve(async (req) => {
     }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
-});
+}));

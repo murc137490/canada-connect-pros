@@ -4,6 +4,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isSuperAdminEmail, normalizeEmail } from "../_shared/platformAdmin.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,7 +38,7 @@ function isMemberId(v: string) {
   return /^[0-9]{4}$/.test(v.trim());
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -208,4 +209,4 @@ Deno.serve(async (req) => {
   }
 
   return json({ error: "Unknown action" }, 400);
-});
+}));

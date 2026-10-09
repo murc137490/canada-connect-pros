@@ -4,17 +4,17 @@
 
 **Supabase Dashboard** → your project → **SQL Editor** → **New query**.
 
-**Optional (workspace vs travel):** Run `supabase/ADD-SERVICE-AT-WORKSPACE-ONLY.sql` once to add `service_at_workspace_only` to `pro_profiles`.
+**Optional (workspace vs travel):** Run `supabase/_archive/ADD-SERVICE-AT-WORKSPACE-ONLY.sql` once to add `service_at_workspace_only` to `pro_profiles`.
 
-**Optional (Pro dashboard stats):** Run `supabase/ADD-PRO-PROFILE-VIEWS-AND-RANK.sql` once to add profile views (clicks) and rank for the Pro file tab in the dashboard.
+**Optional (Pro dashboard stats):** Run `supabase/_archive/ADD-PRO-PROFILE-VIEWS-AND-RANK.sql` once to add profile views (clicks) and rank for the Pro file tab in the dashboard.
 
-**Optional (Decline booking + Pro reviews client):** Run `supabase/ADD-BOOKING-DECLINE-AND-CLIENT-REVIEWS.sql` once to add decline_reason to bookings and the client_reviews table so pros can decline with a reason and review clients.
+**Optional (Decline booking + Pro reviews client):** Run `supabase/_archive/ADD-BOOKING-DECLINE-AND-CLIENT-REVIEWS.sql` once to add decline_reason to bookings and the client_reviews table so pros can decline with a reason and review clients.
 
-**Optional (Mock data for testing):** Run `supabase/MOCK-BOOKINGS-JOHNS.sql` once to insert one completed and one pending booking for "John's Plumbing & HVAC" (so you can test the review flow and the decline/approve forms). Requires that pro and at least one other user exist.
+**Optional (Mock data for testing):** Run `supabase/_archive/MOCK-BOOKINGS-JOHNS.sql` once to insert one completed and one pending booking for "John's Plumbing & HVAC" (so you can test the review flow and the decline/approve forms). Requires that pro and at least one other user exist.
 
 **Admin accept:** The admin page at /admin is only for the hardcoded admin (email murc137490@gmail.com or username aymen). Deploy the Edge Function `accept-pro` (see `supabase/functions/accept-pro/index.ts`). Log in as that admin and use /admin to accept pending pros and give them access to the pro section.
 
-**Accept via SQL (alternative):** Run `supabase/ACCEPT-USER-AS-PRO.sql` in SQL Editor (replace UID/name) to set a user as verified pro.
+**Accept via SQL (alternative):** Run `supabase/_archive/ACCEPT-USER-AS-PRO.sql` in SQL Editor (replace UID/name) to set a user as verified pro.
 
 Then paste the block below and click **Run**.
 

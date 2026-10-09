@@ -55,7 +55,7 @@ export default function RecommendationSidebar({
 
       let q = supabase
         .from("pro_profiles")
-        .select("id, user_id, business_name, phone, is_verified")
+        .select("id, user_id, business_name, is_verified")
         .eq("is_verified", true)
         .neq("id", currentProId)
         .limit(40);

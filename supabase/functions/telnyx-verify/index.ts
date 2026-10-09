@@ -8,6 +8,7 @@
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { toE164NorthAmerica } from "../_shared/phoneE164.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,7 +18,7 @@ const corsHeaders = {
 
 const TELNYX_API = "https://api.telnyx.com/v2";
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -144,4 +145,4 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
-});
+}));

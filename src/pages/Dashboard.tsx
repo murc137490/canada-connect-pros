@@ -229,6 +229,8 @@ import {
   planTierThemeClass,
 } from "@/lib/planTierTheme";
 import "@/components/ProPlansContent.css";
+import { fetchMyProProfile, fetchProProfilesAsAdmin, fetchProBillingDetails } from "@/lib/proProfileAccess";
+import { safeHttpUrl } from "@/lib/safeUrl";
 
 /** Hide browser number input spinners (up/down) on price fields. */
 const INPUT_NO_NUMBER_SPIN =
@@ -1249,7 +1251,8 @@ export default function Dashboard() {
     let qError: Error | null = null;
 
     for (const select of SELECT_ATTEMPTS) {
-      const res = await supabase.from("pro_profiles").select(select).order("created_at", { ascending: false });
+      // Admin list: full rows via moderator-only RPC (referral_invite_panel_enabled is not public).
+      const res = await fetchProProfilesAsAdmin<Record<string, unknown>>(select);
       if (!res.error) {
         list = res.data as Record<string, unknown>[] | null;
         qError = null;
@@ -1436,7 +1439,7 @@ export default function Dashboard() {
     setReviewProfileLastEdited(null);
     (async () => {
       const [profileRes, servicesRes, photosRes] = await Promise.all([
-        supabase.from("pro_profiles").select("*").eq("id", reviewProId).single(),
+        fetchProProfilesAsAdmin<Record<string, unknown>>("*", [reviewProId]).then((r) => ({ data: r.data?.[0] ?? null, error: r.error })),
         supabase.from("pro_services").select("category_slug, service_slug, display_name, description, custom_price_min, custom_price_max").eq("pro_profile_id", reviewProId),
         supabase.from("pro_photos").select("url, caption, is_primary").eq("pro_profile_id", reviewProId).order("is_primary", { ascending: false }),
       ]);
@@ -2484,10 +2487,12 @@ export default function Dashboard() {
         const [{ data: pros }, reviewsRes] = await Promise.all([
           supabase
             .from("pro_profiles")
-            .select("id, business_name, service_at_workspace_only, business_address, subscription_tier")
+            .select("id, business_name, service_at_workspace_only, subscription_tier")
             .in("id", proIds),
           supabase.from("reviews").select("pro_profile_id").eq("reviewer_id", user.id),
         ]);
+        // business_address is private; booked pros' address comes from a signed-in RPC (HIGH 1).
+        const billingByPro = await fetchProBillingDetails(proIds);
         const meta: Record<
           string,
           { name: string; ws: boolean | null; addr: string | null; tier: string | null }
@@ -2500,10 +2505,11 @@ export default function Dashboard() {
             business_address?: string | null;
             subscription_tier?: string | null;
           }) => {
+            const addrRaw = billingByPro[p.id]?.business_address ?? p.business_address;
             meta[p.id] = {
               name: p.business_name || "",
               ws: p.service_at_workspace_only ?? null,
-              addr: typeof p.business_address === "string" && p.business_address.trim() ? p.business_address.trim() : null,
+              addr: typeof addrRaw === "string" && addrRaw.trim() ? addrRaw.trim() : null,
               tier: typeof p.subscription_tier === "string" ? p.subscription_tier : null,
             };
           },
@@ -2632,11 +2638,8 @@ export default function Dashboard() {
     void purgeStaleJobRequests();
     (async () => {
       const browseOrigin = getBrowsePostalLocation();
-      const { data: proRow } = await supabase
-        .from("pro_profiles")
-        .select("latitude, longitude, service_radius_km, location")
-        .eq("id", proProfile.id)
-        .single();
+      // Own exact coords: owner-only RPC (HIGH 1).
+      const { data: proRow } = await fetchMyProProfile("latitude, longitude, service_radius_km, location");
       if (cancelled) return;
       const proLat = (proRow as { latitude?: number | null } | null)?.latitude ?? null;
       const proLng = (proRow as { longitude?: number | null } | null)?.longitude ?? null;
@@ -2761,13 +2764,10 @@ export default function Dashboard() {
     }
     setProProfileLoading(true);
     (async () => {
-      const { data: proData, error: proError } = await supabase
-        .from("pro_profiles")
-        .select(
-          "id, business_name, availability, is_verified, price_min, price_max, subscription_tier, page_template, page_primary_color, page_secondary_color, page_accent_color, page_background_color, page_header_text, unavailable_dates, available_date_overrides, primary_category_slug, referral_invite_panel_enabled, square_location_id, share_slug, service_at_workspace_only, offers_workspace, offers_travel, business_address, latitude, longitude, service_radius_km, booking_cancel_policy, booking_cancel_fee_percent, pro_member_id"
-        )
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // Owner row incl. private columns (business_address, exact coords, referral flag) via RPC (HIGH 1).
+      const { data: proData, error: proError } = await fetchMyProProfile(
+        "id, business_name, availability, is_verified, price_min, price_max, subscription_tier, page_template, page_primary_color, page_secondary_color, page_accent_color, page_background_color, page_header_text, unavailable_dates, available_date_overrides, primary_category_slug, referral_invite_panel_enabled, square_location_id, share_slug, service_at_workspace_only, offers_workspace, offers_travel, business_address, latitude, longitude, service_radius_km, booking_cancel_policy, booking_cancel_fee_percent, pro_member_id"
+      );
       let pro = proData as {
         id: string;
         business_name: string;
@@ -2786,13 +2786,9 @@ export default function Dashboard() {
         business_address?: string | null;
       } | null;
       if (proError && (proError.message?.includes("unavailable_dates") || proError.message?.includes("available_date_overrides") || proError.message?.includes("primary_category_slug") || proError.message?.includes("referral_invite_panel_enabled") || proError.message?.includes("square_location_id"))) {
-        const { data: fallback } = await supabase
-          .from("pro_profiles")
-          .select(
-            "id, business_name, availability, is_verified, price_min, price_max, subscription_tier, page_template, page_primary_color, page_secondary_color, page_accent_color, page_background_color, page_header_text, unavailable_dates, available_date_overrides"
-          )
-          .eq("user_id", user.id)
-          .maybeSingle();
+        const { data: fallback } = await fetchMyProProfile(
+          "id, business_name, availability, is_verified, price_min, price_max, subscription_tier, page_template, page_primary_color, page_secondary_color, page_accent_color, page_background_color, page_header_text, unavailable_dates, available_date_overrides"
+        );
         pro = { ...(fallback as typeof pro), primary_category_slug: (fallback as { primary_category_slug?: null })?.primary_category_slug ?? null };
       }
       const { data: subRow } = await supabase.from("pro_subscriptions").select("plan_id").eq("user_id", user.id).maybeSingle();
@@ -7283,7 +7279,11 @@ export default function Dashboard() {
                     {reviewProData.profile.website && (
                       <div>
                         <h4 className="font-semibold text-foreground mb-1">{t.dashboard.website ?? "Website"}</h4>
-                        <a href={reviewProData.profile.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">{reviewProData.profile.website}</a>
+                        {safeHttpUrl(reviewProData.profile.website, { assumeHttps: true }) ? (
+                          <a href={safeHttpUrl(reviewProData.profile.website, { assumeHttps: true }) ?? undefined} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{reviewProData.profile.website}</a>
+                        ) : (
+                          <p className="text-muted-foreground break-all">{reviewProData.profile.website}</p>
+                        )}
                       </div>
                     )}
                     {(reviewProData.profile.price_min != null || reviewProData.profile.price_max != null) && (

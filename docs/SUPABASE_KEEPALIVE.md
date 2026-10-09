@@ -5,7 +5,8 @@ Free projects can pause after ~7 days of low database activity.
 ## What we added
 
 1. Table `platform_keepalive` (one row) — migration `20260819170000_platform_keepalive.sql`
-2. GitHub Action `.github/workflows/supabase-keepalive.yml` — runs every **3 days** (and manually via **Actions → Supabase keep-alive → Run workflow**)
+2. RPC `platform_keepalive_ping()` (SECURITY DEFINER, anon-executable) — migration `20261009100400_keepalive_rpc_and_profile_view_dedupe.sql`. The anon role has no direct write access to the table.
+3. GitHub Action `.github/workflows/supabase-keepalive.yml` — runs every **3 days** (and manually via **Actions → Supabase keep-alive → Run workflow**)
 
 ## One-time GitHub setup
 

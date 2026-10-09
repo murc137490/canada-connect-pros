@@ -7,6 +7,7 @@ import {
   emailSecondaryNote,
   emailShell,
 } from "../_shared/premiereEmail.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -125,7 +126,7 @@ async function lookupPersonalTrialToken(admin: ReturnType<typeof createClient>, 
   };
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -385,7 +386,7 @@ Deno.serve(async (req) => {
     }
     return json({ error: message }, 500);
   }
-});
+}));
 
 async function listInvites(admin: ReturnType<typeof createClient>, userId: string) {
   const { data, error } = await admin

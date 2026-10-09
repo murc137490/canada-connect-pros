@@ -95,7 +95,7 @@ export default function ProListPage() {
 
       const { data: proData } = await supabase
         .from("pro_profiles")
-        .select("*")
+        .select("id, user_id, business_name, price_min, price_max, is_verified")
         .in("id", proIds)
         .eq("is_verified", true);
 

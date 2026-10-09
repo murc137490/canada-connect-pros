@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { untypedDb } from "@/lib/untypedSupabase";
 import { GROWTH_COPY, formatYmd, growthErrorMessage, serviceSlugLabel, type Lang, type SeriesStatus } from "@/lib/growthTools";
+import { fetchMyProProfile } from "@/lib/proProfileAccess";
 
 export type BookingSeriesRow = {
   id: string;
@@ -64,7 +65,7 @@ export default function BookingSeriesPanel({ role, lang, proProfileId, userId, c
     const { data, error } = await q;
     if (!error) setRows((data ?? []) as unknown as BookingSeriesRow[]);
     if (role === "pro") {
-      const { data: pp } = await untypedDb.from("pro_profiles").select("recurring_auto_approve").eq("id", scopeId).maybeSingle();
+      const { data: pp } = await fetchMyProProfile("recurring_auto_approve"); // owner-only column (HIGH 1)
       setAutoApprove(Boolean((pp as { recurring_auto_approve?: boolean } | null)?.recurring_auto_approve));
     }
     setLoading(false);

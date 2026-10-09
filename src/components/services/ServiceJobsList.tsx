@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyProProfile } from "@/lib/proProfileAccess";
 
 type ServiceJob = {
   id: string;
@@ -72,7 +73,7 @@ export default function ServiceJobsList({ categorySlug, serviceSlug }: Props) {
         return;
       }
       setLoading(true);
-      const { data: pro } = await supabase.from("pro_profiles").select("id, is_verified, latitude, longitude, service_radius_km").eq("user_id", user.id).maybeSingle();
+      const { data: pro } = await fetchMyProProfile<{ id: string; is_verified: boolean | null; latitude: number | null; longitude: number | null; service_radius_km: number | null }>("id, is_verified, latitude, longitude, service_radius_km");
       if (cancelled) return;
       if (!pro?.is_verified) {
         setJobs([]); setProId(null); setLoading(false);

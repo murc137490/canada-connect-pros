@@ -23,7 +23,7 @@ Users choose their preferred language for emails when creating an account (signu
 
 ## 2. SQL to run in Supabase
 
-Run the contents of **`supabase/ADD-EMAIL-LANGUAGE.sql`** in the Supabase Dashboard → **SQL Editor** → New query → paste → Run.
+Run the contents of **`supabase/_archive/ADD-EMAIL-LANGUAGE.sql`** in the Supabase Dashboard → **SQL Editor** → New query → paste → Run.
 
 That file:
 
@@ -98,7 +98,7 @@ Store SMTP credentials (SMTP user and SMTP password from the email provider, e.g
 
 | Where                | What to do |
 |----------------------|------------|
-| **Supabase SQL**     | Run `supabase/ADD-EMAIL-LANGUAGE.sql` once. |
+| **Supabase SQL**     | Run `supabase/_archive/ADD-EMAIL-LANGUAGE.sql` once. |
 | **Signup**           | User selects English or Français for emails; stored in `profiles.email_language`. |
 | **Create Pro**       | Pro selects English or Français; stored in `pro_profiles.email_language`. |
 | **Edge Function**    | Use `get_pro_and_user(pro_user_id)` for pros; use `profiles.email_language` for others; send EN or FR template accordingly. |

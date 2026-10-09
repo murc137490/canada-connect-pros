@@ -6,6 +6,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.27.0";
 import { loadUserSessionSnapshot, formatSessionContextBlock } from "./sessionContext.ts";
 import { sanitizeSupportReply } from "./sanitizeReply.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const HF_CHAT_URL = "https://router.huggingface.co/v1/chat/completions";
 const HF_MODEL = "Featherless-Chat-Models/Mistral-7B-Instruct-v0.2:featherless-ai";
@@ -292,7 +293,7 @@ function staticOffTopicRefusal(language: "en" | "fr"): string {
 
 // --- end topic gate ---
 
-Deno.serve(async (req: Request) => {
+Deno.serve(withCorsAllowlist(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -535,4 +536,4 @@ Language: **English only** (proper nouns / emails / phone excepted).`;
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
-});
+}));

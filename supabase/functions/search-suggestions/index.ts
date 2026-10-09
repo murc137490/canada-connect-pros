@@ -1,5 +1,6 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -489,7 +490,7 @@ function jsonResponse(data: Record<string, unknown>, status = 200) {
   });
 }
 
-Deno.serve(async (req: Request) => {
+Deno.serve(withCorsAllowlist(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -700,4 +701,4 @@ Deno.serve(async (req: Request) => {
       500
     );
   }
-});
+}));

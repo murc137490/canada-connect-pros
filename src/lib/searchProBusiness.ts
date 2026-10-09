@@ -66,7 +66,7 @@ export async function searchProsByBusinessOrName(query: string, limit = 8): Prom
 
   const { data: byBusiness, error: bizErr } = await supabase
     .from("pro_profiles")
-    .select("id, business_name, user_id, primary_category_slug, phone, is_verified")
+    .select("id, business_name, user_id, primary_category_slug, is_verified")
     .eq("is_verified", true)
     .ilike("business_name", pattern)
     .limit(limit);
@@ -104,7 +104,7 @@ export async function searchProsByBusinessOrName(query: string, limit = 8): Prom
     if (!fullName) continue;
     const { data: proRow } = await supabase
       .from("pro_profiles")
-      .select("id, business_name, user_id, primary_category_slug, phone, is_verified")
+      .select("id, business_name, user_id, primary_category_slug, is_verified")
       .eq("user_id", userId)
       .eq("is_verified", true)
       .maybeSingle();

@@ -19,6 +19,7 @@ import { sendTelnyxSms, telnyxSmsConfigured } from "../_shared/telnyxSms.ts";
 import { toE164NorthAmerica } from "../_shared/phoneE164.ts";
 import { SMS_SUPPORT_FOOTER, smsLang, type SmsLang } from "../_shared/bookingSmsTemplates.ts";
 import { emailParagraph, emailPrimaryButton, emailSecondaryNote, emailShell } from "../_shared/premiereEmail.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -103,7 +104,7 @@ type Candidate = {
   attempts: number;
 };
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -251,4 +252,4 @@ Deno.serve(async (req) => {
   }
 
   return json({ ok: true, dry_run: dryRun, local_hour: hour, candidates: candidates.length, results });
-});
+}));

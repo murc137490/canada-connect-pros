@@ -15,6 +15,7 @@ import ClientAccountSummaryBlock, {
   type ClientAccountSummary,
 } from "@/components/admin/ClientAccountSummaryBlock";
 import { displayBookingId } from "@/lib/bookingDisplayIds";
+import { safeHttpUrl } from "@/lib/safeUrl";
 
 const EVIDENCE_BUCKET = "booking-evidence";
 
@@ -304,7 +305,7 @@ export default function AdminIssueReports() {
                             ) : (
                               <a
                                 key={href}
-                                href={href}
+                                href={safeHttpUrl(href) ?? undefined}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="block h-20 w-20 rounded-md border overflow-hidden"

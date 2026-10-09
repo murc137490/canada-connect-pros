@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { untypedDb } from "@/lib/untypedSupabase";
 import { GROWTH_COPY, growthErrorMessage, type Lang } from "@/lib/growthTools";
+import { fetchMyProProfile } from "@/lib/proProfileAccess";
 
 const WEEK_OPTIONS = [2, 4, 6, 8, 12, 26, 52];
 
@@ -29,7 +30,7 @@ export default function ProRebookReminderSettings({ proProfileId, lang, onWeeksC
     (async () => {
       setLoading(true);
       const [{ data }, { count }] = await Promise.all([
-        untypedDb.from("pro_profiles").select("rebook_reminder_enabled, rebook_reminder_weeks").eq("id", proProfileId).maybeSingle(),
+        fetchMyProProfile("rebook_reminder_enabled, rebook_reminder_weeks"),
         untypedDb.from("rebook_nudges").select("id", { count: "exact", head: true }).eq("pro_profile_id", proProfileId).eq("status", "sent"),
       ]);
       if (cancelled) return;

@@ -4,6 +4,7 @@
  * Zippopotam FSA centroid runs only after those exact sources miss, and is not cached as the LDU.
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const API_KEY =
   Deno.env.get("GOOGLE_MAPS_API_KEY") ||
@@ -548,7 +549,7 @@ async function reverseGeocodeCoords(lat: number, lng: number): Promise<GeoOut | 
   return null;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -676,4 +677,4 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}));

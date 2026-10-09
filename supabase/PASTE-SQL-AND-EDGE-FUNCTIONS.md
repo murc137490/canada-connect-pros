@@ -9,7 +9,7 @@ Create each **Edge Function** in **Supabase Dashboard → Edge Functions → Cre
 
 ### 1.1 Base tables (run first)
 
-Paste the contents of **`supabase/RUN-THIS-ONCE-CREATE-TABLES.sql`** into the SQL Editor and run it. That file creates: `profiles`, `pro_profiles`, `pro_services`, `pro_photos`, `pro_licenses`, `reviews`, `review_photos`, `review_responses`, storage buckets, and triggers.
+Paste the contents of **`supabase/_archive/RUN-THIS-ONCE-CREATE-TABLES.sql`** into the SQL Editor and run it. That file creates: `profiles`, `pro_profiles`, `pro_services`, `pro_photos`, `pro_licenses`, `reviews`, `review_photos`, `review_responses`, storage buckets, and triggers.
 
 (If you prefer a single block here, open `RUN-THIS-ONCE-CREATE-TABLES.sql` in your project and copy its full content.)
 
@@ -466,7 +466,7 @@ Deno.serve(async (req) => {
 
 | Item | Where |
 |------|--------|
-| **SQL 1.1** | Open `supabase/RUN-THIS-ONCE-CREATE-TABLES.sql` and paste its full content into SQL Editor → Run. |
+| **SQL 1.1** | Open `supabase/_archive/RUN-THIS-ONCE-CREATE-TABLES.sql` and paste its full content into SQL Editor → Run. |
 | **SQL 1.2** | Bookings + top picks (block above). |
 | **SQL 1.3** | Decline + client_reviews (block above). |
 | **square-create-payment** | Edge Function; secrets: `SQUARE_ACCESS_TOKEN`, optional `SQUARE_LOCATION_ID`, `SQUARE_ENVIRONMENT`. |

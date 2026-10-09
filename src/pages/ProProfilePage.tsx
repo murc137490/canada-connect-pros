@@ -26,9 +26,6 @@ import LicenseBadge from "@/components/pro/LicenseBadge";
 import ReviewSection from "@/components/pro/ReviewSection";
 import AvailabilityCalendar, { type UnavailableDatesMap } from "@/components/pro/AvailabilityCalendar";
 import { bookableStartTimes, bookingSlotDurationMinutes } from "@/lib/bookingDaySlots";
-import { isWholeDayUnavailable, getUnavailableSlots, getUnavailableNote } from "@/lib/unavailableDates";
-import type { UnavailableDayStored } from "@/lib/unavailableDates";
-import { parseAvailabilityToWeekly } from "@/components/pro/ProScheduleEditor";
 import RecommendationSidebar from "@/components/pro/RecommendationSidebar";
 import TermsAcceptance from "@/components/TermsAcceptance";
 import BookingRequestConfirm from "@/components/BookingRequestConfirm";
@@ -103,6 +100,14 @@ import {
   resolveBookingLocationChoice,
   type ServiceLocationChoice,
 } from "@/lib/serviceLocationMode";
+import {
+  PUBLIC_PRO_PROFILE_SELECT,
+  withApproxCoords,
+  fetchProBillingDetails,
+  fetchProOpenSlots,
+  isSlotTakenError,
+  type ProOpenSlotsByDate,
+} from "@/lib/proProfileAccess";
 
 interface ProData {
   id: string;
@@ -222,15 +227,6 @@ export default function ProProfilePage() {
   /** Storage path on profiles when user already completed verification on a past booking. */
   const [clientBookingIdPath, setClientBookingIdPath] = useState<string | null>(null);
   const [bookingClientRenewAnnually, setBookingClientRenewAnnually] = useState(false);
-  const [proBookings, setProBookings] = useState<
-    {
-      id: string;
-      created_at?: string;
-      preferred_date?: string | null;
-      preferred_time?: string | null;
-      service_duration_minutes?: number | null;
-    }[]
-  >([]);
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
   const [resolvedPhotoUrls, setResolvedPhotoUrls] = useState<Record<string, string>>({});
   const [lightboxImageDark, setLightboxImageDark] = useState<boolean>(false);
@@ -239,6 +235,10 @@ export default function ProProfilePage() {
   const [selectedBookingTime, setSelectedBookingTime] = useState<string | null>(null);
   const [selectedBookingService, setSelectedBookingService] = useState<typeof services[0] | null>(null);
   const [slotClock, setSlotClock] = useState(0);
+  // Server-computed OPEN windows (weekly hours − blocked times − every client's active bookings).
+  const [openSlots, setOpenSlots] = useState<ProOpenSlotsByDate | null>(null);
+  const [openSlotsTick, setOpenSlotsTick] = useState(0);
+  const refreshOpenSlots = useCallback(() => setOpenSlotsTick((n) => n + 1), []);
   const [clientInvoiceAddress, setClientInvoiceAddress] = useState<string | null>(null);
   const [allServicesModalOpen, setAllServicesModalOpen] = useState(false);
   const viewRecordedRef = useRef(false);
@@ -643,37 +643,18 @@ export default function ProProfilePage() {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
   })();
-  const weekdayKeyFromDateStr = (dateStr: string) => {
-    const d = new Date(`${dateStr}T12:00:00`);
-    // JS getDay: 0=Sun..6=Sat, while our availability keys are "sun".."sat"
-    return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][d.getDay()] as keyof AvailabilityState;
-  };
 
   const getBookableTimeOptionsForDate = useCallback(
     (dateStr: string) => {
       if (!pro || !dateStr) return [] as string[];
-
-      const weekly = parseAvailabilityToWeekly(pro.availability ?? null);
-      const weekdayKey = weekdayKeyFromDateStr(dateStr);
-      const dayState = weekly[weekdayKey];
-
-      const isDayOverride = (pro.available_date_overrides ?? []).includes(dateStr);
-
-      const exceptions = pro.unavailable_dates?.[dateStr];
-      if (isWholeDayUnavailable(exceptions)) return [];
-
-      const exceptionSlots = getUnavailableSlots(exceptions);
+      const day = openSlots?.[dateStr];
+      if (!day || day.windows.length === 0) return [] as string[];
 
       const parseHHMMToMinutes = (s: string) => {
         const m = s.match(/^\s*(\d{1,2}):(\d{2})/);
         if (!m) return null;
         return Number(m[1]) * 60 + Number(m[2]);
       };
-
-      const scheduleStartMin = isDayOverride ? 9 * 60 : parseHHMMToMinutes(dayState.start);
-      const scheduleEndMin = isDayOverride ? 17 * 60 : parseHHMMToMinutes(dayState.end);
-      if (!isDayOverride && !dayState.available) return [];
-      if (scheduleStartMin == null || scheduleEndMin == null || scheduleEndMin <= scheduleStartMin) return [];
       const newBookingDuration = bookingSlotDurationMinutes(
         selectedBookingService?.duration_minutes,
         services.map((s) => s.duration_minutes),
@@ -682,55 +663,24 @@ export default function ProProfilePage() {
       const now = new Date();
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
       const isToday = dateStr === todayStr;
+      const lastEnd = Math.max(...day.windows.map((w) => w.end));
 
+      // Same hourly grid as before (anchored on the day's schedule start), kept only when the whole
+      // appointment fits inside one open window returned by the server.
       const candidates = bookableStartTimes({
-        scheduleStartMin,
-        scheduleEndMin,
+        scheduleStartMin: day.gridStartMin,
+        scheduleEndMin: lastEnd,
         durationMin: newBookingDuration,
         nowMinutes: isToday ? nowMinutes : null,
       });
-
-      const filteredByExceptions = candidates.filter((time) => {
+      return candidates.filter((time) => {
         const startMin = parseHHMMToMinutes(time);
         if (startMin == null) return false;
         const endMin = startMin + newBookingDuration;
-
-        for (const slot of exceptionSlots) {
-          const slotStart = parseHHMMToMinutes(slot.start);
-          const slotEnd = parseHHMMToMinutes(slot.end);
-          if (slotStart == null || slotEnd == null) continue;
-          const overlaps = startMin < slotEnd && endMin > slotStart;
-          if (overlaps) return false;
-        }
-        return true;
+        return day.windows.some((w) => startMin >= w.start && endMin <= w.end);
       });
-
-      const bookingsForDate = proBookings.filter((b) => {
-        const dateFromPreferred = b.preferred_date ? String(b.preferred_date) : null;
-        const dateFromCreatedAt = b.created_at ? String(b.created_at).slice(0, 10) : null;
-        return (dateFromPreferred ?? dateFromCreatedAt) === dateStr;
-      });
-
-      const bookedRanges = bookingsForDate
-        .map((b) => {
-          const raw = b.preferred_time ? String(b.preferred_time) : b.created_at ? String(b.created_at).slice(11, 16) : "";
-          const start = parseHHMMToMinutes(raw);
-          if (start == null) return null;
-          const duration = b.service_duration_minutes ?? 60;
-          return { start, end: start + duration };
-        })
-        .filter((x): x is { start: number; end: number } => !!x);
-
-      const filteredByBookings = filteredByExceptions.filter((time) => {
-        const startMin = parseHHMMToMinutes(time);
-        if (startMin == null) return false;
-        const endMin = startMin + newBookingDuration;
-        return !bookedRanges.some((booked) => startMin < booked.end && endMin > booked.start);
-      });
-
-      return filteredByBookings;
     },
-    [pro, selectedBookingService?.duration_minutes, services, proBookings, todayStr, slotClock],
+    [pro, openSlots, selectedBookingService?.duration_minutes, services, todayStr, slotClock],
   );
 
   const handleCalendarDayClick = (dateStr: string, isAvailableByWeekday: boolean) => {
@@ -738,9 +688,10 @@ export default function ProProfilePage() {
       toast({ title: t.auth.toastError, description: t.terms.bookingDateNotInPast ?? "You cannot book a date in the past.", variant: "destructive" });
       return;
     }
-    const hasOverride = (pro?.available_date_overrides ?? []).includes(dateStr);
-    const wholeDayOff = isWholeDayUnavailable(pro?.unavailable_dates?.[dateStr]);
-    const isBookable = !wholeDayOff && (hasOverride || isAvailableByWeekday);
+    // Day is bookable only if the server reports at least one open window (private blocks and
+    // other clients' bookings are already subtracted there).
+    void isAvailableByWeekday;
+    const isBookable = !!openSlots?.[dateStr]?.windows.length;
     if (!isBookable) {
       toast({
         title: locale === "fr" ? "Aucune plage disponible" : "No available times",
@@ -779,13 +730,38 @@ export default function ProProfilePage() {
     if (!pro) return [] as string[];
     // Only need today: later days aren't exhausted by clock time.
     const slots = getBookableTimeOptionsForDate(todayStr);
-    const weekly = parseAvailabilityToWeekly(pro.availability ?? null);
-    const weekdayKey = weekdayKeyFromDateStr(todayStr);
-    const dayOpen =
-      (pro.available_date_overrides ?? []).includes(todayStr) ||
-      (!isWholeDayUnavailable(pro.unavailable_dates?.[todayStr]) && weekly[weekdayKey]?.available);
+    const dayOpen = !!openSlots?.[todayStr]?.windows.length;
     return dayOpen && slots.length === 0 ? [todayStr] : [];
-  }, [pro, todayStr, getBookableTimeOptionsForDate]);
+  }, [pro, openSlots, todayStr, getBookableTimeOptionsForDate]);
+
+  const openSlotDates = useMemo(
+    () => Object.keys(openSlots ?? {}).filter((d) => (openSlots?.[d]?.windows.length ?? 0) > 0),
+    [openSlots],
+  );
+
+  // Load open windows for the next ~4 months; refreshed when the booking dialog opens and after a
+  // booking attempt, so a slot taken by another client disappears for everyone.
+  useEffect(() => {
+    const id = pro?.id;
+    if (!id) {
+      setOpenSlots(null);
+      return;
+    }
+    let cancelled = false;
+    const to = new Date(`${todayStr}T12:00:00`);
+    to.setDate(to.getDate() + 120);
+    const toStr = `${to.getFullYear()}-${String(to.getMonth() + 1).padStart(2, "0")}-${String(to.getDate()).padStart(2, "0")}`;
+    void fetchProOpenSlots(id, todayStr, toStr).then((res) => {
+      if (!cancelled && res) setOpenSlots(res);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pro?.id, todayStr, openSlotsTick]);
+
+  useEffect(() => {
+    if (bookingDialogOpen) refreshOpenSlots();
+  }, [bookingDialogOpen, refreshOpenSlots]);
 
   useEffect(() => {
     if (!selectedBookingTime) return;
@@ -797,11 +773,8 @@ export default function ProProfilePage() {
     if (bookingTimeOptions.includes(rebookPrefTime)) setSelectedBookingTime(rebookPrefTime);
   }, [rebookPrefTime, selectedBookingDate, selectedBookingTime, bookingTimeOptions]);
 
-  const scheduleClientNote = useMemo(() => {
-    if (!pro || !selectedBookingDate) return "";
-    const ex = pro.unavailable_dates?.[selectedBookingDate] as UnavailableDayStored | undefined;
-    return (getUnavailableNote(ex) ?? "").trim();
-  }, [pro, selectedBookingDate]);
+  // Blocked-time notes are private to the pro now (security review 2026-10-08).
+  const scheduleClientNote = "";
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -858,14 +831,22 @@ export default function ProProfilePage() {
     const fetch = async () => {
       setLoading(true);
 
-      const { data: proData } = await supabase
+      // Public-safe columns only (HIGH 1). Exact coords are private: use the ~1 km rounded copies.
+      const { data: proRaw } = await supabase
         .from("pro_profiles")
-        .select("*")
+        .select(PUBLIC_PRO_PROFILE_SELECT)
         .eq("id", proId)
         .eq("is_verified", true)
         .single();
 
-      if (!proData) { setLoading(false); return; }
+      if (!proRaw) { setLoading(false); return; }
+      const proPublic = proRaw as unknown as ProData & {
+        latitude_approx?: number | null;
+        longitude_approx?: number | null;
+        location_city?: string | null;
+      };
+      // City-level location only; the street-level `location` is private.
+      const proData = { ...withApproxCoords(proPublic), location: proPublic.location_city ?? null };
       const { data: subForTier } = await supabase
         .from("pro_subscriptions")
         .select("plan_id")
@@ -875,16 +856,12 @@ export default function ProProfilePage() {
       setPro(proData as ProData);
 
       // Parallel fetches (services loaded with display_name fallback if column missing)
-      const [profileRes, photosRes, licensesRes, ratingRes, bookingsRes] = await Promise.all([
+      const [profileRes, photosRes, licensesRes, ratingRes] = await Promise.all([
         supabase.from("public_profiles").select("full_name, avatar_url").eq("user_id", proData.user_id).single(),
         supabase.from("pro_photos").select("id, url, caption, is_primary").eq("pro_profile_id", proId).order("is_primary", { ascending: false }),
         supabase.from("pro_licenses").select("license_number, license_type, is_verified").eq("pro_profile_id", proId),
         supabase.rpc("get_pro_avg_rating", { p_pro_profile_id: proId }),
-        supabase
-          .from("bookings")
-          .select("id, created_at, preferred_date, preferred_time, service_duration_minutes")
-          .eq("pro_profile_id", proId)
-          .in("status", ["pending", "accepted", "completed"]),
+        // Taken slots come from get_pro_open_slots() (covers every client's bookings, no client data).
       ]);
 
       let servicesRows: {
@@ -950,26 +927,6 @@ export default function ProProfilePage() {
         servicesRows = (sFull.data as typeof servicesRows) || [];
       }
 
-      let bookingRows =
-        (bookingsRes.data as {
-          id: string;
-          created_at?: string;
-          preferred_date?: string | null;
-          preferred_time?: string | null;
-          service_duration_minutes?: number | null;
-        }[] | null) || [];
-      if (bookingsRes.error && `${bookingsRes.error.message || ""}`.includes("service_duration_minutes")) {
-        const fb = await supabase
-          .from("bookings")
-          .select("id, created_at, preferred_date, preferred_time")
-          .eq("pro_profile_id", proId)
-          .in("status", ["pending", "accepted", "completed"]);
-        bookingRows = ((fb.data as Omit<(typeof bookingRows)[number], "service_duration_minutes">[] | null) || []).map((b) => ({
-          ...b,
-          service_duration_minutes: null,
-        }));
-      }
-
       setFullName(profileRes.data?.full_name || t.common.proFallback);
       const photoList = (photosRes.data || []) as { id: string; url: string; caption: string | null; is_primary?: boolean }[];
       setPhotos(photoList);
@@ -989,7 +946,6 @@ export default function ProProfilePage() {
       setLicenses((licensesRes.data as { license_number: string; license_type: string; is_verified: boolean }[] | null) || []);
       setAvgRating(Number(ratingRes.data?.[0]?.avg_rating || 0));
       setReviewCount(Number(ratingRes.data?.[0]?.review_count || 0));
-      setProBookings(bookingRows);
       setLoading(false);
     };
     fetch();
@@ -1643,8 +1599,8 @@ export default function ProProfilePage() {
                 <AvailabilityCalendar
                   availability={pro.availability}
                   busyDates={busyDatesList}
-                  unavailableDates={pro.unavailable_dates ?? {}}
-                  availableDateOverrides={pro.available_date_overrides ?? []}
+                  unavailableDates={{}}
+                  availableDateOverrides={openSlotDates}
                   exhaustedDates={exhaustedBookingDates}
                   dayHasBookableSlot={(dateStr) => getBookableTimeOptionsForDate(dateStr).length > 0}
                   onDayClick={handleCalendarDayClick}
@@ -2243,7 +2199,7 @@ export default function ProProfilePage() {
                     <Button
                       type="button"
                       className="w-full gap-2"
-                      onClick={() => {
+                      onClick={async () => {
                         if (selectedBookingDate && selectedBookingDate < todayStr) {
                           toast({ title: t.auth.toastError, description: t.terms.bookingDateNotInPast ?? "You cannot book a date in the past.", variant: "destructive" });
                           return;
@@ -2255,6 +2211,41 @@ export default function ProProfilePage() {
                         if (!bookingPhotoWithIdFile && !clientBookingIdPath) {
                           toast({ title: t.auth.toastError, description: t.terms.bookingFillVerification, variant: "destructive" });
                           return;
+                        }
+                        // Re-check the slot server-side right before payment: another client may have
+                        // just taken it (the DB trigger also rejects overlaps at insert time).
+                        if (pro?.id && selectedBookingDate && selectedBookingTime) {
+                          const fresh = await fetchProOpenSlots(pro.id, selectedBookingDate, selectedBookingDate);
+                          if (fresh) {
+                            setOpenSlots((prev) => {
+                              const next = { ...(prev ?? {}) };
+                              if (fresh[selectedBookingDate]) next[selectedBookingDate] = fresh[selectedBookingDate];
+                              else delete next[selectedBookingDate];
+                              return next;
+                            });
+                            const [hh, mm] = selectedBookingTime.split(":").map(Number);
+                            const startMin = hh * 60 + mm;
+                            const dur = bookingSlotDurationMinutes(
+                              selectedBookingService?.duration_minutes,
+                              services.map((s) => s.duration_minutes),
+                            );
+                            const stillOpen = (fresh[selectedBookingDate]?.windows ?? []).some(
+                              (w) => startMin >= w.start && startMin + dur <= w.end,
+                            );
+                            if (!stillOpen) {
+                              setSelectedBookingTime(null);
+                              setBookingStep(1);
+                              toast({
+                                title: locale === "fr" ? "Créneau déjà réservé" : "Time no longer available",
+                                description:
+                                  locale === "fr"
+                                    ? "Ce créneau vient d’être réservé. Choisissez une autre heure."
+                                    : "This time was just booked. Please pick another time.",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                          }
                         }
                         setBookingStep(4);
                       }}
@@ -2400,9 +2391,11 @@ export default function ProProfilePage() {
                                     : ""
                                 }`
                               : "";
+                          // Invoice supplier fields are not publicly readable; signed-in RPC (HIGH 1).
+                          const billing = (await fetchProBillingDetails([pro.id]))[pro.id];
                           const supplierAddress =
-                            (typeof pro.business_address === "string" && pro.business_address.trim()) ||
-                            (typeof pro.location === "string" && pro.location.trim()) ||
+                            (typeof billing?.business_address === "string" && billing.business_address.trim()) ||
+                            (typeof billing?.location === "string" && billing.location.trim()) ||
                             "";
                           if (!supplierAddress) {
                             throw new Error(
@@ -2439,8 +2432,8 @@ export default function ProProfilePage() {
                             proProfileId: pro.id,
                             businessName: pro.business_name ?? "",
                             supplierAddress,
-                            supplierGstNumber: pro.gst_registration_number ?? null,
-                            supplierQstNumber: pro.qst_registration_number ?? null,
+                            supplierGstNumber: billing?.gst_registration_number ?? null,
+                            supplierQstNumber: billing?.qst_registration_number ?? null,
                             serviceName: serviceLine,
                             serviceDescriptionDetailed,
                             durationLabel: formatDurationLabel(svc?.duration_minutes ?? null),
@@ -2521,6 +2514,15 @@ export default function ProProfilePage() {
 
                           let invoiceSnapshotStored = !!payload.invoice_snapshot;
                           let { data, error } = await insertBooking(payload);
+                          if (isSlotTakenError(error)) {
+                            // Server-side double-booking guard: someone else got this slot first.
+                            refreshOpenSlots();
+                            throw new Error(
+                              locale === "fr"
+                                ? "Ce créneau vient d’être réservé par quelqu’un d’autre. Choisissez une autre heure. Si un paiement apparaît pour cette tentative, contactez le support."
+                                : "This time was just booked by someone else. Please pick another time. If a payment shows up for this attempt, contact support.",
+                            );
+                          }
                           if (error) {
                             const errorText = (e: NonNullable<typeof error>) =>
                               `${e.message ?? ""} ${(e as { details?: string }).details ?? ""}`;
@@ -2533,7 +2535,7 @@ export default function ProProfilePage() {
                               invoiceSnapshotStored = false;
                               if (!error) {
                                 console.warn(
-                                  "bookings.invoice_snapshot column missing; booking saved without snapshot. Run supabase/PASTE-BOOKING-INVOICE-SNAPSHOT.sql in Supabase.",
+                                  "bookings.invoice_snapshot column missing; booking saved without snapshot. Run supabase/_archive/PASTE-BOOKING-INVOICE-SNAPSHOT.sql in Supabase.",
                                 );
                               } else {
                                 message = errorText(error);
@@ -2578,7 +2580,7 @@ export default function ProProfilePage() {
                               }
                               if (missingScheduleColumn) {
                                 throw new Error(
-                                  "Your Supabase bookings table is missing schedule columns. Run supabase/ADD-BOOKING-SCHEDULE-COLUMNS.sql in the Supabase SQL Editor, then refresh the schema cache/reload the site."
+                                  "Your Supabase bookings table is missing schedule columns. Run supabase/_archive/ADD-BOOKING-SCHEDULE-COLUMNS.sql in the Supabase SQL Editor, then refresh the schema cache/reload the site."
                                 );
                               }
                               throw new Error(error.message);

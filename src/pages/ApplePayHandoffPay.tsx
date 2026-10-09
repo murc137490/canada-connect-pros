@@ -18,6 +18,7 @@ import {
 } from "@/lib/applePayHandoff";
 import { computeBookingInvoiceFromBaseCents } from "@/lib/bookingInvoiceAmounts";
 import { buildBookingInvoiceSnapshotV2 } from "@/lib/bookingInvoiceSnapshot";
+import { fetchProBillingDetails } from "@/lib/proProfileAccess";
 
 export default function ApplePayHandoffPay() {
   const { handoffId } = useParams<{ handoffId: string }>();
@@ -96,13 +97,21 @@ export default function ApplePayHandoffPay() {
             .filter((x) => typeof x === "string" && x.trim())
             .join("\n") || draft.phone;
 
-        const { data: pro } = await supabase
+        const { data: proPublic } = await supabase
           .from("pro_profiles")
-          .select(
-            "id, business_name, legal_business_name, business_address, location, gst_registration_number, qst_registration_number, user_id",
-          )
+          .select("id, business_name, location, user_id")
           .eq("id", draft.proProfileId)
           .maybeSingle();
+        // Invoice supplier fields come from a signed-in-only RPC (not column-granted; HIGH 1).
+        const billing = (await fetchProBillingDetails([draft.proProfileId]))[draft.proProfileId];
+        const pro = proPublic
+          ? {
+              ...proPublic,
+              business_address: billing?.business_address ?? null,
+              gst_registration_number: billing?.gst_registration_number ?? null,
+              qst_registration_number: billing?.qst_registration_number ?? null,
+            }
+          : null;
 
         const supplierAddress =
           (typeof pro?.business_address === "string" && pro.business_address.trim()) ||

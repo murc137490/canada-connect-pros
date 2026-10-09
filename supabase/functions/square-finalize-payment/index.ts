@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 /**
  * Complete (capture) or cancel (void) a previously authorized Square payment.
@@ -24,7 +25,7 @@ type TokenRow = {
   merchant_id: string;
 };
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -181,4 +182,4 @@ Deno.serve(async (req) => {
     status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-});
+}));
