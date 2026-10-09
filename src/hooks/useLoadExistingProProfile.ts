@@ -9,6 +9,8 @@ import type { ServiceAreaValue } from "@/components/ProServiceAreaMap";
 import type { LanguageLevel } from "@/i18n/constants";
 import { CANADIAN_LANGUAGES } from "@/i18n/constants";
 import { resolveProPageScheme } from "@/data/proPageColorSchemes";
+import { fetchMyProProfile } from "@/lib/proProfileAccess";
+import type { Tables } from "@/integrations/supabase/types";
 
 export type AccountFieldsState = {
   full_name: string;
@@ -99,7 +101,8 @@ export function useLoadExistingProProfile(userId: string | undefined, enabled: b
         });
       }
 
-      const { data: pro } = await supabase.from("pro_profiles").select("*").eq("user_id", userId).maybeSingle();
+      // Owner read via SECURITY DEFINER RPC (private columns are not column-granted).
+      const { data: pro } = await fetchMyProProfile<Tables<"pro_profiles">>();
       if (cancelled) return;
 
       setHasExistingProfile(!!pro?.id);

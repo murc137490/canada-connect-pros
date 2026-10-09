@@ -9,6 +9,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { toE164NorthAmerica } from "../_shared/phoneE164.ts";
 import { sendTelnyxSms, telnyxSmsConfigured } from "../_shared/telnyxSms.ts";
 import { brandFrom, BRAND_REPLY_TO } from "../_shared/brandSender.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -128,7 +129,7 @@ async function sendEmailCode(to: string, code: string, language: "en" | "fr"): P
   return { ok: true };
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
@@ -324,4 +325,4 @@ Deno.serve(async (req) => {
     return json({ error: "email_locked" }, 400);
   }
   return json({ ok: true, email: nextEmail, email_masked: maskEmail(nextEmail) });
-});
+}));

@@ -58,8 +58,9 @@ export default function ReviewSection({ proProfileId, proUserId, previewLimit, s
         .select("*")
         .eq("pro_profile_id", proProfileId)
         .order("created_at", { ascending: false }),
-      // client_reviews is not readable logged out (401); only signed-in viewers need it.
-      user
+      // Pro → client reviews are private (pros, the reviewed client, admins). Only the pro owner
+      // needs them here, to blur reviews of clients they have not reviewed yet.
+      user?.id && proUserId && user.id === proUserId
         ? supabase.from("client_reviews").select("client_id").eq("pro_profile_id", proProfileId)
         : Promise.resolve({ data: [] as { client_id: string }[] }),
     ]);

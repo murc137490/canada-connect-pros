@@ -12,6 +12,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isInternalRequest } from "../_shared/internalAuth.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,7 +26,7 @@ function json(body: unknown, status = 200): Response {
 
 type Generated = { series_id: string; booking_id?: string; date?: string; status?: string; skipped?: string; would_create?: boolean };
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -61,4 +62,4 @@ Deno.serve(async (req) => {
     notifications.push({ booking_id: r.booking_id, email_status: emailStatus, sms_status: smsStatus });
   }
   return json({ ok: true, dry_run: false, generated: rows, notifications });
-});
+}));

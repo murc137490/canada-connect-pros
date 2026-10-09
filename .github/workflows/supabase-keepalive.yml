@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Ping Supabase (select + update)
+      - name: Ping Supabase (platform_keepalive_ping RPC)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -30,24 +30,16 @@ jobs:
             exit 1
           fi
           BASE="${SUPABASE_URL%/}"
-          NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-          echo "Select keepalive row…"
-          curl -fsS \
-            -H "apikey: ${SUPABASE_ANON_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
-            -H "Accept: application/json" \
-            "${BASE}/rest/v1/platform_keepalive?id=eq.1&select=id,last_ping_at,ping_count"
-
-          echo
-          echo "Touch last_ping_at…"
-          curl -fsS -X PATCH \
+          # The anon role can no longer write platform_keepalive directly (security review
+          # 2026-10-08); the SECURITY DEFINER RPC bumps last_ping_at / ping_count.
+          echo "Call platform_keepalive_ping…"
+          curl -fsS -X POST \
             -H "apikey: ${SUPABASE_ANON_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
             -H "Content-Type: application/json" \
-            -H "Prefer: return=minimal" \
-            -d "{\"last_ping_at\":\"${NOW}\"}" \
-            "${BASE}/rest/v1/platform_keepalive?id=eq.1"
+            -d "{}" \
+            "${BASE}/rest/v1/rpc/platform_keepalive_ping"
 
           echo
-          echo "Keep-alive OK at ${NOW}"
+          echo "Keep-alive OK at $(date -u +%Y-%m-%dT%H:%M:%SZ)"

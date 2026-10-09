@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchProBillingDetails } from "@/lib/proProfileAccess";
 
 type Msg = { id?: string; role: "user" | "assistant"; content: string; sender_role?: string };
 
@@ -71,7 +72,7 @@ export default function BookingAssistantChat({
         supabase
           .from("pro_profiles")
           .select(
-            "business_name, bio, years_experience, primary_category_slug, booking_cancel_policy, booking_cancel_fee_percent, service_at_workspace_only, offers_workspace, offers_travel, business_address, service_radius_km, price_min, price_max, pro_member_id",
+            "business_name, bio, years_experience, primary_category_slug, booking_cancel_policy, booking_cancel_fee_percent, service_at_workspace_only, offers_workspace, offers_travel, service_radius_km, price_min, price_max, pro_member_id",
           )
           .eq("id", proProfileId)
           .maybeSingle(),
@@ -81,8 +82,10 @@ export default function BookingAssistantChat({
           .eq("pro_profile_id", proProfileId)
           .limit(40),
       ]);
+      // Workspace address is private: only booked clients / the pro get it via RPC (HIGH 1).
+      const billing = (await fetchProBillingDetails([proProfileId]))[proProfileId];
       if (cancelled) return;
-      const p = pro as Record<string, unknown> | null;
+      const p = pro ? ({ ...(pro as Record<string, unknown>), business_address: billing?.business_address ?? null } as Record<string, unknown>) : null;
       const svcLines = ((services as Record<string, unknown>[] | null) ?? [])
         .map((s) => {
           const name = String(s.display_name || s.service_slug || "");

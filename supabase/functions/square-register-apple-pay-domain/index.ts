@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 /**
  * Diagnose + register Apple Pay domain via Square RegisterDomain API.
@@ -10,7 +11,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -86,4 +87,4 @@ Deno.serve(async (req) => {
     status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-});
+}));

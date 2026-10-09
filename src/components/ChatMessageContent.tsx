@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from "react";
+import { safeHttpUrl } from "@/lib/safeUrl";
 
 type Seg = { type: "text"; value: string } | { type: "link"; href: string; label: string };
 
@@ -72,8 +73,10 @@ export function ChatMessageContent({
 }) {
   const nodes: ReactNode[] = parseChatLinks(text).map((seg, i) => {
     if (seg.type === "text") return <Fragment key={i}>{seg.value}</Fragment>;
+    const href = safeHttpUrl(seg.href, { allowRelative: true });
+    if (!href) return <Fragment key={i}>{seg.label}</Fragment>;
     return (
-      <a key={i} href={seg.href} className={inlineLinkClass} onClick={() => onNavigate?.()}>
+      <a key={i} href={href} className={inlineLinkClass} onClick={() => onNavigate?.()}>
         {seg.label}
       </a>
     );

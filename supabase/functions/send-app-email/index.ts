@@ -11,6 +11,7 @@ import {
   emailShell,
   type EmailLanguage,
 } from "../_shared/premiereEmail.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 type Language = EmailLanguage;
 type EmailType =
@@ -66,7 +67,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   if (!RESEND_API_KEY) return json({ error: "Missing RESEND_API_KEY" }, 500);
@@ -143,7 +144,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : String(error) }, 500);
   }
-});
+}));
 
 async function getCaller(req: Request, supabaseUrl: string, anonKey: string) {
   const authHeader = req.headers.get("Authorization");

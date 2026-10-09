@@ -5,6 +5,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getPlatformAdminEmails, isPlatformAdminEmail, normalizeEmail } from "../_shared/platformAdmin.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,7 +39,7 @@ async function loadAuthUserMaps(admin: ReturnType<typeof createClient>): Promise
   return { emailById, idByEmail };
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -148,4 +149,4 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     },
   );
-});
+}));

@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { callerIsPlatformModerator } from "../_shared/platformAdmin.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -114,7 +115,7 @@ function mapRowsToPayload(
   });
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -204,4 +205,4 @@ Deno.serve(async (req) => {
   } catch (e) {
     return json({ error: setupError(e) }, 500);
   }
-});
+}));

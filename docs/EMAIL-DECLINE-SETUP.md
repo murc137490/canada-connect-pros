@@ -21,7 +21,7 @@ This lets declined pro applicants disappear from the Admin list and stores that 
 
 Run once in **Supabase → SQL Editor** so the admin can accept pending applications and remove pros from the Dashboard:
 
-**File:** `supabase/ADMIN-ACCEPT-REMOVE-RPC.sql` (paste its contents and run).
+**File:** `supabase/_archive/ADMIN-ACCEPT-REMOVE-RPC.sql` (paste its contents and run).
 
 This creates RPCs `accept_pro_by_admin` and `remove_pro_by_admin`. Only the user with email `premiereservicescontact@gmail.com` can call them. After running, use **Dashboard → Admin** to accept or remove pros.
 

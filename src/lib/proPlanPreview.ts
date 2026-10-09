@@ -6,6 +6,7 @@ import {
   dollarsToCents,
   inferBillingStartWhenNoSubscriptionRow,
 } from "@/lib/proration";
+import { fetchMyProProfile } from "@/lib/proProfileAccess";
 
 export type ProPlanId = "starter" | "growth" | "pro";
 
@@ -108,23 +109,12 @@ export async function computePlanChangePreview(proProfileId: string, newPlanRaw:
       cancel_return_discount_consumed_at?: string | null;
     };
     let profile: ProRow | undefined;
-    const byId = await supabase
-      .from("pro_profiles")
-      .select("id, user_id, subscription_tier, created_at, cancel_return_discount_pending, cancel_return_discount_consumed_at")
-      .eq("id", proProfileId)
-      .maybeSingle();
-
-    if (!byId.error && byId.data) {
-      profile = byId.data as ProRow;
-    } else {
-      const byUser = await supabase
-        .from("pro_profiles")
-        .select("id, user_id, subscription_tier, created_at, cancel_return_discount_pending, cancel_return_discount_consumed_at")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (!byUser.error && byUser.data) {
-        profile = byUser.data as ProRow;
-      }
+    // Owner-only columns (cancel_return_discount_*) come from the owner RPC (HIGH 1).
+    const own = await fetchMyProProfile<ProRow>(
+      "id, user_id, subscription_tier, created_at, cancel_return_discount_pending, cancel_return_discount_consumed_at",
+    );
+    if (!own.error && own.data && (!proProfileId || own.data.id === proProfileId)) {
+      profile = own.data;
     }
 
     if (!profile) {

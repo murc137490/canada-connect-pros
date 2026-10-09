@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { resolveStorageDisplayUrl } from "@/lib/resolveStorageUrl";
 import { RETENTION_CONFIG } from "@/config/legalConfig";
+import { safeHttpUrl } from "@/lib/safeUrl";
 
 const EVIDENCE_BUCKET = "booking-evidence";
 
@@ -75,7 +76,7 @@ export default function BookingEvidenceGallery({ bookingId }: { bookingId: strin
             ) : isVideoFile(name) ? (
               <video src={url} className="w-full h-28 object-cover" controls preload="metadata" />
             ) : (
-              <a href={url} target="_blank" rel="noreferrer" className="block p-2 text-xs text-primary hover:underline">
+              <a href={safeHttpUrl(url) ?? undefined} target="_blank" rel="noreferrer" className="block p-2 text-xs text-primary hover:underline">
                 {d.evidenceGalleryOpenFile}
               </a>
             )}

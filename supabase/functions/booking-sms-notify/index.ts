@@ -19,6 +19,7 @@ import { toE164NorthAmerica } from "../_shared/phoneE164.ts";
 import { sendTelnyxSms, telnyxSmsConfigured } from "../_shared/telnyxSms.ts";
 import { buildSmsText, formatSmsDate, smsLang, type SmsEvent } from "../_shared/bookingSmsTemplates.ts";
 import { isInternalRequest } from "../_shared/internalAuth.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,7 +69,7 @@ function maskPhone(e164: string): string {
   return e164.length > 4 ? `${e164.slice(0, 2)}******${e164.slice(-4)}` : "****";
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -264,4 +265,4 @@ Deno.serve(async (req) => {
     await admin.from("bookings").update({ [sentCol[event]]: new Date().toISOString() }).eq("id", bookingId);
   }
   return json({ ok: anyOk && !anyFail ? true : anyOk, partial: anyOk && anyFail, event, results }, anyOk ? 200 : 502);
-});
+}));

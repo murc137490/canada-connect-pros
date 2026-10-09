@@ -77,7 +77,7 @@ export async function searchProsByBusinessOrName(query: string, limit = 8): Prom
   const handlePattern = /^[a-z][a-z0-9._-]{1,29}$/.test(handle) ? escapeIlike(handle) : null;
   const { data: byBusiness, error: bizErr } = await supabase
     .from("pro_profiles")
-    .select("id, business_name, user_id, primary_category_slug, phone, is_verified, share_slug")
+    .select("id, business_name, user_id, primary_category_slug, is_verified, share_slug")
     .eq("is_verified", true)
     .or(
       handlePattern
@@ -119,7 +119,7 @@ export async function searchProsByBusinessOrName(query: string, limit = 8): Prom
     if (!fullName) continue;
     const { data: proRow } = await supabase
       .from("pro_profiles")
-      .select("id, business_name, user_id, primary_category_slug, phone, is_verified, share_slug")
+      .select("id, business_name, user_id, primary_category_slug, is_verified, share_slug")
       .eq("user_id", userId)
       .eq("is_verified", true)
       .maybeSingle();

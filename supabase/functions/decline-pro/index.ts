@@ -10,6 +10,7 @@ const corsHeaders = {
 };
 
 import { callerIsPlatformModerator } from "../_shared/platformAdmin.ts";
+import { withCorsAllowlist } from "../_shared/cors.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SMTP_HOST = Deno.env.get("SMTP_HOST");
@@ -19,7 +20,7 @@ const SMTP_PASS = Deno.env.get("SMTP_PASS");
 const FROM_EMAIL = brandAddress(Deno.env.get("DECLINE_PRO_FROM_EMAIL") ?? Deno.env.get("FROM_EMAIL"));
 const FROM_NAME = BRAND_FROM_NAME;
 
-Deno.serve(async (req) => {
+Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -130,7 +131,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}));
 
 function escapeHtml(s: string): string {
   return s

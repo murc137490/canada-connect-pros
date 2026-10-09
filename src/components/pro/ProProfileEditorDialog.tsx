@@ -62,6 +62,7 @@ import { referralInvite } from "@/lib/referralInvite";
 import { navigateWithViewTransition } from "@/lib/navigateWithViewTransition";
 import { getProPublicContactBlacklistReasons } from "@/lib/proPublicContactBlacklist";
 import { cn } from "@/lib/utils";
+import { fetchMyProProfile } from "@/lib/proProfileAccess";
 
 const STORAGE_BUCKET = "pro-photos";
 const VERIFICATION_BUCKET = "pro-verification";
@@ -490,11 +491,10 @@ export function ProProfileEditorDialog({
         .eq("user_id", user.id);
       if (profileAccountErr) throw profileAccountErr;
 
-      const { data: existing } = await supabase
-        .from("pro_profiles")
-        .select("id, is_verified, approval_baseline_json")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // approval_baseline_json is owner/admin-only: read through the owner RPC (HIGH 1).
+      const { data: existing } = await fetchMyProProfile<{ id: string; is_verified: boolean | null; approval_baseline_json: unknown }>(
+        "id, is_verified, approval_baseline_json",
+      );
       let profileId: string | undefined = existing?.id;
 
       const ext = (f: File) => f.name.split(".").pop() || "jpg";

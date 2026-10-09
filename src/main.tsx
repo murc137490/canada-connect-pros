@@ -54,9 +54,11 @@ async function bootstrap() {
         `<h2 style="margin:0 0 10px 0;">${copy.title}</h2>` +
         `<p style="margin:0 0 16px 0;color:#5E6672;line-height:1.5;">${copy.description}</p>` +
         `<a href="/support" style="display:inline-block;margin:0 8px 8px 0;padding:10px 16px;background:#102556;color:#FBF9F6;border-radius:8px;text-decoration:none;font-weight:600;">${copy.supportCta}</a>` +
-        `<button onclick="location.reload()" style="padding:10px 16px;background:transparent;color:#102556;border:1px solid #E0DAD2;border-radius:8px;cursor:pointer;font-weight:600;">Refresh</button>` +
+        `<button type="button" id="boot-refresh" style="padding:10px 16px;background:transparent;color:#102556;border:1px solid #E0DAD2;border-radius:8px;cursor:pointer;font-weight:600;">Refresh</button>` +
         `</div>`,
     );
+    // No inline handlers (CSP without 'unsafe-inline' for scripts): wire Refresh here.
+    document.getElementById("boot-refresh")?.addEventListener("click", () => window.location.reload());
     try {
       window.dispatchEvent(new Event("altshift-app-ready"));
     } catch {
