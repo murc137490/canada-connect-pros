@@ -25,6 +25,7 @@ import {
 } from "@/lib/browsePostalStorage";
 import { cleanSupportQuery } from "@/lib/supportAiQuery";
 import { searchProsByBusinessOrName, type ProBusinessSearchHit } from "@/lib/searchProBusiness";
+import { proPublicPath } from "@/lib/publicHandle";
 import BookingPhoneMock from "@/components/BookingPhoneMock";
 import HeroPostalTiltMap from "@/components/HeroPostalTiltMap";
 import { Button } from "@/components/ui/button";
@@ -755,7 +756,7 @@ export default function HeroSection() {
                             <button
                               key={pro.proProfileId}
                               type="button"
-                              onClick={() => navigate(`/pros/${pro.proProfileId}`)}
+                              onClick={() => navigate(proPublicPath({ id: pro.proProfileId, share_slug: pro.shareSlug }))}
                               className={resultChipClass}
                             >
                               {pro.businessName}

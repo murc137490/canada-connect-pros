@@ -202,6 +202,23 @@ export function ProProfileEditorDialog({
   const [shareSlugTaken, setShareSlugTaken] = useState(false);
   const [shareSlugAlternatives, setShareSlugAlternatives] = useState<[string, string] | null>(null);
   const [shareSlugChecking, setShareSlugChecking] = useState(false);
+  /** The public link is /<account username>; the slug picker below is only for accounts without one. */
+  const [accountUsername, setAccountUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return;
+      const { data } = await supabase.from("profiles").select("username").eq("user_id", uid).maybeSingle();
+      if (!cancelled) setAccountUsername((data as { username?: string | null } | null)?.username?.trim() || null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
   const onboarding = searchParams.get("onboarding") === "1";
   const isEditMode = hasExistingProfile;
   const promoCode = (searchParams.get("promo_code") ?? "").trim();
@@ -239,7 +256,7 @@ export function ProProfileEditorDialog({
   }, [proEdit, profileApplied]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || accountUsername) return;
     const name = form.firstNameOrBusiness.trim();
     if (!name) {
       setSelectedShareSlug("");
@@ -266,7 +283,7 @@ export function ProProfileEditorDialog({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [form.firstNameOrBusiness, open, proEdit?.proProfileId]);
+  }, [form.firstNameOrBusiness, open, proEdit?.proProfileId, accountUsername]);
 
   useEffect(() => {
     if (open) return;
@@ -529,7 +546,8 @@ export function ProProfileEditorDialog({
       payload.page_background_color = pageBackgroundColor || null;
       payload.page_header_text = null;
       payload.service_tags = proServiceTags.length > 0 ? proServiceTags : null;
-      payload.share_slug = selectedShareSlug || slugifyShareName(form.firstNameOrBusiness);
+      // With a username the DB mirrors it into share_slug; only pick a slug for accounts without one.
+      if (!accountUsername) payload.share_slug = selectedShareSlug || slugifyShareName(form.firstNameOrBusiness);
 
       if (existing?.id) {
         let upErr = (await supabase.from("pro_profiles").update(payload).eq("id", existing.id)).error;
@@ -957,7 +975,19 @@ export function ProProfileEditorDialog({
               className="w-full"
               required
             />
-            {form.firstNameOrBusiness.trim() ? (
+            {accountUsername ? (
+              <div className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2.5 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {t.dashboard.shareSlugPreview ?? "Public link preview"}
+                </p>
+                <p className="text-sm font-medium text-foreground break-all">{publicShareUrl(accountUsername)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {locale === "fr"
+                    ? "Votre lien suit votre nom d’utilisateur. Modifiez-le dans Mon compte → Nom d’utilisateur."
+                    : "Your link follows your username. Change it under My account → Username."}
+                </p>
+              </div>
+            ) : form.firstNameOrBusiness.trim() ? (
               <div className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2.5 space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">
                   {t.dashboard.shareSlugPreview ?? "Public link preview"}

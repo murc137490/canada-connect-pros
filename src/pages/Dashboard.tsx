@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef, startTransition } from "react";
 import { format } from "date-fns";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isDemoAccount, isDemoClientAccount, isDemoProProfile } from "@/lib/demoAccount";
-import { publicShareUrl, slugifyShareName } from "@/lib/proShareSlug";
+import { publicShareUrl } from "@/lib/proShareSlug";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LiquidButton } from "@/components/ui/liquid-button";
@@ -75,7 +75,8 @@ import RepeatBookingDialog from "@/components/growth/RepeatBookingDialog";
 import { GROWTH_COPY, growthErrorMessage, tierStringHasGrowthTools } from "@/lib/growthTools";
 import { untypedDb } from "@/lib/untypedSupabase";
 import BookingAssistantChat from "@/components/dashboard/BookingAssistantChat";
-import MemberIdSettings from "@/components/dashboard/MemberIdSettings";
+import MemberIdSettings, { USERNAME_CHANGED_EVENT } from "@/components/dashboard/MemberIdSettings";
+import { proPublicPath } from "@/lib/publicHandle";
 import ClientBookingPayDialog from "@/components/ClientBookingPayDialog";
 import DashboardReviewsPanel from "@/components/dashboard/DashboardReviewsPanel";
 import { DashboardTour, DashboardTourHelpButton } from "@/components/dashboard/DashboardTour";
@@ -869,23 +870,38 @@ export default function Dashboard() {
     [openDashTour],
   );
 
+  /** Username edits (account settings) change the pro's public link immediately. */
+  useEffect(() => {
+    const onChanged = (e: Event) => {
+      const next = (e as CustomEvent<{ username?: string }>).detail?.username;
+      if (!next) return;
+      setProProfile((prev) => (prev ? { ...prev, share_slug: next } : prev));
+    };
+    window.addEventListener(USERNAME_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(USERNAME_CHANGED_EVENT, onChanged);
+  }, []);
+
   const tourParam = searchParams.get("tour");
 
   /** Auto-start once per pro; honor ?tour=1 from Help. Persist as soon as we open so refresh won't re-show. */
   useEffect(() => {
-    if (!user?.id || isAdminDashboardShell || !proProfile) return;
+    if (!user?.id || isAdminDashboardShell) return;
+    const force = tourParam === "1";
+    // Auto-start stays pro-only; clients get the tour when they ask for it (Help → Start the tour).
+    if (!proProfile && (!force || proProfileLoading)) return;
     const segment = segmentForTab(shellTab);
     if (!segment) {
       // Favorites / other tabs have no tour — never fall back to account
       setDashTourOpen(false);
       return;
     }
-    if (segment !== "account" && !proProfile.is_verified) return;
+    if (proProfile && segment !== "account" && !proProfile.is_verified) return;
 
-    const force = tourParam === "1";
     if (force) {
       dashTourSessionSkip.current.delete(segment);
-      const t = window.setTimeout(() => {
+      // No cleanup on purpose: removing ?tour=1 below re-runs this effect, and clearing
+      // the timer then meant "Start the tour" never opened anything.
+      window.setTimeout(() => {
         setDashTourSegment(segment);
         setDashTourOpen(true);
       }, 450);
@@ -897,9 +913,10 @@ export default function Dashboard() {
         },
         { replace: true },
       );
-      return () => window.clearTimeout(t);
+      return;
     }
 
+    if (!proProfile) return;
     if (!shouldAutoStartSegment(user.id, segment)) return;
     if (dashTourSessionSkip.current.has(segment)) return;
     const uid = user.id;
@@ -922,6 +939,7 @@ export default function Dashboard() {
     isAdminDashboardShell,
     tourParam,
     setSearchParams,
+    proProfileLoading,
   ]);
 
   /** Dismiss stale booking badges as soon as the dashboard opens (not only on Bookings tab). */
@@ -3273,7 +3291,7 @@ export default function Dashboard() {
         .eq("id", proProfile.id);
       if (error) throw error;
       setProProfile((prev) => (prev ? { ...prev, referral_invite_panel_enabled: false } : prev));
-      toast({ title: locale === "fr" ? "Panneau retir?" : "Panel removed" });
+      toast({ title: locale === "fr" ? "Panneau retiré" : "Panel removed" });
       setReferralDismissDialogOpen(false);
     } catch (e) {
       toast({
@@ -3695,18 +3713,9 @@ export default function Dashboard() {
   }
 
   if (!user) {
-    return (
-      <Layout>
-        <div className="min-h-screen bg-gradient-page">
-        <div className="container py-12 px-4 text-center">
-          <p className="text-muted-foreground mb-4">{t.joinPros.loginMessage}</p>
-          <Button asChild>
-            <Link to="/auth?mode=login&redirect=/dashboard">{t.nav.logIn}</Link>
-          </Button>
-        </div>
-        </div>
-      </Layout>
-    );
+    // Logged out: straight to login, then back here (incl. ?tab=…&tour=1).
+    const back = `/dashboard${typeof window !== "undefined" ? window.location.search : ""}`;
+    return <Navigate to={`/auth?mode=login&redirect=${encodeURIComponent(back)}`} replace />;
   }
 
   const showClientRequestUpgradePrompt = () => {
@@ -4290,7 +4299,9 @@ export default function Dashboard() {
         </aside>
       )}
       {showReferralFriendAside && (
-        <aside className="hidden lg:block fixed left-4 top-24 z-30 w-80 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border border-primary/20 bg-card p-4 shadow-sm">
+        <aside
+          className={`${shellTab === "account" ? "block" : "hidden"} mx-auto mb-6 w-full max-w-md rounded-xl border border-primary/20 bg-card p-4 shadow-sm lg:fixed lg:left-4 lg:top-24 lg:z-30 lg:mb-0 lg:block lg:w-80 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto`}
+        >
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 via-background to-orange-500/10 p-4 pr-10">
             <button
               type="button"
@@ -4398,9 +4409,9 @@ export default function Dashboard() {
             </span>
           </div>
         )}
-        {proProfile && !isAdminDashboardShell && user?.id ? (
+        {!isAdminDashboardShell && user?.id ? (
           <div className="mb-6 md:mb-8 flex flex-wrap items-center justify-center gap-2">
-            {segmentForTab(shellTab) ? (
+            {segmentForTab(shellTab) && (proProfile || segmentForTab(shellTab) === "account") ? (
               <Button
                 type="button"
                 variant="outline"
@@ -4517,10 +4528,9 @@ export default function Dashboard() {
                       </div>
                     </div>
                     {(() => {
-                      const slug =
-                        (proProfile.share_slug?.trim() ||
-                          slugifyShareName(proProfile.business_name || profile?.full_name || "pro")) ||
-                        "pro";
+                      // share_slug mirrors the account username (DB trigger), so this is /<username>.
+                      const slug = proProfile.share_slug?.trim() || "";
+                      if (!slug) return null;
                       const shareHref = publicShareUrl(slug);
                       return (
                         <div className="mt-5 rounded-lg border border-border/70 bg-muted/30 px-4 py-3">
@@ -4754,7 +4764,7 @@ export default function Dashboard() {
                             size="sm"
                             className="w-full justify-center gap-2"
                             onClick={() => {
-                              const publicPath = `/pros/${proProfile.id}`;
+                              const publicPath = proPublicPath(proProfile);
                               const isDesktop =
                                 typeof window !== "undefined" &&
                                 window.matchMedia("(min-width: 768px)").matches;
@@ -6012,11 +6022,10 @@ export default function Dashboard() {
                 </Button>
               </div>
             )}
-            {proProfile ? (
-              <div className="flex justify-center w-full">
-                <DashboardTourHelpButton onClick={() => replayDashTour("account")} />
-              </div>
-            ) : null}
+            {/* Everyone (clients too) can replay the My account tour. */}
+            <div className="flex justify-center w-full">
+              <DashboardTourHelpButton onClick={() => replayDashTour("account")} />
+            </div>
           </TabsContent>
 
           {!isAdminDashboardShell ? (
@@ -6149,7 +6158,7 @@ export default function Dashboard() {
                 />
                 <Button type="button" onClick={handleSaveSchedule} disabled={savingSchedule} className="mt-4 gap-2">
                   {savingSchedule && <Loader2 size={16} className="animate-spin" />}
-                  {t.common.save ?? "Save"} {t.dashboard.schedule}
+                  {locale === "fr" ? "Enregistrer l’horaire" : "Save schedule"}
                 </Button>
                 </div>
                 <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">

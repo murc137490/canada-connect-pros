@@ -6,11 +6,13 @@ import { Link } from "react-router-dom";
 import AvatarCircles, { type AvatarItem } from "@/components/AvatarCircles";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { isPubliclyListablePro } from "@/lib/publicProListing";
+import { proPublicPath } from "@/lib/publicHandle";
 
 interface ProItem {
   id: string;
   user_id: string;
   business_name: string;
+  share_slug?: string | null;
   imageUrl: string;
 }
 
@@ -55,7 +57,7 @@ export default function RecommendationSidebar({
 
       let q = supabase
         .from("pro_profiles")
-        .select("id, user_id, business_name, phone, is_verified")
+        .select("id, user_id, business_name, phone, is_verified, share_slug")
         .eq("is_verified", true)
         .neq("id", currentProId)
         .limit(40);
@@ -98,8 +100,8 @@ export default function RecommendationSidebar({
           if (profile?.avatar_url) imageUrl = profile.avatar_url;
         }
 
-        allItems.push({ id: pro.id, user_id: pro.user_id, business_name: pro.business_name, imageUrl: imageUrl || PLACEHOLDER_AVATAR });
-        avatarList.push({ imageUrl: imageUrl || PLACEHOLDER_AVATAR, profileUrl: `/pros/${pro.id}` });
+        allItems.push({ id: pro.id, user_id: pro.user_id, business_name: pro.business_name, share_slug: pro.share_slug ?? null, imageUrl: imageUrl || PLACEHOLDER_AVATAR });
+        avatarList.push({ imageUrl: imageUrl || PLACEHOLDER_AVATAR, profileUrl: proPublicPath(pro) });
       }
 
       setProfileCards(allItems.slice(0, 3));
@@ -136,7 +138,7 @@ export default function RecommendationSidebar({
         {profileCards.map((pro) => (
           <Link
             key={pro.id}
-            to={`/pros/${pro.id}`}
+            to={proPublicPath(pro)}
             className="flex items-center gap-3 rounded-lg border border-gray-200 bg-[#F7F7F7] dark:bg-muted/50 dark:border-gray-700 p-2.5 hover:bg-gray-100 dark:hover:bg-muted transition-colors"
           >
             <Avatar className="h-10 w-10 rounded-full shrink-0">

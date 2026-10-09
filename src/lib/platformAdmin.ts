@@ -9,7 +9,9 @@ export function getPlatformAdminEmails(): string[] {
 }
 
 export function isSuperAdminEmail(email: string | null | undefined): boolean {
-  return normalizeEmail(email) === SUPER_ADMIN_EMAIL;
+  const em = normalizeEmail(email);
+  // An unset VITE_SUPER_ADMIN_EMAIL must never make "no email" (logged out) an admin.
+  return em.length > 0 && SUPER_ADMIN_EMAIL.length > 0 && em === SUPER_ADMIN_EMAIL;
 }
 
 export function isPlatformAdminEmail(email: string | null | undefined): boolean {

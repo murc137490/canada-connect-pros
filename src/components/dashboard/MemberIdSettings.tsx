@@ -2,11 +2,17 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Check, Copy, ExternalLink, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeMemberIdInput } from "@/lib/adminMemberGate";
 import { isValidUsername } from "@/lib/loginIdentifier";
 import { useToast } from "@/hooks/use-toast";
+import { isReservedHandle, publicHandleUrl } from "@/lib/publicHandle";
+
+/** Fired after a successful username change so other panels (share link, previews) refresh. */
+export const USERNAME_CHANGED_EVENT = "altshift:username-changed";
+
+type Availability = "idle" | "checking" | "available" | "taken" | "reserved" | "held" | "invalid" | "current";
 
 type Props = {
   currentMemberId: string | null;
@@ -28,6 +34,8 @@ export default function MemberIdSettings({
   const [usernameDraft, setUsernameDraft] = useState("");
   const [usernameSaving, setUsernameSaving] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameAvail, setUsernameAvail] = useState<Availability>("idle");
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const [hasPin, setHasPin] = useState(false);
   const [pinDraft, setPinDraft] = useState("");
@@ -38,12 +46,12 @@ export default function MemberIdSettings({
   const copy =
     locale === "fr"
       ? {
-          title: "Member ID",
+          title: "Numéro de membre",
           confirm: "Confirmer",
-          taken: "Ce Member ID est déjà pris.",
+          taken: "Ce numéro de membre est déjà pris.",
           invalid: "Entrez 4 chiffres.",
           available: "Disponible — confirmez pour l’adopter.",
-          saved: "Member ID mis à jour",
+          saved: "Numéro de membre mis à jour",
           pinTitle: "NIP vocal (téléphone)",
           pinSave: "Enregistrer le NIP",
           pinClear: "Supprimer le NIP",
@@ -62,6 +70,16 @@ export default function MemberIdSettings({
           usernameInvalid: "3 à 30 lettres minuscules, chiffres, points ou traits d’union, en commençant par une lettre.",
           usernameTaken: "Ce nom d’utilisateur est déjà pris.",
           usernameReserved: "Ce nom d’utilisateur est réservé.",
+          usernameHeld: "Ce nom vient d’être libéré par un autre membre; il reste réservé 90 jours.",
+          usernameAvailable: "Disponible",
+          usernameChecking: "Vérification…",
+          usernameCurrent: "C’est votre nom d’utilisateur actuel.",
+          linkLabel: "Votre lien public",
+          linkCopy: "Copier",
+          linkCopied: "Lien copié",
+          linkOpen: "Ouvrir",
+          linkHint: "Changer votre nom d’utilisateur change ce lien. L’ancien lien redirige vers le nouveau; personne d’autre ne peut le prendre pendant 90 jours.",
+          linkNone: "Choisissez un nom d’utilisateur pour obtenir votre lien public.",
         }
       : {
           title: "Member ID",
@@ -88,6 +106,16 @@ export default function MemberIdSettings({
           usernameInvalid: "3–30 lowercase letters, numbers, dots or dashes, starting with a letter.",
           usernameTaken: "That username is taken.",
           usernameReserved: "That username is reserved.",
+          usernameHeld: "Another member just gave up that name; it stays reserved for 90 days.",
+          usernameAvailable: "Available",
+          usernameChecking: "Checking…",
+          usernameCurrent: "That’s your current username.",
+          linkLabel: "Your public link",
+          linkCopy: "Copy",
+          linkCopied: "Link copied",
+          linkOpen: "Open",
+          linkHint: "Changing your username changes this link. Your old link redirects to the new one, and nobody else can take it for 90 days.",
+          linkNone: "Pick a username to get your public link.",
         };
 
   useEffect(() => {
@@ -112,6 +140,56 @@ export default function MemberIdSettings({
     };
   }, []);
 
+  useEffect(() => {
+    const next = usernameDraft.trim().toLowerCase();
+    if (!next || next === (username ?? "")) {
+      setUsernameAvail(next && next === username ? "current" : "idle");
+      return;
+    }
+    if (!isValidUsername(next)) {
+      setUsernameAvail("invalid");
+      return;
+    }
+    if (isReservedHandle(next)) {
+      setUsernameAvail("reserved");
+      return;
+    }
+    let cancelled = false;
+    setUsernameAvail("checking");
+    const t = window.setTimeout(() => {
+      void (async () => {
+        const { data, error } = await supabase.rpc("username_available" as never, { p_username: next } as never);
+        if (cancelled) return;
+        if (error) {
+          setUsernameAvail("idle");
+          return;
+        }
+        const r = data as { available?: boolean; reason?: string } | null;
+        if (r?.available) setUsernameAvail(r.reason === "current" ? "current" : "available");
+        else if (r?.reason === "reserved") setUsernameAvail("reserved");
+        else if (r?.reason === "held") setUsernameAvail("held");
+        else if (r?.reason === "invalid_format") setUsernameAvail("invalid");
+        else setUsernameAvail("taken");
+      })();
+    }, 350);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [usernameDraft, username]);
+
+  const copyPublicLink = async () => {
+    if (!username) return;
+    try {
+      await navigator.clipboard.writeText(publicHandleUrl(username));
+      setLinkCopied(true);
+      toast({ title: copy.linkCopied });
+      window.setTimeout(() => setLinkCopied(false), 1800);
+    } catch {
+      /* clipboard blocked — the link stays selectable */
+    }
+  };
+
   const saveUsername = async () => {
     const next = usernameDraft.trim().toLowerCase();
     if (!isValidUsername(next)) {
@@ -130,6 +208,8 @@ export default function MemberIdSettings({
           ? copy.usernameTaken
           : code === "reserved"
             ? copy.usernameReserved
+            : code === "held"
+              ? copy.usernameHeld
             : code === "invalid_format"
               ? copy.usernameInvalid
               : error?.message ?? code ?? "Error",
@@ -139,6 +219,8 @@ export default function MemberIdSettings({
     const saved = String(result.username ?? next);
     setUsername(saved);
     setUsernameDraft(saved);
+    setUsernameAvail("current");
+    window.dispatchEvent(new CustomEvent(USERNAME_CHANGED_EVENT, { detail: { username: saved } }));
     toast({ title: copy.usernameSaved });
   };
 
@@ -307,7 +389,12 @@ export default function MemberIdSettings({
           <Button
             type="button"
             size="sm"
-            disabled={usernameSaving || !usernameDraft.trim() || usernameDraft.trim() === (username ?? "")}
+            disabled={
+              usernameSaving ||
+              !usernameDraft.trim() ||
+              usernameDraft.trim() === (username ?? "") ||
+              !["available", "idle"].includes(usernameAvail)
+            }
             onClick={() => void saveUsername()}
           >
             {usernameSaving ? <Loader2 className="size-4 animate-spin" /> : null}
@@ -316,9 +403,53 @@ export default function MemberIdSettings({
         </div>
         {usernameError ? (
           <p className="text-sm text-destructive font-medium">{usernameError}</p>
+        ) : usernameAvail === "checking" ? (
+          <p className="text-xs text-muted-foreground flex items-center gap-1" aria-live="polite">
+            <Loader2 className="size-3 animate-spin" /> {copy.usernameChecking}
+          </p>
+        ) : usernameAvail === "available" ? (
+          <p className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1" aria-live="polite">
+            <Check className="size-4" /> {copy.usernameAvailable} — {publicHandleUrl(usernameDraft)}
+          </p>
+        ) : usernameAvail === "taken" ? (
+          <p className="text-sm text-destructive font-medium" aria-live="polite">{copy.usernameTaken}</p>
+        ) : usernameAvail === "reserved" ? (
+          <p className="text-sm text-destructive font-medium" aria-live="polite">{copy.usernameReserved}</p>
+        ) : usernameAvail === "held" ? (
+          <p className="text-sm text-destructive font-medium" aria-live="polite">{copy.usernameHeld}</p>
+        ) : usernameAvail === "invalid" ? (
+          <p className="text-sm text-destructive" aria-live="polite">{copy.usernameInvalid}</p>
         ) : (
           <p className="text-xs text-muted-foreground">{copy.usernameHint}</p>
         )}
+
+        <div className="rounded-lg border border-border/70 bg-muted/30 px-3 py-2.5">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{copy.linkLabel}</p>
+          {username ? (
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <a
+                href={publicHandleUrl(username)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-w-0 truncate font-mono text-sm text-primary hover:underline"
+              >
+                {publicHandleUrl(username).replace(/^https:\/\//, "")}
+              </a>
+              <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => void copyPublicLink()}>
+                {linkCopied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                {linkCopied ? copy.linkCopied : copy.linkCopy}
+              </Button>
+              <Button type="button" size="sm" variant="ghost" className="h-8 gap-1.5" asChild>
+                <a href={`/${username}`} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="size-3.5" /> {copy.linkOpen}
+                </a>
+              </Button>
+            </div>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">{copy.linkNone}</p>
+          )}
+          <p className="mt-1.5 text-xs text-muted-foreground">{copy.linkHint}</p>
+        </div>
       </div>
 
       <div className="border-t pt-4 space-y-2">

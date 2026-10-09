@@ -29,6 +29,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const { user, signOut } = useAuth();
+  /** Log in, then come back here (home → dashboard). */
+  const loginHref =
+    location.pathname === "/" || location.pathname.startsWith("/auth")
+      ? "/auth?mode=login"
+      : `/auth?mode=login&redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`;
   const navigate = useNavigate();
   const { locale, setLocale, t } = useLanguage();
   const { count: notificationCount } = useNotifications();
@@ -308,7 +313,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               />
             ) : (
               <Button variant="ghost" size="sm" className="hidden h-8 px-2.5 text-[13px] font-semibold md:inline-flex" asChild>
-                <Link to="/auth?mode=login">{t.nav.logIn}</Link>
+                <Link to={loginHref}>{t.nav.logIn}</Link>
               </Button>
             )}
             <button
@@ -350,16 +355,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               ) : null}
               <div className="mt-3 flex flex-col gap-2 px-1">
                 {user ? (
-                  <Button variant="outline" size="sm" className="gap-1" onClick={() => { handleSignOut(); setMobileOpen(false); }}>
-                    <LogOut size={14} /> {t.nav.logOut}
-                  </Button>
+                  <>
+                    {!isPlatformAdmin ? (
+                      <Button size="sm" className="w-full" asChild>
+                        <Link to="/make-request" onClick={() => setMobileOpen(false)}>{t.nav.publishRequest}</Link>
+                      </Button>
+                    ) : null}
+                    <Button variant="secondary" size="sm" className="w-full" asChild>
+                      <Link to={isPlatformAdmin ? "/dashboard?tab=admin" : "/dashboard"} onClick={() => setMobileOpen(false)}>
+                        {isPlatformAdmin ? dashboardLabel : t.dashboard.title}
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => { handleSignOut(); setMobileOpen(false); }}>
+                      <LogOut size={14} /> {t.nav.logOut}
+                    </Button>
+                  </>
                 ) : (
                   <>
                     <Button size="sm" className="w-full" asChild>
                       <Link to="/make-request" onClick={() => setMobileOpen(false)}>{t.nav.publishRequest}</Link>
                     </Button>
                     <Button variant="outline" size="sm" className="w-full" asChild>
-                      <Link to="/auth?mode=login" onClick={() => setMobileOpen(false)}>{t.nav.logIn}</Link>
+                      <Link to={loginHref} onClick={() => setMobileOpen(false)}>{t.nav.logIn}</Link>
                     </Button>
                   </>
                 )}

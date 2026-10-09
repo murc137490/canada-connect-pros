@@ -16,6 +16,7 @@ export const translations = {
       publishRequest: "Post a job",
     },
     common: {
+      save: "Save",
       premiereServices: "AltShift",
       account: "Account",
       backTo: "Back to",
@@ -880,6 +881,7 @@ export const translations = {
       toastError: "Error",
     },
     dashboard: {
+      saved: "Saved",
       title: "My Dashboard",
       myAccount: "My account",
       bookings: "Booking History",
@@ -1410,7 +1412,7 @@ export const translations = {
         "Waiting for {email}. The coupon unlocks when they verify their inbox link.",
       referralCodeStaysHidden: "The coupon stays hidden until they confirm email.",
       referralBlurb:
-        "Inviting a friend gives you a free 14-day Growth trial.",
+        "Invite a friend: when they sign up with your link and confirm their email, you unlock a free 14-day Growth trial.",
       referralCouponUnlocked: "Coupon unlocked",
       referralCouponHidden: "Hidden coupon",
       referralCopyToken: "Copy code",
@@ -1895,6 +1897,7 @@ export const translations = {
       publishRequest: "Publiez une job",
     },
     common: {
+      save: "Enregistrer",
       premiereServices: "AltShift",
       account: "Compte",
       backTo: "Retour à",
@@ -2760,6 +2763,7 @@ export const translations = {
       toastError: "Erreur",
     },
     dashboard: {
+      saved: "Enregistré",
       title: "Mon tableau de bord",
       myAccount: "Mon compte",
       bookings: "Réservations",
@@ -3295,7 +3299,7 @@ export const translations = {
         "En attente de {email}. Le coupon se déverrouille lorsqu’ils cliquent le lien dans leur boîte de réception.",
       referralCodeStaysHidden: "Le code reste caché jusqu’à la confirmation du courriel.",
       referralBlurb:
-        "Inviter un ami vous offre un essai Croissance gratuit de 14 jours.",
+        "Invitez un ami : dès qu’il s’inscrit avec votre lien et confirme son courriel, vous débloquez un essai Croissance gratuit de 14 jours.",
       referralCouponUnlocked: "Coupon déverrouillé",
       referralCouponHidden: "Coupon caché",
       referralCopyToken: "Copier le code",

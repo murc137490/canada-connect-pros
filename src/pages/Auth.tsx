@@ -39,10 +39,22 @@ type SignupDetails = {
 
 const ADMIN_DASHBOARD_PATH = "/dashboard?tab=admin";
 
+/**
+ * Where to go after login: the page the user came from, else their dashboard.
+ * Only same-site paths are honoured ("/x", not "//evil.com" or "https://…").
+ */
+function safeRedirect(raw: string | null): string {
+  const v = (raw ?? "").trim();
+  if (!v || v === "/" || !v.startsWith("/") || v.startsWith("//") || v.startsWith("/\\") || v.startsWith("/auth")) {
+    return "/dashboard";
+  }
+  return v;
+}
+
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get("mode") === "signup" ? "signup" : "login";
-  const redirect = searchParams.get("redirect") || "/";
+  const redirect = safeRedirect(searchParams.get("redirect"));
   const referralCode = searchParams.get("ref")?.trim() || "";
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [showPassword, setShowPassword] = useState(false);
