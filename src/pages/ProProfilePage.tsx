@@ -109,6 +109,8 @@ import {
   fetchProBillingReady,
   fetchProOpenSlots,
   isSlotTakenError,
+  PUBLIC_PRO_SERVICE_COLUMNS,
+  withApproxWorkspaceCoords,
   type ProOpenSlotsByDate,
 } from "@/lib/proProfileAccess";
 
@@ -898,7 +900,7 @@ export default function ProProfilePage({ proIdOverride }: { proIdOverride?: stri
       }[] = [];
       const sFull = await supabase
         .from("pro_services")
-        .select("service_slug, category_slug, description, display_name, custom_price_min, custom_price_max, duration_minutes, auto_reply_message, renewal_interval_months, location_mode, workspace_address, workspace_latitude, workspace_longitude, cancel_policy, cancel_fee_type, cancel_fee_percent, cancel_fee_cents")
+        .select(PUBLIC_PRO_SERVICE_COLUMNS)
         .eq("pro_profile_id", proId);
       if (sFull.error && /auto_reply_message|renewal_interval_months|cancel_policy|cancel_fee|schema cache/i.test(`${sFull.error.message || ""}`)) {
         const fb = await supabase
@@ -941,7 +943,13 @@ export default function ProProfilePage({ proIdOverride }: { proIdOverride?: stri
           servicesRows = ((fb.data || []) as typeof servicesRows).map((r) => ({ ...r, display_name: null }));
         }
       } else {
-        servicesRows = (sFull.data as typeof servicesRows) || [];
+        // Public rows carry rounded workspace coords only (exact address/coords are private).
+        servicesRows = (
+          (sFull.data || []) as unknown as ((typeof servicesRows)[number] & {
+            workspace_latitude_approx?: number | null;
+            workspace_longitude_approx?: number | null;
+          })[]
+        ).map((r) => withApproxWorkspaceCoords(r));
       }
 
       setFullName(profileRes.data?.full_name || t.common.proFallback);

@@ -230,7 +230,7 @@ import {
   planTierThemeClass,
 } from "@/lib/planTierTheme";
 import "@/components/ProPlansContent.css";
-import { fetchMyProProfile, fetchProProfilesAsAdmin, fetchProBillingDetails } from "@/lib/proProfileAccess";
+import { fetchMyProProfile, fetchProProfilesAsAdmin, fetchProBillingDetails, fetchProServiceWorkspace } from "@/lib/proProfileAccess";
 import { safeHttpUrl } from "@/lib/safeUrl";
 
 /** Hide browser number input spinners (up/down) on price fields. */
@@ -2159,10 +2159,22 @@ export default function Dashboard() {
 
   const loadProServicesForDashboard = useCallback(async (proId: string) => {
     const full =
-      "category_slug, service_slug, description, display_name, custom_price_min, custom_price_max, duration_minutes, auto_reply_message, renewal_interval_months, location_mode, workspace_address, workspace_latitude, workspace_longitude, cancel_policy, cancel_fee_type, cancel_fee_percent, cancel_fee_cents";
+      "category_slug, service_slug, description, display_name, custom_price_min, custom_price_max, duration_minutes, auto_reply_message, renewal_interval_months, location_mode, cancel_policy, cancel_fee_type, cancel_fee_percent, cancel_fee_cents";
     const { data: d0, error: e0 } = await supabase.from("pro_services").select(full).eq("pro_profile_id", proId);
     if (!e0 && d0) {
-      setProServices(d0 as ProServiceRow[]);
+      // Exact workspace address/coords are private columns: the owner reads them via RPC.
+      const ws = await fetchProServiceWorkspace(proId);
+      setProServices(
+        (d0 as ProServiceRow[]).map((row) => {
+          const w = ws[`${row.category_slug}/${row.service_slug}`];
+          return {
+            ...row,
+            workspace_address: w?.workspace_address ?? null,
+            workspace_latitude: w?.workspace_latitude ?? null,
+            workspace_longitude: w?.workspace_longitude ?? null,
+          };
+        }),
+      );
       return;
     }
     const { data: d1, error: e1 } = await supabase
