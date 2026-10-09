@@ -108,6 +108,44 @@ export async function fetchProBillingReady(proId: string): Promise<boolean | nul
   return data === true;
 }
 
+export type ProServiceWorkspace = {
+  id: string;
+  category_slug: string;
+  service_slug: string;
+  workspace_address: string | null;
+  workspace_latitude: number | null;
+  workspace_longitude: number | null;
+};
+
+/** Public pro_services columns (exact workspace address/coords are private; see get_pro_service_workspace). */
+export const PUBLIC_PRO_SERVICE_COLUMNS =
+  "service_slug, category_slug, description, display_name, custom_price_min, custom_price_max, duration_minutes, auto_reply_message, renewal_interval_months, location_mode, workspace_latitude_approx, workspace_longitude_approx, cancel_policy, cancel_fee_type, cancel_fee_percent, cancel_fee_cents";
+
+/**
+ * Exact workspace address + coordinates per service. Only returned to the pro themself, admins, or a
+ * client with a booking/payment with that pro. Key: `${category_slug}/${service_slug}`.
+ */
+export async function fetchProServiceWorkspace(proProfileId: string): Promise<Record<string, ProServiceWorkspace>> {
+  if (!proProfileId) return {};
+  const { data, error } = await untypedDb.rpc("get_pro_service_workspace", { p_pro_profile_id: proProfileId });
+  if (error || !Array.isArray(data)) return {};
+  const out: Record<string, ProServiceWorkspace> = {};
+  for (const row of data as ProServiceWorkspace[]) out[`${row.category_slug}/${row.service_slug}`] = row;
+  return out;
+}
+
+/** Public rows: map the rounded workspace coords onto workspace_latitude/longitude (distance preview only). */
+export function withApproxWorkspaceCoords<
+  T extends { workspace_latitude_approx?: number | null; workspace_longitude_approx?: number | null },
+>(row: T): T & { workspace_address: null; workspace_latitude: number | null; workspace_longitude: number | null } {
+  return {
+    ...row,
+    workspace_address: null,
+    workspace_latitude: row.workspace_latitude_approx ?? null,
+    workspace_longitude: row.workspace_longitude_approx ?? null,
+  };
+}
+
 /** Map the rounded public coords onto latitude/longitude for code that expects those keys. */
 export function withApproxCoords<T extends { latitude_approx?: number | null; longitude_approx?: number | null }>(
   row: T,
