@@ -3,6 +3,13 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { getPublicSiteOrigin, getOAuthRedirectOrigin } from "@/lib/authSiteUrl";
 import { stashOAuthRedirect } from "@/lib/oauthRedirect";
+import {
+  classifyLoginIdentifier,
+  LOGIN_INVALID_CREDENTIALS,
+  LOGIN_INVALID_TRY_MEMBER_ID,
+  requestIdentifierSession,
+  type LoginIdentifierKind,
+} from "@/lib/loginIdentifier";
 
 export const NAME_TAKEN_MESSAGE = "This name is already taken.";
 export const EMAIL_ALREADY_IN_USE_MESSAGE = "EMAIL_ALREADY_IN_USE";
@@ -23,8 +30,10 @@ interface AuthContextType {
     phone?: string;
     emailLanguage?: "en" | "fr";
     referralCode?: string;
-  }) => Promise<void>;
-  signIn: (emailOrName: string, password: string) => Promise<void>;
+    username?: string;
+  }) => Promise<{ hasSession: boolean }>;
+  /** Password login with a Member ID or username (never email). */
+  signIn: (identifier: string, password: string) => Promise<{ kind: LoginIdentifierKind; value: string }>;
   /** Opens Google OAuth; creates an account on first sign-in. */
   signInWithGoogle: (redirectPath?: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -94,8 +103,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     phone?: string;
     emailLanguage?: "en" | "fr";
     referralCode?: string;
+    username?: string;
   }) => {
-    const { email, password, fullName, phone, emailLanguage = "en", referralCode } = params;
+    const { email, password, fullName, phone, emailLanguage = "en", referralCode, username } = params;
     const trimmedEmail = email.trim();
     const trimmedName = fullName.trim();
     const trimmedPhone = phone?.trim() || "";
@@ -110,6 +120,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           phone: trimmedPhone || undefined,
           email_language: emailLanguage === "fr" ? "fr" : "en",
           referral_code: referralCode?.trim() || undefined,
+          // Requested login username; the database assigns a unique one if taken.
+          username: username?.trim().toLowerCase() || undefined,
         },
         emailRedirectTo: `${getPublicSiteOrigin()}/auth/callback`,
       },
@@ -123,15 +135,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (data.user?.id && trimmedPhone) {
       await supabase.from("profiles").update({ phone: trimmedPhone }).eq("user_id", data.user.id);
     }
+    return { hasSession: !!data.session };
   };
 
-  const signIn = async (emailOrName: string, password: string) => {
-    const email = emailOrName.trim();
-    if (!email.includes("@")) {
-      throw new Error("Please sign in with your email address.");
+  const signIn = async (identifier: string, password: string) => {
+    const parsed = classifyLoginIdentifier(identifier);
+    if (!parsed) {
+      // Same generic outcome as a wrong password; emails are not accepted here.
+      throw new Error(identifier.trim().includes("@") ? LOGIN_INVALID_TRY_MEMBER_ID : LOGIN_INVALID_CREDENTIALS);
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const tokens = await requestIdentifierSession(parsed.value, password);
+    const { error } = await supabase.auth.setSession({
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+    });
     if (error) throw error;
+    return parsed;
   };
 
   const signInWithGoogle = async (redirectPath = "/") => {

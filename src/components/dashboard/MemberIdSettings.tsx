@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeMemberIdInput } from "@/lib/adminMemberGate";
+import { isValidUsername } from "@/lib/loginIdentifier";
 import { useToast } from "@/hooks/use-toast";
 
 type Props = {
@@ -22,6 +23,11 @@ export default function MemberIdSettings({
   const [draft, setDraft] = useState(currentMemberId ?? "");
   const [status, setStatus] = useState<"idle" | "checking" | "taken" | "available" | "invalid">("idle");
   const [saving, setSaving] = useState(false);
+
+  const [username, setUsername] = useState<string | null>(null);
+  const [usernameDraft, setUsernameDraft] = useState("");
+  const [usernameSaving, setUsernameSaving] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
 
   const [hasPin, setHasPin] = useState(false);
   const [pinDraft, setPinDraft] = useState("");
@@ -47,6 +53,15 @@ export default function MemberIdSettings({
           pinCleared: "NIP vocal supprimé",
           pinStatusOn: "NIP vocal actif",
           pinStatusOff: "Aucun NIP vocal",
+          memberHint: "Votre numéro de membre sert à vous connecter et à vous identifier par téléphone.",
+          usernameTitle: "Nom d’utilisateur",
+          usernameHint: "Vous pouvez vous connecter avec votre nom d’utilisateur ou votre numéro de membre.",
+          usernameNone: "Aucun nom d’utilisateur pour l’instant.",
+          usernameSave: "Enregistrer",
+          usernameSaved: "Nom d’utilisateur mis à jour",
+          usernameInvalid: "3 à 30 lettres minuscules, chiffres, points ou traits d’union, en commençant par une lettre.",
+          usernameTaken: "Ce nom d’utilisateur est déjà pris.",
+          usernameReserved: "Ce nom d’utilisateur est réservé.",
         }
       : {
           title: "Member ID",
@@ -64,12 +79,68 @@ export default function MemberIdSettings({
           pinCleared: "Voice PIN removed",
           pinStatusOn: "Voice PIN is set",
           pinStatusOff: "No voice PIN yet",
+          memberHint: "Your Member ID lets you log in and identifies you by phone.",
+          usernameTitle: "Username",
+          usernameHint: "You can log in with your username or your Member ID.",
+          usernameNone: "No username yet.",
+          usernameSave: "Save",
+          usernameSaved: "Username updated",
+          usernameInvalid: "3–30 lowercase letters, numbers, dots or dashes, starting with a letter.",
+          usernameTaken: "That username is taken.",
+          usernameReserved: "That username is reserved.",
         };
 
   useEffect(() => {
     setDraft(currentMemberId ?? "");
     setStatus("idle");
   }, [currentMemberId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return;
+      const { data, error } = await supabase.from("profiles").select("username").eq("user_id", uid).maybeSingle();
+      if (cancelled || error) return;
+      const current = (data as { username?: string | null } | null)?.username ?? null;
+      setUsername(current);
+      setUsernameDraft(current ?? "");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const saveUsername = async () => {
+    const next = usernameDraft.trim().toLowerCase();
+    if (!isValidUsername(next)) {
+      setUsernameError(copy.usernameInvalid);
+      return;
+    }
+    setUsernameSaving(true);
+    setUsernameError(null);
+    const { data, error } = await supabase.rpc("set_my_username" as never, { p_username: next } as never);
+    setUsernameSaving(false);
+    const result = data as { ok?: boolean; error?: string; username?: string } | null;
+    if (error || !result?.ok) {
+      const code = result?.error ?? "";
+      setUsernameError(
+        code === "taken"
+          ? copy.usernameTaken
+          : code === "reserved"
+            ? copy.usernameReserved
+            : code === "invalid_format"
+              ? copy.usernameInvalid
+              : error?.message ?? code ?? "Error",
+      );
+      return;
+    }
+    const saved = String(result.username ?? next);
+    setUsername(saved);
+    setUsernameDraft(saved);
+    toast({ title: copy.usernameSaved });
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -213,6 +284,41 @@ export default function MemberIdSettings({
             <Loader2 className="size-3 animate-spin" /> …
           </p>
         ) : null}
+        <p className="text-xs text-muted-foreground mt-1.5">{copy.memberHint}</p>
+      </div>
+
+      <div className="border-t pt-4 space-y-2">
+        <Label htmlFor="username-edit">{copy.usernameTitle}</Label>
+        <div className="flex flex-wrap gap-2 items-start">
+          <Input
+            id="username-edit"
+            autoCapitalize="none"
+            spellCheck={false}
+            autoComplete="username"
+            className="font-mono max-w-[16rem]"
+            value={usernameDraft}
+            maxLength={30}
+            placeholder={username ? undefined : copy.usernameNone}
+            onChange={(e) => {
+              setUsernameDraft(e.target.value.toLowerCase().replace(/\s+/g, ""));
+              setUsernameError(null);
+            }}
+          />
+          <Button
+            type="button"
+            size="sm"
+            disabled={usernameSaving || !usernameDraft.trim() || usernameDraft.trim() === (username ?? "")}
+            onClick={() => void saveUsername()}
+          >
+            {usernameSaving ? <Loader2 className="size-4 animate-spin" /> : null}
+            {copy.usernameSave}
+          </Button>
+        </div>
+        {usernameError ? (
+          <p className="text-sm text-destructive font-medium">{usernameError}</p>
+        ) : (
+          <p className="text-xs text-muted-foreground">{copy.usernameHint}</p>
+        )}
       </div>
 
       <div className="border-t pt-4 space-y-2">

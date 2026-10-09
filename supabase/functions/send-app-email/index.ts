@@ -1,5 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { brandAddress, BRAND_FROM_NAME } from "../_shared/brandSender.ts";
+import { isServiceRoleRequest } from "../_shared/internalAuth.ts";
 import { callerIsPlatformModerator, getPlatformAdminEmails } from "../_shared/platformAdmin.ts";
 import {
   emailDetails,
@@ -41,10 +43,12 @@ const corsHeaders = {
 };
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "support@altshift.ca";
-const FROM_NAME = Deno.env.get("FROM_NAME") ?? "AltShift";
-const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "support@altshift.ca";
-const SITE_URL = trimTrailingSlash(Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.altshift.ca");
+const FROM_EMAIL = brandAddress(Deno.env.get("FROM_EMAIL"));
+const FROM_NAME = BRAND_FROM_NAME;
+const REPLY_TO_EMAIL = brandAddress(Deno.env.get("REPLY_TO_EMAIL"));
+const SITE_URL_ENV = trimTrailingSlash(Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "");
+/** Links always point at the AltShift site, even if an old-brand SITE_URL secret is still set. */
+const SITE_URL = /^https:\/\/(www\.)?altshift\.ca$/i.test(SITE_URL_ENV) ? SITE_URL_ENV : "https://www.altshift.ca";
 const ADMIN_EMAIL =
   Deno.env.get("ADMIN_NOTIFICATION_EMAIL") ??
   Deno.env.get("ADMIN_EMAIL") ??
@@ -80,8 +84,10 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const caller = await getCaller(req, supabaseUrl, anonKey);
+    // Internal callers (cron functions such as booking-series-run) use the service-role bearer.
     const hasPipelineSecret =
-      Boolean(EMAIL_PIPELINE_SECRET) && req.headers.get("x-email-pipeline-secret") === EMAIL_PIPELINE_SECRET;
+      isServiceRoleRequest(req) ||
+      (Boolean(EMAIL_PIPELINE_SECRET) && req.headers.get("x-email-pipeline-secret") === EMAIL_PIPELINE_SECRET);
 
     if (!caller && !hasPipelineSecret) return json({ error: "Unauthorized" }, 401);
 

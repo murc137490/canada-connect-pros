@@ -12,10 +12,12 @@ import { Badge } from "@/components/ui/badge";
 import { LiquidButton } from "@/components/ui/liquid-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   CalendarDays,
+  Repeat,
   CalendarIcon,
   Heart,
   Star,
@@ -67,6 +69,11 @@ import AvailabilityCalendar from "@/components/pro/AvailabilityCalendar";
 import ProBookingRequestCard from "@/components/pro/ProBookingRequestCard";
 import ProBookingRequestDetailDialog from "@/components/pro/ProBookingRequestDetailDialog";
 import ProSmsAutomationSettings from "@/components/dashboard/ProSmsAutomationSettings";
+import ProGrowthTools from "@/components/growth/ProGrowthTools";
+import BookingSeriesPanel from "@/components/growth/BookingSeriesPanel";
+import RepeatBookingDialog from "@/components/growth/RepeatBookingDialog";
+import { GROWTH_COPY, growthErrorMessage, tierStringHasGrowthTools } from "@/lib/growthTools";
+import { untypedDb } from "@/lib/untypedSupabase";
 import BookingAssistantChat from "@/components/dashboard/BookingAssistantChat";
 import MemberIdSettings from "@/components/dashboard/MemberIdSettings";
 import ClientBookingPayDialog from "@/components/ClientBookingPayDialog";
@@ -133,11 +140,12 @@ function writeDashboardProVerifiedCache(userId: string, verified: boolean) {
   }
 }
 import { supabase } from "@/integrations/supabase/client";
+import { notifyBookingEvent } from "@/lib/bookingEventNotify";
 import { useToast } from "@/hooks/use-toast";
 import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
 import { serviceCategories } from "@/data/services";
-import { PRO_PAGE_COLOR_SCHEMES, getSchemeById, getSchemeIdFromColors } from "@/data/proPageColorSchemes";
+import { PRO_PAGE_COLOR_SCHEMES, DEFAULT_PRO_PAGE_COLOR_SCHEME, getSchemeById, resolveProPageScheme, schemeLabel } from "@/data/proPageColorSchemes";
 import { SERVICE_TAG_OPTIONS } from "@/data/serviceTags";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { PRO_BOOKING_SELECT, useProBookingsRealtime, type ProBookingRealtimeRow } from "@/hooks/useProBookingsRealtime";
@@ -571,11 +579,11 @@ export default function Dashboard() {
   const [clientReviewPhotoPreviews, setClientReviewPhotoPreviews] = useState<string[]>([]);
   // Pro page aesthetic editing (template + colors) in dashboard
   const [proPageTemplate, setProPageTemplate] = useState<string>("classic");
-  const [proPageColorSchemeId, setProPageColorSchemeId] = useState<string>("navyTeal");
-  const [proPagePrimaryColor, setProPagePrimaryColor] = useState("#1e3a5f");
-  const [proPageSecondaryColor, setProPageSecondaryColor] = useState("#0d9488");
-  const [proPageAccentColor, setProPageAccentColor] = useState("#e0f2f1");
-  const [proPageBackgroundColor, setProPageBackgroundColor] = useState("#f8fafc");
+  const [proPageColorSchemeId, setProPageColorSchemeId] = useState<string>(DEFAULT_PRO_PAGE_COLOR_SCHEME.id);
+  const [proPagePrimaryColor, setProPagePrimaryColor] = useState(DEFAULT_PRO_PAGE_COLOR_SCHEME.primary);
+  const [proPageSecondaryColor, setProPageSecondaryColor] = useState(DEFAULT_PRO_PAGE_COLOR_SCHEME.secondary);
+  const [proPageAccentColor, setProPageAccentColor] = useState(DEFAULT_PRO_PAGE_COLOR_SCHEME.accent);
+  const [proPageBackgroundColor, setProPageBackgroundColor] = useState(DEFAULT_PRO_PAGE_COLOR_SCHEME.background);
   const [proPageHeaderText, setProPageHeaderText] = useState("");
   const [proServiceTags, setProServiceTags] = useState<string[]>([]);
   const [savingProAesthetic, setSavingProAesthetic] = useState(false);
@@ -590,6 +598,33 @@ export default function Dashboard() {
   const [payBookingTarget, setPayBookingTarget] = useState<(typeof clientBookings)[number] | null>(null);
   const [payBookingSquareLoc, setPayBookingSquareLoc] = useState<string | null>(null);
   const [proSubscriptionPlanId, setProSubscriptionPlanId] = useState<string | null>(null);
+  const [clientRepeatTarget, setClientRepeatTarget] = useState<{ id: string; date: string | null } | null>(null);
+  const [clientSeriesKey, setClientSeriesKey] = useState(0);
+  const [rebookOptOut, setRebookOptOut] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await untypedDb.from("profiles").select("rebook_reminders_opt_out").eq("user_id", user.id).maybeSingle();
+      if (cancelled || error) return;
+      setRebookOptOut(Boolean((data as { rebook_reminders_opt_out?: boolean } | null)?.rebook_reminders_opt_out));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+  const saveRebookOptOut = async (optOut: boolean) => {
+    if (!user?.id) return;
+    const prev = rebookOptOut;
+    setRebookOptOut(optOut);
+    const { error } = await untypedDb.from("profiles").update({ rebook_reminders_opt_out: optOut }).eq("user_id", user.id);
+    if (error) {
+      setRebookOptOut(prev);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: GROWTH_COPY[locale === "fr" ? "fr" : "en"].bookAgain.optOutSaved });
+  };
 
   const subscriptionTierNormalized = useMemo(
     () =>
@@ -647,6 +682,7 @@ export default function Dashboard() {
       invoice_snapshot?: unknown;
       public_booking_code?: string | null;
       pro_subscription_tier?: string | null;
+      series_id?: string | null;
     }[]
   >([]);
   const [bookingPaymentsById, setBookingPaymentsById] = useState<
@@ -1875,21 +1911,13 @@ export default function Dashboard() {
     const template = p.page_template || "classic";
     setProPageTemplate(template === "bold" || template === "warm" || template === "minimal" ? "classic" : template);
     setProPageHeaderText(p.page_header_text ?? "");
-    const schemeId = getSchemeIdFromColors(p.page_primary_color ?? null, p.page_secondary_color ?? null);
-    setProPageColorSchemeId(schemeId || "navyTeal");
-    if (p.page_primary_color) setProPagePrimaryColor(p.page_primary_color);
-    if (p.page_secondary_color) setProPageSecondaryColor(p.page_secondary_color);
-    if (p.page_accent_color) setProPageAccentColor(p.page_accent_color);
-    if (p.page_background_color) setProPageBackgroundColor(p.page_background_color);
-    if (!p.page_primary_color && !p.page_secondary_color) {
-      const def = getSchemeById("navyTeal");
-      if (def) {
-        setProPagePrimaryColor(def.primary);
-        setProPageSecondaryColor(def.secondary);
-        setProPageAccentColor(def.accent);
-        setProPageBackgroundColor(def.background);
-      }
-    }
+    // Saved colours outside the current palette resolve to the closest palette colour.
+    const scheme = resolveProPageScheme(p.page_primary_color ?? null);
+    setProPageColorSchemeId(scheme.id);
+    setProPagePrimaryColor(scheme.primary);
+    setProPageSecondaryColor(scheme.secondary);
+    setProPageAccentColor(scheme.accent);
+    setProPageBackgroundColor(scheme.background);
     setProServiceTags(Array.isArray(p.service_tags) ? p.service_tags : []);
   }, [proProfile?.id]);
 
@@ -2406,7 +2434,7 @@ export default function Dashboard() {
     if (!user || isMonitorAdmin) return;
     (async () => {
       const full =
-        "id, created_at, status, pro_profile_id, responded_at, auto_reply_snapshot, service_category_slug, service_slug, client_renews_annually, renewal_anchor_date, renewal_interval_months_snapshot, client_unread, preferred_date, preferred_time, service_duration_minutes, invoice_snapshot, public_booking_code";
+        "id, created_at, status, pro_profile_id, responded_at, auto_reply_snapshot, service_category_slug, service_slug, client_renews_annually, renewal_anchor_date, renewal_interval_months_snapshot, client_unread, preferred_date, preferred_time, service_duration_minutes, invoice_snapshot, public_booking_code, series_id";
       let res = await supabase
         .from("bookings")
         .select(full)
@@ -2449,6 +2477,7 @@ export default function Dashboard() {
         service_duration_minutes?: number | null;
         invoice_snapshot?: unknown;
         public_booking_code?: string | null;
+        series_id?: string | null;
       }[];
       if (rows.length > 0) {
         const proIds = [...new Set(rows.map((b) => b.pro_profile_id))];
@@ -3393,6 +3422,7 @@ export default function Dashboard() {
         .eq("id", bookingId);
       if (error) throw error;
       await finalizeSquareBookingPayment(bookingId, "complete");
+      void notifyBookingEvent(bookingId, "confirmed");
       toast({ title: t.dashboard.approveSuccess ?? "Booking accepted." });
       setProBookings((prev) =>
         prev.map((b) =>
@@ -3401,7 +3431,14 @@ export default function Dashboard() {
       );
       refreshBookingNotificationCount();
     } catch (err: unknown) {
-      toast({ title: t.auth.toastError, description: (err as Error).message, variant: "destructive" });
+      const rawMsg = String((err as { message?: string } | null)?.message ?? "");
+      toast({
+        title: t.auth.toastError,
+        description: rawMsg.includes("client_request_limit_reached")
+          ? growthErrorMessage(err, locale === "fr" ? "fr" : "en")
+          : rawMsg,
+        variant: "destructive",
+      });
     } finally {
       setApproveSubmitting(false);
       setApproveBookingId(null);
@@ -4013,7 +4050,14 @@ export default function Dashboard() {
       setQuoteTimeTo("");
       setQuoteMessage("");
     } catch (e) {
-      toast({ title: t.dashboard.quoteSendFailedTitle ?? "Failed to send quote", description: (e as Error).message, variant: "destructive" });
+      const rawMsg = String((e as { message?: string } | null)?.message ?? "");
+      toast({
+        title: t.dashboard.quoteSendFailedTitle ?? "Failed to send quote",
+        description: rawMsg.includes("client_request_limit_reached")
+          ? growthErrorMessage(e, locale === "fr" ? "fr" : "en")
+          : rawMsg,
+        variant: "destructive",
+      });
     } finally {
       setSendingQuote(false);
     }
@@ -4523,10 +4567,9 @@ export default function Dashboard() {
                           <p className="text-sm font-medium text-foreground mb-2">{t.createPro.colorSchemeLabel ?? "Color scheme"}</p>
                           <div className="sm:hidden">
                             {(() => {
-                              const selectedScheme = getSchemeById(proPageColorSchemeId) ?? PRO_PAGE_COLOR_SCHEMES[0];
+                              const selectedScheme = getSchemeById(proPageColorSchemeId) ?? DEFAULT_PRO_PAGE_COLOR_SCHEME;
                               const selectedLabel =
-                                (t.createPro as Record<string, string>)[`scheme${selectedScheme.id.charAt(0).toUpperCase()}${selectedScheme.id.slice(1)}`] ??
-                                selectedScheme.id;
+                                schemeLabel(selectedScheme, locale);
 
                               return (
                                 <div className="relative">
@@ -4535,13 +4578,13 @@ export default function Dashboard() {
                                     onClick={() => setMobileColorSchemeOpen((open) => !open)}
                                     className="relative min-h-12 w-full overflow-hidden rounded-lg border border-foreground/30 px-3 py-2 text-left text-sm font-semibold text-white shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                     style={{
-                                      background: `linear-gradient(135deg, ${selectedScheme.primary} 0%, ${selectedScheme.secondary} 62%, ${selectedScheme.accent} 160%)`,
+                                      background: `linear-gradient(135deg, ${selectedScheme.primary} 0%, ${selectedScheme.primary} 68%, ${selectedScheme.secondary} 100%)`,
+                                      color: selectedScheme.ink,
                                     }}
                                     aria-expanded={mobileColorSchemeOpen}
                                   >
-                                    <span className="absolute inset-0 bg-black/20" />
                                     <span className="relative z-10 flex items-center justify-between gap-2">
-                                      <span className="truncate drop-shadow-sm">{selectedLabel}</span>
+                                      <span className="truncate">{selectedLabel}</span>
                                       <span className="shrink-0 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-950">
                                         {locale === "fr" ? "Changer" : "Change"}
                                       </span>
@@ -4554,8 +4597,7 @@ export default function Dashboard() {
                                         {PRO_PAGE_COLOR_SCHEMES.map((scheme) => {
                                           const isSelected = proPageColorSchemeId === scheme.id;
                                           const label =
-                                            (t.createPro as Record<string, string>)[`scheme${scheme.id.charAt(0).toUpperCase()}${scheme.id.slice(1)}`] ??
-                                            scheme.id;
+                                            schemeLabel(scheme, locale);
                                           return (
                                             <button
                                               key={scheme.id}
@@ -4584,12 +4626,12 @@ export default function Dashboard() {
                                                 isSelected ? "border-foreground ring-2 ring-foreground/40" : "border-white/20"
                                               }`}
                                               style={{
-                                                background: `linear-gradient(135deg, ${scheme.primary} 0%, ${scheme.secondary} 62%, ${scheme.accent} 160%)`,
+                                                background: `linear-gradient(135deg, ${scheme.primary} 0%, ${scheme.primary} 68%, ${scheme.secondary} 100%)`,
+                                      color: scheme.ink,
                                               }}
                                             >
-                                              <span className="absolute inset-0 bg-black/20" />
                                               <span className="relative z-10 flex items-center justify-between gap-2">
-                                                <span className="truncate drop-shadow-sm">{label}</span>
+                                                <span className="truncate">{label}</span>
                                                 {isSelected ? (
                                                   <span className="shrink-0 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-950">
                                                     {locale === "fr" ? "Choisi" : "Selected"}
@@ -4611,8 +4653,7 @@ export default function Dashboard() {
                             {PRO_PAGE_COLOR_SCHEMES.map((scheme) => {
                               const isSelected = proPageColorSchemeId === scheme.id;
                               const label =
-                                (t.createPro as Record<string, string>)[`scheme${scheme.id.charAt(0).toUpperCase()}${scheme.id.slice(1)}`] ??
-                                scheme.id;
+                                schemeLabel(scheme, locale);
                               return (
                                 <button
                                   key={scheme.id}
@@ -4640,13 +4681,13 @@ export default function Dashboard() {
                                     isSelected ? "border-foreground ring-2 ring-foreground/40 ring-offset-2 ring-offset-background" : "border-white/20"
                                   }`}
                                   style={{
-                                    background: `linear-gradient(135deg, ${scheme.primary} 0%, ${scheme.secondary} 62%, ${scheme.accent} 160%)`,
+                                    background: `linear-gradient(135deg, ${scheme.primary} 0%, ${scheme.primary} 68%, ${scheme.secondary} 100%)`,
+                                      color: scheme.ink,
                                   }}
                                   aria-pressed={isSelected}
                                 >
-                                  <span className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/10" />
                                   <span className="relative z-10 flex items-center justify-between gap-2">
-                                    <span className="truncate drop-shadow-sm">{label}</span>
+                                    <span className="truncate">{label}</span>
                                     {isSelected ? (
                                       <span className="shrink-0 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-950">
                                         {locale === "fr" ? "Choisi" : "Selected"}
@@ -6016,6 +6057,13 @@ export default function Dashboard() {
                       locale={locale === "fr" ? "fr" : "en"}
                       enabled={hasSmsBookingAutomation(subscriptionTierNormalized)}
                     />
+                    <div className="mt-4">
+                      <ProGrowthTools
+                        proProfileId={proProfile.id}
+                        lang={locale === "fr" ? "fr" : "en"}
+                        tier={subscriptionTierNormalized}
+                      />
+                    </div>
                   </div>
                 ) : null}
                 <div className="flex justify-center">
@@ -6144,6 +6192,13 @@ export default function Dashboard() {
                         locale={locale === "fr" ? "fr" : "en"}
                         enabled={hasSmsBookingAutomation(subscriptionTierNormalized)}
                       />
+                      <div className="mt-4">
+                        <ProGrowthTools
+                          proProfileId={proProfile.id}
+                          lang={locale === "fr" ? "fr" : "en"}
+                          tier={subscriptionTierNormalized}
+                        />
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -6435,6 +6490,11 @@ export default function Dashboard() {
                                 <p className="text-xs text-muted-foreground">
                                   {new Date(b.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })} ·{" "}
                                   <span className="font-medium text-foreground/90">{statusLabel}</span>
+                                  {b.series_id ? (
+                                    <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                                      <Repeat className="size-3" aria-hidden /> {GROWTH_COPY[locale === "fr" ? "fr" : "en"].series.badge}
+                                    </span>
+                                  ) : null}
                                 </p>
                                 <p className="text-xs text-muted-foreground">{responseClientLine}</p>
                                 {b.auto_reply_snapshot?.trim() && (
@@ -6511,10 +6571,39 @@ export default function Dashboard() {
                                     {t.dashboard.invoiceReportIssue ?? "Report an issue"}
                                   </Button>
                                 )}
+                                {tierStringHasGrowthTools(b.pro_subscription_tier) &&
+                                (b.status === "accepted" || b.status === "completed") ? (
+                                  <>
+                                    {b.status === "accepted" ? (
+                                      <Button asChild size="sm" variant="outline">
+                                        <Link to={`/book-again/${b.id}`}>
+                                          {GROWTH_COPY[locale === "fr" ? "fr" : "en"].bookAgain.button}
+                                        </Link>
+                                      </Button>
+                                    ) : null}
+                                    {!b.series_id ? (
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setClientRepeatTarget({ id: b.id, date: b.preferred_date ?? null })}
+                                      >
+                                        <Repeat className="mr-1 size-3.5" aria-hidden />
+                                        {GROWTH_COPY[locale === "fr" ? "fr" : "en"].series.makeRepeat}
+                                      </Button>
+                                    ) : null}
+                                  </>
+                                ) : null}
                                 {b.status === "completed" && (
                                   <>
                                     <Button asChild size="sm" variant="default">
-                                      <Link to={rebookTo}>{t.dashboard.rebook}</Link>
+                                      {tierStringHasGrowthTools(b.pro_subscription_tier) ? (
+                                        <Link to={`/book-again/${b.id}`}>
+                                          {GROWTH_COPY[locale === "fr" ? "fr" : "en"].bookAgain.button}
+                                        </Link>
+                                      ) : (
+                                        <Link to={rebookTo}>{t.dashboard.rebook}</Link>
+                                      )}
                                     </Button>
                                     {!reviewedProIds.has(b.pro_profile_id) && (
                                       <Button
@@ -6544,6 +6633,45 @@ export default function Dashboard() {
                     </Button>
                   </div>
                 ) : null}
+                {user?.id ? (
+                  <div className="mt-4">
+                    <BookingSeriesPanel
+                      role="client"
+                      lang={locale === "fr" ? "fr" : "en"}
+                      userId={user.id}
+                      refreshKey={clientSeriesKey}
+                      hideWhenEmpty
+                    />
+                  </div>
+                ) : null}
+                {clientBookings.length > 0 && rebookOptOut !== null ? (
+                  <div className="mt-4 flex items-start justify-between gap-4 rounded-xl border bg-card p-4">
+                    <div>
+                      <Label htmlFor="rebook-opt-in" className="font-medium">
+                        {GROWTH_COPY[locale === "fr" ? "fr" : "en"].bookAgain.optOutLabel}
+                      </Label>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {GROWTH_COPY[locale === "fr" ? "fr" : "en"].bookAgain.optOutHint}
+                      </p>
+                    </div>
+                    <Switch
+                      id="rebook-opt-in"
+                      checked={!rebookOptOut}
+                      onCheckedChange={(on) => void saveRebookOptOut(!on)}
+                    />
+                  </div>
+                ) : null}
+                <RepeatBookingDialog
+                  open={clientRepeatTarget != null}
+                  onOpenChange={(o) => {
+                    if (!o) setClientRepeatTarget(null);
+                  }}
+                  bookingId={clientRepeatTarget?.id ?? null}
+                  bookingDate={clientRepeatTarget?.date ?? null}
+                  role="client"
+                  lang={locale === "fr" ? "fr" : "en"}
+                  onCreated={() => setClientSeriesKey((k) => k + 1)}
+                />
                 <div className="mt-5 flex justify-end">
                   <div className="rounded-md border bg-card/60 px-3 py-2 text-xs text-muted-foreground inline-flex items-center gap-4">
                     <span className="inline-flex items-center gap-1.5">

@@ -47,7 +47,8 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
   const language = body.language === "fr" ? "fr" : "en";
-  const channel = body.channel === "phone" ? "phone" : body.channel === "demo" ? "demo" : "web";
+  // Phone sessions come only from the SIP webhook; a browser can never mint one.
+  const channel = body.channel === "demo" ? "demo" : "web";
 
   // Optional user auth (preferred for web)
   const authHeader = req.headers.get("Authorization");
@@ -67,7 +68,8 @@ Deno.serve(async (req) => {
     .select("id")
     .maybeSingle();
   if (sErr || !sessionRow) {
-    return new Response(JSON.stringify({ error: sErr?.message ?? "session_create_failed" }), {
+    console.error("front_desk_sessions insert failed", sErr?.code ?? "no_row");
+    return new Response(JSON.stringify({ error: "session_create_failed" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -76,36 +78,49 @@ Deno.serve(async (req) => {
   const sessionId = sessionRow.id as string;
   const instructions =
     FRONT_DESK_INSTRUCTIONS +
-    `\n\nCurrent front_desk session_id (pass to every tool): ${sessionId}\nSample business for demo: Les Services AltShift Inc. Support: +1 450 800 3177.`;
+    `\n\nCurrent front_desk session_id (pass to every tool): ${sessionId}` +
+    `\nThis is a WEB voice session in the browser (language preference: ${language}), not a phone call: there is no keypad and no voice PIN. ` +
+    `Skip the phone authentication steps; to verify identity use authenticate_member (four-digit Member ID, then the SMS code the person says or types). ` +
+    `Do not call identify_caller, lookup_member_id or verify_voice_pin. Business: Les Services AltShift Inc.`;
 
   // Ephemeral client secret for browser WebRTC (GA Realtime)
-  const secretRes = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${openaiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      session: {
-        type: "realtime",
-        model: FRONT_DESK_MODEL,
-        instructions,
-        audio: {
-          output: { voice: FRONT_DESK_VOICE },
-        },
-        tools: FRONT_DESK_TOOLS,
-        tool_choice: "auto",
+  let secretRes: Response;
+  try {
+    secretRes = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
+      signal: AbortSignal.timeout(10_000),
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openaiKey}`,
+        "Content-Type": "application/json",
       },
-    }),
-  });
+      body: JSON.stringify({
+        session: {
+          type: "realtime",
+          model: FRONT_DESK_MODEL,
+          instructions,
+          audio: {
+            output: { voice: FRONT_DESK_VOICE },
+          },
+          tools: FRONT_DESK_TOOLS,
+          tool_choice: "auto",
+        },
+      }),
+    });
+  } catch (e) {
+    console.error("openai client_secrets failed", e instanceof Error ? e.name : "error");
+    return new Response(JSON.stringify({ error: "openai_unavailable" }), {
+      status: 503,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const secretJson = await secretRes.json().catch(() => ({}));
   if (!secretRes.ok) {
+    console.error("openai client_secrets rejected", secretRes.status);
     return new Response(
       JSON.stringify({
         error: "openai_client_secret_failed",
         status: secretRes.status,
-        detail: secretJson,
       }),
       { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

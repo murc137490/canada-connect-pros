@@ -1,6 +1,7 @@
 // Pro-only: send the client an email when their booking was declined (with reason and booking details).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { brandAddress, brandFrom, BRAND_FROM_NAME } from "../_shared/brandSender.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,8 +14,8 @@ const SMTP_HOST = Deno.env.get("SMTP_HOST");
 const SMTP_PORT = Deno.env.get("SMTP_PORT");
 const SMTP_USER = Deno.env.get("SMTP_USER");
 const SMTP_PASS = Deno.env.get("SMTP_PASS");
-const FROM_EMAIL = Deno.env.get("BOOKING_DECLINED_FROM_EMAIL") ?? Deno.env.get("FROM_EMAIL") ?? "notifications@altshift.ca";
-const FROM_NAME = Deno.env.get("FROM_NAME") ?? "";
+const FROM_EMAIL = brandAddress(Deno.env.get("BOOKING_DECLINED_FROM_EMAIL") ?? Deno.env.get("FROM_EMAIL"));
+const FROM_NAME = BRAND_FROM_NAME;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -88,7 +89,7 @@ Deno.serve(async (req) => {
       .eq("id", booking.pro_profile_id)
       .single();
 
-    if (pro?.user_id && pro.user_id !== user.id) {
+    if (!pro?.user_id || pro.user_id !== user.id) {
       return new Response(JSON.stringify({ error: "Forbidden: not your booking" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -116,7 +117,7 @@ Deno.serve(async (req) => {
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { "Authorization": `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: FROM_EMAIL, to: [toEmail], subject, html }),
+        body: JSON.stringify({ from: brandFrom(FROM_EMAIL), to: [toEmail], subject, html }),
       });
       emailSent = res.ok;
     }

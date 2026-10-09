@@ -59,6 +59,10 @@ verify_jwt = false
 [functions.request-password-reset]
 verify_jwt = false
 
+# Public password login by Member ID / username; validates CORS + throttles in-function.
+[functions.login-with-identifier]
+verify_jwt = false
+
 [functions.square-oauth-start]
 verify_jwt = false
 

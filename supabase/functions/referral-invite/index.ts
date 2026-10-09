@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { brandAddress, brandFrom, BRAND_FROM_NAME } from "../_shared/brandSender.ts";
 import {
   emailParagraph,
   emailPrimaryButton,
@@ -20,9 +21,9 @@ const SMTP_HOST = Deno.env.get("SMTP_HOST");
 const SMTP_PORT = Deno.env.get("SMTP_PORT");
 const SMTP_USER = Deno.env.get("SMTP_USER");
 const SMTP_PASS = Deno.env.get("SMTP_PASS");
-const DEFAULT_FROM_EMAIL = "no-reply@altshift.ca";
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? DEFAULT_FROM_EMAIL;
-const FROM_NAME = Deno.env.get("FROM_NAME") ?? "AltShift";
+const DEFAULT_FROM_EMAIL = "support@altshift.ca";
+const FROM_EMAIL = brandAddress(Deno.env.get("FROM_EMAIL"));
+const FROM_NAME = BRAND_FROM_NAME;
 const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "support@altshift.ca";
 const SITE_URL = trimTrailingSlash(Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.altshift.ca");
 

@@ -31,6 +31,16 @@ type BookingRow = {
 const BOOKING_COLUMNS =
   "id, status, preferred_date, preferred_time, public_booking_code, service_slug, service_category_slug, service_duration_minutes, invoice_snapshot, client_id, pro_profile_id";
 
+/** Map/geo lookups must never hang a phone call: 5 s cap, null on any failure. */
+async function fetchQuick(url: string, init: RequestInit = {}, ms = 5000): Promise<Response | null> {
+  try {
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(ms) });
+  } catch (e) {
+    console.error("front-desk geo fetch failed", e instanceof Error ? e.name : "error");
+    return null;
+  }
+}
+
 function digits(raw: string): string {
   return raw.replace(/\D/g, "");
 }
@@ -194,8 +204,8 @@ async function geocodeAddress(address: string): Promise<{
       encodeURIComponent(address) +
       "&components=country:CA&key=" +
       encodeURIComponent(key);
-    const res = await fetch(url);
-    const body = await res.json().catch(() => null) as {
+    const res = await fetchQuick(url);
+    const body = await res?.json().catch(() => null) as {
       status?: string;
       results?: {
         formatted_address?: string;
@@ -210,12 +220,12 @@ async function geocodeAddress(address: string): Promise<{
       return { lat: loc.lat, lng: loc.lng, formatted: hit?.formatted_address ?? address, street };
     }
   }
-  const nom = await fetch(
+  const nom = await fetchQuick(
     "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=ca&q=" +
       encodeURIComponent(address),
     { headers: { "User-Agent": "AltShift-FrontDesk/1.0 (https://www.altshift.ca)", Accept: "application/json" } },
   );
-  const rows = await nom.json().catch(() => []) as {
+  const rows = (await nom?.json().catch(() => []) ?? []) as {
     lat?: string;
     lon?: string;
     display_name?: string;
@@ -260,8 +270,8 @@ async function nearbyPlaces(lat: number, lng: number, keyword: string | null, ra
       encodeURIComponent(keyword) +
       "&key=" +
       encodeURIComponent(key);
-    const res = await fetch(url);
-    const body = await res.json().catch(() => null) as {
+    const res = await fetchQuick(url);
+    const body = await res?.json().catch(() => null) as {
       status?: string;
       results?: {
         name?: string;
@@ -295,12 +305,12 @@ async function nearbyPlaces(lat: number, lng: number, keyword: string | null, ra
     `node(around:${radius},${lat},${lng})${nameFilter};` +
     `way(around:${radius},${lat},${lng})${nameFilter};` +
     `);out center 12;`;
-  const res = await fetch("https://overpass-api.de/api/interpreter", {
+  const res = await fetchQuick("https://overpass-api.de/api/interpreter", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "AltShift-FrontDesk/1.0" },
     body: "data=" + encodeURIComponent(query),
-  });
-  const body = await res.json().catch(() => null) as {
+  }, 6000);
+  const body = await res?.json().catch(() => null) as {
     elements?: { lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> }[];
   } | null;
   const hits: PlaceHit[] = [];
@@ -328,10 +338,10 @@ async function nearbyPlaces(lat: number, lng: number, keyword: string | null, ra
         encodeURIComponent(viewbox) +
         "&q=" +
         encodeURIComponent(alias);
-      const nom = await fetch(url, {
+      const nom = await fetchQuick(url, {
         headers: { "User-Agent": "AltShift-FrontDesk/1.0 (https://www.altshift.ca)", Accept: "application/json" },
       });
-      const rows = await nom.json().catch(() => []) as {
+      const rows = (await nom?.json().catch(() => []) ?? []) as {
         lat?: string;
         lon?: string;
         display_name?: string;
@@ -484,6 +494,8 @@ export async function checkBookingLandmark(
 
 type DeskSession = {
   id: string;
+  channel: string;
+  otp_sent_at: string | null;
   authenticated: boolean;
   customer_user_id: string | null;
   draft: Record<string, unknown>;
@@ -560,7 +572,7 @@ export async function handleProTool(
         return { ok: true, demo: true, message: "Code sent. Demo code is 000000." };
       }
       const sent = await deps.sendOtp(phone);
-      if (!sent.ok) return { ok: false, error: "otp_send_failed", detail: sent.error };
+      if (!sent.ok) return { ok: false, error: "otp_send_failed" };
       await deps.patch({
         customer_user_id: pro.user_id,
         otp_sent_at: new Date().toISOString(),
@@ -610,6 +622,7 @@ export async function handleProTool(
       place_name: args.place_name ? String(args.place_name) : undefined,
     });
   } catch (e) {
-    return { ok: false, error: "pro_jobs_failed", detail: e instanceof Error ? e.message : String(e) };
+    console.error("pro jobs tool failed", name, e instanceof Error ? e.name : "error");
+    return { ok: false, error: "pro_jobs_failed" };
   }
 }

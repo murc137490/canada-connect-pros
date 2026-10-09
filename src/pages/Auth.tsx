@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, ArrowRight, Loader2, Shield } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Loader2, Shield, KeyRound } from "lucide-react";
 import { useAuth, NAME_TAKEN_MESSAGE, EMAIL_ALREADY_IN_USE_MESSAGE } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,21 @@ import {
   normalizeMemberIdInput,
   setAdminMemberVerified,
 } from "@/lib/adminMemberGate";
+import {
+  isValidUsername,
+  LOGIN_EMAIL_NOT_CONFIRMED,
+  LOGIN_INVALID_CREDENTIALS,
+  LOGIN_INVALID_TRY_MEMBER_ID,
+  LOGIN_TOO_MANY_ATTEMPTS,
+  LOGIN_UNAVAILABLE,
+  suggestUsername,
+} from "@/lib/loginIdentifier";
+
+type SignupDetails = {
+  memberId: string | null;
+  username: string | null;
+  confirmed: boolean;
+};
 
 const ADMIN_DASHBOARD_PATH = "/dashboard?tab=admin";
 
@@ -32,6 +47,14 @@ export default function Auth() {
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
+  /** Login form: Member ID or username (never email). */
+  const [identifier, setIdentifier] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameTouched, setUsernameTouched] = useState(false);
+  const [loginHint, setLoginHint] = useState<string | null>(null);
+  const [showReset, setShowReset] = useState(false);
+  const [resetIdentifier, setResetIdentifier] = useState("");
+  const [signupDetails, setSignupDetails] = useState<SignupDetails | null>(null);
   const [password, setPassword] = useState("");
   const [adminVerifyUser, setAdminVerifyUser] = useState<{ userId: string; expected: string } | null>(null);
   const [verifyMemberIdInput, setVerifyMemberIdInput] = useState("");
@@ -77,7 +100,7 @@ export default function Auth() {
   // After login / OAuth (or if already signed in), land on the intended page.
   // Wait if admin Member ID verification is needed on this page.
   useEffect(() => {
-    if (authLoading || !user || loading || adminVerifyUser) return;
+    if (authLoading || !user || loading || adminVerifyUser || signupDetails) return;
 
     const isStaffAdmin =
       (isPlatformAdminEmail(user.email) || canUsePlatformAdminTools(user.email, true)) &&
@@ -101,7 +124,7 @@ export default function Auth() {
     const adminDest =
       isPlatformAdminEmail(user.email) || isSuperAdminEmail(user.email) ? ADMIN_DASHBOARD_PATH : null;
     navigate(adminDest ?? redirect, { replace: true });
-  }, [authLoading, user, redirect, navigate, loading, adminVerifyUser]);
+  }, [authLoading, user, redirect, navigate, loading, adminVerifyUser, signupDetails]);
 
   const buildAuthPath = useCallback(
     (nextMode: "login" | "signup") => {
@@ -130,10 +153,32 @@ export default function Auth() {
     return suggestions;
   }
 
+  const loginErrorMessage = (code: string): string | null => {
+    switch (code) {
+      case LOGIN_INVALID_CREDENTIALS:
+        return t.auth.loginInvalid;
+      case LOGIN_INVALID_TRY_MEMBER_ID:
+        return t.auth.loginInvalidTryMemberId;
+      case LOGIN_TOO_MANY_ATTEMPTS:
+        return t.auth.loginTooManyAttempts;
+      case LOGIN_EMAIL_NOT_CONFIRMED:
+        return t.auth.loginEmailNotConfirmed;
+      case LOGIN_UNAVAILABLE:
+        return t.auth.loginUnavailable;
+      default:
+        return null;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEmailAlreadyExists(false);
     setNameTaken(false);
+    setLoginHint(null);
+    if (mode === "signup" && username.trim() && !isValidUsername(username)) {
+      toast({ title: t.auth.toastError, description: t.auth.usernameInvalid, variant: "destructive" });
+      return;
+    }
     setLoading(true);
     try {
       if (mode === "signup") {
@@ -147,17 +192,44 @@ export default function Auth() {
           return;
         }
         const ref = searchParams.get("ref")?.trim();
-        await signUp({
+        const requestedUsername = (username.trim() || suggestUsername(fullName)).toLowerCase();
+        const { hasSession } = await signUp({
           email: email.trim(),
           password,
           fullName: fullName.trim(),
           phone: phone.trim(),
           emailLanguage,
           referralCode: ref || undefined,
+          username: requestedUsername || undefined,
         });
         toast({ title: t.auth.toastCreated });
+        if (hasSession) {
+          const {
+            data: { user: created },
+          } = await supabase.auth.getUser();
+          let memberId: string | null = null;
+          let assignedUsername: string | null = null;
+          if (created?.id) {
+            const { data: prof } = await supabase
+              .from("profiles")
+              .select("public_user_number")
+              .eq("user_id", created.id)
+              .maybeSingle();
+            memberId = (prof as { public_user_number?: string | null } | null)?.public_user_number ?? null;
+            // Separate read so an older schema without `username` never hides the Member ID.
+            const { data: uname } = await supabase
+              .from("profiles")
+              .select("username")
+              .eq("user_id", created.id)
+              .maybeSingle();
+            assignedUsername = (uname as { username?: string | null } | null)?.username ?? null;
+          }
+          setSignupDetails({ memberId, username: assignedUsername ?? (requestedUsername || null), confirmed: true });
+        } else {
+          setSignupDetails({ memberId: null, username: requestedUsername || null, confirmed: false });
+        }
       } else {
-        await signIn(email.trim(), password);
+        const used = await signIn(identifier.trim(), password);
         const {
           data: { user: signedIn },
         } = await supabase.auth.getUser();
@@ -178,6 +250,14 @@ export default function Auth() {
             }
             // Staff admin: prompt for their four-digit Member ID now
             const expected = String(prof?.public_user_number ?? "").trim();
+            if (used.kind === "member_id" && expected && used.value === expected) {
+              // They just proved the Member ID at login; no second prompt.
+              setAdminMemberVerified(signedIn.id, expected);
+              toast({ title: t.auth.toastWelcome });
+              navigate(ADMIN_DASHBOARD_PATH, { replace: true });
+              setLoading(false);
+              return;
+            }
             setAdminVerifyUser({
               userId: signedIn.id,
               expected,
@@ -191,7 +271,11 @@ export default function Auth() {
       }
     } catch (err: unknown) {
       const msg = (err as Error).message ?? "";
-      if (mode === "signup" && (msg === EMAIL_ALREADY_IN_USE_MESSAGE || isEmailAlreadyRegistered(msg))) {
+      const loginMsg = mode === "login" ? loginErrorMessage(msg) : null;
+      if (loginMsg) {
+        setLoginHint(loginMsg);
+        toast({ title: t.auth.toastError, description: loginMsg, variant: "destructive" });
+      } else if (mode === "signup" && (msg === EMAIL_ALREADY_IN_USE_MESSAGE || isEmailAlreadyRegistered(msg))) {
         setEmailAlreadyExists(true);
       } else if (mode === "signup" && msg === NAME_TAKEN_MESSAGE) {
         setNameTaken(true);
@@ -281,12 +365,18 @@ export default function Auth() {
     }
   };
 
-  const handlePasswordResetEmail = async () => {
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail || !trimmedEmail.includes("@")) {
+  const openResetPanel = () => {
+    setResetIdentifier((prev) => prev || identifier.trim());
+    setShowReset(true);
+  };
+
+  const handlePasswordResetEmail = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const value = resetIdentifier.trim();
+    if (!value) {
       toast({
         title: t.auth.toastError,
-        description: t.auth.resetPasswordEmailRequired ?? "Enter your email address first.",
+        description: t.auth.resetPasswordEmailRequired,
         variant: "destructive",
       });
       return;
@@ -294,10 +384,10 @@ export default function Auth() {
 
     setResetLoading(true);
     try {
-      // Prefer Resend edge function — Auth Custom SMTP is currently rejecting credentials (535).
+      // Resend edge function — Auth Custom SMTP is currently rejecting credentials (535).
       const { data, error } = await supabase.functions.invoke("request-password-reset", {
         body: {
-          email: trimmedEmail,
+          identifier: value,
           language: locale === "fr" ? "fr" : "en",
           redirectTo: `${getPublicSiteOrigin()}/reset-password`,
         },
@@ -307,26 +397,34 @@ export default function Auth() {
         throw new Error(String((data as { error: string }).error));
       }
       toast({
-        title: t.auth.resetPasswordSentTitle ?? "Password reset sent",
-        description: t.auth.resetPasswordSentBody ?? "Check your email for the reset link.",
+        title: t.auth.resetPasswordSentTitle,
+        description: t.auth.resetPasswordSentBody,
       });
+      setShowReset(false);
     } catch (err: unknown) {
       const msg = (err as Error)?.message ?? "";
-      if (isAuthEmailDeliveryError(msg)) {
+      if (isAuthEmailDeliveryError(msg) || /recovery email/i.test(msg)) {
         toast({
           title: t.auth.toastError,
           description:
             locale === "fr"
-              ? "Impossible d’envoyer le courriel de réinitialisation. Réessayez dans une minute ou contactez support@altshift.ca."
+              ? "Impossible d’envoyer le courriel de réinitialisation. Réessayez dans une minute ou écrivez à support@altshift.ca."
               : "Could not send the recovery email. Try again in a minute or contact support@altshift.ca.",
           variant: "destructive",
         });
+      } else if (/identifier_required/i.test(msg)) {
+        toast({ title: t.auth.toastError, description: t.auth.resetPasswordEmailRequired, variant: "destructive" });
       } else {
-        toast({ title: t.auth.toastError, description: msg || t.auth.toastError, variant: "destructive" });
+        toast({ title: t.auth.toastError, description: t.auth.loginUnavailable, variant: "destructive" });
       }
     } finally {
       setResetLoading(false);
     }
+  };
+
+  const finishSignupDetails = () => {
+    setSignupDetails(null);
+    if (!user) navigate(buildAuthPath("login"), { replace: true });
   };
 
   return (
@@ -335,7 +433,49 @@ export default function Auth() {
         <div className="w-full max-w-md space-y-6 md:space-y-8">
           <MagicCard className="p-0">
             <Card className="border-none shadow-none bg-transparent">
-              {adminVerifyUser ? (
+              {signupDetails ? (
+                <>
+                  <CardHeader className="space-y-2 text-center pb-2">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-1">
+                      <KeyRound size={24} />
+                    </div>
+                    <CardTitle className="font-heading text-2xl font-bold">{t.auth.signupDetailsTitle}</CardTitle>
+                    <CardDescription>{t.auth.signupDetailsBody}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3 pt-2">
+                    <dl className="rounded-lg border border-border bg-muted/30 divide-y divide-border">
+                      {signupDetails.memberId ? (
+                        <div className="flex items-center justify-between gap-4 px-4 py-3">
+                          <dt className="text-sm text-muted-foreground">{t.auth.signupDetailsMemberId}</dt>
+                          <dd className="font-mono text-xl font-semibold tracking-widest text-foreground">{signupDetails.memberId}</dd>
+                        </div>
+                      ) : null}
+                      {signupDetails.username ? (
+                        <div className="flex items-center justify-between gap-4 px-4 py-3">
+                          <dt className="text-sm text-muted-foreground">
+                            {signupDetails.confirmed ? t.auth.signupDetailsUsername : t.auth.signupDetailsRequestedUsername}
+                          </dt>
+                          <dd className="font-mono text-base font-semibold text-foreground break-all">{signupDetails.username}</dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                    {!signupDetails.confirmed || !signupDetails.memberId ? (
+                      <p className="text-sm text-muted-foreground">{t.auth.signupDetailsPending}</p>
+                    ) : null}
+                  </CardContent>
+                  <CardFooter className="flex flex-col gap-2 border-t border-border pt-4">
+                    <Button
+                      type="button"
+                      className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 gap-2"
+                      size="lg"
+                      onClick={finishSignupDetails}
+                    >
+                      {t.auth.signupDetailsContinue}
+                      <ArrowRight size={16} />
+                    </Button>
+                  </CardFooter>
+                </>
+              ) : adminVerifyUser ? (
                 <>
                   <CardHeader className="space-y-2 text-center pb-2">
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-1">
@@ -471,7 +611,9 @@ export default function Auth() {
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase tracking-wide">
-              <span className="bg-card px-2 text-muted-foreground">{t.auth.orContinueWithEmail}</span>
+              <span className="bg-card px-2 text-muted-foreground">
+                {mode === "login" ? t.auth.orLogInWithMemberId : t.auth.orSignUpWithEmail}
+              </span>
             </div>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -503,6 +645,28 @@ export default function Auth() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-username" className="text-foreground dark:text-white">{t.auth.username}</Label>
+                  <Input
+                    id="signup-username"
+                    type="text"
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    maxLength={30}
+                    placeholder={suggestUsername(fullName) || t.auth.usernamePlaceholder}
+                    className="mt-1.5 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-white/60 bg-background dark:bg-card"
+                    value={username}
+                    onChange={(e) => {
+                      setUsernameTouched(true);
+                      setUsername(e.target.value.toLowerCase().replace(/\s+/g, ""));
+                    }}
+                    aria-invalid={usernameTouched && !!username && !isValidUsername(username)}
+                  />
+                  <p className={`text-xs ${usernameTouched && username && !isValidUsername(username) ? "text-destructive" : "text-muted-foreground"}`}>
+                    {usernameTouched && username && !isValidUsername(username) ? t.auth.usernameInvalid : t.auth.usernameHint}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-phone" className="text-foreground dark:text-white">{t.auth.phone} *</Label>
@@ -551,17 +715,32 @@ export default function Auth() {
             )}
             {mode === "login" && (
               <div className="space-y-2">
-                <Label htmlFor="emailOrName" className="text-foreground dark:text-white">{t.auth.emailOrName}</Label>
+                <Label htmlFor="loginIdentifier" className="text-foreground dark:text-white">{t.auth.emailOrName}</Label>
                 <Input
-                  id="emailOrName"
+                  id="loginIdentifier"
+                  name="username"
                   type="text"
                   autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  maxLength={64}
                   placeholder={t.auth.emailOrNamePlaceholder}
                   className="mt-1.5 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-white/60 bg-background dark:bg-card"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={identifier}
+                  onChange={(e) => {
+                    setIdentifier(e.target.value);
+                    setLoginHint(null);
+                  }}
+                  aria-describedby="loginIdentifierHint"
                   required
                 />
+                <p
+                  id="loginIdentifierHint"
+                  role={loginHint ? "alert" : undefined}
+                  className={`text-xs ${loginHint ? "text-destructive font-medium" : "text-muted-foreground"}`}
+                >
+                  {loginHint ?? t.auth.loginIdentifierHint}
+                </p>
               </div>
             )}
             <div className="space-y-2">
@@ -570,11 +749,13 @@ export default function Auth() {
                 {mode === "login" ? (
                   <button
                     type="button"
-                    onClick={handlePasswordResetEmail}
+                    onClick={openResetPanel}
                     disabled={resetLoading}
+                    aria-expanded={showReset}
+                    aria-controls="reset-panel"
                     className="shrink-0 text-xs font-medium text-secondary hover:underline disabled:pointer-events-none disabled:opacity-60"
                   >
-                    {resetLoading ? (t.auth.sendingResetPassword ?? "Sending...") : (t.auth.forgotPassword ?? "Forgot password?")}
+                    {t.auth.forgotPassword}
                   </button>
                 ) : null}
               </div>
@@ -663,6 +844,40 @@ export default function Auth() {
               {!loading && <ArrowRight size={16} />}
             </Button>
           </form>
+          {mode === "login" && showReset ? (
+            <form
+              id="reset-panel"
+              onSubmit={handlePasswordResetEmail}
+              className="rounded-lg border border-border bg-muted/30 p-4 space-y-3"
+            >
+              <div className="space-y-2">
+                <Label htmlFor="resetIdentifier" className="text-foreground dark:text-white">{t.auth.resetIdentifierLabel}</Label>
+                <Input
+                  id="resetIdentifier"
+                  type="text"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  maxLength={254}
+                  className="text-foreground dark:text-white bg-background dark:bg-card"
+                  value={resetIdentifier}
+                  onChange={(e) => setResetIdentifier(e.target.value)}
+                  autoFocus
+                  required
+                />
+                <p className="text-xs text-muted-foreground">{t.auth.resetIdentifierHint}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" size="sm" disabled={resetLoading} className="gap-2">
+                  {resetLoading ? <Loader2 size={14} className="animate-spin" /> : null}
+                  {resetLoading ? t.auth.sendingResetPassword : t.auth.resetSend}
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setShowReset(false)}>
+                  {t.auth.resetCancel}
+                </Button>
+              </div>
+            </form>
+          ) : null}
               </CardContent>
               <CardFooter className="flex flex-col gap-2 border-t border-border pt-4">
                 <p className="text-sm text-muted-foreground leading-relaxed text-center">

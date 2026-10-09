@@ -4,9 +4,15 @@
  * Supabase Auth `/recover` uses Dashboard Custom SMTP, which is currently failing
  * with `535 Authentication credentials invalid`. This function generates a recovery
  * link via the Admin API and sends it through Resend (same path as other app email).
+ *
+ * Accepts { identifier } (email, four-digit Member ID or username) or the legacy
+ * { email }. The account email is resolved server-side and never returned; the
+ * response is the same whether or not an account exists. The email also reminds
+ * the member of their Member ID and username, so it doubles as "forgot my ID".
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { brandAddress, brandFrom, BRAND_FROM_NAME } from "../_shared/brandSender.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,10 +22,18 @@ const corsHeaders = {
 };
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-/** Resend currently verifies premierservices.ca (altshift.ca not yet on this account). */
-const DEFAULT_FROM_EMAIL = "support@premiereservices.ca";
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? DEFAULT_FROM_EMAIL;
-const FROM_NAME = Deno.env.get("FROM_NAME") ?? "AltShift";
+/** altshift.ca is a verified Resend sending domain. */
+const DEFAULT_FROM_EMAIL = "support@altshift.ca";
+/** Optional env-only fallback sender if the primary sender is refused by Resend. */
+const FALLBACK_FROM_EMAIL = (Deno.env.get("RESEND_FALLBACK_FROM_EMAIL") ?? "").trim().toLowerCase().endsWith("@altshift.ca")
+  ? Deno.env.get("RESEND_FALLBACK_FROM_EMAIL")!.trim()
+  : "";
+const FROM_EMAIL = brandAddress(Deno.env.get("FROM_EMAIL"));
+/**
+ * Display name is always the brand. The FROM_NAME secret is ignored on purpose:
+ * it still carries a legacy business name that must not reach customers.
+ */
+const FROM_NAME = "AltShift";
 const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "support@altshift.ca";
 const SITE_URL = trimTrailingSlash(
   Deno.env.get("SITE_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.altshift.ca",
@@ -39,19 +53,47 @@ const CONSUMER_FROM_DOMAINS = new Set([
   "protonmail.com",
 ]);
 
-/** Prefer configured FROM; never send as a consumer mailbox; fall back to verified Première domain. */
+/** Prefer configured FROM; never send as a consumer mailbox. */
 function effectiveFromEmail(configured: string): string {
   const trimmed = configured.trim();
   const at = trimmed.lastIndexOf("@");
   const domain = at >= 0 ? trimmed.slice(at + 1).toLowerCase() : "";
   if (!trimmed || (domain && CONSUMER_FROM_DOMAINS.has(domain))) return DEFAULT_FROM_EMAIL;
-  // altshift.ca not verified on Resend yet — use the known-good Première sender.
-  if (domain === "altshift.ca") return DEFAULT_FROM_EMAIL;
   return trimmed;
 }
 
 const recentByEmail = new Map<string, number>();
+const recentByIp = new Map<string, number[]>();
 const RATE_LIMIT_MS = 60_000;
+const IP_WINDOW_MS = 15 * 60_000;
+const IP_MAX_REQUESTS = 10;
+
+function clientIp(req: Request): string {
+  const xff = req.headers.get("x-forwarded-for") ?? "";
+  return xff.split(",")[0]?.trim() || req.headers.get("x-real-ip")?.trim() || "unknown";
+}
+
+/** Best-effort per-instance IP limiter (the per-email limiter below still applies). */
+function ipAllowed(ip: string): boolean {
+  const now = Date.now();
+  const hits = (recentByIp.get(ip) ?? []).filter((t) => now - t < IP_WINDOW_MS);
+  hits.push(now);
+  recentByIp.set(ip, hits);
+  if (recentByIp.size > 5000) recentByIp.clear();
+  return hits.length <= IP_MAX_REQUESTS;
+}
+
+type LoginIdentifier = { kind: "member_id" | "username"; value: string } | null;
+
+function normalizeLoginIdentifier(raw: unknown): LoginIdentifier {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > 64 || trimmed.includes("@")) return null;
+  const digits = trimmed.replace(/[\s#-]/g, "");
+  if (/^\d+$/.test(digits)) return /^\d{4,5}$/.test(digits) ? { kind: "member_id", value: digits } : null;
+  const username = trimmed.replace(/^@/, "").toLowerCase();
+  return /^[a-z][a-z0-9._-]{2,29}$/.test(username) ? { kind: "username", value: username } : null;
+}
 
 type Lang = "en" | "fr";
 
@@ -108,7 +150,13 @@ function allowRedirect(raw: unknown): string {
   }
 }
 
-function buildHtml(language: Lang, email: string, resetUrl: string, nameSuffix: string) {
+function buildHtml(
+  language: Lang,
+  email: string,
+  resetUrl: string,
+  nameSuffix: string,
+  ids: { memberId: string | null; username: string | null },
+) {
   const fr = language === "fr";
   const title = fr ? "Réinitialisez votre mot de passe" : "Reset your password";
   const preheader = fr
@@ -121,6 +169,21 @@ function buildHtml(language: Lang, email: string, resetUrl: string, nameSuffix: 
     ? "Utilisez le bouton ci-dessous pour choisir un nouveau mot de passe."
     : "Use the button below to choose a new password.";
   const cta = fr ? "Réinitialiser le mot de passe" : "Reset password";
+  const idsLabel = fr ? "Vos identifiants de connexion" : "Your login details";
+  const idsRows = [
+    ids.memberId ? `${fr ? "Numéro de membre" : "Member ID"} : ${ids.memberId}` : "",
+    ids.username ? `${fr ? "Nom d’utilisateur" : "Username"} : ${ids.username}` : "",
+  ].filter(Boolean);
+  const idsHint = fr
+    ? "Connectez-vous avec votre numéro de membre ou votre nom d’utilisateur, et votre mot de passe."
+    : "Log in with your Member ID or username, and your password.";
+  const idsBlock = idsRows.length
+    ? `<div style="margin:0 0 24px;padding:16px 18px;background:#F8F6F3;border:1px solid #E0DAD2;border-radius:10px;">
+            <p style="margin:0 0 8px;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#102556;">${esc(idsLabel)}</p>
+            ${idsRows.map((r) => `<p style="margin:0 0 4px;font-size:16px;font-weight:600;color:#141A24;">${esc(r)}</p>`).join("")}
+            <p style="margin:8px 0 0;font-size:13px;line-height:1.5;color:#5E6672;">${esc(idsHint)}</p>
+          </div>`
+    : "";
   const note = fr
     ? "Ce lien expire dans environ 1 heure. Si vous n’avez pas fait cette demande, ignorez ce courriel — votre mot de passe ne changera pas."
     : "This link expires in about 1 hour. If you didn’t ask for a reset, ignore this email — your password won’t change.";
@@ -141,6 +204,7 @@ function buildHtml(language: Lang, email: string, resetUrl: string, nameSuffix: 
           <p style="margin:0 0 16px;font-size:16px;line-height:1.65;color:#141A24;">${esc(p1)}</p>
           <p style="margin:0 0 16px;font-size:16px;line-height:1.65;color:#141A24;">${esc(p2)}</p>
           <a href="${esc(resetUrl)}" style="display:inline-block;margin:8px 0 24px;padding:15px 28px;background:#102556;color:#FBF9F6;text-decoration:none;border-radius:8px;font-weight:700;">${esc(cta)}</a>
+          ${idsBlock}
           <p style="margin:0;font-size:14px;line-height:1.6;color:#5E6672;">${esc(note)}</p>
           <p style="margin:32px 0 0;font-size:14px;color:#5E6672;">${fr ? "Besoin d’aide ?" : "Need help?"}
             <a href="mailto:${esc(REPLY_TO_EMAIL)}" style="color:#102556;font-weight:600;">${esc(REPLY_TO_EMAIL)}</a>
@@ -153,17 +217,29 @@ function buildHtml(language: Lang, email: string, resetUrl: string, nameSuffix: 
 </html>`;
 }
 
-async function sendViaResend(toEmail: string, subject: string, html: string) {
-  if (!RESEND_API_KEY) return { ok: false as const, details: "Missing RESEND_API_KEY" };
-  const fromAddr = effectiveFromEmail(FROM_EMAIL);
+async function sendOnce(fromAddr: string, toEmail: string, subject: string, html: string) {
   const from = FROM_NAME.trim() ? `${FROM_NAME.trim()} <${fromAddr}>` : fromAddr;
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({ from, to: [toEmail], reply_to: REPLY_TO_EMAIL, subject, html }),
+    signal: AbortSignal.timeout(10_000),
   });
   const details = await response.text().catch(() => "");
-  return { ok: response.ok, details };
+  return { ok: response.ok, status: response.status, details: details.slice(0, 300) };
+}
+
+async function sendViaResend(toEmail: string, subject: string, html: string) {
+  if (!RESEND_API_KEY) return { ok: false as const, status: 0, details: "Missing RESEND_API_KEY" };
+  const primary = effectiveFromEmail(FROM_EMAIL);
+  const first = await sendOnce(primary, toEmail, subject, html);
+  if (first.ok || !FALLBACK_FROM_EMAIL || FALLBACK_FROM_EMAIL === primary) return first;
+  // Sender/domain refused (e.g. key scoped to another domain): retry with the env fallback.
+  if (first.status === 403 || first.status === 422) {
+    console.warn("request-password-reset primary sender refused; using fallback sender");
+    return await sendOnce(FALLBACK_FROM_EMAIL, toEmail, subject, html);
+  }
+  return first;
 }
 
 Deno.serve(async (req) => {
@@ -177,20 +253,39 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-    const email = normalizeEmail(body.email);
-    if (!email) return json({ error: "Valid email required" }, 400);
-
+    const rawIdentifier = typeof body.identifier === "string" ? body.identifier : body.email;
     const language = normalizeLanguage(body.language);
     const redirectTo = allowRedirect(body.redirectTo ?? body.redirect_to);
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    let email = normalizeEmail(rawIdentifier);
+    const loginId = email ? null : normalizeLoginIdentifier(rawIdentifier);
+    if (!email && !loginId) return json({ error: "identifier_required" }, 400);
+
+    // Same generic answer for every outcome below (no account enumeration).
+    const generic = () => json({ ok: true, emailed: true });
+
+    if (!ipAllowed(clientIp(req))) return generic();
+
+    if (loginId) {
+      const { data: rows, error: lookupErr } = await admin
+        .from("profiles")
+        .select("user_id")
+        .eq(loginId.kind === "member_id" ? "public_user_number" : "username", loginId.value)
+        .limit(2);
+      if (lookupErr || !rows || rows.length !== 1) return generic();
+      const { data: u } = await admin.auth.admin.getUserById(String(rows[0].user_id));
+      email = normalizeEmail(u?.user?.email ?? "");
+      if (!email) return generic();
+    }
 
     const now = Date.now();
     const last = recentByEmail.get(email) ?? 0;
-    if (now - last < RATE_LIMIT_MS) {
-      return json({ ok: true, emailed: true });
-    }
+    if (now - last < RATE_LIMIT_MS) return generic();
     recentByEmail.set(email, now);
 
-    const admin = createClient(supabaseUrl, serviceRoleKey);
     const { data, error } = await admin.auth.admin.generateLink({
       type: "recovery",
       email,
@@ -198,8 +293,26 @@ Deno.serve(async (req) => {
     });
 
     if (error || !data?.properties?.action_link) {
-      console.warn("request-password-reset generateLink:", error?.message ?? "no action_link");
-      return json({ ok: true, emailed: true });
+      console.warn("request-password-reset generateLink failed");
+      return generic();
+    }
+
+    let memberId: string | null = null;
+    let username: string | null = null;
+    if (data.user?.id) {
+      const { data: prof } = await admin
+        .from("profiles")
+        .select("public_user_number")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+      memberId = (prof as { public_user_number?: string | null } | null)?.public_user_number ?? null;
+      // Separate query so a missing username column (migration not applied) never breaks resets.
+      const { data: uname } = await admin
+        .from("profiles")
+        .select("username")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+      username = (uname as { username?: string | null } | null)?.username ?? null;
     }
 
     const meta = (data.user?.user_metadata ?? {}) as Record<string, unknown>;
@@ -208,17 +321,18 @@ Deno.serve(async (req) => {
     const resetUrl = data.properties.action_link;
     const subject =
       language === "fr" ? "Réinitialisez votre mot de passe AltShift" : "Reset your AltShift password";
-    const html = buildHtml(language, email, resetUrl, nameSuffix);
+    const html = buildHtml(language, email, resetUrl, nameSuffix, { memberId, username });
 
     const sent = await sendViaResend(email, subject, html);
     if (!sent.ok) {
-      console.error("request-password-reset Resend failed:", sent.details);
-      return json({ error: "Error sending recovery email", details: sent.details }, 502);
+      console.error("request-password-reset Resend failed", sent.status);
+      // Only email-typed requests surface delivery errors (the user already knows the address).
+      return loginId ? generic() : json({ error: "Error sending recovery email" }, 502);
     }
 
-    return json({ ok: true, emailed: true });
+    return generic();
   } catch (error) {
-    console.error("request-password-reset:", error);
-    return json({ error: error instanceof Error ? error.message : String(error) }, 500);
+    console.error("request-password-reset:", error instanceof Error ? error.name : "error");
+    return json({ error: "request_failed" }, 500);
   }
 });

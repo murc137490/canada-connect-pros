@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyBookingEvent } from "@/lib/bookingEventNotify";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Briefcase, Check,
-  ShieldCheck, CalendarCheck, CreditCard, ChevronRight, ChevronDown, Share2, Info, X, Heart, Sparkles
+  ShieldCheck, CalendarCheck, CreditCard, ChevronRight, ChevronDown, Share2, Info, X, Heart, Sparkles, Clock
 } from "lucide-react";
 import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { serviceCategories } from "@/data/services";
@@ -40,6 +41,8 @@ import { buildClientInvoiceContactBlock } from "@/lib/clientInvoiceContactBlock"
 import type { AvailabilityState } from "@/components/WeekdayAvailability";
 import { isReservedShareSlug, isUuidLike } from "@/lib/proShareSlug";
 import { useAuth } from "@/contexts/AuthContext";
+import { untypedDb } from "@/lib/untypedSupabase";
+import { responseTimeLabel } from "@/lib/growthTools";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { isDemoAccount, isDemoProProfile } from "@/lib/demoAccount";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -74,7 +77,8 @@ import {
 } from "@/lib/clientBookingIdVerification";
 import { useTheme } from "next-themes";
 import { resolveStorageDisplayUrl } from "@/lib/resolveStorageUrl";
-import { isLightHexColor } from "@/lib/contrastOnHex";
+import { bestInkOn, isLightHexColor, readableTextColor } from "@/lib/contrastOnHex";
+import { resolveProPageScheme } from "@/data/proPageColorSchemes";
 import {
   bookingCheckoutLoginPath,
   clearBookingCheckoutResume,
@@ -497,6 +501,76 @@ export default function ProProfilePage() {
     );
   }, [proId, user?.id, services, searchParams, setSearchParams]);
 
+  /** Book Again (/book-again/:id → ?rebook=id): same service, place and time slot as a past booking. */
+  const [rebookPrefTime, setRebookPrefTime] = useState<string | null>(null);
+  useEffect(() => {
+    const rebookId = searchParams.get("rebook");
+    if (!rebookId || !proId || !user?.id || services.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      const { data } = await untypedDb
+        .from("bookings")
+        .select("id, client_id, pro_profile_id, service_category_slug, service_slug, preferred_time, client_renews_annually")
+        .eq("id", rebookId)
+        .maybeSingle();
+      if (cancelled) return;
+      const b = data as {
+        client_id: string;
+        pro_profile_id: string;
+        service_category_slug: string | null;
+        service_slug: string | null;
+        preferred_time: string | null;
+        client_renews_annually: boolean | null;
+      } | null;
+      if (b && b.client_id === user.id && b.pro_profile_id === proId) {
+        const match = services.find((s) => s.category_slug === b.service_category_slug && s.service_slug === b.service_slug);
+        if (match) setSelectedBookingService(match);
+        const { data: loc } = await untypedDb.from("bookings").select("service_location_choice").eq("id", rebookId).maybeSingle();
+        if (cancelled) return;
+        const choice = (loc as { service_location_choice?: string | null } | null)?.service_location_choice;
+        if (choice === "workspace" || choice === "travel") setBookingLocationChoice(choice);
+        setRebookPrefTime(b.preferred_time ? String(b.preferred_time).slice(0, 5) : null);
+        setBookingClientRenewAnnually(Boolean(b.client_renews_annually));
+        setBookingDialogOpen(true);
+        toast({
+          title: locale === "fr" ? "Réserver à nouveau" : "Book again",
+          description:
+            locale === "fr"
+              ? "Même service et même lieu que votre dernière réservation. Choisissez une date; nous reprenons la même heure si elle est libre."
+              : "Same service and place as your last booking. Pick a date; we'll keep the same time if it's free.",
+        });
+      }
+      setSearchParams(
+        (prev) => {
+          const n = new URLSearchParams(prev);
+          n.delete("rebook");
+          return n;
+        },
+        { replace: true },
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proId, user?.id, services, searchParams, setSearchParams]);
+
+  /** Public response time (Growth/Pro only; the RPC returns nothing for other tiers or too little data). */
+  const [responseTimeText, setResponseTimeText] = useState<string | null>(null);
+  useEffect(() => {
+    if (!proId) return;
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await untypedDb.rpc("pro_response_time_summary", { p_pro_profile_id: proId });
+      if (cancelled || error) return;
+      const row = (Array.isArray(data) ? data[0] : data) as { median_minutes?: number | null; sample_size?: number | null } | null;
+      setResponseTimeText(row?.median_minutes != null ? responseTimeLabel(row.median_minutes, locale === "fr" ? "fr" : "en") : null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [proId, locale]);
+
   useEffect(() => {
     if (!user?.id) {
       setClientInvoiceAddress(null);
@@ -717,6 +791,11 @@ export default function ProProfilePage() {
     if (!selectedBookingTime) return;
     if (!bookingTimeOptions.includes(selectedBookingTime)) setSelectedBookingTime(null);
   }, [bookingTimeOptions, selectedBookingTime]);
+
+  useEffect(() => {
+    if (!rebookPrefTime || !selectedBookingDate || selectedBookingTime) return;
+    if (bookingTimeOptions.includes(rebookPrefTime)) setSelectedBookingTime(rebookPrefTime);
+  }, [rebookPrefTime, selectedBookingDate, selectedBookingTime, bookingTimeOptions]);
 
   const scheduleClientNote = useMemo(() => {
     if (!pro || !selectedBookingDate) return "";
@@ -1002,21 +1081,27 @@ export default function ProProfilePage() {
   const proFeatureTier = effectiveProTier(pro.subscription_tier, proBillingPlanId);
   const canAdvertiseAndBook = isPaidSubscriptionPlanId(proFeatureTier);
   const featuredLook = hasFeaturedPublicProfileLook(proFeatureTier);
-  const pagePrimary = featuredLook ? pro.page_primary_color || "#1e3a5f" : "hsl(var(--primary))";
-  const pageSecondary = featuredLook ? pro.page_secondary_color || "#0d9488" : "hsl(var(--secondary))";
-  const pageAccent = featuredLook ? pro.page_accent_color || "#e0f2f1" : null;
-  const pageBackground = featuredLook ? pro.page_background_color || "#f8fafc" : null;
+  /** Featured palette; saved colours outside the palette resolve to the closest palette colour. */
+  const featuredScheme = featuredLook ? resolveProPageScheme(pro.page_primary_color) : null;
+  const pagePrimary = featuredScheme ? featuredScheme.primary : "hsl(var(--primary))";
+  const pageSecondary = featuredScheme ? featuredScheme.secondary : "hsl(var(--secondary))";
+  const pageAccent = featuredScheme ? featuredScheme.accent : null;
+  const pageBackground = featuredScheme ? featuredScheme.background : null;
+  /** Light palette colours (Dusty Rose, Burnt Terracotta, Antique Gold) need dark text for WCAG AA. */
+  const featuredInkDark = Boolean(featuredScheme && featuredScheme.ink === "#000000" && !pro.banner_image_url);
   const sidebarPrimary = pagePrimary;
   const sidebarSecondary = pageSecondary;
   const sidebarGradient = `linear-gradient(145deg, ${sidebarPrimary} 0%, ${sidebarSecondary} 45%, ${sidebarPrimary} 100%)`;
   const customAccentHex = getAccentHex(pro.pro_accent_color);
   const actionColor = featuredLook ? pagePrimary : customAccentHex;
-  const accentStyle = actionColor ? { color: actionColor } : undefined;
-  const accentBgStyle = actionColor ? { backgroundColor: actionColor } : undefined;
+  const actionInk = actionColor && actionColor.startsWith("#") ? bestInkOn(actionColor) : "#FFFFFF";
+  const accentTextColor = actionColor && actionColor.startsWith("#") ? readableTextColor(actionColor, isDarkMode ? "#1A1A1A" : "#FFFFFF") : actionColor;
+  const accentStyle = accentTextColor ? { color: accentTextColor } : undefined;
+  const accentBgStyle = actionColor ? { backgroundColor: actionColor, color: actionInk } : undefined;
   const accentBorderStyle = actionColor ? { borderColor: actionColor } : undefined;
 
   const brandPrimaryHex = featuredLook
-    ? String(pro.page_primary_color || "#1e3a5f").trim()
+    ? (featuredScheme?.primary ?? "#49658A")
     : customAccentHex || "#2563eb";
   const brandSecondaryHex =
     featuredLook && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(pageSecondary).trim())
@@ -1079,7 +1164,7 @@ export default function ProProfilePage() {
                 <div className="absolute inset-0 bg-black/35" aria-hidden />
               </div>
             )}
-            <div className="relative z-10 px-6 py-8 md:px-8 md:py-10">
+            <div className={cn("relative z-10 px-6 py-8 md:px-8 md:py-10", featuredInkDark && "pro-featured-ink-dark")}>
             {featuredLook && pro.page_header_text && (
               <div className="prose prose-lg md:prose-xl max-w-none mb-8 text-white prose-headings:text-white prose-p:text-white/85 whitespace-pre-wrap">
                 {pro.page_header_text}
@@ -1139,6 +1224,14 @@ export default function ProProfilePage() {
                     {reviewCount}
                   </span>
                 </div>
+                {responseTimeText ? (
+                  <p
+                    className={cn("mt-1.5 inline-flex items-center gap-1.5 text-sm", featuredLook ? "text-white/85" : "text-neutral-800 dark:text-zinc-300")}
+                    data-testid="pro-response-time"
+                  >
+                    <Clock size={14} aria-hidden /> {responseTimeText}
+                  </p>
+                ) : null}
                 <div className="flex flex-wrap items-center gap-2 mt-3">
                   <button
                     type="button"
@@ -1474,7 +1567,7 @@ export default function ProProfilePage() {
                 <StarBorder as="div" color="rgba(0,0,0,0.08)" speed="4s" thickness={2} className="w-full mb-3" innerClassName="!bg-transparent !border-0 !p-0">
                   <Button
                     className="w-full min-h-12 py-4 text-base font-semibold gap-2 rounded-lg border-2 text-white hover:opacity-90"
-                    style={{ backgroundColor: actionColor || "hsl(var(--primary))", borderColor: actionColor || "hsl(var(--primary))" }}
+                    style={{ backgroundColor: actionColor || "hsl(var(--primary))", borderColor: actionColor || "hsl(var(--primary))", color: actionInk }}
                     onClick={() => {
                       if (services.length > 1) {
                         setAllServicesModalOpen(true);
@@ -1490,7 +1583,7 @@ export default function ProProfilePage() {
                 ) : (
                   <Button
                     className="w-full min-h-12 py-4 text-base font-semibold gap-2 rounded-lg border-2 text-white hover:opacity-90 mb-3"
-                    style={{ backgroundColor: actionColor || "hsl(var(--primary))", borderColor: actionColor || "hsl(var(--primary))" }}
+                    style={{ backgroundColor: actionColor || "hsl(var(--primary))", borderColor: actionColor || "hsl(var(--primary))", color: actionInk }}
                     onClick={() => {
                       if (services.length > 1) {
                         setAllServicesModalOpen(true);
@@ -1600,7 +1693,7 @@ export default function ProProfilePage() {
                         setAllServicesModalOpen(false);
                         setBookingDialogOpen(true);
                       }}
-                      style={actionColor ? { backgroundColor: actionColor, borderColor: actionColor } : undefined}
+                      style={actionColor ? { backgroundColor: actionColor, borderColor: actionColor, color: actionInk } : undefined}
                       className={!actionColor ? "" : "text-white border-2"}
                     >
                       {t.profile?.bookThisService ?? "Book"}
@@ -2072,6 +2165,7 @@ export default function ProProfilePage() {
                       <BookingServiceAssistantPanel
                         enabled
                         locale={locale === "fr" ? "fr" : "en"}
+                        proProfileId={pro.id}
                         proBusinessName={pro.business_name}
                         serviceName={serviceLineLabel(selectedBookingService)}
                         serviceDescription={selectedBookingService.description}
@@ -2535,9 +2629,7 @@ export default function ProProfilePage() {
                             });
                           }
                           if (data?.id && !isDemoAccount(user?.email) && !isDemoProProfile(pro)) {
-                            void supabase.functions.invoke("booking-sms-notify", {
-                              body: { booking_id: data.id, event: "confirmation" },
-                            });
+                            void notifyBookingEvent(data.id, "created");
                           }
                         }}
                         onError={(msg) =>

@@ -1358,3 +1358,34 @@ apple-pay-button {
 .cream .text-slate-900 {
   color: hsl(var(--foreground));
 }
+
+
+/* Featured profile on a light palette colour (Dusty Rose, Burnt Terracotta, Antique Gold):
+   white text fails WCAG AA there, so the header switches to black ink. */
+.pro-featured-ink-dark.text-white,
+.pro-featured-ink-dark .text-white,
+.pro-featured-ink-dark .hover\:text-white:hover,
+.pro-featured-ink-dark .prose :is(h1, h2, h3, h4, p, li, strong) {
+  color: #000 !important;
+}
+.pro-featured-ink-dark .text-white\/80,
+.pro-featured-ink-dark .text-white\/85,
+.pro-featured-ink-dark .text-white\/90,
+.pro-featured-ink-dark .text-white\/95,
+.pro-featured-ink-dark .text-muted-foreground {
+  color: rgba(0, 0, 0, 0.82) !important;
+}
+.pro-featured-ink-dark .bg-white\/15,
+.pro-featured-ink-dark .bg-white\/18 {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+.pro-featured-ink-dark .hover\:bg-white\/15:hover,
+.pro-featured-ink-dark .hover\:bg-white\/25:hover {
+  background-color: rgba(0, 0, 0, 0.14) !important;
+}
+.pro-featured-ink-dark .border-white\/30,
+.pro-featured-ink-dark .border-white\/35,
+.pro-featured-ink-dark .border-white\/45,
+.pro-featured-ink-dark.border-white\/18 {
+  border-color: rgba(0, 0, 0, 0.3) !important;
+}

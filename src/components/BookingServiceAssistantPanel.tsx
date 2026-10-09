@@ -10,6 +10,7 @@ const AI_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-h
 export default function BookingServiceAssistantPanel({
   enabled,
   locale,
+  proProfileId,
   proBusinessName,
   serviceName,
   serviceDescription,
@@ -18,6 +19,8 @@ export default function BookingServiceAssistantPanel({
 }: {
   enabled: boolean;
   locale: "en" | "fr";
+  /** Lets the server confirm the pro is on the Pro plan (AI assistant is Pro-only). */
+  proProfileId: string;
   proBusinessName: string;
   serviceName: string;
   serviceDescription: string | null;
@@ -102,6 +105,8 @@ export default function BookingServiceAssistantPanel({
           access_token: session.access_token,
           language: locale === "fr" ? "fr" : "en",
           system_extension,
+          intent: "booking_assistant",
+          pro_profile_id: proProfileId,
         }),
       });
 

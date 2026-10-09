@@ -35,6 +35,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CookiePolicy from "./pages/CookiePolicy";
 import PhonePreview from "./pages/PhonePreview";
 import ResetPassword from "./pages/ResetPassword";
+import BookAgain from "./pages/BookAgain";
+import RebookUnsubscribe from "./pages/RebookUnsubscribe";
 import ProOnboardingStart from "./pages/ProOnboardingStart";
 import ProOnboardingTier from "./pages/ProOnboardingTier";
 import ApplePayHandoffPay from "./pages/ApplePayHandoffPay";
@@ -130,6 +132,8 @@ const App = () => (
               <Route path="/cookie-policy" element={<Navigate to="/cookies" replace />} />
               <Route path="/phone-preview" element={<><PrivateNoIndex /><PhonePreview /></>} />
               <Route path="/reset-password" element={<><PrivateNoIndex /><ResetPassword /></>} />
+              <Route path="/book-again/:bookingId" element={<><PrivateNoIndex /><BookAgain /></>} />
+              <Route path="/unsubscribe/rebook" element={<><PrivateNoIndex /><RebookUnsubscribe /></>} />
               <Route path="/confirm-deletion" element={<><PrivateNoIndex /><ConfirmAccountDeletion /></>} />
               <Route path="/pay/apple-handoff/:handoffId" element={<><PrivateNoIndex /><ApplePayHandoffPay /></>} />
               <Route path="/auth" element={<><PrivateNoIndex /><Auth /></>} />
