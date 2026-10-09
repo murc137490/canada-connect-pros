@@ -27,10 +27,11 @@ async function main() {
     console.log("[sitemap] no Supabase env — kept static sitemap");
     return;
   }
+  // Only public columns (security review: pro_profiles column grants). No lastmod: updated_at is private.
   let rows = [];
   try {
     const res = await fetch(
-      `${url}/rest/v1/pro_profiles?select=share_slug,updated_at&is_verified=eq.true&share_slug=not.is.null`,
+      `${url}/rest/v1/pro_profiles?select=share_slug&is_verified=eq.true&share_slug=not.is.null`,
       { headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(8000) },
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
