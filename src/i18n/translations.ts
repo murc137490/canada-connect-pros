@@ -323,7 +323,7 @@ export const translations = {
         lead:
           "Try Growth tools with no charge today. We verify your email, limit trials per account and network, and securely store one Square payment method before activating access.",
         bullet1: "Growth tier access for leads, client tools, and repeat booking features.",
-        bullet2: "No public navigation points to this special trial page.",
+        bullet2: "Save a payment method to start. You will not be charged until the trial ends.",
         bullet3: "One trial per account, Square payment profile, and network limits.",
         cardTitle: "Start Free Trial",
         signInPrompt:
@@ -470,8 +470,8 @@ export const translations = {
       phoneRequired: "Enter a valid 10-digit phone number.",
       signupPhoneHint: "Professionals use this to reach you about bookings.",
       email: "Email",
-      emailOrName: "Email or name",
-      emailOrNamePlaceholder: "you@example.com or Ryan Smith",
+      emailOrName: "Email",
+      emailOrNamePlaceholder: "you@example.com",
       password: "Password",
       logIn: "Log In",
       createAccountButton: "Create Account",
@@ -2188,7 +2188,7 @@ export const translations = {
         lead:
           "Essayez les outils Croissance sans frais aujourd’hui. Nous vérifions votre courriel, limitons les essais par compte et par réseau, et enregistrons en toute sécurité un mode de paiement Square avant d’activer l’accès.",
         bullet1: "Accès Croissance : demandes, outils clients et réservations répétées.",
-        bullet2: "Aucun lien public ne mène à cette page d’essai spéciale.",
+        bullet2: "Enregistrez un moyen de paiement pour commencer. Vous ne serez pas facturé avant la fin de l’essai.",
         bullet3: "Un essai par compte, par profil de paiement Square et limites réseau.",
         cardTitle: "Commencer l’essai gratuit",
         signInPrompt:
@@ -2335,8 +2335,8 @@ export const translations = {
       phoneRequired: "Entrez un numéro de téléphone valide à 10 chiffres.",
       signupPhoneHint: "Les professionnels l'utilisent pour vous joindre au sujet des réservations.",
       email: "Courriel",
-      emailOrName: "Courriel ou nom",
-      emailOrNamePlaceholder: "vous@exemple.com ou Jean Dupont",
+      emailOrName: "Courriel",
+      emailOrNamePlaceholder: "vous@exemple.com",
       password: "Mot de passe",
       logIn: "Connexion",
       createAccountButton: "Créer un compte",

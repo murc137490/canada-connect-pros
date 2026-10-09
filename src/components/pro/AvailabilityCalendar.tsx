@@ -55,6 +55,11 @@ export interface AvailabilityCalendarProps {
   minBookingDate?: string;
   /** Optional: dates that look weekday-open but have no remaining bookable slots (e.g. today after hours). */
   exhaustedDates?: string[];
+  /**
+   * Booking calendars: a weekday-open day is available only when this returns true.
+   * When set, days with no remaining slots are not clickable.
+   */
+  dayHasBookableSlot?: (dateStr: string) => boolean;
   /** Optional: highlight the currently selected date in the calendar. */
   selectedDateStr?: string | null;
 }
@@ -80,6 +85,7 @@ export default function AvailabilityCalendar({
   minBookingDate,
   exhaustedDates = [],
   selectedDateStr = null,
+  dayHasBookableSlot,
 }: AvailabilityCalendarProps) {
   const { t } = useLanguage();
   const monthNames = (monthNamesProp ?? t.dashboard.calendarMonthNames) as readonly string[];
@@ -210,7 +216,7 @@ export default function AvailabilityCalendar({
     const hasOverride = overridesSet.has(dateStr);
     const unavailEntry = unavailableDates[dateStr] as UnavailableDayStored | undefined;
     const wholeDayUnavail = unavailEntry != null && isWholeDayUnavailable(unavailEntry);
-    const isExhausted = exhaustedSet.has(dateStr);
+    const isExhausted = exhaustedSet.has(dateStr) || (dayHasBookableSlot ? !dayHasBookableSlot(dateStr) : false);
     const isAvailable =
       isPast || isBeyondWindow || isExhausted
         ? false
@@ -328,7 +334,13 @@ export default function AvailabilityCalendar({
           ))}
           {days.map((day, i) => {
             const isBeyond = !!(onDayClick && day.date && day.isBeyondWindow);
-            const isInteractiveEdit = !!(onDayClick && day.date && !day.isPast && !isBeyond);
+            const isInteractiveEdit = !!(
+              onDayClick &&
+              day.date &&
+              !day.isPast &&
+              !isBeyond &&
+              (dayHasBookableSlot ? day.isAvailable && !day.isBusy : true)
+            );
             const isInteractiveUpgrade = isBeyond;
             const Cell = isInteractiveEdit || isInteractiveUpgrade ? "button" : "div";
             const isAvailable = day.date && day.isAvailable && !day.isBusy;
@@ -358,8 +370,9 @@ export default function AvailabilityCalendar({
                   isAvailable && !availableDayColor && "bg-primary text-primary-foreground border border-primary/30 shadow-[0_0_0_0.5px_rgba(0,0,0,0.06)]",
                   isUnavailable && "bg-slate-200 text-slate-700 border border-slate-300",
                   isBeyond && "line-through opacity-60",
-                  isToday && "font-semibold",
-                  isSelected && "ring-2 ring-amber-500 ring-offset-2 ring-offset-background"
+                  isToday && isAvailable && "ring-2 ring-offset-1 ring-amber-500 dark:ring-amber-400 font-semibold shadow-[0_0_0_2px_rgba(245,158,11,0.5)]",
+                  // Calendar "selected day" outline: white in dark mode, black in light mode.
+                  isSelected && "ring-2 ring-black dark:ring-white ring-offset-2 ring-offset-background"
                 )}
                 style={isAvailable && availableDayColor ? { backgroundColor: availableDayColor, color: "#fff", border: "0.5px solid rgba(255,255,255,0.4)" } : undefined}
               >

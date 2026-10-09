@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Shield, TrendingUp, Users, Star, ArrowRight, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { isDemoClientAccount } from "@/lib/demoAccount";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveVerifiedPro } from "@/hooks/useActiveVerifiedPro";
@@ -172,6 +173,7 @@ export default function JoinPros() {
                     <ArrowRight size={18} />
                   </Link>
                 </Button>
+                {proProfileId || !isDemoClientAccount(user.email) ? (
                 <Button
                   size="lg"
                   variant="outline"
@@ -182,6 +184,7 @@ export default function JoinPros() {
                   {proProfileId ? t.joinPros.editProfile : t.joinPros.completeProfile}
                   <ArrowRight size={18} />
                 </Button>
+                ) : null}
               </div>
             </div>
           </section>

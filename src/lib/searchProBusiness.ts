@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { filterAdvertiseableProIds } from "@/lib/filterAdvertiseablePros";
+import { isPubliclyListablePro } from "@/lib/publicProListing";
 
 export type ProBusinessSearchHit = {
   proProfileId: string;
@@ -65,13 +66,16 @@ export async function searchProsByBusinessOrName(query: string, limit = 8): Prom
 
   const { data: byBusiness, error: bizErr } = await supabase
     .from("pro_profiles")
-    .select("id, business_name, user_id, primary_category_slug")
+    .select("id, business_name, user_id, primary_category_slug, phone, is_verified")
     .eq("is_verified", true)
     .ilike("business_name", pattern)
     .limit(limit);
 
-  if (!bizErr && byBusiness?.length) {
-    const userIds = [...new Set(byBusiness.map((p) => p.user_id).filter(Boolean))] as string[];
+  const byBusinessFiltered = (!bizErr && byBusiness?.length)
+    ? byBusiness.filter((p) => isPubliclyListablePro(p as { business_name?: string | null; phone?: string | null; is_demo?: boolean | null; is_verified?: boolean | null }))
+    : [];
+  if (byBusinessFiltered.length) {
+    const userIds = [...new Set(byBusinessFiltered.map((p) => p.user_id).filter(Boolean))] as string[];
     const nameByUser = new Map<string, string>();
     if (userIds.length > 0) {
       const { data: profiles } = await supabase.from("public_profiles").select("user_id, full_name").in("user_id", userIds);
@@ -81,7 +85,7 @@ export async function searchProsByBusinessOrName(query: string, limit = 8): Prom
         if (name) nameByUser.set(uid, name);
       }
     }
-    for (const p of byBusiness) {
+    for (const p of byBusinessFiltered) {
       await pushHit(p, nameByUser.get(p.user_id as string) ?? null);
       if (hits.length >= limit) return hits;
     }
@@ -100,11 +104,12 @@ export async function searchProsByBusinessOrName(query: string, limit = 8): Prom
     if (!fullName) continue;
     const { data: proRow } = await supabase
       .from("pro_profiles")
-      .select("id, business_name, user_id, primary_category_slug")
+      .select("id, business_name, user_id, primary_category_slug, phone, is_verified")
       .eq("user_id", userId)
       .eq("is_verified", true)
       .maybeSingle();
     if (!proRow?.id) continue;
+    if (!isPubliclyListablePro(proRow)) continue;
     await pushHit(proRow, fullName);
   }
 

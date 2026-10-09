@@ -13,6 +13,7 @@ import {
   shouldBlurProReviewOfClientForViewer,
 } from "@/lib/reviewBlind";
 import { REVIEWS_CHANGED_EVENT } from "@/lib/fetchPendingReviewNotices";
+import { withAltShiftBrand } from "@/lib/publicBrand";
 import {
   fetchAllReviewOpportunities,
   type ReviewOpportunity,
@@ -219,7 +220,7 @@ export default function DashboardReviewsPanel({
 
       const myReviewsRes = await supabase
         .from("reviews")
-        .select("id, pro_profile_id, reviewer_id, rating, title, content, created_at, booking_id")
+        .select("id, pro_profile_id, reviewer_id, rating, title, content, created_at")
         .eq("reviewer_id", uid)
         .order("created_at", { ascending: false });
 
@@ -251,7 +252,7 @@ export default function DashboardReviewsPanel({
             .order("created_at", { ascending: false }),
           supabase
             .from("reviews")
-            .select("id, rating, title, content, created_at, reviewer_id, booking_id")
+            .select("id, rating, title, content, created_at, reviewer_id")
             .eq("pro_profile_id", proProfileId)
             .order("created_at", { ascending: false }),
           supabase.from("client_reviews").select("client_id, pro_profile_id").eq("pro_profile_id", proProfileId),
@@ -335,8 +336,8 @@ export default function DashboardReviewsPanel({
         myReviews.map((r) => ({
           id: r.id,
           rating: r.rating,
-          title: r.title,
-          content: r.content,
+          title: withAltShiftBrand(r.title),
+          content: withAltShiftBrand(r.content),
           created_at: r.created_at,
           pro_profile_id: r.pro_profile_id,
           business_name: proNames.get(r.pro_profile_id) ?? null,
@@ -354,8 +355,8 @@ export default function DashboardReviewsPanel({
           return {
             id: r.id,
             rating: r.rating,
-            title: r.title,
-            content: r.content,
+            title: withAltShiftBrand(r.title),
+            content: withAltShiftBrand(r.content),
             created_at: r.created_at,
             reviewer_id: r.reviewer_id,
             reviewer_name: personNames.get(r.reviewer_id) || null,

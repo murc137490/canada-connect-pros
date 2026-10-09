@@ -119,17 +119,17 @@ export default function ProBookingRequestCard({
           </span>
         </div>
 
-        {!compactPending ? (
-          <p className="text-xs text-muted-foreground">
-            {(() => {
-              const responseFmt = formatProResponseDuration(b.created_at, b.responded_at, locale);
-              if (responseFmt) return (t.dashboard.proResponseTimeLine ?? "Response: {{value}}").replace("{{value}}", responseFmt);
-              return t.dashboard.proResponseWaiting ?? "";
-            })()}
-          </p>
-        ) : b.status === "pending" ? (
+        {b.status === "pending" ? (
           <p className="text-xs text-muted-foreground">{t.dashboard.proResponseWaiting ?? ""}</p>
-        ) : null}
+        ) : (() => {
+              const responseFmt = formatProResponseDuration(b.created_at, b.responded_at, locale);
+              if (!responseFmt) return null;
+              return (
+                <p className="text-xs text-muted-foreground">
+                  {(t.dashboard.proResponseTimeLine ?? "Response: {{value}}").replace("{{value}}", responseFmt)}
+                </p>
+              );
+            })()}
 
         {serviceLabel ? (
           <p className="text-sm text-foreground">

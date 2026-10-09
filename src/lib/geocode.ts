@@ -161,8 +161,10 @@ function parseGoogleResult(first: GoogleResult): GeocodeLocation | null {
   };
 }
 
-async function geocodeViaEdgeOnce(address: string): Promise<GeocodeLocation | null> {
-  if (!SUPABASE_URL || !SUPABASE_ANON) return null;
+type EdgeGeoAttempt = { loc: GeocodeLocation | null; notFound: boolean };
+
+async function geocodeViaEdgeOnce(address: string, timeoutMs = 10000): Promise<EdgeGeoAttempt> {
+  if (!SUPABASE_URL || !SUPABASE_ANON) return { loc: null, notFound: false };
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/geocode`, {
       method: "POST",
@@ -172,31 +174,77 @@ async function geocodeViaEdgeOnce(address: string): Promise<GeocodeLocation | nu
         apikey: SUPABASE_ANON,
       },
       body: JSON.stringify({ address }),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
-    if (!res.ok) return null;
+    if (!res.ok) return { loc: null, notFound: res.status === 404 || res.status === 400 };
     const data = (await res.json()) as GeocodeLocation & { error?: string; postal?: string | null };
-    if (typeof data.lat !== "number" || typeof data.lng !== "number") return null;
+    if (typeof data.lat !== "number" || typeof data.lng !== "number") return { loc: null, notFound: false };
     return {
-      lat: data.lat,
-      lng: data.lng,
-      city: data.city ?? null,
-      province: data.province ?? null,
-      formattedAddress: data.formattedAddress,
-      postal: data.postal ?? null,
+      loc: {
+        lat: data.lat,
+        lng: data.lng,
+        city: data.city ?? null,
+        province: data.province ?? null,
+        formattedAddress: data.formattedAddress,
+        postal: data.postal ?? null,
+      },
+      notFound: false,
     };
   } catch (err) {
     console.warn("Edge geocode error:", err);
-    return null;
+    return { loc: null, notFound: false };
   }
 }
 
-/** Edge with short backoff — retry network/5xx once, then fail fast for UX. */
+/** Edge with short backoff — retry network/5xx once. A 404 is final. */
 async function geocodeViaEdge(address: string): Promise<GeocodeLocation | null> {
   const first = await geocodeViaEdgeOnce(address);
-  if (first) return first;
+  if (first.loc || first.notFound) return first.loc;
   await sleep(400);
-  return geocodeViaEdgeOnce(address);
+  return (await geocodeViaEdgeOnce(address)).loc;
+}
+
+const FSA_RE = /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]$/;
+
+/** Zippopotam FSA payload → city pin. Returns null unless `fsa` is exactly 3 characters. */
+export function parseZippopotamFsaPayload(data: unknown, fsa: string): GeocodeLocation | null {
+  const code = fsa.toUpperCase();
+  if (!FSA_RE.test(code)) return null;
+  if (!data || typeof data !== "object") return null;
+  const places = (data as { places?: unknown }).places;
+  if (!Array.isArray(places) || places.length === 0) return null;
+  const place = places[0] as Record<string, unknown>;
+  const lat = Number(place.latitude);
+  const lng = Number(place.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const city = typeof place["place name"] === "string" ? (place["place name"] as string) : null;
+  const abbr = place["state abbreviation"];
+  const state = place.state;
+  const province =
+    (typeof abbr === "string" && abbr) || (typeof state === "string" ? state : null);
+  return {
+    lat,
+    lng,
+    city,
+    province,
+    formattedAddress: [city, province, code, "Canada"].filter(Boolean).join(", "),
+    postal: code,
+  };
+}
+
+/** Browser-callable FSA centroid. Used only after an exact 6-character LDU lookup fails. */
+async function geocodeViaZippopotamFsa(fsa: string): Promise<GeocodeLocation | null> {
+  if (!FSA_RE.test(fsa)) return null;
+  try {
+    const res = await fetch(`https://api.zippopotam.us/ca/${encodeURIComponent(fsa)}`, {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    return parseZippopotamFsaPayload(await res.json(), fsa);
+  } catch (err) {
+    console.warn("Zippopotam FSA geocode error:", err);
+    return null;
+  }
 }
 
 /** Accept exact LDU or formatted_address containing it — never a different 6-char postal. */
@@ -435,8 +483,10 @@ export async function detectBrowserLocationPostal(): Promise<DetectBrowserLocati
 
 /**
  * Geocode postal/address.
- * Edge resolves full Canadian LDUs via geocoder.ca, then exact Google match.
- * Full LDUs never fall back to FSA centroids (that pinned every H3Z* on H3Z 1A1).
+ * Exact Canadian LDUs resolve via the edge function (Google / geocoder.ca / Photon).
+ * Only when that exact lookup fails do we use the FSA centroid (Zippopotam),
+ * so a mapped LDU such as J2G 9H7 keeps its own pin and an unmapped Granby
+ * LDU such as J2G 1A1 still gets a city.
  */
 export async function geocodePostalToLocation(postalOrAddress: string): Promise<GeocodeLocation | null> {
   const trimmed = postalOrAddress?.trim();
@@ -463,17 +513,23 @@ export async function geocodePostalToLocation(postalOrAddress: string): Promise<
       return loc;
     };
 
-    const viaEdge = accept(await geocodeViaEdge(trimmed));
+    // One short edge attempt for a full LDU. A hung geocode function must not eat the
+    // make-request 18s budget before the FSA fallback runs.
+    const viaEdge = accept(
+      wanted ? (await geocodeViaEdgeOnce(trimmed, 8000)).loc : await geocodeViaEdge(trimmed),
+    );
     if (viaEdge) return viaEdge;
 
     const viaClient = accept(await geocodeViaGoogleClient(trimmed));
     if (viaClient) return viaClient;
 
-    // Full LDU failed — try FSA (first 3 chars) so Granby J2G* still resolves a city pin.
+    // Exact LDU missed. FSA centroid only — never replace a successful exact hit.
     if (wanted && wanted.length === 6) {
       const fsa = wanted.slice(0, 3);
-      const fsaLoc = accept(await geocodeViaEdge(`${fsa}, QC, Canada`))
-        ?? accept(await geocodeViaGoogleClient(`${fsa}, Quebec, Canada`));
+      const fsaLoc =
+        accept(await geocodeViaZippopotamFsa(fsa)) ??
+        accept((await geocodeViaEdgeOnce(fsa, 5000)).loc) ??
+        accept(await geocodeViaGoogleClient(`${fsa}, Quebec, Canada`));
       if (fsaLoc) {
         const withWanted = { ...fsaLoc, postal: `${wanted.slice(0, 3)} ${wanted.slice(3)}` };
         writeGeoCache(cacheKey, withWanted);

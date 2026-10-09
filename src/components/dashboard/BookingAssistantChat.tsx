@@ -71,7 +71,7 @@ export default function BookingAssistantChat({
         supabase
           .from("pro_profiles")
           .select(
-            "business_name, bio, service_tags, years_experience, primary_category_slug, booking_cancel_policy, booking_cancel_fee_percent, service_at_workspace_only, offers_workspace, offers_travel, business_address, service_radius_km, price_min, price_max, pro_member_id",
+            "business_name, bio, years_experience, primary_category_slug, booking_cancel_policy, booking_cancel_fee_percent, service_at_workspace_only, offers_workspace, offers_travel, business_address, service_radius_km, price_min, price_max, pro_member_id",
           )
           .eq("id", proProfileId)
           .maybeSingle(),
@@ -101,7 +101,6 @@ export default function BookingAssistantChat({
         p?.bio ? `Bio: ${String(p.bio).slice(0, 500)}` : null,
         p?.years_experience != null ? `Years experience: ${p.years_experience}` : null,
         p?.primary_category_slug ? `Main category: ${p.primary_category_slug}` : null,
-        Array.isArray(p?.service_tags) ? `Tags: ${(p!.service_tags as string[]).join(", ")}` : null,
         p?.booking_cancel_policy ? `Cancel policy: ${p.booking_cancel_policy}` : null,
         p?.booking_cancel_fee_percent != null ? `Cancel fee %: ${p.booking_cancel_fee_percent}` : null,
         p?.service_at_workspace_only ? "Clients visit workspace" : null,
