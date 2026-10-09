@@ -85,8 +85,10 @@ export type ProBillingDetails = {
 };
 
 /**
- * Invoice supplier fields (legal name, business address, GST/QST) for signed-in callers.
- * Returns verified pros, the caller's own pro profile, or pros the caller has booked.
+ * Invoice supplier fields (legal name, business address, GST/QST). Only returned to the pro
+ * themself, admins, or a client who already has a booking or payment with that pro. At checkout
+ * the bookings trigger fills these into invoice_snapshot server-side, so callers must not rely on
+ * this before the booking/payment exists (use fetchProBillingReady() for the pre-payment check).
  */
 export async function fetchProBillingDetails(ids: string[]): Promise<Record<string, ProBillingDetails>> {
   const unique = [...new Set(ids.filter(Boolean))];
@@ -96,6 +98,14 @@ export async function fetchProBillingDetails(ids: string[]): Promise<Record<stri
   const out: Record<string, ProBillingDetails> = {};
   for (const row of data as ProBillingDetails[]) out[row.id] = row;
   return out;
+}
+
+/** Pre-payment check: does the pro have an invoice address on file? (no address is returned) */
+export async function fetchProBillingReady(proId: string): Promise<boolean | null> {
+  if (!proId) return null;
+  const { data, error } = await untypedDb.rpc("pro_billing_ready", { p_pro_profile_id: proId });
+  if (error) return null; // unknown (e.g. migration not applied): don't block checkout
+  return data === true;
 }
 
 /** Map the rounded public coords onto latitude/longitude for code that expects those keys. */

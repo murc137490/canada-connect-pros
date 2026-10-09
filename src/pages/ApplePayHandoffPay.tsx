@@ -99,15 +99,17 @@ export default function ApplePayHandoffPay() {
 
         const { data: proPublic } = await supabase
           .from("pro_profiles")
-          .select("id, business_name, location, user_id")
+          .select("id, business_name, user_id")
           .eq("id", draft.proProfileId)
           .maybeSingle();
-        // Invoice supplier fields come from a signed-in-only RPC (not column-granted; HIGH 1).
+        // Invoice supplier fields are private. The payment row exists at this point so the RPC
+        // usually returns them; the bookings trigger fills them server-side on insert regardless.
         const billing = (await fetchProBillingDetails([draft.proProfileId]))[draft.proProfileId];
         const pro = proPublic
           ? {
               ...proPublic,
               business_address: billing?.business_address ?? null,
+              location: billing?.location ?? null,
               gst_registration_number: billing?.gst_registration_number ?? null,
               qst_registration_number: billing?.qst_registration_number ?? null,
             }

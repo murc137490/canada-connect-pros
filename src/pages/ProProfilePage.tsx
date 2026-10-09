@@ -104,6 +104,7 @@ import {
   PUBLIC_PRO_PROFILE_SELECT,
   withApproxCoords,
   fetchProBillingDetails,
+  fetchProBillingReady,
   fetchProOpenSlots,
   isSlotTakenError,
   type ProOpenSlotsByDate,
@@ -2247,6 +2248,19 @@ export default function ProProfilePage() {
                             }
                           }
                         }
+                        // Before payment: the pro must have an invoice address on file (checked
+                        // server-side; the address itself is not exposed).
+                        if (pro?.id && (await fetchProBillingReady(pro.id)) === false) {
+                          toast({
+                            title: t.auth.toastError,
+                            description:
+                              locale === "fr"
+                                ? "Ce professionnel n'a pas d'adresse de facturation complète. Réessayez plus tard ou contactez le support."
+                                : "This professional has not completed a billing address yet. Please try again later or contact support.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
                         setBookingStep(4);
                       }}
                     >
@@ -2391,19 +2405,15 @@ export default function ProProfilePage() {
                                     : ""
                                 }`
                               : "";
-                          // Invoice supplier fields are not publicly readable; signed-in RPC (HIGH 1).
+                          // Invoice supplier fields are private (only the pro, admins and clients with a
+                          // booking/payment can read them). The payment row exists by now so this usually
+                          // returns them; either way the bookings trigger writes the authoritative
+                          // supplier address / GST / QST into invoice_snapshot on insert.
                           const billing = (await fetchProBillingDetails([pro.id]))[pro.id];
                           const supplierAddress =
                             (typeof billing?.business_address === "string" && billing.business_address.trim()) ||
                             (typeof billing?.location === "string" && billing.location.trim()) ||
                             "";
-                          if (!supplierAddress) {
-                            throw new Error(
-                              locale === "fr"
-                                ? "Ce professionnel n'a pas d'adresse de facturation complète. Réessayez plus tard ou contactez le support."
-                                : "This professional has not completed a billing address yet. Please try again later or contact support."
-                            );
-                          }
                           const serviceLine = svc
                             ? serviceLineLabel(svc)
                             : t.profile?.servicesOffered ?? "Service";
