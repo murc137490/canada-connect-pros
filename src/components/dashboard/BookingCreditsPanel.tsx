@@ -55,15 +55,16 @@ export default function BookingCreditsPanel({ proProfileId }: { proProfileId: st
     return () => { active = false; };
   }, [proProfileId]);
   return (
-    <section className="mb-6 flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-primary/15 bg-card px-4 py-3 shadow-sm" aria-label={fr ? "Crédits de réservation" : "Booking Credits"}>
-      <div className="flex items-center gap-2.5">
+    <section className="flex w-full flex-wrap items-center justify-end gap-x-3 gap-y-1 text-foreground" aria-label={fr ? "Crédits de réservation" : "Booking Credits"}>
+      <div className="flex items-center gap-2">
         <Coins size={17} className="text-primary" aria-hidden="true" />
         <span className="text-sm font-semibold">{fr ? "Crédit" : "Credit"}</span>
         <span className="text-sm font-bold tabular-nums">
           {summary === null ? "—" : `${summary.available}${summary.monthly ? `/${summary.monthly}` : ""}`}
         </span>
+        {summary ? <span className="text-xs text-muted-foreground">· {fr ? "utilisés" : "used"} {summary.usedThisMonth}</span> : null}
       </div>
-      <details className="basis-full border-t border-border/60 pt-2 text-xs text-muted-foreground">
+      <details className="basis-full pt-1 text-xs text-muted-foreground md:basis-auto md:pt-0">
         <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 font-medium text-muted-foreground hover:text-foreground">
           <History size={13} aria-hidden="true" />{fr ? "Détails et activité" : "Details and activity"}
         </summary>

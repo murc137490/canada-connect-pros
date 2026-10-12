@@ -1453,3 +1453,35 @@ apple-pay-button {
   .mini-guide-card-active .mini-guide-meet-pro,
   .mini-guide-card-active .mini-guide-payment { animation: none; }
 }
+
+/* Theme-aware footer surface and wordmark contrast. */
+html:not(.dark):not(.cream) .footer-gradient {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border-top: 1px solid hsl(var(--border));
+}
+html.cream .footer-gradient {
+  background: hsl(var(--background));
+  color: #342b20;
+  border-top: 1px solid hsl(var(--border));
+}
+html:not(.dark):not(.cream) .footer-gradient [class*="text-white"],
+html:not(.dark):not(.cream) .footer-gradient [class*="hover:text-white"],
+html.cream .footer-gradient [class*="text-white"],
+html.cream .footer-gradient [class*="hover:text-white"] {
+  color: inherit !important;
+}
+html:not(.dark):not(.cream) .footer-gradient a[class*="bg-[#D97757]"],
+html:not(.dark):not(.cream) .footer-gradient a[class*="bg-[#10A37F]"],
+html.cream .footer-gradient a[class*="bg-[#D97757]"],
+html.cream .footer-gradient a[class*="bg-[#10A37F]"] {
+  color: #fff !important;
+}
+.footer-wordmark {
+  letter-spacing: 0.05em;
+  color: #000;
+  white-space: nowrap;
+  opacity: 1;
+}
+html.dark .footer-wordmark { color: #fff; }
+html.cream .footer-wordmark { color: #342b20; }

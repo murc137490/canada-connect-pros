@@ -40,6 +40,7 @@ import {
   Trash2,
   Gift,
   Send,
+  Pin,
   X,
   Copy,
   Check,
@@ -662,6 +663,31 @@ export default function Dashboard() {
   const [bookingPaymentsById, setBookingPaymentsById] = useState<
     Record<string, { amount_cents: number; currency: string; square_payment_id: string | null; status: string }>
   >({});
+  const [pinnedInvoiceIds, setPinnedInvoiceIds] = useState<string[]>([]);
+  const [lastPinnedInvoiceMove, setLastPinnedInvoiceMove] = useState<{ id: string; pinned: boolean } | null>(null);
+  useEffect(() => {
+    if (!user?.id) {
+      setPinnedInvoiceIds([]);
+      return;
+    }
+    try {
+      const saved = localStorage.getItem(`dashboardPinnedInvoices:${user.id}`);
+      const parsed: unknown = saved ? JSON.parse(saved) : [];
+      setPinnedInvoiceIds(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : []);
+    } catch {
+      setPinnedInvoiceIds([]);
+    }
+  }, [user?.id]);
+
+  const togglePinnedInvoice = (bookingId: string) => {
+    const pin = !pinnedInvoiceIds.includes(bookingId);
+    const next = pin ? [...pinnedInvoiceIds, bookingId] : pinnedInvoiceIds.filter((id) => id !== bookingId);
+    setPinnedInvoiceIds(next);
+    setLastPinnedInvoiceMove({ id: bookingId, pinned: pin });
+    if (user?.id) {
+      try { localStorage.setItem(`dashboardPinnedInvoices:${user.id}`, JSON.stringify(next)); } catch { /* ignore */ }
+    }
+  };
   const [claimDialogOpen, setClaimDialogOpen] = useState(false);
   const [claimBooking, setClaimBooking] = useState<{
     id: string;
@@ -4185,7 +4211,7 @@ export default function Dashboard() {
 
       <div className="min-h-screen bg-gradient-page dark:text-white flex flex-col items-center w-full">
       <div
-        className={`relative w-full py-8 md:py-12 px-4 md:px-6 ${showReferralFriendAside || showAdminAside ? "lg:pl-80 lg:pr-80" : ""}`}
+        className={`relative w-full py-8 md:py-12 px-4 md:px-6 ${showAdminAside || (showReferralFriendAside && shellTab === "account") ? "2xl:pl-80" : ""} ${proProfile?.is_verified && !isAdminDashboardShell ? "2xl:pr-80" : ""}`}
       >
       {showAdminAside && (
         <aside className="hidden lg:block fixed left-4 top-24 z-30 w-80 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border border-amber-500/30 bg-card p-4 shadow-sm">
@@ -4227,7 +4253,7 @@ export default function Dashboard() {
       )}
       {showReferralFriendAside && (
         <aside
-          className={`${shellTab === "account" ? "block" : "hidden"} mx-auto mb-6 w-full max-w-md rounded-xl border border-primary/20 bg-card p-4 shadow-sm lg:fixed lg:left-4 lg:top-24 lg:z-30 lg:mb-0 lg:block lg:w-80 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto`}
+          className={`${shellTab === "account" ? "block" : "hidden"} mx-auto mb-6 w-full max-w-md rounded-xl border border-primary/20 bg-card p-4 shadow-sm 2xl:fixed 2xl:left-4 2xl:top-24 2xl:z-30 2xl:mb-0 2xl:block 2xl:w-80 2xl:max-h-[calc(100vh-8rem)] 2xl:overflow-y-auto`}
         >
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 via-background to-orange-500/10 p-4 pr-10">
             <button
@@ -4323,7 +4349,13 @@ export default function Dashboard() {
         </aside>
       )}
       <div className="w-full max-w-[min(96vw,1600px)] container mx-auto">
-        {proProfile?.id ? <BookingCreditsPanel proProfileId={proProfile.id} /> : null}
+        {proProfile?.id ? (
+          <div className="relative mx-auto w-full max-w-[min(96vw,1600px)] md:h-0">
+            <div className="mb-3 md:absolute md:right-0 md:top-0 md:z-10 md:mb-0 md:max-w-[24rem]">
+              <BookingCreditsPanel proProfileId={proProfile.id} />
+            </div>
+          </div>
+        ) : null}
         <h1 className="font-heading text-3xl md:text-4xl font-extrabold text-foreground dark:text-white mb-3 md:mb-4 text-center">
           {t.dashboard.title}
         </h1>
@@ -4497,7 +4529,8 @@ export default function Dashboard() {
                     })()}
                   </div>
 
-                  <div className="overflow-hidden rounded-xl border bg-card p-4 sm:p-6 md:p-8" data-tour="pro-featured">
+                  <div className="grid min-w-0 gap-6 xl:grid-cols-2 xl:items-start">
+                  <div className="min-w-0 overflow-hidden rounded-xl border bg-card p-4 sm:p-6 md:p-8" data-tour="pro-featured">
                     <h3 className="font-heading font-bold text-foreground mb-4">{t.dashboard.featuredProfileDesign ?? "Featured profile design"}</h3>
                     <div className="grid min-w-0 gap-4 md:grid-cols-2">
                       <div className="min-w-0 space-y-4">
@@ -4809,7 +4842,7 @@ export default function Dashboard() {
                     </DialogContent>
                   </Dialog>
 
-                  <div className="rounded-xl border bg-card p-6 md:p-8" data-tour="pro-services">
+                  <div className="min-w-0 rounded-xl border bg-card p-6 md:p-8" data-tour="pro-services">
                     <h3 className="font-heading font-bold text-foreground mb-4">{t.dashboard.myServices ?? "My Services"}</h3>
                     <div className="mb-6 flex flex-wrap items-end gap-3">
                       <div className="min-w-[140px]">
@@ -4940,6 +4973,7 @@ export default function Dashboard() {
                     </div>
                   </div>
 
+                  </div>
                   {proProfile?.id ? (
                     <div data-tour="pro-portfolio">
                       <ProPortfolioEditor proProfileId={proProfile.id} />
@@ -5393,8 +5427,8 @@ export default function Dashboard() {
             bookingStatusCode={claimBooking?.statusCode ?? null}
           />
 
-          <TabsContent forceMount value="account" className="space-y-6">
-            <div className="grid w-full items-start gap-6 xl:grid-cols-[minmax(17rem,0.78fr)_minmax(0,2.22fr)]">
+          <TabsContent forceMount value="account" className="space-y-6 2xl:grid 2xl:grid-cols-[minmax(14rem,0.72fr)_minmax(20rem,1.5fr)_minmax(17rem,1fr)] 2xl:items-start 2xl:gap-4 2xl:space-y-0">
+            <div className="contents">
               <aside className="space-y-4">
                 <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-6 text-center">
                   <ClickableProfileAvatar
@@ -5545,9 +5579,9 @@ export default function Dashboard() {
               </Button>
               </form>
             </div>
-            <div className="grid w-full grid-cols-1 items-start gap-4 xl:grid-cols-2">
+            <div className="contents">
             {!isAdminAccountView ? (
-            <div className="rounded-xl border border-destructive/30 bg-card p-6 md:p-8 w-full space-y-4">
+            <div className="rounded-xl border border-destructive/30 bg-card p-6 md:p-8 w-full space-y-4 2xl:col-start-1 2xl:row-start-2">
               <div className="flex items-center gap-2">
                 <Trash2 className="w-5 h-5 text-destructive" />
                 <h3 className="font-heading font-semibold text-foreground">
@@ -5664,7 +5698,7 @@ export default function Dashboard() {
             </div>
             ) : null}
             {proProfile && !isAdminDashboardShell ? (
-              <div className="rounded-xl border bg-card p-6 md:p-8 w-full space-y-4" data-tour="account-cancel-policy">
+              <div className="rounded-xl border bg-card p-6 md:p-8 w-full space-y-4 2xl:col-start-3 2xl:row-start-1" data-tour="account-cancel-policy">
                 <h3 className="font-heading font-semibold text-foreground">
                   {locale === "fr" ? "Politique d’annulation (clients)" : "Cancellation policy (clients)"}
                 </h3>
@@ -5759,7 +5793,7 @@ export default function Dashboard() {
               </div>
             ) : null}
             {!isAdminAccountView ? (
-            <div className="rounded-xl border bg-card p-6 md:p-8 w-full space-y-4" data-tour="account-id-verification">
+            <div className="rounded-xl border bg-card p-6 md:p-8 w-full space-y-4 2xl:col-start-2 2xl:row-start-2" data-tour="account-id-verification">
               <button
                 type="button"
                 onClick={() => setBookingIdVerificationOpen((open) => !open)}
@@ -5903,7 +5937,7 @@ export default function Dashboard() {
             </div>
             ) : null}
             {proProfile?.is_verified && isPaidSubscriptionPlanId(proSubscriptionPlanId) && (
-              <div className={`w-full rounded-xl p-[2px] ${PLAN_TIER_BORDER_CLASS[currentPlanTheme]}`}>
+              <div className={`w-full rounded-xl p-[2px] 2xl:col-start-3 2xl:row-start-2 ${PLAN_TIER_BORDER_CLASS[currentPlanTheme]}`}>
                 <div className="rounded-[calc(0.75rem-2px)] border border-border/70 bg-card p-6 md:p-8">
                 <h3 className="font-heading font-bold mb-3 max-w-full min-w-0 text-balance break-words leading-snug current-plan-rainbow-heading">
                   {t.dashboard.myCurrentPlan}
@@ -5950,7 +5984,7 @@ export default function Dashboard() {
               </div>
             )}
             {proProfile?.is_verified && !isPaidSubscriptionPlanId(proSubscriptionPlanId) && (
-              <div className="w-full rounded-xl border border-dashed border-muted-foreground/40 bg-muted/20 p-6 md:p-8">
+              <div className="w-full rounded-xl border border-dashed border-muted-foreground/40 bg-muted/20 p-6 md:p-8 2xl:col-start-3 2xl:row-start-2">
                 <h3 className="font-heading font-bold mb-2 text-foreground">{t.dashboard.proTabNoPaidPlanTitle}</h3>
                 <p className="text-sm text-muted-foreground mb-4">{t.dashboard.proTabNoPaidPlanBody}</p>
                 <Button variant="default" size="sm" asChild>
@@ -6017,7 +6051,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : proProfile?.is_verified && !proViewingMyRequests ? (
-              <div className="space-y-4">
+              <div className="space-y-4 xl:grid xl:grid-cols-[minmax(0,1.3fr)_minmax(22rem,.9fr)] xl:items-start xl:gap-4 xl:space-y-0">
                 <div
                   data-tour="schedule-calendar"
                   className="rounded-xl border bg-card p-4 sm:p-6 md:p-8"
@@ -6148,7 +6182,7 @@ export default function Dashboard() {
                   ) : null}
                 </div>
 
-                <div id="received-quotes" className="rounded-xl border border-border bg-muted/20 p-5 sm:p-6 scroll-mt-24">
+                <div id="received-quotes" className="rounded-xl border border-border bg-muted/20 p-5 sm:p-6 scroll-mt-24 xl:col-span-2">
                   <h4 className="font-heading font-bold text-foreground mb-1">{t.dashboard.quotesReceivedSection}</h4>
                   <p className="text-sm text-muted-foreground mb-4">{t.dashboard.quotesReceivedHint}</p>
                   {jobRequests.length === 0 ? (
@@ -6719,6 +6753,52 @@ export default function Dashboard() {
                         : code === "cancelled"
                           ? t.dashboard.bookingStatusCancelled
                           : code;
+              const unpinnedInvoices = invoiceRows.filter((booking) => !pinnedInvoiceIds.includes(booking.id));
+              const pinnedInvoices = invoiceRows.filter((booking) => pinnedInvoiceIds.includes(booking.id));
+              const invoiceCard = (booking: (typeof invoiceRows)[number]) => {
+                const pinned = pinnedInvoiceIds.includes(booking.id);
+                const justMoved = lastPinnedInvoiceMove?.id === booking.id;
+                return (
+                  <div
+                    key={booking.id}
+                    className={`relative min-w-0 animate-in fade-in duration-500 ${justMoved ? (pinned ? "slide-in-from-left-6" : "slide-in-from-right-6") : ""}`}
+                  >
+                    <div className="relative z-10 -mb-3 flex justify-end px-3">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant={pinned ? "secondary" : "outline"}
+                        className="h-8 w-8 rounded-full bg-card shadow-sm"
+                        aria-label={pinned ? (locale === "fr" ? "Désépingler la facture" : "Unpin invoice") : (locale === "fr" ? "Épingler la facture à droite" : "Pin invoice to the right")}
+                        title={pinned ? (locale === "fr" ? "Désépingler" : "Unpin") : (locale === "fr" ? "Épingler à droite" : "Pin to the right")}
+                        onClick={() => togglePinnedInvoice(booking.id)}
+                      >
+                        <Pin className={`h-4 w-4 transition-transform ${pinned ? "rotate-45 fill-current" : ""}`} aria-hidden="true" />
+                      </Button>
+                    </div>
+                    <BookingInvoiceCard
+                      bookingId={booking.id}
+                      bookingPublicCode={booking.public_booking_code ?? null}
+                      bookingStatus={statusLabel(booking.status)}
+                      businessName={booking.business_name || t.common.proFallback}
+                      createdAt={booking.created_at}
+                      snapshotJson={booking.invoice_snapshot}
+                      payment={bookingPaymentsById[booking.id] ?? null}
+                      showSupplierAddress={booking.pro_service_at_workspace_only === true}
+                      onReport={() => {
+                        setActiveTab("bookings");
+                        setClaimBooking({
+                          id: booking.id,
+                          pro_profile_id: booking.pro_profile_id,
+                          statusCode: booking.status,
+                          public_booking_code: booking.public_booking_code ?? null,
+                        });
+                        setClaimDialogOpen(true);
+                      }}
+                    />
+                  </div>
+                );
+              };
               return (
                 <div className="space-y-4" data-tour="invoices-panel">
                   {invoiceRows.length === 0 ? (
@@ -6734,30 +6814,16 @@ export default function Dashboard() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {invoiceRows.map((b) => (
-                        <BookingInvoiceCard
-                          key={b.id}
-                          bookingId={b.id}
-                          bookingPublicCode={b.public_booking_code ?? null}
-                          bookingStatus={statusLabel(b.status)}
-                          businessName={b.business_name || t.common.proFallback}
-                          createdAt={b.created_at}
-                          snapshotJson={b.invoice_snapshot}
-                          payment={bookingPaymentsById[b.id] ?? null}
-                          showSupplierAddress={b.pro_service_at_workspace_only === true}
-                          onReport={() => {
-                            setActiveTab("bookings");
-                            setClaimBooking({
-                              id: b.id,
-                              pro_profile_id: b.pro_profile_id,
-                              statusCode: b.status,
-                              public_booking_code: b.public_booking_code ?? null,
-                            });
-                            setClaimDialogOpen(true);
-                          }}
-                        />
-                      ))}
+                    <div className="grid min-w-0 gap-5 xl:grid-cols-2 xl:items-start">
+                      <div className="min-w-0 space-y-4">{unpinnedInvoices.map(invoiceCard)}</div>
+                      <div className="min-w-0 space-y-4">
+                        {pinnedInvoices.map(invoiceCard)}
+                        {pinnedInvoices.length === 0 ? (
+                          <div className="rounded-xl border border-dashed bg-muted/15 p-5 text-sm text-muted-foreground">
+                            {locale === "fr" ? "Épinglez une facture pour la garder dans cette colonne." : "Pin an invoice to keep it in this column."}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   )}
                   {proProfile ? (
@@ -7424,7 +7490,7 @@ export default function Dashboard() {
           <aside
             id="dashboard-open-leads"
             data-tour="available-jobs"
-            className="mt-8 hidden w-full max-w-4xl mx-auto lg:mt-0 lg:mx-0 lg:block lg:w-80 lg:max-w-none lg:shrink-0 lg:fixed lg:right-4 lg:top-24 lg:z-30 max-h-[min(70vh,calc(100vh-8rem))] lg:max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border bg-card p-4 shadow-sm scroll-mt-24"
+            className="mt-8 hidden w-full max-w-4xl mx-auto 2xl:mt-0 2xl:mx-0 2xl:block 2xl:w-80 2xl:max-w-none 2xl:shrink-0 2xl:fixed 2xl:right-4 2xl:top-24 2xl:z-30 max-h-[min(70vh,calc(100vh-8rem))] 2xl:max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border bg-card p-4 shadow-sm scroll-mt-24"
           >
             <div className="mb-3 flex items-center justify-between gap-2">
               <h3 className="font-heading font-bold text-foreground">{t.dashboard.availableJobsPanelTitle}</h3>

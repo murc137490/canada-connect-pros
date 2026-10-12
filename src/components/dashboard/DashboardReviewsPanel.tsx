@@ -435,7 +435,7 @@ export default function DashboardReviewsPanel({
   const givenToProsByProId = new Map(givenToPros.map((g) => [g.pro_profile_id, g]));
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-6 mx-auto w-full max-w-none">
       {hasPending ? (
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 md:p-6 space-y-4">
           <h3 className="font-heading font-bold text-foreground">{pendingTitle}</h3>
@@ -495,6 +495,7 @@ export default function DashboardReviewsPanel({
 
       {showProSection ? (
         <>
+          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
           <div className="rounded-xl border bg-card p-5 md:p-6 space-y-4">
             <h3 className="font-heading font-bold text-foreground">{t.dashboard.reviewsReceivedAsPro}</h3>
             <p className="text-xs text-muted-foreground">{t.dashboard.reviewsAsProHint}</p>
@@ -594,6 +595,7 @@ export default function DashboardReviewsPanel({
             )}
           </div>
 
+          </div>
           {givenToClients.length > 0 ? (
             <Collapsible open={givenAsProOpen} onOpenChange={setGivenAsProOpen}>
               <CollapsibleTrigger asChild>

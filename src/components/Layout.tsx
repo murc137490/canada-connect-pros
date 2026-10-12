@@ -405,7 +405,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)] md:gap-12">
             <div className="space-y-4 max-w-sm">
               <div className="flex items-center gap-2.5">
-                <BrandLogo className="h-9 w-9" tone="onDark" />
+                <BrandLogo className="h-9 w-9" tone="auto" />
                 <span className="font-heading text-xl font-extrabold tracking-tight">AltShift</span>
               </div>
               <p className="text-sm text-white/65 leading-relaxed">
@@ -506,7 +506,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </ul>
             </div>
           </div>
-          <div aria-hidden="true" className="mt-10 select-none overflow-hidden text-center font-display text-[clamp(4rem,19vw,20rem)] font-black leading-[0.72] tracking-[-0.095em] text-white/[0.075]">
+          <div aria-hidden="true" className="footer-wordmark mt-10 select-none overflow-hidden text-center font-display text-[clamp(4rem,15vw,18rem)] font-black leading-none tracking-[0.05em]">
             ALTSHIFT
           </div>
           <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
