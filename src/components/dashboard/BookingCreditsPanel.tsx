@@ -55,36 +55,36 @@ export default function BookingCreditsPanel({ proProfileId }: { proProfileId: st
     return () => { active = false; };
   }, [proProfileId]);
   return (
-    <section className="mb-6 grid w-full grid-cols-1 gap-4 rounded-2xl border border-primary/20 bg-card p-5 shadow-sm sm:grid-cols-[1fr_auto] sm:items-center sm:p-6" aria-label="Booking Credits">
-      <div className="flex min-w-0 items-start gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Coins size={21} /></span>
-        <div className="min-w-0">
-          <h2 className="font-heading text-lg font-bold">{fr ? "Crédits de réservation" : "Booking Credits"}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {summary === null
-              ? (fr ? "Le solde de crédits sera affiché ici." : "Your credit balance will appear here.")
-              : `${summary.available}${summary.monthly ? ` / ${summary.monthly}` : ""} ${fr ? "disponibles" : "available"}`}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {fr ? "Les demandes et les devis n’utilisent pas de crédits. Les crédits sont réservés à l’acceptation et consommés lorsque le travail est terminé." : "Requests and quotes don't use credits. Credits are reserved when a booking is accepted and consumed when the work is completed."}
-          </p>
-          {summary ? (
-            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
-              <span>{fr ? "Crédits utilisés ce mois-ci" : "Credits used this month"}: {summary.usedThisMonth}</span>
-              <span>{fr ? "Valeur des réservations terminées" : "Completed booking value"}: ${(summary.bookedValueCents / 100).toFixed(2)} CAD</span>
-            </div>
-          ) : null}
-          {summary?.activity.length ? (
-            <details className="mt-3">
-              <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-semibold text-primary"><History size={14} />{fr ? "Activité récente" : "Recent activity"}</summary>
-              <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                {summary.activity.map((row) => <li key={row.id} className="flex justify-between gap-4"><span>{row.type.replace(/_/g, " ")}</span><span>−{row.amount} · {new Date(row.createdAt).toLocaleDateString(fr ? "fr-CA" : "en-CA")}</span></li>)}
-              </ul>
-            </details>
-          ) : null}
-        </div>
+    <section className="mb-6 flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-primary/15 bg-card px-4 py-3 shadow-sm" aria-label={fr ? "Crédits de réservation" : "Booking Credits"}>
+      <div className="flex items-center gap-2.5">
+        <Coins size={17} className="text-primary" aria-hidden="true" />
+        <span className="text-sm font-semibold">{fr ? "Crédit" : "Credit"}</span>
+        <span className="text-sm font-bold tabular-nums">
+          {summary === null ? "—" : `${summary.available}${summary.monthly ? `/${summary.monthly}` : ""}`}
+        </span>
       </div>
-      <Link to="/pro-plans" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">{fr ? "Gérer le forfait" : "Manage plan"}</Link>
+      <details className="basis-full border-t border-border/60 pt-2 text-xs text-muted-foreground">
+        <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 font-medium text-muted-foreground hover:text-foreground">
+          <History size={13} aria-hidden="true" />{fr ? "Détails et activité" : "Details and activity"}
+        </summary>
+        <p className="mt-2 leading-relaxed">
+          {fr
+            ? "Les demandes et les devis n’utilisent pas de crédits. Les crédits sont réservés à l’acceptation et consommés lorsque le travail est terminé."
+            : "Requests and quotes don't use credits. Credits are reserved when a booking is accepted and consumed when the work is completed."}
+        </p>
+        <Link to="/pro-plans" className="mt-2 inline-block font-semibold text-primary underline-offset-4 hover:underline">{fr ? "Gérer le forfait" : "Manage plan"}</Link>
+        {summary ? (
+          <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+            <span>{fr ? "Crédits utilisés ce mois-ci" : "Credits used this month"}: {summary.usedThisMonth}</span>
+            <span>{fr ? "Valeur des réservations terminées" : "Completed booking value"}: ${(summary.bookedValueCents / 100).toFixed(2)} CAD</span>
+          </div>
+        ) : null}
+        {summary?.activity.length ? (
+          <ul className="mt-2 space-y-1">
+            {summary.activity.map((row) => <li key={row.id} className="flex justify-between gap-4"><span>{row.type.replace(/_/g, " ")}</span><span>−{row.amount} · {new Date(row.createdAt).toLocaleDateString(fr ? "fr-CA" : "en-CA")}</span></li>)}
+          </ul>
+        ) : null}
+      </details>
     </section>
   );
 }

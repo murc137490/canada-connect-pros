@@ -1415,3 +1415,41 @@ apple-pay-button {
 .pro-featured-ink-dark.border-white\/18 {
   border-color: rgba(0, 0, 0, 0.3) !important;
 }
+
+/* Homepage explainers play one scene at a time. Inactive cards stay still. */
+@keyframes mini-guide-search-zoom { 0%, 12% { transform: scale(1); } 38% { transform: scale(1.055); } 62%, 100% { transform: scale(1); } }
+@keyframes mini-guide-search-result { 0%, 30% { opacity: 0; transform: translateY(10px) scale(0.97); } 48%, 100% { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes mini-guide-pro-left { 0%, 12% { opacity: 0; transform: translateX(15px) scale(0.97); } 34%, 100% { opacity: 1; transform: translateX(0) scale(1); } }
+@keyframes mini-guide-pro-right { 0%, 22% { opacity: 0; transform: translateX(-15px) scale(0.97); } 44%, 100% { opacity: 1; transform: translateX(0) scale(1); } }
+@keyframes mini-guide-priority { 0%, 45% { opacity: 0.4; transform: scale(0.96); } 62%, 100% { opacity: 1; transform: scale(1); } }
+@keyframes mini-guide-select { 0%, 64% { transform: scale(1); } 70% { transform: scale(0.96); } 78%, 100% { transform: scale(1); } }
+@keyframes mini-guide-phone-zoomout { 0%, 32% { transform: translateX(0.7rem) scale(1.04); opacity: 1; } 62%, 100% { transform: translateX(-0.5rem) scale(0.78); opacity: 0.94; } }
+@keyframes mini-guide-house-arrive { 0%, 42% { opacity: 0; transform: translateY(8px) scale(0.9); } 62%, 100% { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes mini-guide-pro-arrive { 0%, 60% { opacity: 0; transform: translateX(-18px); } 82%, 100% { opacity: 1; transform: translateX(0); } }
+@keyframes mini-guide-payment-confirm { 0%, 44% { filter: saturate(0.8); } 54%, 66% { filter: saturate(1.6) brightness(1.12); } 74%, 100% { filter: saturate(1); } }
+.mini-guide-card-active .mini-guide-search-screen { animation: mini-guide-search-zoom 6.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.mini-guide-card-active .mini-guide-search-result--one { animation: mini-guide-search-result 6.8s ease-out both; }
+.mini-guide-card-active .mini-guide-search-result--two { animation: mini-guide-search-result 6.8s 0.2s ease-out both; }
+.mini-guide-card-active .mini-guide-pro-card--left { animation: mini-guide-pro-left 6.8s ease-out both; }
+.mini-guide-card-active .mini-guide-pro-card--right { animation: mini-guide-pro-right 6.8s ease-out both; }
+.mini-guide-card-active .mini-guide-priority { animation: mini-guide-priority 6.8s ease-out both; }
+.mini-guide-card-active .mini-guide-select { animation: mini-guide-select 6.8s ease-in-out both; }
+.mini-guide-card-active .mini-guide-phone { animation: mini-guide-phone-zoomout 6.8s ease-in-out both; }
+.mini-guide-card-active .mini-guide-home { animation: mini-guide-house-arrive 6.8s ease-out both; }
+.mini-guide-card-active .mini-guide-house { animation: mini-guide-house-arrive 6.8s 0.2s ease-out both; }
+.mini-guide-card-active .mini-guide-meet-pro { animation: mini-guide-pro-arrive 6.8s ease-out both; }
+.mini-guide-card-active .mini-guide-payment { animation: mini-guide-payment-confirm 6.8s ease-in-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .mini-guide-card-active .mini-guide-search-screen,
+  .mini-guide-card-active .mini-guide-search-result--one,
+  .mini-guide-card-active .mini-guide-search-result--two,
+  .mini-guide-card-active .mini-guide-pro-card--left,
+  .mini-guide-card-active .mini-guide-pro-card--right,
+  .mini-guide-card-active .mini-guide-priority,
+  .mini-guide-card-active .mini-guide-select,
+  .mini-guide-card-active .mini-guide-phone,
+  .mini-guide-card-active .mini-guide-home,
+  .mini-guide-card-active .mini-guide-house,
+  .mini-guide-card-active .mini-guide-meet-pro,
+  .mini-guide-card-active .mini-guide-payment { animation: none; }
+}

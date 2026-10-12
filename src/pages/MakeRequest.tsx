@@ -93,7 +93,6 @@ export default function MakeRequest() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
-<<<<<<< HEAD
   const serviceSlug = searchParams.get("service_slug");
   const serviceContext = useMemo(
     () => serviceSlug ? getAllServices().find((service) => service.slug === serviceSlug) ?? null : null,

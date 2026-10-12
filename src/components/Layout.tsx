@@ -412,34 +412,34 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {t.footer.tagline}
               </p>
               <div className="space-y-3 pt-2">
-                <div>
-                  <h3 className="text-sm font-bold text-white">
-                    {locale === "fr" ? "Comment utiliser AltShift ?" : "How Could I Use AltShift?"}
-                  </h3>
-                  <p className="mt-1 text-xs leading-relaxed text-white/55">
-                    {locale === "fr"
-                      ? "Demandez à votre assistant IA des idées adaptées à vos objectifs."
-                      : "Ask your AI assistant for ideas tailored to your goals."}
-                  </p>
-                </div>
+                <h3 className="text-sm font-bold text-white">
+                  {locale === "fr" ? "Comment utiliser AltShift ?" : "How Could I Use AltShift?"}
+                </h3>
                 <div className="flex flex-wrap gap-2">
                   <a
                     href={ALTSHIFT_AI_PROMPT_LINKS.claude}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                    aria-label="Claude"
+                    className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[#D97757] bg-[#D97757] px-3 py-2 text-sm font-semibold text-white transition-colors hover:border-[#C26143] hover:bg-[#C26143] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                   >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
+                      <path d="M12 2.25v19.5M2.25 12h19.5M5.1 5.1l13.8 13.8M18.9 5.1 5.1 18.9M8.25 3.7l7.5 16.6M20.3 8.25 3.7 15.75M15.75 3.7 8.25 20.3M3.7 8.25l16.6 7.5" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" />
+                    </svg>
                     <span>Claude</span>
-                    <span className="text-white/65">{locale === "fr" ? "Demander" : "Ask Claude"}</span>
                   </a>
                   <a
                     href={ALTSHIFT_AI_PROMPT_LINKS.chatgpt}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                    aria-label="ChatGPT"
+                    className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[#10A37F] bg-[#10A37F] px-3 py-2 text-sm font-semibold text-white transition-colors hover:border-[#0B8B6B] hover:bg-[#0B8B6B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                   >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
+                      <path d="M12 3.1a4.15 4.15 0 0 1 3.6 2.08 4.12 4.12 0 0 1 4.2 4.05 4.12 4.12 0 0 1-.5 7.32 4.12 4.12 0 0 1-6.4 3.9 4.12 4.12 0 0 1-6.1-3.96 4.12 4.12 0 0 1-.35-7.29A4.12 4.12 0 0 1 12 3.1Z" stroke="currentColor" strokeWidth="1.35" strokeLinejoin="round" />
+                      <path d="m8.45 7.05 7.1 4.05v5.85M5.8 10.95l7.25-4.2m-7.2 8.35 7.05 4.1m-1.2-8.8v8.15m-4.2-5.35 7.1-4.1" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                     <span>ChatGPT</span>
-                    <span className="text-white/65">{locale === "fr" ? "Demander" : "Ask ChatGPT"}</span>
                   </a>
                 </div>
                 <p className="text-[11px] leading-relaxed text-white/45">
@@ -506,7 +506,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </ul>
             </div>
           </div>
-          <div aria-hidden="true" className="mt-10 select-none overflow-hidden text-center font-heading text-[clamp(4rem,19vw,20rem)] font-black leading-[0.72] tracking-[-0.095em] text-white/[0.075]">
+          <div aria-hidden="true" className="mt-10 select-none overflow-hidden text-center font-display text-[clamp(4rem,19vw,20rem)] font-black leading-[0.72] tracking-[-0.095em] text-white/[0.075]">
             ALTSHIFT
           </div>
           <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">

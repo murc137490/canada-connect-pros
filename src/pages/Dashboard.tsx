@@ -5393,17 +5393,34 @@ export default function Dashboard() {
             bookingStatusCode={claimBooking?.statusCode ?? null}
           />
 
-          <TabsContent forceMount value="account" className="space-y-4 flex flex-col items-center">
-            <div className="flex justify-center w-full max-w-lg mx-auto pt-2">
-              <ClickableProfileAvatar
-                className="h-24 w-24"
-                src={profile?.avatar_url}
-                fallback={(profile?.full_name ?? accountForm.full_name ?? user?.email ?? "?").slice(0, 2).toUpperCase()}
-                alt={profile?.full_name ?? ""}
-                onSave={saveProfileAvatar}
-              />
-            </div>
-            <form onSubmit={saveAccount} className="rounded-xl border bg-card p-6 md:p-8 space-y-4 max-w-lg w-full mx-auto" data-tour="account-profile">
+          <TabsContent forceMount value="account" className="space-y-6">
+            <div className="grid w-full items-start gap-6 xl:grid-cols-[minmax(17rem,0.78fr)_minmax(0,2.22fr)]">
+              <aside className="space-y-4">
+                <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-6 text-center">
+                  <ClickableProfileAvatar
+                    className="h-24 w-24"
+                    src={profile?.avatar_url}
+                    fallback={(profile?.full_name ?? accountForm.full_name ?? user?.email ?? "?").slice(0, 2).toUpperCase()}
+                    alt={profile?.full_name ?? ""}
+                    onSave={saveProfileAvatar}
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-foreground">{accountForm.full_name || profile?.full_name || (locale === "fr" ? "Mon compte" : "My account")}</p>
+                    <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+                  </div>
+                </div>
+                <div className="rounded-xl border bg-card p-4 sm:p-5">
+                  <MemberIdSettings
+                    currentMemberId={(profile as { public_user_number?: string | null } | null)?.public_user_number ?? null}
+                    locale={locale === "fr" ? "fr" : "en"}
+                    onChanged={(next) => {
+                      setProfile((prev) => (prev ? { ...prev, public_user_number: next } : prev));
+                      setProProfile((prev) => (prev ? { ...prev, pro_member_id: next } : prev));
+                    }}
+                  />
+                </div>
+              </aside>
+              <form onSubmit={saveAccount} className="grid min-w-0 grid-cols-1 gap-4 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-2 md:p-8" data-tour="account-profile">
               <div className="space-y-2">
                 <Label htmlFor="acc-name">{t.dashboard.accountName}</Label>
                 <Input id="acc-name" value={accountForm.full_name} onChange={(e) => setAccountForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Ryan Smith" />
@@ -5434,7 +5451,7 @@ export default function Dashboard() {
                 />
               </div>
               {proProfile ? (
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label>{t.createPro?.businessAddressInvoiceLabel ?? "Business address for invoices"}</Label>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap rounded-md border bg-muted/30 px-3 py-2">
                     {proProfile.business_address?.trim() || accountForm.address.trim() || (
@@ -5446,7 +5463,7 @@ export default function Dashboard() {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="acc-address">{t.dashboard.accountAddress}</Label>
                   <AddressInput
                     id="acc-address"
@@ -5503,14 +5520,6 @@ export default function Dashboard() {
                   max={maxBirthdayForMinAge()}
                   className={hasSavedBirthday ? "bg-muted" : undefined}
                 />
-              <MemberIdSettings
-                currentMemberId={(profile as { public_user_number?: string | null } | null)?.public_user_number ?? null}
-                locale={locale === "fr" ? "fr" : "en"}
-                onChanged={(next) => {
-                  setProfile((prev) => (prev ? { ...prev, public_user_number: next } : prev));
-                  setProProfile((prev) => (prev ? { ...prev, pro_member_id: next } : prev));
-                }}
-              />
               </div>
               {proProfile && !isAdminDashboardShell && (
                 <div className="space-y-2">
@@ -5530,13 +5539,15 @@ export default function Dashboard() {
                   </select>
                 </div>
               )}
-              <Button type="submit" disabled={accountSaving} className="gap-2">
+              <Button type="submit" disabled={accountSaving} className="gap-2 md:col-span-2 md:justify-self-start">
                 {accountSaving && <Loader2 size={16} className="animate-spin" />}
                 {t.dashboard.saveAccount}
               </Button>
-            </form>
+              </form>
+            </div>
+            <div className="grid w-full grid-cols-1 items-start gap-4 xl:grid-cols-2">
             {!isAdminAccountView ? (
-            <div className="rounded-xl border border-destructive/30 bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-4">
+            <div className="rounded-xl border border-destructive/30 bg-card p-6 md:p-8 w-full space-y-4">
               <div className="flex items-center gap-2">
                 <Trash2 className="w-5 h-5 text-destructive" />
                 <h3 className="font-heading font-semibold text-foreground">
@@ -5653,7 +5664,7 @@ export default function Dashboard() {
             </div>
             ) : null}
             {proProfile && !isAdminDashboardShell ? (
-              <div className="rounded-xl border bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-4" data-tour="account-cancel-policy">
+              <div className="rounded-xl border bg-card p-6 md:p-8 w-full space-y-4" data-tour="account-cancel-policy">
                 <h3 className="font-heading font-semibold text-foreground">
                   {locale === "fr" ? "Politique d’annulation (clients)" : "Cancellation policy (clients)"}
                 </h3>
@@ -5748,7 +5759,7 @@ export default function Dashboard() {
               </div>
             ) : null}
             {!isAdminAccountView ? (
-            <div className="rounded-xl border bg-card p-6 md:p-8 max-w-lg w-full mx-auto space-y-4" data-tour="account-id-verification">
+            <div className="rounded-xl border bg-card p-6 md:p-8 w-full space-y-4" data-tour="account-id-verification">
               <button
                 type="button"
                 onClick={() => setBookingIdVerificationOpen((open) => !open)}
@@ -5892,7 +5903,7 @@ export default function Dashboard() {
             </div>
             ) : null}
             {proProfile?.is_verified && isPaidSubscriptionPlanId(proSubscriptionPlanId) && (
-              <div className={`max-w-lg w-full mx-auto rounded-xl p-[2px] ${PLAN_TIER_BORDER_CLASS[currentPlanTheme]}`}>
+              <div className={`w-full rounded-xl p-[2px] ${PLAN_TIER_BORDER_CLASS[currentPlanTheme]}`}>
                 <div className="rounded-[calc(0.75rem-2px)] border border-border/70 bg-card p-6 md:p-8">
                 <h3 className="font-heading font-bold mb-3 max-w-full min-w-0 text-balance break-words leading-snug current-plan-rainbow-heading">
                   {t.dashboard.myCurrentPlan}
@@ -5939,7 +5950,7 @@ export default function Dashboard() {
               </div>
             )}
             {proProfile?.is_verified && !isPaidSubscriptionPlanId(proSubscriptionPlanId) && (
-              <div className="max-w-lg w-full mx-auto rounded-xl border border-dashed border-muted-foreground/40 bg-muted/20 p-6 md:p-8">
+              <div className="w-full rounded-xl border border-dashed border-muted-foreground/40 bg-muted/20 p-6 md:p-8">
                 <h3 className="font-heading font-bold mb-2 text-foreground">{t.dashboard.proTabNoPaidPlanTitle}</h3>
                 <p className="text-sm text-muted-foreground mb-4">{t.dashboard.proTabNoPaidPlanBody}</p>
                 <Button variant="default" size="sm" asChild>
@@ -5947,6 +5958,7 @@ export default function Dashboard() {
                 </Button>
               </div>
             )}
+            </div>
             {/* Everyone (clients too) can replay the My account tour. */}
             <div className="flex justify-center w-full">
               <DashboardTourHelpButton onClick={() => replayDashTour("account")} />

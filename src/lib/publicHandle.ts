@@ -1,4 +1,4 @@
-import { CANONICAL_ORIGIN } from "@/components/CanonicalUrl";
+import { CANONICAL_ORIGIN } from "@/lib/routeMeta";
 
 /**
  * Public vanity links: https://www.altshift.ca/<username>.
