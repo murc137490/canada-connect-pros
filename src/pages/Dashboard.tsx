@@ -469,6 +469,7 @@ export default function Dashboard() {
   const [accountIdVerificationFile, setAccountIdVerificationFile] = useState<File | null>(null);
   const [accountIdVerificationSaving, setAccountIdVerificationSaving] = useState(false);
   const [bookingIdVerificationOpen, setBookingIdVerificationOpen] = useState(false);
+  const [accountDeletionOpen, setAccountDeletionOpen] = useState(false);
   const [bookingCancelPolicy, setBookingCancelPolicy] = useState<"free" | "late_fee" | "no_cancel">("late_fee");
   const [bookingCancelFeePercent, setBookingCancelFeePercent] = useState<25 | 50 | 75>(50);
   const [bookingCancelPolicySaving, setBookingCancelPolicySaving] = useState(false);
@@ -4540,7 +4541,7 @@ export default function Dashboard() {
                     })()}
                   </div>
 
-                  <div className="grid min-w-0 gap-6 xl:grid-cols-2 xl:items-start">
+                <div className="grid min-w-0 gap-6 xl:grid-cols-2 xl:items-stretch">
                   <div className="min-w-0 overflow-hidden rounded-xl border bg-card p-4 sm:p-6 md:p-8" data-tour="pro-featured">
                     <h3 className="font-heading font-bold text-foreground mb-4">{t.dashboard.featuredProfileDesign ?? "Featured profile design"}</h3>
                     <div className="grid min-w-0 gap-4 md:grid-cols-2">
@@ -5440,7 +5441,7 @@ export default function Dashboard() {
 
           <TabsContent forceMount value="account" className="mx-auto w-full max-w-[1480px] space-y-6 2xl:grid 2xl:grid-cols-12 2xl:items-start 2xl:gap-4 2xl:space-y-0">
             <div className="contents">
-              <aside className="space-y-4 2xl:col-start-1 2xl:col-span-3 2xl:row-span-2">
+              <aside className="flex flex-col gap-4 2xl:col-start-1 2xl:col-span-3 2xl:row-span-2">
                 <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-6 text-center">
                   <ClickableProfileAvatar
                     className="h-24 w-24"
@@ -5454,7 +5455,7 @@ export default function Dashboard() {
                     <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
                   </div>
                 </div>
-                <div className="rounded-xl border bg-card p-4 sm:p-5">
+                <div className="flex-1 rounded-xl border bg-card p-4 sm:p-5">
                   <MemberIdSettings
                     currentMemberId={(profile as { public_user_number?: string | null } | null)?.public_user_number ?? null}
                     locale={locale === "fr" ? "fr" : "en"}
@@ -5593,13 +5594,20 @@ export default function Dashboard() {
             </div>
             <div className="contents">
             {!isAdminAccountView ? (
-            <div className="rounded-xl border border-destructive/30 bg-card p-6 md:p-8 w-full space-y-4 2xl:col-start-1 2xl:col-span-6 2xl:row-start-3">
-              <div className="flex items-center gap-2">
-                <Trash2 className="w-5 h-5 text-destructive" />
-                <h3 className="font-heading font-semibold text-foreground">
+            <Dialog open={accountDeletionOpen} onOpenChange={setAccountDeletionOpen}>
+            <DialogTrigger asChild>
+              <button type="button" className="flex min-h-24 w-full items-center gap-3 rounded-xl border border-destructive/30 bg-card p-6 text-left transition-colors hover:bg-muted/30 2xl:col-start-1 2xl:col-span-6 2xl:row-start-3">
+                <Trash2 className="h-5 w-5 shrink-0 text-destructive" />
+                <span className="font-heading font-semibold text-foreground">
                   {locale === "fr" ? "Suppression de compte" : "Account Deletion"}
-                </h3>
-              </div>
+                </span>
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{locale === "fr" ? "Suppression de compte" : "Account Deletion"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
 
               {deletionRequest?.status === "pending_confirmation" ? (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-3">
@@ -5707,7 +5715,9 @@ export default function Dashboard() {
                   </Button>
                 </>
               )}
-            </div>
+              </div>
+            </DialogContent>
+            </Dialog>
             ) : null}
             {proProfile && !isAdminDashboardShell ? (
               <div className="rounded-xl border bg-card p-6 md:p-8 w-full space-y-4 2xl:col-start-10 2xl:col-span-3 2xl:row-start-1" data-tour="account-cancel-policy">
@@ -5805,23 +5815,22 @@ export default function Dashboard() {
               </div>
             ) : null}
             {!isAdminAccountView ? (
-            <div className="rounded-xl border bg-card p-6 md:p-8 w-full space-y-4 2xl:col-start-7 2xl:col-span-6 2xl:row-start-3" data-tour="account-id-verification">
-              <button
-                type="button"
-                onClick={() => setBookingIdVerificationOpen((open) => !open)}
-                className="flex w-full items-center gap-3 text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-expanded={bookingIdVerificationOpen}
-                aria-controls="account-booking-id-verification"
-              >
+            <Dialog open={bookingIdVerificationOpen} onOpenChange={setBookingIdVerificationOpen}>
+              <DialogTrigger asChild>
+                <button type="button" className="flex min-h-24 w-full items-center gap-3 rounded-xl border bg-card p-6 text-left transition-colors hover:bg-muted/30 2xl:col-start-7 2xl:col-span-6 2xl:row-start-3" data-tour="account-id-verification">
                 <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 ring-1 ring-amber-500/40">
                   <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden />
                 </span>
                 <h3 className="font-heading font-semibold text-foreground">
                   {t.dashboard.accountBookingIdVerificationTitle}
                 </h3>
-              </button>
-              {bookingIdVerificationOpen ? (
-                <div id="account-booking-id-verification" className="space-y-4">
+                </button>
+              </DialogTrigger>
+              <DialogContent id="account-booking-id-verification" className="max-h-[90vh] max-w-xl overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{t.dashboard.accountBookingIdVerificationTitle}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
                     {t.terms.bookingPhotoWithIdReplaceLabel ??
                       t.dashboard.accountBookingIdVerificationFrontOnly}
@@ -5945,8 +5954,8 @@ export default function Dashboard() {
                       : t.dashboard.accountBookingIdVerificationSave}
                   </Button>
                 </div>
-              ) : null}
-            </div>
+              </DialogContent>
+            </Dialog>
             ) : null}
             {proProfile?.is_verified && isPaidSubscriptionPlanId(proSubscriptionPlanId) && (
               <div className={`w-full rounded-xl p-[2px] 2xl:col-start-10 2xl:col-span-3 2xl:row-start-2 ${PLAN_TIER_BORDER_CLASS[currentPlanTheme]}`}>
@@ -6063,7 +6072,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : proProfile?.is_verified && !proViewingMyRequests ? (
-              <div className="space-y-4 xl:grid xl:grid-cols-[minmax(0,1.3fr)_minmax(22rem,.9fr)] xl:items-start xl:gap-4 xl:space-y-0">
+              <div className="mx-auto w-full max-w-[1480px] space-y-4 xl:grid xl:grid-cols-[minmax(0,1.3fr)_minmax(22rem,.9fr)] xl:items-start xl:gap-4 xl:space-y-0">
                 <div
                   data-tour="schedule-calendar"
                   className="rounded-xl border bg-card p-4 sm:p-6 md:p-8"
@@ -6194,7 +6203,7 @@ export default function Dashboard() {
                   ) : null}
                 </div>
 
-                <div id="received-quotes" className="rounded-xl border border-border bg-muted/20 p-5 sm:p-6 scroll-mt-24 xl:col-span-2">
+                <div id="received-quotes" className="rounded-xl border border-border bg-muted/20 p-5 sm:p-6 scroll-mt-24">
                   <h4 className="font-heading font-bold text-foreground mb-1">{t.dashboard.quotesReceivedSection}</h4>
                   <p className="text-sm text-muted-foreground mb-4">{t.dashboard.quotesReceivedHint}</p>
                   {jobRequests.length === 0 ? (
@@ -6681,7 +6690,7 @@ export default function Dashboard() {
             )}
           </TabsContent>
 
-          <TabsContent forceMount value="favorites" className="space-y-4">
+          <TabsContent forceMount value="favorites" className="mx-auto w-full max-w-[1480px] space-y-4">
             {savedProsLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="animate-spin text-muted-foreground" size={32} />
