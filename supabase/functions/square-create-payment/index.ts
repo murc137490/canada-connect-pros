@@ -1,11 +1,14 @@
 // Square Create Payment: Web Payments SDK token → Square charge.
-// If the pro has OAuth tokens (pro_square_tokens), charges run on the seller account with app_fee_money =
-// 2.1% of service subtotal (platform share). Checkout still shows one ~5% “card & platform” line on the service
-// amount (~2.9% processing + 2.1% platform — not 2.9% + an extra 5% app fee).
+// If the pro has OAuth tokens (pro_square_tokens), charges run on the seller account.
+// The customer booking fee is 5% through 2026-12-31, then 3.8%; estimated Square processing is deducted first.
 // Otherwise falls back to platform SQUARE_ACCESS_TOKEN + SQUARE_LOCATION_ID (legacy).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { withCorsAllowlist } from "../_shared/cors.ts";
+import {
+  computeExpectedBookingTotalCents,
+  estimateAltShiftApplicationFeeCents,
+} from "../_shared/bookingPaymentMath.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -125,11 +128,14 @@ Deno.serve(withCorsAllowlist(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const sourceId = typeof body.source_id === "string" ? body.source_id.trim() : null;
-    const amountCents = Math.round(Number(body.amount_cents) || 0);
-    const baseAmountCents = Math.round(Number(body.base_amount_cents) || 0);
-    const currency = (body.currency ?? "cad").toString().toUpperCase().slice(0, 3);
-    const proProfileId = body.pro_profile_id ?? null;
-    const bookingId = body.booking_id ?? null;
+    const amountCents = Number(body.amount_cents);
+    const submittedBaseCents = Number(body.base_amount_cents);
+    const currency = "CAD";
+    const proProfileId = typeof body.pro_profile_id === "string" ? body.pro_profile_id.trim() : "";
+    const bookingId = typeof body.booking_id === "string" ? body.booking_id.trim() : "";
+    const jobQuoteId = typeof body.job_quote_id === "string" ? body.job_quote_id.trim() : "";
+    const serviceCategorySlug = typeof body.service_category_slug === "string" ? body.service_category_slug.trim() : "";
+    const serviceSlug = typeof body.service_slug === "string" ? body.service_slug.trim() : "";
     const clientId = typeof body.client_id === "string" ? body.client_id.trim() : null;
 
     if (!clientId || clientId !== user.id) {
@@ -145,12 +151,6 @@ Deno.serve(withCorsAllowlist(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    if (amountCents < 50) {
-      return new Response(
-        JSON.stringify({ error: "Invalid amount", details: "Minimum 50 cents" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
     if (!proProfileId) {
       return new Response(
         JSON.stringify({ error: "Invalid request", details: "pro_profile_id required" }),
@@ -158,14 +158,100 @@ Deno.serve(withCorsAllowlist(async (req) => {
       );
     }
 
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const admin = serviceRoleKey && supabaseUrl ? createClient(supabaseUrl, serviceRoleKey) : null;
+    if (!admin) {
+      return new Response(JSON.stringify({ error: "Server misconfigured", details: "Payment amount verification is unavailable" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let authoritativeBaseCents: number | null = null;
+    if (bookingId) {
+      const { data: booking } = await admin.from("bookings")
+        .select("client_id, pro_profile_id, status, invoice_snapshot, service_category_slug, service_slug")
+        .eq("id", bookingId).maybeSingle();
+      const snapshot = booking?.invoice_snapshot as Record<string, unknown> | null;
+      const snapshotBase = snapshot?.base_amount_cents;
+      const snapshotSubtotal = snapshot?.subtotal;
+      if (booking?.client_id !== user.id || booking?.pro_profile_id !== proProfileId || booking?.status !== "accepted") {
+        return new Response(JSON.stringify({ error: "Forbidden", details: "Booking is not payable by this account" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (Number.isSafeInteger(snapshotBase)) authoritativeBaseCents = Number(snapshotBase);
+      else if (typeof snapshotSubtotal === "number" && Number.isFinite(snapshotSubtotal)) authoritativeBaseCents = Math.round(snapshotSubtotal * 100);
+      if (authoritativeBaseCents == null) {
+        const category = serviceCategorySlug || String(booking.service_category_slug ?? "");
+        const slug = serviceSlug || String(booking.service_slug ?? "");
+        if (category && slug) {
+          const { data: service } = await admin.from("pro_services").select("custom_price_min, custom_price_max")
+            .eq("pro_profile_id", proProfileId).eq("category_slug", category).eq("service_slug", slug).maybeSingle();
+          const listedPrice = service?.custom_price_min ?? service?.custom_price_max;
+          if (listedPrice != null && Number.isFinite(Number(listedPrice))) authoritativeBaseCents = Math.max(500, Math.round(Number(listedPrice) * 100));
+        }
+        if (authoritativeBaseCents == null) {
+          const { data: pro } = await admin.from("pro_profiles").select("price_min").eq("id", proProfileId).maybeSingle();
+          const price = Number(pro?.price_min ?? 5);
+          if (Number.isFinite(price)) authoritativeBaseCents = Math.max(500, Math.round(price * 100));
+        }
+      }
+    } else if (jobQuoteId) {
+      const { data: quote } = await admin.from("job_quotes")
+        .select("id, job_request_id, pro_profile_id, price_cents, status")
+        .eq("id", jobQuoteId).maybeSingle();
+      if (!quote || quote.pro_profile_id !== proProfileId || quote.status !== "pending") {
+        return new Response(JSON.stringify({ error: "Invalid quote", details: "This quote cannot be paid" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: request } = await admin.from("job_requests").select("client_id").eq("id", quote.job_request_id).maybeSingle();
+      if (request?.client_id !== user.id) {
+        return new Response(JSON.stringify({ error: "Forbidden", details: "Quote does not belong to this client" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (Number.isSafeInteger(quote.price_cents) && Number(quote.price_cents) >= 0) authoritativeBaseCents = Math.max(50, Number(quote.price_cents));
+    } else if (serviceCategorySlug && serviceSlug) {
+      const { data: service } = await admin.from("pro_services")
+        .select("custom_price_min, custom_price_max")
+        .eq("pro_profile_id", proProfileId).eq("category_slug", serviceCategorySlug).eq("service_slug", serviceSlug)
+        .maybeSingle();
+      if (!service) {
+        return new Response(JSON.stringify({ error: "Invalid service", details: "Service price could not be verified" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const listedPrice = service.custom_price_min ?? service.custom_price_max;
+      if (listedPrice != null && Number.isFinite(Number(listedPrice))) {
+        authoritativeBaseCents = Math.max(500, Math.round(Number(listedPrice) * 100));
+      } else {
+        const { data: pro } = await admin.from("pro_profiles").select("price_min").eq("id", proProfileId).maybeSingle();
+        const price = Number(pro?.price_min ?? 5);
+        if (Number.isFinite(price)) authoritativeBaseCents = Math.max(500, Math.round(price * 100));
+      }
+    } else {
+      const { data: pro } = await admin.from("pro_profiles").select("price_min").eq("id", proProfileId).maybeSingle();
+      const price = Number(pro?.price_min ?? 5);
+      if (Number.isFinite(price)) authoritativeBaseCents = Math.max(500, Math.round(price * 100));
+    }
+
+    if (!Number.isSafeInteger(authoritativeBaseCents) || authoritativeBaseCents == null || authoritativeBaseCents < 50 || submittedBaseCents !== authoritativeBaseCents || !Number.isSafeInteger(amountCents)) {
+      return new Response(JSON.stringify({ error: "Invalid amount", details: "Payment amount does not match the verified booking price" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const baseAmountCents = authoritativeBaseCents;
+    if (amountCents !== computeExpectedBookingTotalCents(baseAmountCents)) {
+      return new Response(JSON.stringify({ error: "Invalid amount", details: "Payment total does not match the server-calculated invoice" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const clientIdempotency =
       typeof body.idempotency_key === "string" ? body.idempotency_key.trim().slice(0, 128) : "";
     const idempotencyKey =
       clientIdempotency.length >= 8 ? clientIdempotency : crypto.randomUUID();
-
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const admin =
-      serviceRoleKey && supabaseUrl ? createClient(supabaseUrl, serviceRoleKey) : null;
 
     let bearerToken = platformAccessToken ?? "";
     let locationId: string | null = typeof platformLocationId === "string" && platformLocationId.trim()
@@ -220,11 +306,9 @@ Deno.serve(withCorsAllowlist(async (req) => {
           }
         }
 
-        const baseForFee = baseAmountCents > 0 ? baseAmountCents : 0;
-        const platformFeeRate = Number(Deno.env.get("PLATFORM_APP_FEE_RATE") ?? "0.021");
-        const rate =
-          Number.isFinite(platformFeeRate) && platformFeeRate > 0 && platformFeeRate < 1 ? platformFeeRate : 0.021;
-        appFeeCents = Math.max(0, Math.round(baseForFee * rate));
+        // Square's estimated processing charge comes out of the scheduled checkout-fee allowance
+        // first. AltShift collects only the remaining estimated amount, if any.
+        appFeeCents = estimateAltShiftApplicationFeeCents(baseAmountCents, amountCents);
         if (appFeeCents >= amountCents) {
           appFeeCents = Math.max(0, Math.min(appFeeCents, amountCents - 1));
         }
@@ -256,7 +340,7 @@ Deno.serve(withCorsAllowlist(async (req) => {
         currency,
       },
       autocomplete: body.authorize_only === true || body.autocomplete === false ? false : true,
-      reference_id: (bookingId ?? proProfileId).toString().slice(0, 40),
+      reference_id: (bookingId || jobQuoteId || proProfileId).toString().slice(0, 40),
     };
     if (locationId) squareBody.location_id = locationId;
 

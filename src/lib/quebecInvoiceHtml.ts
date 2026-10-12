@@ -106,7 +106,7 @@ export function buildQuebecBilingualInvoiceHtml(
         <tr><td style="padding:6px 0;border-bottom:1px solid #ddd;">Sous-total (avant taxes)</td><td style="padding:6px 0;border-bottom:1px solid #ddd;text-align:right;">${esc(sub)}</td></tr>
         <tr><td style="padding:6px 0;border-bottom:1px solid #ddd;">TPS (5 %)</td><td style="padding:6px 0;border-bottom:1px solid #ddd;text-align:right;">${esc(gst)}</td></tr>
         <tr><td style="padding:6px 0;border-bottom:1px solid #ddd;">TVQ (9,975 %)</td><td style="padding:6px 0;border-bottom:1px solid #ddd;text-align:right;">${esc(qst)}</td></tr>
-        <tr><td style="padding:6px 0;border-bottom:1px solid #ddd;">Frais carte et plateforme (5 % sur le service, non taxés)</td><td style="padding:6px 0;border-bottom:1px solid #ddd;text-align:right;">${esc(proc)}</td></tr>
+        <tr><td style="padding:6px 0;border-bottom:1px solid #ddd;">Frais de réservation (5 % maintenant; 3,8 % dès le 1er janvier 2027)</td><td style="padding:6px 0;border-bottom:1px solid #ddd;text-align:right;">${esc(proc)}</td></tr>
         <tr><td style="padding:8px 0 0;font-weight:bold;">Total</td><td style="padding:8px 0 0;text-align:right;font-weight:bold;">${esc(tot)}</td></tr>
       </table>
       <h3 style="font-size:0.95rem;margin:16px 0 8px;">Paiement</h3>
@@ -141,7 +141,7 @@ export function buildQuebecBilingualInvoiceHtml(
         <tr><td style="padding:6px 0;border-bottom:1px solid #ddd;">Subtotal (before tax)</td><td style="padding:6px 0;border-bottom:1px solid #ddd;text-align:right;">${esc(sub)}</td></tr>
         <tr><td style="padding:6px 0;border-bottom:1px solid #ddd;">GST (5%)</td><td style="padding:6px 0;border-bottom:1px solid #ddd;text-align:right;">${esc(gst)}</td></tr>
         <tr><td style="padding:6px 0;border-bottom:1px solid #ddd;">QST (9.975%)</td><td style="padding:6px 0;border-bottom:1px solid #ddd;text-align:right;">${esc(qst)}</td></tr>
-        <tr><td style="padding:6px 0;border-bottom:1px solid #ddd;">Platform fee (5% on service)</td><td style="padding:6px 0;border-bottom:1px solid #ddd;text-align:right;">${esc(proc)}</td></tr>
+        <tr><td style="padding:6px 0;border-bottom:1px solid #ddd;">Booking fee (5% now; 3.8% from January 1, 2027)</td><td style="padding:6px 0;border-bottom:1px solid #ddd;text-align:right;">${esc(proc)}</td></tr>
         <tr><td style="padding:8px 0 0;font-weight:bold;">Total</td><td style="padding:8px 0 0;text-align:right;font-weight:bold;">${esc(tot)}</td></tr>
       </table>
       <h3 style="font-size:0.95rem;margin:16px 0 8px;">Payment</h3>

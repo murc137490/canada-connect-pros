@@ -3,8 +3,8 @@
  * Source: Les Services AltShift Inc. marketplace terms for altshift.ca.
  */
 
-export const LAST_UPDATED = "September 2026";
-export const LAST_UPDATED_FR = "septembre 2026";
+export const LAST_UPDATED = "October 2026";
+export const LAST_UPDATED_FR = "octobre 2026";
 export const COMPANY_NAME = "AltShift";
 export const LEGAL_COMPANY_NAME = "Les Services AltShift Inc.";
 
@@ -78,13 +78,13 @@ By registering as a professional service provider you agree to the following:
 You are an independent contractor under a contract of enterprise / for services (Civil Code of Québec arts. 2098–2099), not an employee of Company.
 
 2. ELIGIBILITY AND ONBOARDING
-You must be 18+, legally able to contract in Québec, complete identity verification (government photo ID and selfie), supply licence/permit numbers for regulated categories, and obtain Company approval before public listing.
+You must be 18+, legally able to contract in Québec, complete identity verification (government photo ID, selfie, and the camera-recorded liveness step where required), supply licence/permit numbers for regulated categories, and obtain Company approval before public listing. Liveness recordings are reviewed manually by authorized Company personnel and are not processed through automated face matching.
 
 3. VERIFIED CLAIMS
 Badges such as “licence checked” or “ID reviewed” mean only the limited check described on the Platform as of the stated date—not continuous monitoring, insurance confirmation, skills testing, or criminal background clearance.
 
 4. FEES AND SUBSCRIPTION
-Subscription plans and platform fees are those shown at enrollment and checkout (billed via Square). You are responsible for your own taxes. You must not steer Clients off-Platform to avoid fees for bookings that originated on the Platform, except for a documented pre-existing client relationship.
+Subscription prices, Booking Credits, booking fees, and payment terms are shown before checkout and billed via Square. The customer booking fee is 5% of the eligible service amount through December 31, 2026, and 3.8% starting January 1, 2027. No separate fixed Square processing amount is added at checkout. AltShift's application fee is limited to the amount remaining after estimated Square processing costs and can be zero. Square deducts actual processing costs first; these can differ from estimates and may reduce the Pro's net payout. You are responsible for your own taxes. You must not steer Clients off-Platform to avoid fees for bookings that originated on the Platform, except for a documented pre-existing client relationship.
 
 5. CANCELLATION POLICIES YOU MAY OFFER
 You may offer free cancellation until a clearly stated cutoff and/or, after the cutoff, liability for your actual reasonably proven damages—not a pre-set percentage or automatic full charge. Optional fixed-dollar deposits must be precisely disclosed before booking; unused portions must be refunded.
@@ -160,7 +160,7 @@ Governing law: Province of Québec and applicable federal law of Canada.`,
     title: "4. Booking, price, and fees",
     body: `4.1 Before you book, the Platform will show the price elements that apply to that booking, including amounts payable to the Pro and any Platform-related charges that apply to you, if any. No costs may be claimed from a consumer unless the amount is precisely indicated in the contract (CPA s. 12).
 4.2 Payment is processed via Square.
-4.3 Platform fees charged to Pros are disclosed to Pros at enrollment/checkout. If any fee is charged to you as Client, it will be shown before you confirm. Amounts payable are those shown at enrollment and checkout.`,
+4.3 The customer booking fee shown at checkout is 5% of the eligible service amount through December 31, 2026, and 3.8% starting January 1, 2027. No separate fixed Square processing amount is added at checkout. AltShift's application fee is limited to the amount remaining after estimated Square processing costs and may be zero. Square deducts actual processing costs first; actual costs may differ from estimates and may reduce the Pro's net payout. Any customer-facing fee will be shown before confirmation. Amounts payable are those shown at enrollment and checkout.`,
   },
   {
     title: "5. Distance contracts (online bookings)",
@@ -392,11 +392,12 @@ Other Quebec registers (manual public lookup unless an API is available): BSP pu
   {
     title: "4. Fees, subscription, and payment routing",
     body: `4.1 Subscription plans (amounts may change — always those shown at enrollment):
-Starter — CA$20/month — about 20 requests;
-Growth — CA$27/month — about 50 requests;
-Pro — CA$32/month.
-Billed via Square.
-4.2 Platform fee. In addition to subscription, Company charges a platform fee on eligible transactions. Fees are those shown at enrollment and at checkout.
+Starter — CA$29/month — 5 monthly Booking Credits;
+Growth — CA$39/month — 10 monthly Booking Credits;
+Pro — CA$49/month — 18 monthly Booking Credits.
+Each Booking Credit covers up to CA$100 of eligible booked service value. Credits required are rounded UP to the next whole $100 increment: $100 = 1 credit, $180 = 2 credits, $450 = 5 credits, $800 = 8 credits, and $1,250 = 13 credits. The eligible amount is the Pro’s service amount before taxes, platform fees, payment-processing fees, tips, refundable deposits, and other pass-through charges. Credit availability and expiry are subject to the plan and checkout terms shown to you. This rounding rule is part of the professional agreement and is not a client-facing fee calculation.
+Billed via Square; billing renewals are only charged as presented and authorized at checkout.
+4.2 The customer booking fee is 5% of the eligible service amount through December 31, 2026, and 3.8% starting January 1, 2027. No separate fixed Square processing amount is added at checkout. Square deducts actual processing costs first; AltShift's application fee is limited to any amount remaining after estimated costs and may be zero. Actual costs can differ from estimates and may reduce the Pro's net payout.
 4.3 Fees payable are those shown at enrollment and checkout. Pro invoices and checkout display the actual amounts.
 4.4 Taxes. You are responsible for your own taxes, QST/GST registrations if required, and bookkeeping.
 4.5 Anti-circumvention. You must not steer Clients off-Platform to avoid Platform fees for bookings that originated on the Platform, except for a pre-existing client relationship.
@@ -493,7 +494,7 @@ En créant un compte Pro, en complétant l’intégration ou en cliquant pour ac
     title: "2. Admissibilité et intégration",
     body: `2.1 Vous devez avoir au moins 18 ans et être légalement apte à contracter au Québec.
 2.2 Avant toute annonce publique, vous devez compléter l’intégration, notamment :
-une pièce d’identité avec photo délivrée par le gouvernement et un autoportrait (selfie) aux fins de vérification d’identité;
+une pièce d’identité avec photo délivrée par le gouvernement, un autoportrait (selfie) et, lorsque requis, une courte vidéo de présence enregistrée par caméra aux fins de vérification d’identité; la vidéo est examinée manuellement par le personnel autorisé et n’est pas soumise à une reconnaissance faciale automatisée;
 pour les catégories réglementées, un numéro de licence / permis / adhésion et tout document à l’appui que la Société demande raisonnablement;
 un examen administratif et l’approbation de la Société avant que vous n’apparaissiez publiquement.
 2.3 La Société peut refuser, suspendre ou retirer une annonce si les renseignements sont incomplets, inexacts, expirés ou si l’examen échoue.`,
@@ -513,11 +514,12 @@ Autres registres québécois (consultation publique manuelle sauf API disponible
   {
     title: "4. Frais, abonnement et acheminement des paiements",
     body: `4.1 Forfaits d’abonnement (les montants peuvent changer — toujours ceux affichés à l’inscription) :
-Départ — 20 $ CA/mois — environ 20 demandes;
-Croissance — 27 $ CA/mois — environ 50 demandes;
-Pro — 32 $ CA/mois.
-Facturation via Square.
-4.2 Frais de plateforme. En plus de l’abonnement, la Société perçoit des frais de plateforme sur les transactions admissibles. Les frais sont ceux affichés à l’inscription et au paiement.
+Départ — 29 $ CA/mois — 5 crédits de réservation par mois;
+Croissance — 39 $ CA/mois — 10 crédits de réservation par mois;
+Pro — 49 $ CA/mois — 18 crédits de réservation par mois.
+Chaque crédit couvre jusqu’à 100 $ CA de valeur de service réservée admissible. Les crédits requis sont arrondis AU SUPÉRIEUR à la tranche entière suivante de 100 $ : 100 $ = 1 crédit, 180 $ = 2 crédits, 450 $ = 5 crédits, 800 $ = 8 crédits et 1 250 $ = 13 crédits. La valeur admissible est le montant des services du Pro avant taxes, frais de plateforme, frais de traitement, pourboires, dépôts remboursables et autres montants transmis. Cette règle est une règle de l’entente professionnelle et ne constitue pas un calcul de frais facturés au Client.
+Facturation via Square; les renouvellements ne sont facturés que selon les modalités présentées et autorisées au paiement.
+4.2 Les frais de réservation sont de 5 % du montant admissible du service jusqu’au 31 décembre 2026, puis de 3,8 % à compter du 1er janvier 2027. Aucun montant fixe distinct de traitement Square n’est ajouté au paiement. Square déduit les frais réels de traitement en premier; les frais d’application d’AltShift se limitent au solde après les coûts estimés et peuvent être nuls. Les coûts réels peuvent différer des estimations et réduire le versement net au Pro.
 4.3 Les montants payables sont ceux affichés à l’inscription et au paiement. Les factures Pro et le paiement affichent les montants réels.
 4.4 Taxes. Vous êtes responsable de vos propres taxes, des inscriptions TVQ/TPS si requises, et de votre tenue de livres.
 4.5 Anti-contournement. Vous ne devez pas détourner les Clients hors de la Plateforme pour éviter les frais de Plateforme pour des réservations issues de la Plateforme, sauf en cas de relation client préexistante.

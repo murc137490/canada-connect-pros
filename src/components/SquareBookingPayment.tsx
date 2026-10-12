@@ -47,13 +47,18 @@ export type SquareBookingPaymentSuccessMeta = {
 
 export interface SquareBookingPaymentProps {
   amountCents: number;
-  /** Service subtotal in cents; with Square Connect the Edge function sends app_fee_money = 2.1% of this (platform share). */
+  /** Eligible service subtotal in cents before tax and AltShift's checkout platform fee. */
   baseAmountCents: number;
   /** Seller location when pro uses OAuth Connect; otherwise platform location from env/edge. */
   squareLocationId?: string | null;
   currency?: string;
   proProfileId: string;
   clientId: string;
+  /** Authoritative source record used by the Edge Function to verify the amount. */
+  bookingId?: string | null;
+  jobQuoteId?: string | null;
+  serviceCategorySlug?: string | null;
+  serviceSlug?: string | null;
   onSuccess: (meta: SquareBookingPaymentSuccessMeta) => void;
   onError: (message: string) => void;
   submitLabel?: string;
@@ -78,6 +83,10 @@ export default function SquareBookingPayment({
   currency = "cad",
   proProfileId,
   clientId,
+  bookingId,
+  jobQuoteId,
+  serviceCategorySlug,
+  serviceSlug,
   onSuccess,
   onError,
   audience = "client",
@@ -212,6 +221,10 @@ export default function SquareBookingPayment({
           currency: currencyCode,
           pro_profile_id: proProfileId,
           client_id: clientId,
+          booking_id: bookingId ?? null,
+          job_quote_id: jobQuoteId ?? null,
+          service_category_slug: serviceCategorySlug ?? null,
+          service_slug: serviceSlug ?? null,
           idempotency_key: idempotencyKeyRef.current,
           autocomplete: !authorizeOnly,
           authorize_only: authorizeOnly,

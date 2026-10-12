@@ -41,14 +41,6 @@ export function hasFullScheduleCalendarAccess(tier: ProPlanId | null | undefined
   return tier === "growth" || tier === "pro";
 }
 
-/** Monthly client request access limit. Pro has no UI access cap. Hold = no access (0). */
-export function clientRequestLimitForTier(tier: ProPlanId | null | undefined): number | null {
-  if (!tier) return 0;
-  if (tier === "starter") return 20;
-  if (tier === "growth") return 50;
-  return null;
-}
-
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
 /** Local calendar YYYY-MM-DD for `d` (no UTC shift). */

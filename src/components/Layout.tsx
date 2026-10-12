@@ -21,6 +21,7 @@ import WhatsNewMenu from "@/components/WhatsNewMenu";
 import { useWhatsNew } from "@/contexts/WhatsNewContext";
 import { MOTION } from "@/motion/types";
 import BrandLogo from "@/components/BrandLogo";
+import { ALTSHIFT_AI_PROMPT_LINKS } from "@/lib/aiAltShiftPrompts";
 
 const SCROLL_COMPACT = 24;
 
@@ -127,6 +128,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [user, activeVerifiedPro]);
 
   const isHome = location.pathname === "/";
+  const isProProfileSetupPage = location.pathname === "/create-pro-account";
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > SCROLL_COMPACT);
     onScroll();
@@ -232,7 +234,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full min-w-0 max-w-none flex-col m-0 p-0">
-      {!isProProfilePage && (
+      {!isProProfilePage && !isProProfileSetupPage && (
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled ? "site-header--compact" : ""
@@ -390,7 +392,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <main
         className={`flex-1 min-h-screen w-full max-w-full min-w-0 bg-gradient-page m-0 p-0 ${
-          isProProfilePage || isHome
+          isProProfilePage || isProProfileSetupPage || isHome
             ? "pt-0"
             : "pt-[calc(4.25rem+env(safe-area-inset-top,0px))]"
         }`}
@@ -398,7 +400,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      <footer className="footer-gradient text-white">
+      {!isProProfileSetupPage && <footer className="footer-gradient text-white">
         <div className="container-page py-14 md:py-16">
           <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)] md:gap-12">
             <div className="space-y-4 max-w-sm">
@@ -409,6 +411,43 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <p className="text-sm text-white/65 leading-relaxed">
                 {t.footer.tagline}
               </p>
+              <div className="space-y-3 pt-2">
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {locale === "fr" ? "Comment utiliser AltShift ?" : "How Could I Use AltShift?"}
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-white/55">
+                    {locale === "fr"
+                      ? "Demandez à votre assistant IA des idées adaptées à vos objectifs."
+                      : "Ask your AI assistant for ideas tailored to your goals."}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <a
+                    href={ALTSHIFT_AI_PROMPT_LINKS.claude}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                  >
+                    <span>Claude</span>
+                    <span className="text-white/65">{locale === "fr" ? "Demander" : "Ask Claude"}</span>
+                  </a>
+                  <a
+                    href={ALTSHIFT_AI_PROMPT_LINKS.chatgpt}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                  >
+                    <span>ChatGPT</span>
+                    <span className="text-white/65">{locale === "fr" ? "Demander" : "Ask ChatGPT"}</span>
+                  </a>
+                </div>
+                <p className="text-[11px] leading-relaxed text-white/45">
+                  {locale === "fr"
+                    ? "Ces services externes ne peuvent pas lire votre cache de navigation ni votre compte AltShift. Ils peuvent utiliser les souvenirs disponibles dans votre propre compte IA."
+                    : "These external services cannot read your browser cache or AltShift account. They may use memories available in your own AI account."}
+                </p>
+              </div>
             </div>
             <div className="space-y-3">
               <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">{t.footer.servicesCol}</h4>
@@ -467,6 +506,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </ul>
             </div>
           </div>
+          <div aria-hidden="true" className="mt-10 select-none overflow-hidden text-center font-heading text-[clamp(4rem,19vw,20rem)] font-black leading-[0.72] tracking-[-0.095em] text-white/[0.075]">
+            ALTSHIFT
+          </div>
           <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
             <span>© {new Date().getFullYear()} Les Services AltShift Inc. {t.footer.rights}</span>
             <div className="flex flex-wrap gap-3">
@@ -480,7 +522,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
-      </footer>
+      </footer>}
       <CookieConsent />
       <HelpFab />
     </div>

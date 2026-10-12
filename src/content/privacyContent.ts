@@ -2,9 +2,9 @@
  * Privacy Policy (EN/FR) for Les Services AltShift Inc. / altshift.ca.
  */
 
-export const PRIVACY_LAST_UPDATED = "September 2026";
-export const PRIVACY_LAST_UPDATED_FR = "septembre 2026";
-export const PRIVACY_VERSION = "2026-09";
+export const PRIVACY_LAST_UPDATED = "October 2026";
+export const PRIVACY_LAST_UPDATED_FR = "octobre 2026";
+export const PRIVACY_VERSION = "2026-10";
 
 export type PrivacySection = { title: string; body: string };
 
@@ -29,7 +29,7 @@ Personal information means any information which relates to a natural person and
 Account — Name, email, phone, password hash, address/service area, language preference — You
 Pro profile — Trade categories, bio, rates, availability, photos you upload — You
 Government photo ID (Clients) — Image of the front of a government photo ID — You (upload)
-Government photo ID & selfie (Pros) — ID image; selfie for identity verification — You (upload)
+Government photo ID, selfie, and liveness recording (Pros) — ID image, selfie, and a short camera video with a movement prompt — You (upload/record)
 Licence / permit numbers — RBQ, BSP, MAPAQ, pesticide, professional-order, SAAQ school recognition numbers, etc. — You; public registers for verification
 Booking data — Service requested, time, location, messages, cancellation events, reviews — You / Pro / Platform
 Payment — Payment status, last-4 / tokenized references; card data handled by Square — Square / you
@@ -65,7 +65,7 @@ Sensitive information (including information that is biometric or otherwise inti
     title: "5. Selfie and biometric verification (Pros; possibly Clients)",
     body: `5.1 If we use a process that allows biometric characteristics or measurements to verify or confirm identity, C-1.1 s. 44 requires: prior disclosure to the CAI; express consent of the person; only the minimum characteristics needed; destruction of the record when the purpose is met or the reason no longer exists.
 5.2 Creating a database of biometric characteristics/measurements must be disclosed to the CAI promptly and not later than 60 days before it is brought into service (C-1.1 s. 45).
-5.3 Necessity must be demonstrated; a non-biometric alternative is offered when required; consent cannot cure lack of necessity.`,
+5.3 Pro onboarding may request a short liveness video made with your device camera. It is stored in the private verification bucket and accessible to you and authorized AltShift reviewers for manual review with your submitted ID and selfie. The prompt and recording are not run through automated face matching, facial templates, or automated identity decisions. You may decline; if the check is required for approval, your professional listing cannot be activated until manual review is complete. We retain it only as long as needed for verification, dispute handling, and applicable legal obligations, then securely delete it. We will provide a non-video alternative where legally required or where you cannot reasonably use a camera. Review the final process with privacy counsel before launch, including whether Québec biometric notice or filing requirements apply.`,
   },
   {
     title: "6. Licence numbers and public registers",
@@ -169,7 +169,7 @@ Les renseignements personnels s’entendent de tout renseignement qui concerne u
 Compte — Nom, courriel, téléphone, empreinte de mot de passe, adresse/zone de service, préférence linguistique — Vous
 Profil Pro — Catégories de métiers, bio, tarifs, disponibilité, photos que vous téléversez — Vous
 Pièce d’identité avec photo (Clients) — Image du recto d’une pièce d’identité avec photo délivrée par le gouvernement — Vous (téléversement)
-Pièce d’identité avec photo et selfie (Pros) — Image de la pièce d’identité; selfie pour vérification d’identité — Vous (téléversement)
+Pièce d’identité avec photo, selfie et vidéo de présence (Pros) — Image de la pièce d’identité, selfie et courte vidéo de la caméra avec instruction de mouvement — Vous (téléversement/enregistrement)
 Numéros de licence / permis — RBQ, BSP, MAPAQ, pesticides, ordre professionnel, reconnaissance d’école SAAQ, etc. — Vous; registres publics pour vérification
 Données de réservation — Service demandé, heure, lieu, messages, événements d’annulation, évaluations — Vous / Pro / Plateforme
 Paiement — Statut de paiement, 4 derniers chiffres / références tokenisées; données de carte traitées par Square — Square / vous
@@ -205,7 +205,7 @@ Les renseignements sensibles (y compris les renseignements biométriques ou autr
     title: "5. Selfie et vérification biométrique (Pros; possiblement Clients)",
     body: `5.1 Si nous utilisons un procédé qui permet des caractéristiques ou mesures biométriques pour vérifier ou confirmer l’identité, C-1.1 art. 44 exige : une divulgation préalable à la CAI; le consentement exprès de la personne; uniquement les caractéristiques minimales nécessaires; la destruction de l’enregistrement lorsque la finalité est atteinte ou que la raison n’existe plus.
 5.2 La création d’une banque de données de caractéristiques/mesures biométriques doit être divulguée à la CAI sans délai et au plus tard 60 jours avant sa mise en service (C-1.1 art. 45).
-5.3 La nécessité doit être démontrée; une solution de rechange non biométrique est offerte lorsque requis; le consentement ne peut pallier l’absence de nécessité.`,
+5.3 L’intégration des Pros peut demander une courte vidéo de présence prise par la caméra de votre appareil. Elle est conservée dans le stockage privé de vérification et accessible à vous et aux réviseurs AltShift autorisés pour un examen manuel avec votre pièce d’identité et votre selfie. La vidéo et l’instruction ne sont pas analysées par reconnaissance faciale automatisée, création de gabarit facial ou décision automatisée d’identité. Vous pouvez refuser; si la vérification est requise pour l’approbation, l’annonce ne peut être activée avant l’examen manuel. Nous la conservons uniquement le temps nécessaire à la vérification, au traitement des différends et aux obligations légales, puis la supprimons de façon sécurisée. Une solution sans vidéo sera proposée lorsqu’exigée par la loi ou lorsque vous ne pouvez raisonnablement utiliser une caméra. Faites examiner le processus final par un conseiller en protection des renseignements personnels avant son lancement, notamment pour les obligations de notification ou de déclaration biométrique au Québec.`,
   },
   {
     title: "6. Numéros de licence et registres publics",

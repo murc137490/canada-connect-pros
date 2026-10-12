@@ -237,6 +237,8 @@ export default function BookingRequestConfirm({
                 currency="cad"
                 proProfileId={proProfileId}
                 clientId={clientId}
+                serviceCategorySlug={handoffExtras?.serviceCategorySlug}
+                serviceSlug={handoffExtras?.serviceSlug}
                 audience="client"
                 authorizeOnly
                 onApplePayHandoffRequest={() => setShowAppleQr(true)}

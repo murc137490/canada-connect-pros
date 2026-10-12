@@ -866,7 +866,7 @@ export default function MakeRequest() {
                   <Label>{t.makeRequest.step5Label}</Label>
                   <p className="text-xs text-muted-foreground">
                     {t.makeRequest.budgetServiceHint ??
-                      `Enter service budget (min $${JOB_REQUEST_BUDGET_MIN_BASE}). Totals below include taxes + 5% platform fee.`}
+                      `Enter service budget (min $${JOB_REQUEST_BUDGET_MIN_BASE}). Totals include taxes + a 5% booking fee now, changing to 3.8% on Jan. 1, 2027.`}
                   </p>
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2">
@@ -904,7 +904,7 @@ export default function MakeRequest() {
                   {(budgetLive.minAllIn != null || budgetLive.maxAllIn != null) && (
                     <div className="rounded-lg border border-primary/25 bg-primary/5 px-3 py-2 text-sm text-foreground">
                       <span className="font-medium">
-                        {t.makeRequest.budgetAllInLabel ?? "With taxes + 5% platform fee:"}
+                        {t.makeRequest.budgetAllInLabel ?? "With taxes + booking fee (5% now; 3.8% from Jan. 1, 2027):"}
                       </span>{" "}
                       <span className="tabular-nums font-semibold">
                         {budgetLive.minAllIn != null ? `$${budgetLive.minAllIn}` : "—"}

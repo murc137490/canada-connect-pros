@@ -307,6 +307,8 @@ export default function ApplePayHandoffPay() {
                 currency="cad"
                 proProfileId={draft.proProfileId}
                 clientId={draft.clientId}
+                serviceCategorySlug={draft.serviceCategorySlug}
+                serviceSlug={draft.serviceSlug}
                 audience="client"
                 authorizeOnly
                 onSuccess={(meta) => {

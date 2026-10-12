@@ -67,7 +67,6 @@ export function serviceSlugLabel(slug: string | null | undefined): string {
 export function growthErrorMessage(raw: unknown, lang: Lang): string {
   const msg = raw instanceof Error ? raw.message : typeof raw === "object" && raw && "message" in raw ? String((raw as { message: unknown }).message) : String(raw ?? "");
   const c = GROWTH_COPY[lang].errors;
-  if (msg.includes("client_request_limit_reached")) return c.limit;
   if (msg.includes("growth_required")) return c.growth;
   if (msg.includes("bad_first_date")) return c.firstDate;
   if (msg.includes("booking_not_confirmed")) return c.notConfirmed;
@@ -81,7 +80,6 @@ export const GROWTH_COPY = {
     locked: "Available on the Growth and Pro plans.",
     upgrade: "See plans",
     errors: {
-      limit: "This request is over your plan's monthly client request limit. Upgrade your plan to accept it.",
       growth: "This feature is available on the Growth and Pro plans.",
       firstDate: "Pick a first date between tomorrow and 120 days from now.",
       notConfirmed: "Only confirmed or completed bookings can repeat.",
@@ -129,7 +127,7 @@ export const GROWTH_COPY = {
       introClient: "Your recurring bookings. Each visit is created a week ahead and confirmed by the professional.",
       empty: "No repeat bookings yet.",
       autoApprove: "Auto-approve repeat visits",
-      autoApproveHint: "When on, visits from repeat bookings are confirmed automatically (within your plan's monthly request limit). Clients still pay through AltShift like any booking.",
+      autoApproveHint: "When on, visits from repeat bookings are confirmed automatically. Booking Credits are reserved for each confirmed booking. Clients still pay through AltShift like any booking.",
       freq: { weekly: "Every week", biweekly: "Every 2 weeks", monthly: "Every month" } as Record<string, string>,
       statusLabel: { proposed: "Waiting for client", active: "Active", paused: "Paused", cancelled: "Cancelled" } as Record<string, string>,
       proposedToYou: "Proposed by your professional",
@@ -174,7 +172,6 @@ export const GROWTH_COPY = {
     locked: "Offert avec les forfaits Croissance et Performance.",
     upgrade: "Voir les forfaits",
     errors: {
-      limit: "Cette demande dépasse la limite mensuelle de demandes client de votre forfait. Passez à un forfait supérieur pour l’accepter.",
       growth: "Cette fonction est offerte avec les forfaits Croissance et Performance.",
       firstDate: "Choisissez une première date entre demain et dans 120 jours.",
       notConfirmed: "Seules les réservations confirmées ou terminées peuvent être répétées.",
@@ -222,7 +219,7 @@ export const GROWTH_COPY = {
       introClient: "Vos réservations récurrentes. Chaque visite est créée une semaine à l’avance et confirmée par le professionnel.",
       empty: "Aucune réservation répétée pour l’instant.",
       autoApprove: "Approuver automatiquement les visites répétées",
-      autoApproveHint: "Si activé, les visites des réservations répétées sont confirmées automatiquement (dans la limite mensuelle de demandes de votre forfait). Les clients paient quand même via AltShift comme pour toute réservation.",
+      autoApproveHint: "Si activé, les visites des réservations répétées sont confirmées automatiquement. Des crédits de réservation sont réservés pour chaque réservation confirmée. Les clients paient quand même via AltShift comme pour toute réservation.",
       freq: { weekly: "Chaque semaine", biweekly: "Toutes les 2 semaines", monthly: "Chaque mois" } as Record<string, string>,
       statusLabel: { proposed: "En attente du client", active: "Active", paused: "En pause", cancelled: "Annulée" } as Record<string, string>,
       proposedToYou: "Proposée par votre professionnel",

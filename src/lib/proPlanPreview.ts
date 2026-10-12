@@ -13,9 +13,9 @@ export type ProPlanId = "starter" | "growth" | "pro";
 const PLAN_IDS: ProPlanId[] = ["starter", "growth", "pro"];
 
 export const DEFAULT_PLAN_PRICE_CENTS: Record<ProPlanId, number> = {
-  starter: 2000,
-  growth: 2700,
-  pro: 3200,
+  starter: 2900,
+  growth: 3900,
+  pro: 4900,
 };
 
 function isPlanId(s: string): s is ProPlanId {
@@ -45,7 +45,7 @@ export type PlanPreviewOk = {
   billing_period_start: string | null;
   billing_cycle_days: number;
   has_subscription_row: boolean;
-  /** Starter → upgrade uses CA$20.00/mo as the “from” rate (John Pork scenario). */
+  /** Starter → upgrade uses the CA$29.00/mo catalogue rate. */
   starter_rate_assumed?: boolean;
   /** End of the current billing cycle (ISO), for transparent proration display. */
   cycle_end_iso?: string;
@@ -189,9 +189,9 @@ export async function computePlanChangePreview(proProfileId: string, newPlanRaw:
 
     const currentTier = billingPlanId!;
     const catalogOld = priceById[currentTier];
-    /** Starter on file: “from” rate CA$20/mo (2000¢) for proration vs catalog. */
+    /** Starter on file: CA$29/mo catalog rate (2900¢) for proration vs catalog. */
     const oldPrice = currentTier === "starter" ? DEFAULT_PLAN_PRICE_CENTS.starter : catalogOld;
-    let billingPeriodStart: string | null = sub?.billing_start ?? null;
+    const billingPeriodStart: string | null = sub?.billing_start ?? null;
     let chargeCents = 0;
     let mode: PlanPreviewOk["mode"] = "downgrade";
 

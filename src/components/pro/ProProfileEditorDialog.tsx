@@ -69,6 +69,16 @@ const VERIFICATION_BUCKET = "pro-verification";
 const MAX_BIO_WORDS = 300;
 const ACCEPT_IMAGES = "image/png,image/jpeg,image/jpg";
 const ACCEPT_VERIFICATION_DOCS = "application/pdf,image/png,image/jpeg,image/webp";
+const LIVENESS_CHALLENGES = [
+  "Look at the camera, then slowly turn your head left and back to centre.",
+  "Look at the camera, blink twice, then smile.",
+  "Look at the camera, turn your head right and back to centre.",
+];
+const LIVENESS_CHALLENGES_FR = [
+  "Regardez la caméra, tournez lentement la tête à gauche, puis revenez au centre.",
+  "Regardez la caméra, clignez des yeux deux fois, puis souriez.",
+  "Regardez la caméra, tournez la tête à droite, puis revenez au centre.",
+];
 
 /** All distinct services in a category (flattened across subcategories). */
 function listServicesForPrimaryCategory(categorySlug: string): { slug: string; name: string }[] {
@@ -113,12 +123,18 @@ function omitPrivateDocFields<T extends Record<string, unknown>>(payload: T): Re
   return rest;
 }
 
+function ProfileEditorShell({ fullPage, className, children }: { fullPage: boolean; className: string; children: React.ReactNode }) {
+  if (fullPage) return <div className={className}>{children}</div>;
+  return <DialogContent from="bottom" showCloseButton className={className}>{children}</DialogContent>;
+}
+
 export type ProProfileEditorDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved?: () => void;
   /** When true, new profiles can be created without ?onboarding=1 (Join Pros flow). */
   allowDirectCreate?: boolean;
+  fullPage?: boolean;
 };
 
 export function ProProfileEditorDialog({
@@ -126,6 +142,7 @@ export function ProProfileEditorDialog({
   onOpenChange,
   onSaved,
   allowDirectCreate = false,
+  fullPage = false,
 }: ProProfileEditorDialogProps) {
   const { user } = useAuth();
   const { t, locale } = useLanguage();
@@ -149,11 +166,55 @@ export function ProProfileEditorDialog({
   const idDocumentInputRef = useRef<HTMLInputElement>(null);
   const insuranceDocumentInputRef = useRef<HTMLInputElement>(null);
   const licenseDocumentInputRef = useRef<HTMLInputElement>(null);
+  const livenessPreviewRef = useRef<HTMLVideoElement>(null);
+  const livenessStreamRef = useRef<MediaStream | null>(null);
+  const [livenessVideoFile, setLivenessVideoFile] = useState<File | null>(null);
+  const [livenessRecording, setLivenessRecording] = useState(false);
+  const [livenessConsent, setLivenessConsent] = useState(false);
+  const [livenessChallenge] = useState(() => {
+    const prompts = locale === "fr" ? LIVENESS_CHALLENGES_FR : LIVENESS_CHALLENGES;
+    return prompts[Math.floor(Math.random() * prompts.length)];
+  });
   const [insuranceDocumentFile, setInsuranceDocumentFile] = useState<File | null>(null);
   const [licenseDocumentFile, setLicenseDocumentFile] = useState<File | null>(null);
   const [tradeLicenseNumber, setTradeLicenseNumber] = useState("");
   const [rbqVerification, setRbqVerification] = useState<{ status: "verified" | "needs_review"; reason?: string; official_name?: string; subcategories?: string[] } | null>(null);
   const [rbqChecking, setRbqChecking] = useState(false);
+
+  useEffect(() => () => livenessStreamRef.current?.getTracks().forEach((track) => track.stop()), []);
+
+  const recordLivenessCheck = async () => {
+    if (livenessRecording) return;
+    if (!livenessConsent) {
+      toast({ title: locale === "fr" ? "Consentement requis" : "Consent required", description: locale === "fr" ? "Acceptez l’enregistrement pour continuer." : "Consent to the recording before continuing.", variant: "destructive" });
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+      livenessStreamRef.current = stream;
+      if (livenessPreviewRef.current) { livenessPreviewRef.current.srcObject = stream; await livenessPreviewRef.current.play(); }
+      const mimeType = ["video/webm;codecs=vp8", "video/webm", "video/mp4"].find((type) => MediaRecorder.isTypeSupported(type));
+      if (!mimeType) throw new Error("Video recording is not supported by this browser.");
+      const recorder = new MediaRecorder(stream, { mimeType });
+      const chunks: BlobPart[] = [];
+      recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
+      recorder.onstop = () => {
+        const video = new File([new Blob(chunks, { type: mimeType })], `liveness-${Date.now()}.${mimeType.includes("mp4") ? "mp4" : "webm"}`, { type: mimeType.split(";")[0] });
+        setLivenessVideoFile(video);
+        stream.getTracks().forEach((track) => track.stop());
+        livenessStreamRef.current = null;
+        setLivenessRecording(false);
+      };
+      recorder.start();
+      setLivenessRecording(true);
+      window.setTimeout(() => { if (recorder.state === "recording") recorder.stop(); }, 8000);
+    } catch {
+      livenessStreamRef.current?.getTracks().forEach((track) => track.stop());
+      livenessStreamRef.current = null;
+      setLivenessRecording(false);
+      toast({ title: locale === "fr" ? "Caméra indisponible" : "Camera unavailable", description: locale === "fr" ? "Autorisez la caméra et réessayez." : "Allow camera access and try again.", variant: "destructive" });
+    }
+  };
 
   const [form, setForm] = useState({
     firstNameOrBusiness: "",
@@ -456,6 +517,10 @@ export function ProProfileEditorDialog({
       toast({ title: t.createPro.toastRequired, description: t.createPro.personalPhotoLabel, variant: "destructive" });
       return;
     }
+    if (!isEditMode && (!livenessVideoFile || !livenessConsent)) {
+      toast({ title: locale === "fr" ? "Vérification de présence requise" : "Liveness check required", description: locale === "fr" ? "Enregistrez la courte vidéo et donnez votre consentement avant de continuer." : "Record the short video and provide consent before continuing.", variant: "destructive" });
+      return;
+    }
     if (!form.idDocumentFile && !existingIdDocumentUrl) {
       toast({ title: t.createPro.toastRequired, description: t.createPro.idDocumentLabel, variant: "destructive" });
       return;
@@ -604,6 +669,21 @@ export function ProProfileEditorDialog({
         });
         if (error) throw error;
       };
+
+      if (livenessVideoFile) {
+        if (livenessVideoFile.size > 25 * 1024 * 1024) throw new Error("Liveness recording must be 25 MB or smaller.");
+        const videoExt = livenessVideoFile.type === "video/mp4" ? "mp4" : "webm";
+        const path = `${user.id}/verification/${profileId}/liveness-${Date.now()}-${crypto.randomUUID()}.${videoExt}`;
+        const storagePath = await uploadFile(path, livenessVideoFile, VERIFICATION_BUCKET);
+        const { error } = await supabase.from("pro_verification_documents").insert({
+          pro_profile_id: profileId,
+          document_type: "liveness_video",
+          storage_path: storagePath,
+          status: "pending_review",
+          extracted_fields: { review_method: "manual", capture_challenge: livenessChallenge },
+        });
+        if (error) throw error;
+      }
 
       if (form.insurance && insuranceDocumentFile) {
         await uploadVerificationDocument(insuranceDocumentFile, "insurance_certificate");
@@ -852,14 +932,14 @@ export function ProProfileEditorDialog({
 
   return (
     <>
-      <Dialog open={open && Boolean(user)} onOpenChange={onOpenChange}>
-        <DialogContent
-          from="bottom"
-          showCloseButton
+      <Dialog open={!fullPage && open && Boolean(user)} onOpenChange={onOpenChange}>
+        <ProfileEditorShell
+          fullPage={fullPage}
           className={cn(
             "flex flex-col gap-0 overflow-hidden p-0",
-            "sm:max-w-3xl w-[calc(100%-1.5rem)] max-h-[min(92vh,920px)]",
-            "rounded-2xl sm:rounded-3xl border-border/40 shadow-2xl",
+            fullPage
+              ? "mx-auto flex min-h-[100dvh] w-full max-w-[1600px] max-h-none rounded-none border-0 shadow-none"
+              : "sm:max-w-3xl w-[calc(100%-1.5rem)] max-h-[min(92vh,920px)] rounded-2xl sm:rounded-3xl border-border/40 shadow-2xl",
           )}
         >
           <DialogHeader className="shrink-0 space-y-1.5 border-b border-border/50 bg-muted/20 px-5 py-5 sm:px-6 sm:py-6 text-left">
@@ -1128,6 +1208,23 @@ export function ProProfileEditorDialog({
                   </button>
                 </span>
               )}
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
+            <div>
+              <p className="font-medium">{locale === "fr" ? "Vérification de présence" : "Liveness check"}</p>
+              <p className="text-sm text-muted-foreground">{locale === "fr" ? "Enregistrez une courte vidéo en suivant l’instruction. Une personne de l’équipe examinera la vidéo avec votre pièce d’identité et votre selfie." : "Record a short video following the prompt. A team member will manually review it with your ID and selfie."}</p>
+            </div>
+            <p className="text-sm font-medium">{livenessChallenge}</p>
+            <video ref={livenessPreviewRef} muted playsInline className="max-h-48 w-full rounded-lg bg-black object-cover" aria-label={locale === "fr" ? "Aperçu de la caméra" : "Camera preview"} />
+            <label className="flex items-start gap-2 text-sm">
+              <Checkbox checked={livenessConsent} onCheckedChange={(checked) => setLivenessConsent(checked === true)} />
+              <span>{locale === "fr" ? "J’accepte l’enregistrement et l’examen manuel de cette vidéo pour vérifier ma présence et mon identité. Elle sera conservée dans mon dossier privé de vérification." : "I consent to recording and manual review of this video to verify liveness and identity. It will be stored in my private verification file."}</span>
+            </label>
+            <div className="flex items-center gap-3">
+              <Button type="button" variant="outline" disabled={livenessRecording} onClick={() => void recordLivenessCheck()}>{livenessRecording ? (locale === "fr" ? "Enregistrement…" : "Recording…") : (locale === "fr" ? "Enregistrer 8 secondes" : "Record 8 seconds")}</Button>
+              {livenessVideoFile ? <span className="text-sm text-muted-foreground">{locale === "fr" ? "Vidéo prête pour examen manuel" : "Video ready for manual review"}</span> : null}
             </div>
           </div>
 
@@ -1791,7 +1888,7 @@ export function ProProfileEditorDialog({
               </DialogFooter>
             </>
           )}
-        </DialogContent>
+        </ProfileEditorShell>
       </Dialog>
     </>
   );

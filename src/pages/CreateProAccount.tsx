@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ProProfileEditorDialog } from "@/components/pro/ProProfileEditorDialog";
 
-/** Deep-link fallback: opens the same pro profile editor dialog (onboarding / promo flows). */
+/** Dedicated full-screen professional profile setup/edit page. */
 export default function CreateProAccount() {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -30,6 +30,7 @@ export default function CreateProAccount() {
     <Layout>
       <ProProfileEditorDialog
         open
+        fullPage
         allowDirectCreate={onboarding}
         onOpenChange={(open) => {
           if (open) return;

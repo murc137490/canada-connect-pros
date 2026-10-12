@@ -3,7 +3,7 @@ import { computeBookingInvoiceFromBaseCents } from "@/lib/bookingInvoiceAmounts"
 /** Minimum service budget (before tax & platform fee), CAD. */
 export const JOB_REQUEST_BUDGET_MIN_BASE = 20;
 
-/** All-in total (GST + QST + 5% platform fee) from a service subtotal in dollars. */
+/** All-in total (GST + QST + scheduled customer booking fee) from a service subtotal in dollars. */
 export function budgetAllInFromBase(baseDollars: number): number {
   if (!Number.isFinite(baseDollars) || baseDollars <= 0) return 0;
   const cents = Math.round(baseDollars * 100);

@@ -293,7 +293,7 @@
 
 @layer components {
   .container-page {
-    @apply mx-auto w-full max-w-[1320px] px-4 sm:px-6 lg:px-8 xl:px-10;
+    @apply mx-auto w-full max-w-[1680px] px-4 sm:px-6 lg:px-10 2xl:px-12;
   }
   .section-pad {
     @apply py-14 sm:py-20 md:py-24 lg:py-28;

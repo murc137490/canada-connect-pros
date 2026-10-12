@@ -75,6 +75,9 @@ export default function ClientBookingPayDialog({
           currency="cad"
           proProfileId={booking.pro_profile_id}
           clientId={clientId}
+          bookingId={booking.id}
+          serviceCategorySlug={booking.service_category_slug}
+          serviceSlug={booking.service_slug}
           onPaymentComplete={async (paymentMeta: BookingPaymentMeta) => {
             if (paymentMeta.idempotencyKey) {
               const { error: linkErr } = await supabase

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef, startTransition } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, startTransition } from "react";
 import { format } from "date-fns";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -74,6 +74,8 @@ import BookingSeriesPanel from "@/components/growth/BookingSeriesPanel";
 import RepeatBookingDialog from "@/components/growth/RepeatBookingDialog";
 import { GROWTH_COPY, growthErrorMessage, tierStringHasGrowthTools } from "@/lib/growthTools";
 import { untypedDb } from "@/lib/untypedSupabase";
+import BookingCreditsPanel from "@/components/dashboard/BookingCreditsPanel";
+import { bookingCreditsInsufficientMessage } from "@/lib/bookingCredits";
 import BookingAssistantChat from "@/components/dashboard/BookingAssistantChat";
 import MemberIdSettings, { USERNAME_CHANGED_EVENT } from "@/components/dashboard/MemberIdSettings";
 import { proPublicPath } from "@/lib/publicHandle";
@@ -90,7 +92,6 @@ import {
 } from "@/lib/dashboardTutorial";
 import ReviewForm from "@/components/pro/ReviewForm";
 
-const ProProfileEditorDialog = lazy(() => import("@/components/pro/ProProfileEditorDialog"));
 import ClientReviewPhotoPicker from "@/components/dashboard/ClientReviewPhotoPicker";
 import ClickableProfileAvatar from "@/components/dashboard/ClickableProfileAvatar";
 import { uploadProfileAvatar, syncProPrimaryPhotoFromAvatar } from "@/lib/uploadProfileAvatar";
@@ -185,7 +186,6 @@ import {
 } from "@/lib/jobRequestProQuote";
 import { createLocalDateTime, hydrateSchedulingFormFromRow, schedulingDbFieldsFromFormState } from "@/lib/jobRequestScheduling";
 import {
-  clientRequestLimitForTier,
   effectiveProTier,
   hasFullScheduleCalendarAccess,
   hasFeaturedPublicProfileLook,
@@ -266,35 +266,6 @@ type AllPro = {
   subscription_tier?: string | null;
   referral_invite_panel_enabled?: boolean | null;
 };
-
-type RequestLimitItem = { id: string; created_at: string };
-
-function requestMonthKey(createdAt: string) {
-  const date = new Date(createdAt);
-  if (Number.isNaN(date.getTime())) return "unknown";
-  return `${date.getFullYear()}-${date.getMonth()}`;
-}
-
-function lockedClientRequestIds<T extends RequestLimitItem>(items: T[], monthlyLimit: number | null) {
-  if (monthlyLimit == null) return new Set<string>();
-
-  const countsByMonth = new Map<string, number>();
-  const lockedIds = new Set<string>();
-  const oldestFirst = [...items].sort((a, b) => {
-    const aTime = new Date(a.created_at).getTime();
-    const bTime = new Date(b.created_at).getTime();
-    return (Number.isNaN(aTime) ? 0 : aTime) - (Number.isNaN(bTime) ? 0 : bTime);
-  });
-
-  oldestFirst.forEach((item) => {
-    const key = requestMonthKey(item.created_at);
-    const count = (countsByMonth.get(key) ?? 0) + 1;
-    countsByMonth.set(key, count);
-    if (count > monthlyLimit) lockedIds.add(item.id);
-  });
-
-  return lockedIds;
-}
 
 function formatCanadianPhone(value: string) {
   let digits = value.replace(/\D/g, "");
@@ -436,6 +407,7 @@ export default function Dashboard() {
     profile: Record<string, unknown> & { user_id: string; business_name: string; bio: string | null; location: string | null; years_experience: number | null; phone: string | null; website: string | null; availability: string | null; price_min: number | null; price_max: number | null; service_at_workspace_only: boolean | null; service_radius_km: number | null; created_at: string };
     services: { category_slug: string; service_slug: string; description: string | null; custom_price_min: number | null; custom_price_max: number | null }[];
     photos: { url: string; caption: string | null; is_primary: boolean }[];
+    livenessVideoUrl?: string | null;
   } | null>(null);
   const [reviewProLoading, setReviewProLoading] = useState(false);
   const [reviewProfileDiffs, setReviewProfileDiffs] = useState<ProProfileSnapshotDiff[]>([]);
@@ -561,8 +533,6 @@ export default function Dashboard() {
   const [cachedProVerified, setCachedProVerified] = useState<boolean | null>(() =>
     readDashboardProVerifiedCache(user?.id),
   );
-  const [proProfileEditorOpen, setProProfileEditorOpen] = useState(false);
-  const [proProfileRefreshKey, setProProfileRefreshKey] = useState(0);
   const [proofUploadOpen, setProofUploadOpen] = useState(false);
   const [proofUploadBookingId, setProofUploadBookingId] = useState<string | null>(null);
   const [declineBookingId, setDeclineBookingId] = useState<string | null>(null);
@@ -1465,7 +1435,18 @@ export default function Dashboard() {
       const services = (servicesRes.data ?? []) as { category_slug: string; service_slug: string; description: string | null; custom_price_min: number | null; custom_price_max: number | null }[];
       const photos = (photosRes.data ?? []) as { url: string; caption: string | null; is_primary: boolean }[];
       if (profile) {
-        setReviewProData({ profile, services, photos });
+        const { data: livenessDoc } = await supabase
+          .from("pro_verification_documents")
+          .select("storage_path")
+          .eq("pro_profile_id", reviewProId)
+          .eq("document_type", "liveness_video")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const { data: signedLiveness } = livenessDoc?.storage_path
+          ? await supabase.storage.from("pro-verification").createSignedUrl(livenessDoc.storage_path, 300)
+          : { data: null };
+        setReviewProData({ profile, services, photos, livenessVideoUrl: signedLiveness?.signedUrl ?? null });
         const lastEdited = (profile as { profile_last_edited_at?: string | null }).profile_last_edited_at ?? null;
         setReviewProfileLastEdited(lastEdited);
         const baseline = parseApprovalBaselineJson((profile as { approval_baseline_json?: unknown }).approval_baseline_json);
@@ -2982,7 +2963,7 @@ export default function Dashboard() {
         setReviewedClientIds(new Set());
       }
     })();
-  }, [user, proProfileRefreshKey, isMonitorAdmin, platformAdminReady]);
+  }, [user, isMonitorAdmin, platformAdminReady]);
 
   useEffect(() => {
     const p = proProfile as { price_min?: number | null } | null;
@@ -3460,9 +3441,7 @@ export default function Dashboard() {
       const rawMsg = String((err as { message?: string } | null)?.message ?? "");
       toast({
         title: t.auth.toastError,
-        description: rawMsg.includes("client_request_limit_reached")
-          ? growthErrorMessage(err, locale === "fr" ? "fr" : "en")
-          : rawMsg,
+        description: bookingCreditsInsufficientMessage(err, locale === "fr" ? "fr" : "en") ?? rawMsg,
         variant: "destructive",
       });
     } finally {
@@ -3674,26 +3653,20 @@ export default function Dashboard() {
     }
   };
 
-  const clientRequestLimit = clientRequestLimitForTier(subscriptionTierNormalized);
-  const lockedProBookingIds = useMemo(
-    () => lockedClientRequestIds(proBookings, clientRequestLimit),
-    [clientRequestLimit, proBookings]
-  );
   const proMaySeeClientPhone = useCallback(
     (booking: { id: string; status: string; client_id: string }) => {
-      if (!proProfile || lockedProBookingIds.has(booking.id)) return false;
+      if (!proProfile) return false;
       const phone = clientProfiles[booking.client_id]?.phone;
       if (!phone) return false;
       return booking.status === "accepted" || booking.status === "completed";
     },
-    [proProfile, lockedProBookingIds, clientProfiles],
+    [proProfile, clientProfiles],
   );
   const proMaySeeClientContactInDetail = useCallback(
     (booking: { id: string; status: string }) => {
-      if (lockedProBookingIds.has(booking.id)) return false;
       return booking.status === "accepted" || booking.status === "completed";
     },
-    [lockedProBookingIds],
+    [],
   );
 
   const openClientBookingPay = useCallback(async (b: (typeof clientBookings)[number]) => {
@@ -3709,10 +3682,6 @@ export default function Dashboard() {
     );
     setPayBookingTarget(b);
   }, []);
-  const lockedAvailableJobIds = useMemo(
-    () => lockedClientRequestIds(availableJobs, clientRequestLimit),
-    [availableJobs, clientRequestLimit]
-  );
   const hasSavedBirthday = Boolean(profile?.birthday);
   const proViewingMyRequests = Boolean(proProfile?.is_verified && searchParams.get("view") === "my-requests");
 
@@ -3725,38 +3694,6 @@ export default function Dashboard() {
     const back = `/dashboard${typeof window !== "undefined" ? window.location.search : ""}`;
     return <Navigate to={`/auth?mode=login&redirect=${encodeURIComponent(back)}`} replace />;
   }
-
-  const showClientRequestUpgradePrompt = () => {
-    if (subscriptionTierNormalized == null) {
-      toast({
-        title: t.dashboard.requestLimitHoldTitle ?? "Subscribe to unlock pro tools",
-        description: t.dashboard.requestLimitHoldDesc ?? "",
-        onClick: () => navigate("/pro-plans"),
-      });
-      return;
-    }
-    if (clientRequestLimit == null) return;
-    const currentPlan =
-      subscriptionTierNormalized === "starter"
-        ? (t.plans?.starter ?? "Starter")
-        : (t.plans?.growth ?? "Growth");
-    const nextPlan =
-      subscriptionTierNormalized === "starter"
-        ? (t.plans?.growth ?? "Growth")
-        : (t.plans?.pro ?? "Pro");
-    const descriptionTemplate =
-      t.dashboard.requestLimitUpgradeDesc ??
-      "{{plan}} includes access to the first {{limit}} client requests each month. Upgrade to {{nextPlan}} to unlock more.";
-
-    toast({
-      title: t.dashboard.requestLimitUpgradeTitle ?? "Upgrade for more client requests?",
-      description: descriptionTemplate
-        .replace("{{plan}}", currentPlan)
-        .replace("{{limit}}", String(clientRequestLimit))
-        .replace("{{nextPlan}}", nextPlan),
-      onClick: () => navigate("/pro-plans"),
-    });
-  };
 
   const proBookingStatusLabel = (status: string) => {
     switch (status) {
@@ -3776,7 +3713,6 @@ export default function Dashboard() {
   };
 
   const renderProBookingRequestCard = (b: (typeof proBookings)[number]) => {
-    const isLocked = lockedProBookingIds.has(b.id);
     const serviceLocationMode = proProfile ? profileDefaultMode(proProfile) : "travel";
     return (
       <ProBookingRequestCard
@@ -3784,9 +3720,8 @@ export default function Dashboard() {
         booking={b}
         compactPending={b.status === "pending"}
         serviceLocationMode={serviceLocationMode}
-        isLocked={isLocked}
+        isLocked={false}
         statusLabel={proBookingStatusLabel(b.status)}
-        onLockedClick={showClientRequestUpgradePrompt}
         onApprove={() => handleApproveBooking(b.id)}
         onDecline={() => setDeclineBookingId(b.id)}
         onMarkComplete={() => void handleMarkBookingComplete(b.id)}
@@ -3850,23 +3785,12 @@ export default function Dashboard() {
       ) : (
         <ul className="space-y-3">
           {displayJobs.map((job) => {
-            const isLocked = lockedAvailableJobIds.has(job.id);
             return (
               <li
                 key={job.id}
-                className={`relative overflow-hidden rounded-lg border p-3 text-sm ${isLocked ? "cursor-pointer border-primary/20 bg-muted/20" : "border-border/50"}`}
-                onClick={isLocked ? showClientRequestUpgradePrompt : undefined}
-                onKeyDown={(event) => {
-                  if (!isLocked) return;
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    showClientRequestUpgradePrompt();
-                  }
-                }}
-                role={isLocked ? "button" : undefined}
-                tabIndex={isLocked ? 0 : undefined}
+                className="relative overflow-hidden rounded-lg border border-border/50 p-3 text-sm"
               >
-                <div className={isLocked ? "pointer-events-none select-none blur-sm" : ""}>
+                <div>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-foreground line-clamp-1">
@@ -4070,9 +3994,7 @@ export default function Dashboard() {
       const rawMsg = String((e as { message?: string } | null)?.message ?? "");
       toast({
         title: t.dashboard.quoteSendFailedTitle ?? "Failed to send quote",
-        description: rawMsg.includes("client_request_limit_reached")
-          ? growthErrorMessage(e, locale === "fr" ? "fr" : "en")
-          : rawMsg,
+        description: rawMsg,
         variant: "destructive",
       });
     } finally {
@@ -4403,7 +4325,8 @@ export default function Dashboard() {
           </div>
         </aside>
       )}
-      <div className="w-full max-w-4xl container mx-auto">
+      <div className="w-full max-w-[min(96vw,1600px)] container mx-auto">
+        {proProfile?.id ? <BookingCreditsPanel proProfileId={proProfile.id} /> : null}
         <h1 className="font-heading text-3xl md:text-4xl font-extrabold text-foreground dark:text-white mb-3 md:mb-4 text-center">
           {t.dashboard.title}
         </h1>
@@ -4451,14 +4374,14 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground leading-relaxed">{t.dashboard.pendingProApprovalHint}</p>
             <p className="text-xs text-muted-foreground leading-relaxed">{t.dashboard.pendingProApprovalRequiresTier}</p>
             <p className="text-xs text-muted-foreground leading-relaxed">{t.dashboard.pendingProApprovalAfterAccept}</p>
-            <LiquidButton type="button" variant="secondary" size="sm" whiteUntilHover className="w-fit" onClick={() => setProProfileEditorOpen(true)}>
+            <LiquidButton type="button" variant="secondary" size="sm" whiteUntilHover className="w-fit" onClick={() => navigate("/create-pro-account?onboarding=1")}>
               {t.joinPros.editProfile}
             </LiquidButton>
           </div>
         )}
 
         <Tabs value={shellTab} onValueChange={setDashboardTab} className="relative z-0 w-full">
-          <div className="relative z-0 mb-6 w-full max-w-4xl mx-auto px-1 sm:px-0">
+          <div className="relative z-0 mb-6 w-full max-w-[min(96vw,1600px)] mx-auto px-1 sm:px-0">
             {dashboardDockReady ? (
               <Dock items={dashboardDockItems} />
             ) : (
@@ -5520,7 +5443,7 @@ export default function Dashboard() {
                       <span className="italic">{t.dashboard.accountBusinessAddressNotSet}</span>
                     )}
                   </p>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setProProfileEditorOpen(true)}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => navigate("/create-pro-account")}>
                     {t.joinPros?.editProfile ?? "Edit Pro Profile"}
                   </Button>
                 </div>
@@ -6130,7 +6053,6 @@ export default function Dashboard() {
                   availableDayColor={proPagePrimaryColor}
                   calendarSize="large"
                   bookingEvents={proBookings.map((b) => {
-                    const isLocked = lockedProBookingIds.has(b.id);
                     const start = b.preferred_time ? String(b.preferred_time) : null;
                     const timeLabel =
                       start
@@ -6138,7 +6060,7 @@ export default function Dashboard() {
                         : b.created_at.slice(11, 16);
                     return {
                       dateStr: b.preferred_date ? String(b.preferred_date) : b.created_at.slice(0, 10),
-                      label: isLocked ? (t.dashboard.requestLockedBadge ?? "Upgrade to unlock") : (clientProfiles[b.client_id]?.full_name ?? "Client"),
+                      label: clientProfiles[b.client_id]?.full_name ?? "Client",
                       time: timeLabel,
                       status: b.status,
                       durationMinutes: b.service_duration_minutes ?? 60,
@@ -7216,7 +7138,7 @@ export default function Dashboard() {
                       />
                     </div>
                   ) : null}
-                  {((reviewProData.profile as Record<string, unknown>).personal_photo_url || (reviewProData.profile as Record<string, unknown>).id_document_url || reviewProData.photos?.length > 0) && (
+                    {((reviewProData.profile as Record<string, unknown>).personal_photo_url || (reviewProData.profile as Record<string, unknown>).id_document_url || reviewProData.photos?.length > 0 || reviewProData.livenessVideoUrl) && (
                     <div className="space-y-4">
                       <h4 className="font-semibold text-foreground">{t.dashboard.photosAndId ?? "ID, selfie & photos"}</h4>
                       <div className="flex flex-wrap gap-6">
@@ -7268,6 +7190,12 @@ export default function Dashboard() {
                             </div>
                           </div>
                         )}
+                        {reviewProData.livenessVideoUrl ? (
+                          <div className="space-y-2 rounded-lg border border-border/60 p-3">
+                            <p className="text-sm font-medium">{locale === "fr" ? "Vidéo de présence — examen manuel" : "Liveness recording — manual review"}</p>
+                            <video controls playsInline preload="metadata" src={reviewProData.livenessVideoUrl} className="max-h-72 w-full rounded-md bg-black" />
+                          </div>
+                        ) : null}
                       </div>
                       {!(reviewProData.profile as Record<string, unknown>).id_document_url && !(reviewProData.profile as Record<string, unknown>).personal_photo_url && reviewProData.photos?.length === 0 && (
                         <p className="text-muted-foreground text-sm">{t.dashboard.noIdOrSelfie ?? "No ID, selfie or photos submitted."}</p>
@@ -7900,6 +7828,7 @@ export default function Dashboard() {
                 currency="cad"
                 proProfileId={quotePaymentTarget.quote.pro_profile_id}
                 clientId={user.id}
+                jobQuoteId={quotePaymentTarget.quote.id}
                 audience="client"
                 onSuccess={() => {
                   void handleAcceptQuoteAfterPayment();
@@ -7915,14 +7844,6 @@ export default function Dashboard() {
           ) : null}
         </DialogContent>
       </Dialog>
-      <Suspense fallback={null}>
-        <ProProfileEditorDialog
-          open={proProfileEditorOpen}
-          onOpenChange={setProProfileEditorOpen}
-          allowDirectCreate
-          onSaved={() => setProProfileRefreshKey((k) => k + 1)}
-        />
-      </Suspense>
       <ProBookingRequestDetailDialog
         open={proBookingDetailId != null}
         onOpenChange={(open) => {

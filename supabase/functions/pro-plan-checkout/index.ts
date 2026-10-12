@@ -13,10 +13,11 @@ type PlanId = (typeof PLAN_IDS)[number];
 
 /** Fallback when DB catalog is empty or migration not applied (CAD cents). */
 const DEFAULT_PLAN_PRICE_CENTS: Record<PlanId, number> = {
-  starter: 2000,
-  growth: 2700,
-  pro: 3200,
+  starter: 2900,
+  growth: 3900,
+  pro: 4900,
 };
+const DEFAULT_PLAN_CREDITS: Record<PlanId, number> = { starter: 5, growth: 10, pro: 18 };
 
 function isPlanId(s: string): s is PlanId {
   return (PLAN_IDS as readonly string[]).includes(s);
@@ -131,7 +132,16 @@ Deno.serve(withCorsAllowlist(async (req) => {
       });
     }
 
-    const { data: planRows } = await admin.from("subscription_plans").select("id, price_cents").in("id", [...PLAN_IDS]);
+    const { data: planRows, error: planCatalogError } = await admin
+      .from("subscription_plans")
+      .select("id, price_cents, monthly_booking_credits")
+      .in("id", [...PLAN_IDS]);
+    if (planCatalogError) {
+      return new Response(JSON.stringify({ error: "Booking Credits catalog is not ready", details: "Apply the Booking Credits database migration before processing plan payments." }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const priceById = buildPriceMap(planRows ?? []);
     const newPrice = priceById[newPlanRaw];
 
@@ -298,6 +308,30 @@ Deno.serve(withCorsAllowlist(async (req) => {
           updated_at: nowIso,
         })
         .eq("id", proProfileId);
+    }
+
+    // Grant the paid cycle's configured credits once per successful Square payment.
+    // There is no automatic renewal charge/webhook in this project yet, so this only
+    // grants credits for a payment completed by this checkout invocation.
+    if (paymentId && chargeCents > 0) {
+      const selectedPlan = (planRows ?? []).find((row) => row.id === newPlanRaw);
+      const newAllowance = Math.max(0, Number(selectedPlan?.monthly_booking_credits ?? DEFAULT_PLAN_CREDITS[newPlanRaw]));
+      const priorPlan = hasPaidPlanRow ? (planRows ?? []).find((row) => row.id === billingPlanId) : null;
+      const oldAllowance = priorPlan ? Math.max(0, Number(priorPlan.monthly_booking_credits ?? DEFAULT_PLAN_CREDITS[billingPlanId!])) : 0;
+      const creditsToGrant = Math.max(0, newAllowance - oldAllowance);
+      if (creditsToGrant > 0) {
+        const expiry = new Date(Date.now() + (sub?.billing_cycle_days ?? 30) * 86_400_000).toISOString();
+        const { error: creditGrantError } = await admin.rpc("grant_booking_credits", {
+          p_pro_profile_id: proProfileId,
+          p_grant_type: "subscription",
+          p_amount: creditsToGrant,
+          p_source_reference: `square:${paymentId}:${newPlanRaw}`,
+          p_expires_at: expiry,
+          p_reason: `Paid ${newPlanRaw} plan checkout`,
+          p_metadata: { plan_id: newPlanRaw, square_payment_id: paymentId },
+        });
+        if (creditGrantError) throw creditGrantError;
+      }
     }
 
     return new Response(

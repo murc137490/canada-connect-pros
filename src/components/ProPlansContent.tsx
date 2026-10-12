@@ -189,13 +189,18 @@ export default function ProPlansContent({
             {displaySubtitle}
           </p>
         </div>
+        <p className="mx-auto mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
+          {locale === "fr"
+            ? "Ne payez pas pour des pistes. Les crédits de réservation servent lorsque vous réservez réellement du travail. Un crédit couvre jusqu’à 100 $ CA de valeur de service réservée."
+            : "Don't pay for leads. Booking Credits are used when you actually book work. One credit covers up to CA$100 in booked service value."}
+        </p>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto items-stretch relative z-10">
         <div className="min-h-[420px] flex">
           <TierCard
             name={plans?.starter ?? "Starter"}
-            price={plans?.priceStarter ?? "CA$20 / month"}
+            price={plans?.priceStarter ?? "CA$29 / month · 5 Booking Credits"}
             bestFor={`${plans?.bestFor ?? "Best for:"} ${plans?.bestForStarter ?? ""}`}
             features={starterFeatures}
             spotlightColor={SPOTLIGHT_STARTER}
@@ -210,7 +215,7 @@ export default function ProPlansContent({
         <div className="min-h-[420px] flex">
           <TierCard
             name={plans?.growth ?? "Growth"}
-            price={plans?.priceGrowth ?? "CA$27 / month"}
+            price={plans?.priceGrowth ?? "CA$39 / month · 10 Booking Credits"}
             bestFor={`${plans?.bestFor ?? "Best for:"} ${plans?.bestForGrowth ?? ""}`}
             features={growthFeatures}
             spotlightColor={SPOTLIGHT_GROWTH}
@@ -225,7 +230,7 @@ export default function ProPlansContent({
         <div className="min-h-[420px] flex">
           <TierCard
             name={plans?.pro ?? "Pro"}
-            price={plans?.pricePro ?? "CA$32 / month"}
+            price={plans?.pricePro ?? "CA$49 / month · 18 Booking Credits"}
             bestFor={`${plans?.bestFor ?? "Best for:"} ${plans?.bestForPro ?? ""}`}
             features={proAddOnFeatures}
             includedStatement={plans?.proIncludesGrowth}
@@ -272,15 +277,15 @@ export default function ProPlansContent({
           <div>
             <h4 className="font-semibold text-foreground mb-2">{plans?.proToolsTitle ?? "Pro Tier: Automation & Communication"}</h4>
             <p className="text-sm text-muted-foreground">
-              {plans?.proToolsDesc ?? "Pro adds unlimited leads, SMS appointment reminders and booking confirmations, an AI response assistant for messages, and automated review requests - so you spend less time on admin and more time on the job."}
+              {plans?.proToolsDesc ?? "Pro includes monthly Booking Credits, SMS appointment reminders and booking confirmations, an AI response assistant for messages, and automated review requests."}
             </p>
           </div>
 
           <div>
-            <h4 className="font-semibold text-foreground mb-2">{plans?.platformFeeTitle ?? "5% platform fee on completed transactions"}</h4>
+            <h4 className="font-semibold text-foreground mb-2">{plans?.platformFeeTitle ?? "5% booking fee now; 3.8% from January 1, 2027"}</h4>
             <p className="text-sm text-muted-foreground">
               {plans?.platformFeeDesc ??
-                "Starter, Growth, and Pro: we retain 5% of every completed transaction processed through AltShift - jobs that are marked completed and paid via the platform."}
+                "The customer fee is 5% through December 31, 2026, then 3.8% from January 1, 2027. Square deducts actual processing costs first; AltShift's share can be zero."}
             </p>
           </div>
         </div>

@@ -22,6 +22,9 @@ export interface BookingCheckoutProps {
   currency?: string;
   proProfileId: string;
   clientId: string;
+  bookingId?: string | null;
+  serviceCategorySlug?: string | null;
+  serviceSlug?: string | null;
   onPaymentComplete: (meta: BookingPaymentMeta) => Promise<{ bookingId?: string; bookingPublicCode?: string } | void>;
   onError: (message: string) => void;
   onDone: () => void;
@@ -36,6 +39,9 @@ export default function BookingCheckout({
   currency = "cad",
   proProfileId,
   clientId,
+  bookingId,
+  serviceCategorySlug,
+  serviceSlug,
   onPaymentComplete,
   onError,
   onDone,
@@ -170,6 +176,9 @@ export default function BookingCheckout({
                   currency={currency}
                   proProfileId={proProfileId}
                   clientId={clientId}
+                  bookingId={bookingId}
+                  serviceCategorySlug={serviceCategorySlug}
+                  serviceSlug={serviceSlug}
                   onSuccess={handleSquareSuccess}
                   onError={onError}
                 />

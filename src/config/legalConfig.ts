@@ -34,15 +34,8 @@ export const VERIFIED_PRO_DEFINITION = {
   fr: "AltShift vérifie certains titres de compétences le cas échéant, mais cette vérification ne constitue pas une approbation, une garantie, une certification ni une assurance quant au travail du fournisseur.",
 } as const;
 
-/** AltShift platform fee shown to customers/pros (business model). */
+/** Current customer-facing booking fee. The server schedule moves to 3.8% on 2027-01-01 UTC. */
 export const PLATFORM_FEE_RATE = 0.05;
-
-/**
- * Square Connect application fee currently applied in code (seller charges).
- * This is an implementation detail — do not present as "Square's published card rate"
- * unless verified against the live Square account.
- */
-export const SQUARE_CONNECT_APP_FEE_RATE = 0.021;
 
 /**
  * Service-resolution help (NOT a legally binding unlimited satisfaction guarantee).
@@ -70,10 +63,10 @@ export const SERVICE_RESOLUTION_HELP = {
 
 /** Document versions for acceptance logging (bump when published text changes). */
 export const LEGAL_DOCUMENT_VERSIONS = {
-  website_terms: { version: "2026-09", hash: "terms-2026-09" },
-  client_booking_terms: { version: "2026-09", hash: "client-booking-2026-09" },
-  professional_agreement: { version: "2026-09", hash: "pro-agreement-2026-09" },
-  privacy_policy: { version: "2026-09", hash: "privacy-2026-09" },
+  website_terms: { version: "2026-10", hash: "terms-2026-10-booking-credits-fee-schedule" },
+  client_booking_terms: { version: "2026-10", hash: "client-booking-2026-10-fee-schedule" },
+  professional_agreement: { version: "2026-10", hash: "pro-agreement-2026-10-credits-fee-schedule" },
+  privacy_policy: { version: "2026-10", hash: "privacy-2026-10-liveness" },
   cookie_policy: { version: "2026-08-draft", hash: "cookie-2026-08-draft" },
   cancellation_policy_framework: { version: "2026-09", hash: "cancel-framework-2026-09" },
 } as const;

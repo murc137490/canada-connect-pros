@@ -256,7 +256,7 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
       bodyEn:
         "Paid booking receipts appear here with the service amount, AltShift’s platform fee, and taxes. If you have none yet, this tab explains what will show once you pay.",
       bodyFr:
-        "Les reçus des réservations payées apparaissent ici avec le montant du service, les frais de plateforme AltShift et les taxes. S’il n’y en a pas encore, cet onglet explique ce qui s’affichera après un paiement.",
+        "Les reçus des réservations payées apparaissent ici avec le montant du service, les frais de réservation et les taxes. S’il n’y en a pas encore, cet onglet explique ce qui s’affichera après un paiement.",
     },
   ],
 };
