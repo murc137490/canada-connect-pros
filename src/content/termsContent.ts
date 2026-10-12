@@ -392,9 +392,9 @@ Other Quebec registers (manual public lookup unless an API is available): BSP pu
   {
     title: "4. Fees, subscription, and payment routing",
     body: `4.1 Subscription plans (amounts may change — always those shown at enrollment):
-Starter — CA$29/month — 5 monthly Booking Credits;
-Growth — CA$39/month — 10 monthly Booking Credits;
-Pro — CA$49/month — 18 monthly Booking Credits.
+Starter — CA$29/month — 10 monthly Booking Credits;
+Growth — CA$39/month — 17 monthly Booking Credits;
+Pro — CA$49/month — 22 monthly Booking Credits.
 Each Booking Credit covers up to CA$100 of eligible booked service value. Credits required are rounded UP to the next whole $100 increment: $100 = 1 credit, $180 = 2 credits, $450 = 5 credits, $800 = 8 credits, and $1,250 = 13 credits. The eligible amount is the Pro’s service amount before taxes, platform fees, payment-processing fees, tips, refundable deposits, and other pass-through charges. Credit availability and expiry are subject to the plan and checkout terms shown to you. This rounding rule is part of the professional agreement and is not a client-facing fee calculation.
 Billed via Square; billing renewals are only charged as presented and authorized at checkout.
 4.2 The customer booking fee is 5% of the eligible service amount through December 31, 2026, and 3.8% starting January 1, 2027. No separate fixed Square processing amount is added at checkout. Square deducts actual processing costs first; AltShift's application fee is limited to any amount remaining after estimated costs and may be zero. Actual costs can differ from estimates and may reduce the Pro's net payout.
@@ -514,9 +514,9 @@ Autres registres québécois (consultation publique manuelle sauf API disponible
   {
     title: "4. Frais, abonnement et acheminement des paiements",
     body: `4.1 Forfaits d’abonnement (les montants peuvent changer — toujours ceux affichés à l’inscription) :
-Départ — 29 $ CA/mois — 5 crédits de réservation par mois;
-Croissance — 39 $ CA/mois — 10 crédits de réservation par mois;
-Pro — 49 $ CA/mois — 18 crédits de réservation par mois.
+Départ — 29 $ CA/mois — 10 crédits de réservation par mois;
+Croissance — 39 $ CA/mois — 17 crédits de réservation par mois;
+Pro — 49 $ CA/mois — 22 crédits de réservation par mois.
 Chaque crédit couvre jusqu’à 100 $ CA de valeur de service réservée admissible. Les crédits requis sont arrondis AU SUPÉRIEUR à la tranche entière suivante de 100 $ : 100 $ = 1 crédit, 180 $ = 2 crédits, 450 $ = 5 crédits, 800 $ = 8 crédits et 1 250 $ = 13 crédits. La valeur admissible est le montant des services du Pro avant taxes, frais de plateforme, frais de traitement, pourboires, dépôts remboursables et autres montants transmis. Cette règle est une règle de l’entente professionnelle et ne constitue pas un calcul de frais facturés au Client.
 Facturation via Square; les renouvellements ne sont facturés que selon les modalités présentées et autorisées au paiement.
 4.2 Les frais de réservation sont de 5 % du montant admissible du service jusqu’au 31 décembre 2026, puis de 3,8 % à compter du 1er janvier 2027. Aucun montant fixe distinct de traitement Square n’est ajouté au paiement. Square déduit les frais réels de traitement en premier; les frais d’application d’AltShift se limitent au solde après les coûts estimés et peuvent être nuls. Les coûts réels peuvent différer des estimations et réduire le versement net au Pro.

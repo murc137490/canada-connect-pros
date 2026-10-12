@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
-import { Sparkles, ArrowRight, LocateFixed, Loader2 } from "lucide-react";
+import { Sparkles, ArrowRight, LocateFixed, Loader2, MapPin } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MOTION } from "@/motion/types";
 import { getAllServices, getCategorySummariesForAI, getFlatServiceRecords } from "@/data/services";
@@ -661,11 +661,7 @@ export default function HeroSection() {
                   <textarea
                     id="hero-need"
                     ref={textareaRef}
-                    placeholder={
-                      postalResolved
-                        ? t.index.heroProjectPlaceholder
-                        : t.index.heroNeedAfterPostal
-                    }
+                    placeholder={t.index.heroNeedAfterPostal}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => setTextareaFocused(true)}
@@ -840,6 +836,18 @@ export default function HeroSection() {
             <BookingPhoneMock alwaysLive />
           </div>
         </div>
+        <motion.div
+          className="hero-how-pill mx-auto mt-5 flex w-fit max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-white/45 bg-white/50 px-5 py-2.5 text-center text-sm font-semibold text-foreground shadow-[0_8px_32px_rgba(31,38,135,0.12)] backdrop-blur-xl transition-[box-shadow,transform,background-color] duration-300 hover:-translate-y-1 hover:bg-white/65 hover:shadow-[0_14px_40px_rgba(31,38,135,0.18)] dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+          animate={needNudge ? { x: [0, -2, 2, -1, 1, 0] } : { x: 0 }}
+          transition={{ duration: 0.42, ease: "easeInOut" }}
+          aria-label={`${t.index.heroProjectPlaceholder} ${postalResolved?.city ? `${postalResolved.city}, ${postalResolved.province ?? "QC"} · ${normalizedPostal}` : "Montréal, QC · H2Y 1C6"}`}
+        >
+          <span>{t.index.heroProjectPlaceholder}</span>
+          <span className="inline-flex items-center gap-1.5 font-medium text-muted-foreground dark:text-white/75">
+            <MapPin className="size-3.5" aria-hidden="true" />
+            {postalResolved?.city ? `${postalResolved.city}, ${postalResolved.province ?? "QC"} · ${normalizedPostal}` : "Montréal, QC · H2Y 1C6"}
+          </span>
+        </motion.div>
       </div>
     </motion.section>
   );

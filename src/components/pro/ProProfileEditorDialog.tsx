@@ -55,6 +55,7 @@ import {
 import { resolveShareSlugChoices } from "@/lib/resolveShareSlug";
 import { publicShareUrl, slugifyShareName } from "@/lib/proShareSlug";
 import AddressInput, { hasGoogleAddressAutocomplete } from "@/components/AddressInput";
+import { isQuebecAddress } from "@/lib/addressSuggestions";
 import BootLoadingScreen from "@/components/BootLoadingScreen";
 import { Loader2, Upload, X, Plus } from "lucide-react";
 import { activatePendingGrowthTrial } from "@/lib/trialCheckout";
@@ -190,16 +191,18 @@ export function ProProfileEditorDialog({
       return;
     }
     try {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error("MEDIA_DEVICES_UNAVAILABLE");
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
       livenessStreamRef.current = stream;
       if (livenessPreviewRef.current) { livenessPreviewRef.current.srcObject = stream; await livenessPreviewRef.current.play(); }
-      const mimeType = ["video/webm;codecs=vp8", "video/webm", "video/mp4"].find((type) => MediaRecorder.isTypeSupported(type));
-      if (!mimeType) throw new Error("Video recording is not supported by this browser.");
-      const recorder = new MediaRecorder(stream, { mimeType });
+      if (typeof MediaRecorder === "undefined") throw new Error("MEDIA_RECORDER_UNAVAILABLE");
+      const mimeType = ["video/webm;codecs=vp8", "video/webm", "video/mp4"].find((type) => MediaRecorder.isTypeSupported?.(type));
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const recordingType = mimeType ?? recorder.mimeType ?? "video/webm";
       const chunks: BlobPart[] = [];
       recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
       recorder.onstop = () => {
-        const video = new File([new Blob(chunks, { type: mimeType })], `liveness-${Date.now()}.${mimeType.includes("mp4") ? "mp4" : "webm"}`, { type: mimeType.split(";")[0] });
+        const video = new File([new Blob(chunks, { type: recordingType })], `liveness-${Date.now()}.${recordingType.includes("mp4") ? "mp4" : "webm"}`, { type: recordingType.split(";")[0] });
         setLivenessVideoFile(video);
         stream.getTracks().forEach((track) => track.stop());
         livenessStreamRef.current = null;
@@ -208,11 +211,21 @@ export function ProProfileEditorDialog({
       recorder.start();
       setLivenessRecording(true);
       window.setTimeout(() => { if (recorder.state === "recording") recorder.stop(); }, 8000);
-    } catch {
+    } catch (error) {
       livenessStreamRef.current?.getTracks().forEach((track) => track.stop());
       livenessStreamRef.current = null;
       setLivenessRecording(false);
-      toast({ title: locale === "fr" ? "Caméra indisponible" : "Camera unavailable", description: locale === "fr" ? "Autorisez la caméra et réessayez." : "Allow camera access and try again.", variant: "destructive" });
+      const reason = error instanceof Error ? error.message : "";
+      const description = reason === "MEDIA_DEVICES_UNAVAILABLE"
+        ? (locale === "fr" ? "Ce navigateur ne donne pas accès à la caméra. Ouvrez la page dans un navigateur compatible et sécurisé." : "This browser does not expose camera access. Open the page in a supported, secure browser.")
+        : reason === "MEDIA_RECORDER_UNAVAILABLE"
+          ? (locale === "fr" ? "L’enregistrement vidéo n’est pas pris en charge par ce navigateur." : "Video recording is not supported by this browser.")
+          : reason.includes("NotAllowed") || reason.includes("Permission")
+            ? (locale === "fr" ? "L’accès caméra est bloqué pour ce site dans les réglages du navigateur." : "Camera access is blocked for this site in your browser settings.")
+            : reason.includes("NotFound") || reason.includes("DevicesNotFound")
+              ? (locale === "fr" ? "Aucune caméra n’a été détectée sur cet appareil." : "No camera was detected on this device.")
+              : reason || (locale === "fr" ? "Vérifiez que la caméra n’est pas utilisée par une autre application, puis réessayez." : "Check that another app is not using the camera, then try again.");
+      toast({ title: locale === "fr" ? "Caméra indisponible" : "Camera unavailable", description, variant: "destructive" });
     }
   };
 
@@ -485,6 +498,10 @@ export function ProProfileEditorDialog({
         description: t.createPro.toastBusinessAddressRequired,
         variant: "destructive",
       });
+      return;
+    }
+    if (!isQuebecAddress(form.businessAddress)) {
+      toast({ title: t.createPro.toastRequired, description: locale === "fr" ? "L’adresse doit se trouver au Québec." : "The address must be in Québec.", variant: "destructive" });
       return;
     }
     if (!form.startingPrice.trim()) {

@@ -34,14 +34,26 @@ function photonLabel(props: PhotonFeature["properties"]): string {
   return parts.join(", ");
 }
 
+/** Physical addresses accepted by AltShift must resolve to Québec (postal FSAs G, H, or J). */
+export function isQuebecAddress(value: string): boolean {
+  const normalized = value.trim().toUpperCase();
+  if (!normalized) return true;
+  const postal = normalized.match(/\b([GHJ]\d[A-Z])\s?\d[A-Z]\d\b/);
+  if (postal) return true;
+  return /(?:,\s*QC\b|\bQUÉBEC\b|\bQUEBEC\b|\bQUÉ\b)/i.test(normalized);
+}
+
 async function suggestFromPhoton(query: string): Promise<AddressHit[]> {
   const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=6&lang=en&lat=46.8&lon=-71.2`;
   const res = await fetch(url);
   if (!res.ok) return [];
   const data = (await res.json()) as { features?: PhotonFeature[] };
   const features = data.features ?? [];
-  const canadian = features.filter((f) => (f.properties?.countrycode ?? "").toUpperCase() === "CA");
-  const list = (canadian.length ? canadian : features).slice(0, 5);
+  const quebec = features.filter((f) =>
+    (f.properties?.countrycode ?? "").toUpperCase() === "CA" &&
+    /^(QC|Quebec|Québec)$/i.test(f.properties?.state?.trim() ?? "")
+  );
+  const list = quebec.slice(0, 5);
   return list
     .map((f) => {
       const coords = f.geometry?.coordinates;
@@ -93,7 +105,7 @@ async function suggestFromGoogle(query: string): Promise<AddressHit[]> {
     const lat = place.location?.lat();
     const lng = place.location?.lng();
     const label = place.formattedAddress || prediction.text?.text || "";
-    if (label && typeof lat === "number" && typeof lng === "number") hits.push({ label, lat, lng });
+    if (label && isQuebecAddress(label) && typeof lat === "number" && typeof lng === "number") hits.push({ label, lat, lng });
   }
   return hits;
 }

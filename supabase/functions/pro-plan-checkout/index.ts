@@ -17,7 +17,7 @@ const DEFAULT_PLAN_PRICE_CENTS: Record<PlanId, number> = {
   growth: 3900,
   pro: 4900,
 };
-const DEFAULT_PLAN_CREDITS: Record<PlanId, number> = { starter: 5, growth: 10, pro: 18 };
+const DEFAULT_PLAN_CREDITS: Record<PlanId, number> = { starter: 10, growth: 17, pro: 22 };
 
 function isPlanId(s: string): s is PlanId {
   return (PLAN_IDS as readonly string[]).includes(s);

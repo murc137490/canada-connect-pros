@@ -199,10 +199,19 @@ export function SelfieLivenessCapture({
       }
       setStep("face");
       watch(useModel);
-    } catch {
+    } catch (error) {
       stopCamera();
       setStep("error");
-      setMessage(copy.camera);
+      const reason = error instanceof Error ? error.name : "";
+      setMessage(reason === "NotAllowedError" || reason === "PermissionDeniedError"
+        ? (locale === "fr" ? "L’accès caméra est bloqué pour ce site dans les réglages du navigateur." : "Camera access is blocked for this site in your browser settings.")
+        : reason === "NotFoundError" || reason === "DevicesNotFoundError"
+          ? (locale === "fr" ? "Aucune caméra n’a été détectée sur cet appareil." : "No camera was detected on this device.")
+          : reason === "NotReadableError" || reason === "TrackStartError"
+            ? (locale === "fr" ? "La caméra est déjà utilisée par une autre application." : "The camera is already in use by another app.")
+            : error instanceof Error && error.message
+              ? error.message
+              : copy.camera);
     }
   };
 

@@ -26,12 +26,14 @@ export function AccountSecuritySection({
   showPhone,
   onPhoneChanged,
   onEmailChanged,
+  className,
 }: {
   email: string;
   phone: string;
   showPhone: boolean;
   onPhoneChanged: (phone: string) => void;
   onEmailChanged: (email: string) => void;
+  className?: string;
 }) {
   const { t, locale } = useLanguage();
   const { toast } = useToast();
@@ -188,7 +190,7 @@ export function AccountSecuritySection({
           : copy.securitySetPin;
 
   return (
-    <div className="space-y-4 rounded-lg border border-border/80 bg-muted/20 p-4">
+    <div className={`space-y-4 rounded-lg border border-border/80 bg-muted/20 p-4 ${className ?? ""}`}>
       <div className="space-y-2 border-b border-border/70 pb-4">
         <Label>{copy.securityPinTitle}</Label>
         <p className="text-sm text-foreground">

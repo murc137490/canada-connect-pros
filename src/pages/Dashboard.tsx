@@ -167,6 +167,7 @@ import BookingClaimDialog from "@/components/BookingClaimDialog";
 import BookingInvoiceCard from "@/components/BookingInvoiceCard";
 import TimingAndDateFields from "@/components/job-request/TimingAndDateFields";
 import AddressInput, { hasGoogleAddressAutocomplete } from "@/components/AddressInput";
+import { isQuebecAddress } from "@/lib/addressSuggestions";
 import { geocodeAddress } from "@/lib/geocode";
 import { serviceModeNeedsWorkspaceAddress } from "@/lib/serviceWorkspaceLocation";
 import { TIMING_OPTIONS } from "@/data/makeRequestForm";
@@ -2266,6 +2267,11 @@ export default function Dashboard() {
           setSavingService(false);
           return;
         }
+        if (!isQuebecAddress(wsAddr)) {
+          toast({ title: t.auth?.toastError ?? "Error", description: locale === "fr" ? "L’adresse doit se trouver au Québec." : "The address must be in Québec.", variant: "destructive" });
+          setSavingService(false);
+          return;
+        }
         if (wsLat == null || wsLng == null) {
           const geo = await geocodeAddress(wsAddr);
           if (!geo) {
@@ -3573,6 +3579,11 @@ export default function Dashboard() {
       const addressSave = proProfile?.id
         ? (proProfile.business_address?.trim() || accountForm.address.trim() || null)
         : accountForm.address.trim() || null;
+      if (addressSave && !isQuebecAddress(addressSave)) {
+        toast({ title: t.auth.toastError, description: locale === "fr" ? "L’adresse doit se trouver au Québec." : "The address must be in Québec.", variant: "destructive" });
+        setAccountSaving(false);
+        return;
+      }
       if (postalNorm.length > 0) {
         const geo = await geocodePostalToLocation(postalNorm);
         if (!geo) {
@@ -4422,7 +4433,7 @@ export default function Dashboard() {
           </div>
 
           {!isAdminDashboardShell && proProfile?.is_verified && (
-            <TabsContent forceMount value="pro" className="space-y-4">
+            <TabsContent forceMount value="pro" className="mx-auto w-full max-w-[1480px] space-y-4">
               {proProfileLoading ? (
                 <BootLoadingScreen fullScreen={false} label={t.common?.loading ?? "Loading"} />
               ) : (
@@ -5427,9 +5438,9 @@ export default function Dashboard() {
             bookingStatusCode={claimBooking?.statusCode ?? null}
           />
 
-          <TabsContent forceMount value="account" className="space-y-6 2xl:grid 2xl:grid-cols-[minmax(14rem,0.72fr)_minmax(20rem,1.5fr)_minmax(17rem,1fr)] 2xl:items-start 2xl:gap-4 2xl:space-y-0">
+          <TabsContent forceMount value="account" className="mx-auto w-full max-w-[1480px] space-y-6 2xl:grid 2xl:grid-cols-12 2xl:items-start 2xl:gap-4 2xl:space-y-0">
             <div className="contents">
-              <aside className="space-y-4">
+              <aside className="space-y-4 2xl:col-start-1 2xl:col-span-3 2xl:row-span-2">
                 <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-6 text-center">
                   <ClickableProfileAvatar
                     className="h-24 w-24"
@@ -5454,8 +5465,8 @@ export default function Dashboard() {
                   />
                 </div>
               </aside>
-              <form onSubmit={saveAccount} className="grid min-w-0 grid-cols-1 gap-4 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-2 md:p-8" data-tour="account-profile">
-              <div className="space-y-2">
+              <form onSubmit={saveAccount} className="grid min-w-0 grid-cols-1 gap-4 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-2 md:p-8 2xl:col-start-4 2xl:col-span-6 2xl:row-span-2" data-tour="account-profile">
+              <div className="space-y-2 md:col-start-1 md:row-start-1">
                 <Label htmlFor="acc-name">{t.dashboard.accountName}</Label>
                 <Input id="acc-name" value={accountForm.full_name} onChange={(e) => setAccountForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Ryan Smith" />
               </div>
@@ -5470,10 +5481,11 @@ export default function Dashboard() {
                 onEmailChanged={() => {
                   void supabase.auth.refreshSession();
                 }}
+                className="md:col-start-2 md:row-start-1 md:row-span-6"
               />
               {!isAdminAccountView ? (
                 <>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-start-1 md:row-start-2">
                 <Label htmlFor="acc-postal">{t.dashboard.accountPostalCode}</Label>
                 <Input
                   id="acc-postal"
@@ -5485,7 +5497,7 @@ export default function Dashboard() {
                 />
               </div>
               {proProfile ? (
-                <div className="space-y-2 md:col-span-2">
+                <div className="space-y-2 md:col-start-1 md:row-start-3">
                   <Label>{t.createPro?.businessAddressInvoiceLabel ?? "Business address for invoices"}</Label>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap rounded-md border bg-muted/30 px-3 py-2">
                     {proProfile.business_address?.trim() || accountForm.address.trim() || (
@@ -5497,7 +5509,7 @@ export default function Dashboard() {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-2 md:col-span-2">
+                <div className="space-y-2 md:col-start-1 md:row-start-3">
                   <Label htmlFor="acc-address">{t.dashboard.accountAddress}</Label>
                   <AddressInput
                     id="acc-address"
@@ -5514,7 +5526,7 @@ export default function Dashboard() {
               )}
                 </>
               ) : null}
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-start-1 md:row-start-4">
                 <Label>{t.auth.emailLanguageLabel}</Label>
                 <div className="grid grid-cols-2 gap-2" role="group" aria-label={t.auth.emailLanguageLabel}>
                   <button
@@ -5543,7 +5555,7 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-start-1 md:row-start-5">
                 <Label htmlFor="acc-birthday">{t.dashboard.accountBirthday}</Label>
                 <Input
                   id="acc-birthday"
@@ -5556,7 +5568,7 @@ export default function Dashboard() {
                 />
               </div>
               {proProfile && !isAdminDashboardShell && (
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-start-1 md:row-start-6">
                   <Label htmlFor="acc-main-category">{t.dashboard.mainServiceCategory ?? "Main service category"}</Label>
                   <select
                     id="acc-main-category"
@@ -5573,7 +5585,7 @@ export default function Dashboard() {
                   </select>
                 </div>
               )}
-              <Button type="submit" disabled={accountSaving} className="gap-2 md:col-span-2 md:justify-self-start">
+              <Button type="submit" disabled={accountSaving} className="gap-2 md:col-start-1 md:row-start-7 md:justify-self-start">
                 {accountSaving && <Loader2 size={16} className="animate-spin" />}
                 {t.dashboard.saveAccount}
               </Button>
@@ -5581,7 +5593,7 @@ export default function Dashboard() {
             </div>
             <div className="contents">
             {!isAdminAccountView ? (
-            <div className="rounded-xl border border-destructive/30 bg-card p-6 md:p-8 w-full space-y-4 2xl:col-start-1 2xl:row-start-2">
+            <div className="rounded-xl border border-destructive/30 bg-card p-6 md:p-8 w-full space-y-4 2xl:col-start-1 2xl:col-span-6 2xl:row-start-3">
               <div className="flex items-center gap-2">
                 <Trash2 className="w-5 h-5 text-destructive" />
                 <h3 className="font-heading font-semibold text-foreground">
@@ -5698,7 +5710,7 @@ export default function Dashboard() {
             </div>
             ) : null}
             {proProfile && !isAdminDashboardShell ? (
-              <div className="rounded-xl border bg-card p-6 md:p-8 w-full space-y-4 2xl:col-start-3 2xl:row-start-1" data-tour="account-cancel-policy">
+              <div className="rounded-xl border bg-card p-6 md:p-8 w-full space-y-4 2xl:col-start-10 2xl:col-span-3 2xl:row-start-1" data-tour="account-cancel-policy">
                 <h3 className="font-heading font-semibold text-foreground">
                   {locale === "fr" ? "Politique d’annulation (clients)" : "Cancellation policy (clients)"}
                 </h3>
@@ -5793,7 +5805,7 @@ export default function Dashboard() {
               </div>
             ) : null}
             {!isAdminAccountView ? (
-            <div className="rounded-xl border bg-card p-6 md:p-8 w-full space-y-4 2xl:col-start-2 2xl:row-start-2" data-tour="account-id-verification">
+            <div className="rounded-xl border bg-card p-6 md:p-8 w-full space-y-4 2xl:col-start-7 2xl:col-span-6 2xl:row-start-3" data-tour="account-id-verification">
               <button
                 type="button"
                 onClick={() => setBookingIdVerificationOpen((open) => !open)}
@@ -5937,7 +5949,7 @@ export default function Dashboard() {
             </div>
             ) : null}
             {proProfile?.is_verified && isPaidSubscriptionPlanId(proSubscriptionPlanId) && (
-              <div className={`w-full rounded-xl p-[2px] 2xl:col-start-3 2xl:row-start-2 ${PLAN_TIER_BORDER_CLASS[currentPlanTheme]}`}>
+              <div className={`w-full rounded-xl p-[2px] 2xl:col-start-10 2xl:col-span-3 2xl:row-start-2 ${PLAN_TIER_BORDER_CLASS[currentPlanTheme]}`}>
                 <div className="rounded-[calc(0.75rem-2px)] border border-border/70 bg-card p-6 md:p-8">
                 <h3 className="font-heading font-bold mb-3 max-w-full min-w-0 text-balance break-words leading-snug current-plan-rainbow-heading">
                   {t.dashboard.myCurrentPlan}
@@ -5984,7 +5996,7 @@ export default function Dashboard() {
               </div>
             )}
             {proProfile?.is_verified && !isPaidSubscriptionPlanId(proSubscriptionPlanId) && (
-              <div className="w-full rounded-xl border border-dashed border-muted-foreground/40 bg-muted/20 p-6 md:p-8 2xl:col-start-3 2xl:row-start-2">
+              <div className="w-full rounded-xl border border-dashed border-muted-foreground/40 bg-muted/20 p-6 md:p-8 2xl:col-start-10 2xl:col-span-3 2xl:row-start-2">
                 <h3 className="font-heading font-bold mb-2 text-foreground">{t.dashboard.proTabNoPaidPlanTitle}</h3>
                 <p className="text-sm text-muted-foreground mb-4">{t.dashboard.proTabNoPaidPlanBody}</p>
                 <Button variant="default" size="sm" asChild>
@@ -6001,7 +6013,7 @@ export default function Dashboard() {
 
           {!isAdminDashboardShell ? (
           <>
-          <TabsContent forceMount value="bookings" className="space-y-4">
+          <TabsContent forceMount value="bookings" className="mx-auto w-full max-w-[1480px] space-y-4">
             {proProfile?.is_verified && proViewingMyRequests ? (
               <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">
                 <div data-tour="booking-requests" className="rounded-xl">
@@ -6722,7 +6734,7 @@ export default function Dashboard() {
             )}
           </TabsContent>
 
-          <TabsContent forceMount value="reviews" className="space-y-4">
+          <TabsContent forceMount value="reviews" className="mx-auto w-full max-w-[1480px] space-y-4">
             <div data-tour="reviews-panel">
               <DashboardReviewsPanel
                 proProfileId={showProReviewSection ? proProfile?.id ?? null : null}
@@ -6738,7 +6750,7 @@ export default function Dashboard() {
             ) : null}
           </TabsContent>
 
-          <TabsContent forceMount value="invoices" className="space-y-4">
+          <TabsContent forceMount value="invoices" className="mx-auto w-full max-w-[1480px] space-y-4">
             {(() => {
               const invoiceRows = clientBookings.filter((b) => b.status !== "declined");
               const statusLabel = (code: string) =>

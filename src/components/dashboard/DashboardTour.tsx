@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { HelpCircle, X } from "lucide-react";
@@ -250,24 +250,11 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
   const [rect, setRect] = useState<HighlightBox | null>(null);
   const [spotlightReady, setSpotlightReady] = useState(false);
   const isPhone = useIsPhone();
-  const lockY = useRef(0);
-  const locked = useRef(false);
 
   const step = steps[index];
   const fr = locale === "fr";
 
-  const applyScrollLock = useCallback((y: number) => {
-    locked.current = true;
-    lockY.current = y;
-    const { documentElement: html, body } = document;
-    html.style.overflow = "hidden";
-    body.style.overflow = "hidden";
-    body.style.touchAction = "none";
-  }, []);
-
   const clearScrollLock = useCallback(() => {
-    if (!locked.current) return;
-    locked.current = false;
     const { documentElement: html, body } = document;
     html.style.overflow = "";
     body.style.overflow = "";
@@ -317,7 +304,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
       followRaf = 0;
       if (cancelled) return;
       measureNow();
-      applyScrollLock(window.scrollY);
+      clearScrollLock();
     };
 
     raf = requestAnimationFrame(() => {
@@ -350,7 +337,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
       cancelAnimationFrame(followRaf);
       window.clearTimeout(earlyTimer);
     };
-  }, [open, index, step, isPhone, clearScrollLock, applyScrollLock]);
+  }, [open, index, step, isPhone, clearScrollLock]);
 
   useEffect(() => {
     if (!open) {
@@ -358,18 +345,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
       return;
     }
 
-    const blockScroll = (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      if (target?.closest?.("[data-tour-sheet]")) return;
-      e.preventDefault();
-    };
-
-    window.addEventListener("wheel", blockScroll, { passive: false });
-    window.addEventListener("touchmove", blockScroll, { passive: false });
-
     return () => {
-      window.removeEventListener("wheel", blockScroll);
-      window.removeEventListener("touchmove", blockScroll);
       clearScrollLock();
     };
   }, [open, clearScrollLock]);
