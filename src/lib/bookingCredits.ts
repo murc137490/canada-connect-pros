@@ -21,8 +21,8 @@ export function bookingCreditsInsufficientMessage(error: unknown, locale: string
   const required = Number(match[1]);
   const available = Number(match[2]);
   return locale === "fr"
-    ? `Cette réservation nécessite ${required} crédits de réservation. Vous en avez ${available} disponibles. Achetez des crédits ou changez de forfait pour continuer.`
-    : `This booking requires ${required} Booking Credits. You have ${available} available. Buy credits or change your plan to continue.`;
+    ? `Cette réservation nécessite ${required} crédits de réservation. Vous en avez ${available} disponibles. Changez de forfait ou communiquez avec le soutien AltShift pour continuer.`
+    : `This booking requires ${required} Booking Credits. You have ${available} available. Change your plan or contact AltShift support to continue.`;
 }
 
 export const BOOKING_CREDIT_PLAN_DEFAULTS = {
