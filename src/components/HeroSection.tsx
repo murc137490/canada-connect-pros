@@ -31,7 +31,6 @@ import HeroPostalTiltMap from "@/components/HeroPostalTiltMap";
 import TechText from "@/components/motion/TechText";
 import SpecularButton from "@/components/motion/SpecularButton";
 import { Button } from "@/components/ui/button";
-import "@/styles/hero-twitch.css";
 
 const SEARCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-suggestions`;
 
@@ -724,7 +723,7 @@ export default function HeroSection() {
                 tint="#ffffff"
                 tintOpacity={0.015}
                 textColor="transparent"
-                lineColor="#B39445"
+                lineColor="#49658A"
                 baseColor="#31594D"
                 intensity={0.85}
                 idleIntensity={0.2}
