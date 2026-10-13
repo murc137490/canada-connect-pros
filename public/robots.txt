@@ -5,7 +5,7 @@ Allow: /
 Host: https://www.altshift.ca
 Sitemap: https://www.altshift.ca/sitemap.xml
 
-# Private / account surfaces — keep out of indexing when crawled via direct URLs
+# Private / account surfaces, keep out of indexing when crawled via direct URLs
 Disallow: /dashboard
 Disallow: /admin
 Disallow: /auth

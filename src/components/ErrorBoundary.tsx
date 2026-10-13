@@ -42,7 +42,7 @@ function readPrefersDark(): boolean {
 const COPY = {
   en: {
     title: "Something went wrong",
-    body: "Please refresh the page. If it continues, visit Support — we’re here to help.",
+    body: "Please refresh the page. If it continues, visit Support, we’re here to help.",
     tryAgain: "Refresh",
     goHome: "Go home",
     getHelp: "Go to Support",
@@ -53,7 +53,7 @@ const COPY = {
   },
   fr: {
     title: "Une erreur est survenue",
-    body: "Actualisez la page. Si le problème continue, ouvrez Aide — nous sommes là.",
+    body: "Actualisez la page. Si le problème continue, ouvrez Aide, nous sommes là.",
     tryAgain: "Actualiser",
     goHome: "Accueil",
     getHelp: "Aller à l’aide",

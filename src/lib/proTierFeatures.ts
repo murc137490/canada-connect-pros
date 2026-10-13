@@ -14,7 +14,7 @@ export function normalizeProTier(raw: string | null | undefined): ProPlanId {
 }
 
 /**
- * Tier used for Growth/Pro feature gates. `null` = internal "hold" or no billable plan —
+ * Tier used for Growth/Pro feature gates. `null` = internal "hold" or no billable plan ;
  * the pro does not get paid-tier tools until they subscribe to starter, growth, or pro.
  */
 export function effectiveProTier(

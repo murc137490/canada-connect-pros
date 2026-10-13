@@ -52,7 +52,7 @@ export function parseAvailabilityToWeekly(availability: string | null | undefine
   const marked = new Set<WeekdayKey>();
 
   const range = lower.match(
-    /\b(sun|mon|tue|wed|thu|fri|sat)[a-z]*\s*[-–—]\s*(sun|mon|tue|wed|thu|fri|sat)/,
+    /\b(sun|mon|tue|wed|thu|fri|sat)[a-z]*\s*[-–;]\s*(sun|mon|tue|wed|thu|fri|sat)/,
   );
   if (range) {
     const a = jsOrder.indexOf(abbrev(range[1]));

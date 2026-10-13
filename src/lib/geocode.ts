@@ -71,7 +71,7 @@ function writeGeoCache(compact: string, loc: GeocodeLocation): void {
     }
     sessionStorage.setItem(GEO_SESSION_KEY, JSON.stringify(map));
   } catch {
-    // quota / private mode — memory cache still helps
+    // quota / private mode, memory cache still helps
   }
 }
 
@@ -196,7 +196,7 @@ async function geocodeViaEdgeOnce(address: string, timeoutMs = 10000): Promise<E
   }
 }
 
-/** Edge with short backoff — retry network/5xx once. A 404 is final. */
+/** Edge with short backoff, retry network/5xx once. A 404 is final. */
 async function geocodeViaEdge(address: string): Promise<GeocodeLocation | null> {
   const first = await geocodeViaEdgeOnce(address);
   if (first.loc || first.notFound) return first.loc;
@@ -247,7 +247,7 @@ async function geocodeViaZippopotamFsa(fsa: string): Promise<GeocodeLocation | n
   }
 }
 
-/** Accept exact LDU or formatted_address containing it — never a different 6-char postal. */
+/** Accept exact LDU or formatted_address containing it, never a different 6-char postal. */
 function googleMatchesLdu(result: GoogleResult, wanted: string): boolean {
   const got = postalFromComponents(result.address_components);
   if (got === wanted) return true;
@@ -353,7 +353,7 @@ export async function reverseGeocodeToLocation(lat: number, lng: number): Promis
     };
   }
 
-  // Client Google often fails (referrer-restricted keys) — try only as secondary.
+  // Client Google often fails (referrer-restricted keys), try only as secondary.
   if (CLIENT_KEY) {
     try {
       const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${CLIENT_KEY}`;
@@ -523,7 +523,7 @@ export async function geocodePostalToLocation(postalOrAddress: string): Promise<
     const viaClient = accept(await geocodeViaGoogleClient(trimmed));
     if (viaClient) return viaClient;
 
-    // Exact LDU missed. FSA centroid only — never replace a successful exact hit.
+    // Exact LDU missed. FSA centroid only, never replace a successful exact hit.
     if (wanted && wanted.length === 6) {
       const fsa = wanted.slice(0, 3);
       const fsaLoc =

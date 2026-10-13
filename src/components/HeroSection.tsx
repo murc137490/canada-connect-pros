@@ -28,6 +28,8 @@ import { searchProsByBusinessOrName, type ProBusinessSearchHit } from "@/lib/sea
 import { proPublicPath } from "@/lib/publicHandle";
 import BookingPhoneMock from "@/components/BookingPhoneMock";
 import HeroPostalTiltMap from "@/components/HeroPostalTiltMap";
+import TechText from "@/components/motion/TechText";
+import SpecularButton from "@/components/motion/SpecularButton";
 import { Button } from "@/components/ui/button";
 import "@/styles/hero-twitch.css";
 
@@ -149,7 +151,6 @@ export default function HeroSection() {
   const locationDetectOnceRef = useRef(false);
   const [locating, setLocating] = useState(false);
   const [browseLeaving, setBrowseLeaving] = useState(false);
-
   const goBrowseServices = useCallback(() => {
     if (browseLeaving) return;
     setBrowseLeaving(true);
@@ -311,7 +312,7 @@ export default function HeroSection() {
       const saved = getBrowsePostalLocation();
       if (!saved) {
         if (postalEditedRef.current) {
-          // User cleared — keep empty field, don't restore.
+          // User cleared, keep empty field, don't restore.
           return;
         }
         return;
@@ -599,9 +600,27 @@ export default function HeroSection() {
             <p className="font-heading text-[13px] font-extrabold tracking-[-0.01em] text-foreground">
               {t.index.heroBrand}
             </p>
-            <h1 className="hero-project-title mt-5 max-w-[14ch] sm:max-w-[16ch] text-display-xl text-foreground whitespace-pre-line">
-              {t.index.heroProjectTitle}
-            </h1>
+            <h1 className="sr-only">{t.index.heroProjectTitle.replace("\n", " ")}</h1>
+            <div className="hero-project-title mt-5 w-full max-w-[14ch] text-foreground sm:max-w-[16ch]" aria-hidden="true">
+              {t.index.heroProjectTitle.split("\n").map((line, index) => (
+                <TechText
+                  key={`${index}-${line}`}
+                  text={line}
+                  className="h-[clamp(3.5rem,8vw,7rem)] w-full"
+                  fontSize={112}
+                  fontWeight={800}
+                  color="currentColor"
+                  accentColor="#B39445"
+                  reach={145}
+                  softness={0.8}
+                  specks={0}
+                  selection={false}
+                  labels={false}
+                  draggable={false}
+                  sweep={false}
+                />
+              ))}
+            </div>
             <p className="mt-6 max-w-[28rem] text-[17px] md:text-lg text-muted-foreground leading-relaxed">
               {t.index.heroSupport}
             </p>
@@ -627,9 +646,6 @@ export default function HeroSection() {
             </div>
 
             <div className="mt-8 max-w-xl scroll-mt-28">
-              <p className="mb-2.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                {t.index.heroSearchLabel}
-              </p>
               <div className="border border-border bg-card p-3 sm:p-3.5 space-y-2.5" style={{ borderRadius: "10px" }}>
                 <label htmlFor="hero-postal" className="text-[12px] font-medium text-muted-foreground">
                   {t.index.heroPostalHint}
@@ -700,6 +716,28 @@ export default function HeroSection() {
             id="hero-search"
             onSubmit={handleSubmit}
             className="hero-how-pill relative scale-[0.95] origin-center overflow-hidden rounded-full border border-white/75 bg-white/35 px-5 py-2.5 shadow-[0_20px_70px_rgba(24,27,31,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-[30px] backdrop-saturate-150 transition-[background-color,box-shadow,transform] duration-500 hover:bg-white/45 hover:shadow-[0_24px_76px_rgba(24,27,31,0.15),inset_0_1px_0_rgba(255,255,255,0.95)] focus-within:bg-white/50 focus-within:shadow-[0_24px_76px_rgba(24,27,31,0.16),inset_0_1px_0_rgba(255,255,255,1)] dark:border-white/20 dark:bg-white/[0.08] dark:shadow-[0_20px_70px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] dark:hover:bg-white/[0.11] dark:focus-within:bg-white/[0.12]">
+            <span className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+              <SpecularButton
+                className="h-full w-full pointer-events-none"
+                aria-hidden="true"
+                tabIndex={-1}
+                size="md"
+                radius={999}
+                tint="#ffffff"
+                tintOpacity={0.015}
+                textColor="transparent"
+                lineColor="#B39445"
+                baseColor="#31594D"
+                intensity={0.85}
+                idleIntensity={0.08}
+                shineSize={8}
+                shineFade={36}
+                thickness={1.1}
+                glow={0.7}
+                followMouse
+                proximity={220}
+              />
+            </span>
             <label htmlFor="hero-need" className="sr-only">{t.index.heroProjectPlaceholder}</label>
             <input
               id="hero-need"
@@ -708,7 +746,7 @@ export default function HeroSection() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t.index.heroProjectPlaceholder}
-              className={`min-h-[4.6rem] w-full bg-transparent px-3 py-3 text-center font-semibold tracking-tight text-foreground outline-none placeholder:text-foreground/70 ${locale === "fr" ? "text-[1.45rem] sm:text-[2.2rem] md:text-[2.42rem]" : "text-[1.41rem] sm:text-[2.14rem] md:text-[2.35rem]"} sm:min-h-[5.2rem]`}
+              className={`relative z-10 min-h-[4.6rem] w-full bg-transparent px-3 py-3 text-center font-semibold tracking-tight text-foreground outline-none placeholder:text-foreground/70 ${locale === "fr" ? "text-[1.45rem] sm:text-[2.2rem] md:text-[2.42rem]" : "text-[1.41rem] sm:text-[2.14rem] md:text-[2.35rem]"} sm:min-h-[5.2rem]`}
               aria-describedby="hero-service-recommendations"
             />
             <button type="submit" className="sr-only">{locale === "fr" ? "Rechercher" : "Search"}</button>

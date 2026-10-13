@@ -102,7 +102,7 @@ export function buildDayBreakdownSegments(args: {
     const start = b.time?.trim() ? String(b.time).slice(0, 5) : "";
     const sm = parseHHMM(start);
     if (sm == null) {
-      out.push({ kind: "booking", label: b.label, start: "—", end: "—", status: b.status });
+      out.push({ kind: "booking", label: b.label, start: ";", end: ";", status: b.status });
       continue;
     }
     const dur = b.durationMinutes ?? 60;

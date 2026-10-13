@@ -14,7 +14,7 @@ type Props = {
   alwaysLive?: boolean;
 };
 
-/** Wobbling phone mock — rotating role-based perks (pros / clients / users). */
+/** Wobbling phone mock, rotating role-based perks (pros / clients / users). */
 export default function BookingPhoneMock({ className, alwaysLive = false }: Props) {
   const { t } = useLanguage();
   const rootRef = useRef<HTMLDivElement>(null);

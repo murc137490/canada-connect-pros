@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 
 /**
  * Supabase puts #error=… in the URL when email confirmation fails (bad redirect allow-list,
- * expired token, trigger error, etc.). That can land on / or any route — not only /auth.
+ * expired token, trigger error, etc.). That can land on / or any route, not only /auth.
  */
 export default function AuthHashErrorToast() {
   const { t } = useLanguage();

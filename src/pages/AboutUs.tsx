@@ -1,13 +1,28 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import GradientText from "@/components/GradientText";
 import { Button } from "@/components/ui/button";
 import { Handshake, Home, Sparkles } from "lucide-react";
+import AnimatedCounter from "@/components/AnimatedCounter";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AboutUs() {
   const { t } = useLanguage();
   const a = t.about;
+  const [memberCount, setMemberCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void supabase.functions.invoke<{ count: number }>("public-member-count")
+      .then(({ data, error }) => {
+        if (active && !error && Number.isSafeInteger(data?.count) && data.count >= 0) {
+          setMemberCount(data.count);
+        }
+      });
+    return () => { active = false; };
+  }, []);
 
   return (
     <Layout>
@@ -34,6 +49,15 @@ export default function AboutUs() {
             </p>
           </div>
         </section>
+
+        {memberCount !== null && (
+          <section className="container max-w-3xl px-4 md:px-6 pt-9" aria-label={a.memberCountTitle}>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-border/70 bg-card/70 px-5 py-4 shadow-sm backdrop-blur-sm">
+              <AnimatedCounter value={memberCount} className="text-foreground" fontSize={48} />
+              <p className="max-w-sm text-sm font-medium leading-relaxed text-muted-foreground sm:text-base">{a.memberCountTitle}</p>
+            </div>
+          </section>
+        )}
 
         <div className="container px-4 md:px-6 py-12 md:py-16 max-w-3xl space-y-14 md:space-y-16">
           <section className="space-y-3">

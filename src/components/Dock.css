@@ -96,7 +96,7 @@
   box-shadow: 0 4px 12px rgba(0, 122, 86, 0.2);
 }
 
-/* Active: inset highlight — same outer size as siblings (no ring-offset) */
+/* Active: inset highlight, same outer size as siblings (no ring-offset) */
 .dock-item.dock-item-active {
   border-color: hsl(var(--primary));
   background-color: hsl(var(--primary) / 0.14);
@@ -171,7 +171,7 @@
     min-height: 4.25rem;
   }
 
-  /* Hide hover tooltips on touch — they overflow / feel broken */
+  /* Hide hover tooltips on touch, they overflow / feel broken */
   .dock-panel-mobile .dock-label {
     display: none;
   }

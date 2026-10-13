@@ -20,7 +20,7 @@ type Props = {
   clientPhone?: string | null;
   canSeePhone?: boolean;
   statusLabel?: string;
-  /** Pros see status only — never the government ID image. */
+  /** Pros see status only, never the government ID image. */
   clientIdentityVerified?: boolean;
   /** Optional Pro-tier booking AI Q&A panel. */
   assistantSlot?: ReactNode;

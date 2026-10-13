@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-/** Client reviewing a pro — one review ever per pair (delete blocks re-submit). */
+/** Client reviewing a pro, one review ever per pair (delete blocks re-submit). */
 export async function canSubmitProReview(proProfileId: string, reviewerId: string): Promise<{ ok: true } | { ok: false; reason: "exists" | "locked" }> {
   const [{ data: existing }, { data: locked }] = await Promise.all([
     supabase.from("reviews").select("id").eq("pro_profile_id", proProfileId).eq("reviewer_id", reviewerId).maybeSingle(),
@@ -16,7 +16,7 @@ export async function canSubmitProReview(proProfileId: string, reviewerId: strin
   return { ok: true };
 }
 
-/** Pro reviewing a client — one review per pair. */
+/** Pro reviewing a client, one review per pair. */
 export async function canSubmitClientReview(
   proProfileId: string,
   clientId: string,

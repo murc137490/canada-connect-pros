@@ -46,7 +46,7 @@ async function bootstrap() {
       import("./index.css"),
     ]);
     createRoot(rootEl).render(<App />);
-    // Boot splash dismisses when auth finishes (or at 11s max) — see AuthContext + index.html.
+    // Boot splash dismisses when auth finishes (or at 11s max), see AuthContext + index.html.
   } catch {
     const copy = SAFE_USER_ERROR[readUiLocale()];
     showError(

@@ -166,8 +166,8 @@ export default function BookingRequestConfirm({
         <p className="text-xs text-white/75 mt-1">
           {t.terms.bookingPayHoldHint ??
             (locale === "fr"
-              ? "Paiement pré-autorisé maintenant — débité seulement si le pro accepte."
-              : "Card hold now — charged only if the pro accepts.")}
+              ? "Paiement pré-autorisé maintenant, débité seulement si le pro accepte."
+              : "Card hold now, charged only if the pro accepts.")}
         </p>
         {onClose ? (
           <button

@@ -18,7 +18,7 @@ export function normalizePromotionalInput(raw: string): string {
       const token = url.searchParams.get("token")?.trim();
       if (token) return token;
     } catch {
-      // not a parseable URL — use trimmed value
+      // not a parseable URL, use trimmed value
     }
   }
 

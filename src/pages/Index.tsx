@@ -5,7 +5,6 @@ import HomeHowItWorks from "@/components/home/HomeHowItWorks";
 import HomeProductShowcase from "@/components/home/HomeProductShowcase";
 import HomeTrust from "@/components/home/HomeTrust";
 import HomeProCta from "@/components/home/HomeProCta";
-import HomeMiniGuides from "@/components/home/HomeMiniGuides";
 import { useAuth } from "@/contexts/AuthContext";
 import { shouldShowJoinPros, useActiveVerifiedPro } from "@/hooks/useActiveVerifiedPro";
 
@@ -18,7 +17,6 @@ const Index = () => {
     <Layout>
       <HeroSection />
       <HomeHowItWorks />
-      <HomeMiniGuides />
       <HomeCategories />
       <HomeProductShowcase />
       <HomeTrust />

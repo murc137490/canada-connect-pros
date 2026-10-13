@@ -8,9 +8,9 @@ type BrandLogoProps = {
   withWordmark?: boolean;
   wordmarkClassName?: string;
   /**
-   * auto — follow color scheme (light page → darker S; dark page → bright/tier S)
-   * onDark — force bright S (footer)
-   * onLight — force darker S
+   * auto, follow color scheme (light page → darker S; dark page → bright/tier S)
+   * onDark, force bright S (footer)
+   * onLight, force darker S
    *
    * A is always transparent so it reads as the page background
    * (white in light mode, black in dark mode).
@@ -19,7 +19,7 @@ type BrandLogoProps = {
 };
 
 /**
- * AltShift SA monogram — see-through A, gradient S (tier colors when subscribed).
+ * AltShift SA monogram, see-through A, gradient S (tier colors when subscribed).
  */
 export default function BrandLogo({
   className = "h-8 w-8",

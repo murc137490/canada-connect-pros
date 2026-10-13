@@ -1,4 +1,4 @@
-/** In-app test PAN (π digits) — only used by the dev-only panel next to Square; never sent to Square APIs. */
+/** In-app test PAN (π digits), only used by the dev-only panel next to Square; never sent to Square APIs. */
 export const SQUARE_LOCAL_TEST_PAN_DIGITS = "314159265358979";
 export const SQUARE_LOCAL_TEST_CVV = "111";
 /** Expected expiry as MMYY after normalization (January 2027). */
@@ -31,7 +31,7 @@ export function matchesLocalSquareTestCredentials(pan: string, cvv: string, exp:
   );
 }
 
-/** Dev builds only — production bundles never show the local test panel. */
+/** Dev builds only, production bundles never show the local test panel. */
 export function showSquareLocalTestPanel(): boolean {
   return import.meta.env.DEV === true;
 }

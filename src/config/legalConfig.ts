@@ -73,7 +73,7 @@ export const LEGAL_DOCUMENT_VERSIONS = {
 
 export type LegalDocumentType = keyof typeof LEGAL_DOCUMENT_VERSIONS;
 
-/** Retention knobs (days). Do not invent legal periods — counsel must approve. */
+/** Retention knobs (days). Do not invent legal periods, counsel must approve. */
 export const RETENTION_CONFIG = {
   clientIdVerificationDays: null as number | null, // REVIEW_REQUIRED
   claimEvidenceDays: null as number | null, // REVIEW_REQUIRED

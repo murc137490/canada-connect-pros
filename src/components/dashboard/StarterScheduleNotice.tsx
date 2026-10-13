@@ -10,7 +10,7 @@ type Props = {
   ariaLabel?: string;
 };
 
-/** Custom ! — fat top tapering down to a thinner base, then a separate dot. */
+/** Custom !, fat top tapering down to a thinner base, then a separate dot. */
 function ExclamationMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 34" className={cn("overflow-visible", className)} aria-hidden>
@@ -23,7 +23,7 @@ function ExclamationMark({ className }: { className?: string }) {
   );
 }
 
-/** Small bouncing red badge — white tilted ! mostly inside the circle (~70%). */
+/** Small bouncing red badge, white tilted ! mostly inside the circle (~70%). */
 export function StarterScheduleNotice({ message, upgradeLabel, className, ariaLabel }: Props) {
   return (
     <Popover>

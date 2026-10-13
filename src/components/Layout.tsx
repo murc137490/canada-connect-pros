@@ -442,11 +442,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <span>ChatGPT</span>
                   </a>
                 </div>
-                <p className="text-[11px] leading-relaxed text-white/45">
-                  {locale === "fr"
-                    ? "Ces services externes ne peuvent pas lire votre cache de navigation ni votre compte AltShift. Ils peuvent utiliser les souvenirs disponibles dans votre propre compte IA."
-                    : "These external services cannot read your browser cache or AltShift account. They may use memories available in your own AI account."}
-                </p>
               </div>
             </div>
             <div className="space-y-3">

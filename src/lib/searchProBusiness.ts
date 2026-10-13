@@ -4,7 +4,7 @@ import { isPubliclyListablePro } from "@/lib/publicProListing";
 
 export type ProBusinessSearchHit = {
   proProfileId: string;
-  /** Public handle (username) — link with proPublicPath(). */
+  /** Public handle (username), link with proPublicPath(). */
   shareSlug: string | null;
   businessName: string;
   fullName: string | null;

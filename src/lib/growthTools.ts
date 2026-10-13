@@ -35,7 +35,7 @@ export function formatMoneyCents(cents: number | null | undefined, lang: Lang): 
 }
 
 export function formatYmd(ymd: string | null | undefined, lang: Lang): string {
-  if (!ymd) return "—";
+  if (!ymd) return ";";
   const d = new Date(`${String(ymd).slice(0, 10)}T12:00:00`);
   if (Number.isNaN(d.getTime())) return String(ymd);
   return d.toLocaleDateString(lang === "fr" ? "fr-CA" : "en-CA", { dateStyle: "medium" });

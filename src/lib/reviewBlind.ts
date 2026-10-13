@@ -37,7 +37,7 @@ export function clientHasSubmittedProReview(
   return myProReviews.some((r) => r.pro_profile_id === proProfileId);
 }
 
-/** Client viewing pro's review of them — blur until they reviewed that pro. */
+/** Client viewing pro's review of them, blur until they reviewed that pro. */
 export function shouldBlurProReviewOfClientForViewer(
   viewerId: string | undefined,
   clientIdOnReview: string,
@@ -48,7 +48,7 @@ export function shouldBlurProReviewOfClientForViewer(
   return !clientUserHasReviewedPro(proProfileId, viewerId, allMyReviewsOfPros);
 }
 
-/** Pro owner viewing a client's public review — blur until pro reviewed that client. */
+/** Pro owner viewing a client's public review, blur until pro reviewed that client. */
 export function shouldBlurClientReviewOfProForViewer(
   viewerId: string | undefined,
   proUserId: string,

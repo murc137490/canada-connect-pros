@@ -61,7 +61,7 @@ export type PlanPreviewOk = {
 export type PlanPreviewResult = PlanPreviewOk | { ok: false; error: string };
 
 /**
- * Offline quote when preview fails: treat as **first checkout** — full catalog month for `target` (no free Starter).
+ * Offline quote when preview fails: treat as **first checkout**, full catalog month for `target` (no free Starter).
  * Used if the async preview throws (should be rare).
  */
 export function assumeStarterTwentyProrationQuote(target: ProPlanId, now: Date = new Date()): PlanPreviewOk {
@@ -154,7 +154,7 @@ export async function computePlanChangePreview(proProfileId: string, newPlanRaw:
     const billingAnchorDate = sub ? new Date(sub.billing_start) : inferBillingStartWhenNoSubscriptionRow(profile.created_at ?? null);
     const breakdown = computeCycleBreakdown(billingAnchorDate, cycleDays);
 
-    /** First-ever paid plan: no billable row yet (missing row or internal `hold`) — full catalog month. */
+    /** First-ever paid plan: no billable row yet (missing row or internal `hold`), full catalog month. */
     if (!hasPaidPlanRow) {
       const returnDiscountEligible =
         profile.cancel_return_discount_pending === true && profile.cancel_return_discount_consumed_at == null;

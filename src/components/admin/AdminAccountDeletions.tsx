@@ -196,7 +196,7 @@ export default function AdminAccountDeletions() {
                           {isScheduledReady ? " (Ready)" : ""}
                         </span>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground">;</span>
                       )}
                     </td>
                     <td className="py-3 px-3 text-right">
@@ -217,7 +217,7 @@ export default function AdminAccountDeletions() {
                         </Button>
                       ) : (
                         <span className="text-xs text-muted-foreground">
-                          {isProcessed ? (locale === "fr" ? "Terminé" : "Completed") : "—"}
+                          {isProcessed ? (locale === "fr" ? "Terminé" : "Completed") : ";"}
                         </span>
                       )}
                     </td>

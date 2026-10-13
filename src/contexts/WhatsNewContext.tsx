@@ -80,22 +80,22 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
       proProfileId: verified && proId ? proId : null,
       labels: {
         clientLine: (name) =>
-          (t.dashboard.whatsNewReviewReceivedClient ?? "You received a review from {{name}} — leave yours to read it.").replace(
+          (t.dashboard.whatsNewReviewReceivedClient ?? "You received a review from {{name}}, leave yours to read it.").replace(
             "{{name}}",
             name,
           ),
         proLine: (name) =>
-          (t.dashboard.whatsNewReviewReceivedPro ?? "{{name}} left a review — review them back to see it.").replace(
+          (t.dashboard.whatsNewReviewReceivedPro ?? "{{name}} left a review, review them back to see it.").replace(
             "{{name}}",
             name,
           ),
         clientDueLine: (name) =>
-          (t.dashboard.whatsNewReviewDueClient ?? "Your booking with {{name}} is complete — leave your review.").replace(
+          (t.dashboard.whatsNewReviewDueClient ?? "Your booking with {{name}} is complete, leave your review.").replace(
             "{{name}}",
             name,
           ),
         proDueLine: (name) =>
-          (t.dashboard.whatsNewReviewDuePro ?? "Booking with {{name}} is complete — review them from your dashboard.").replace(
+          (t.dashboard.whatsNewReviewDuePro ?? "Booking with {{name}} is complete, review them from your dashboard.").replace(
             "{{name}}",
             name,
           ),

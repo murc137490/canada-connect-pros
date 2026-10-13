@@ -40,7 +40,7 @@ export default function FrontDesk() {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [confirmed, setConfirmed] = useState<Confirmed[]>([]);
   const [statusLine, setStatusLine] = useState(
-    fr ? "Prêt — autorisez le micro pour parler." : "Ready — allow the microphone to talk.",
+    fr ? "Prêt, autorisez le micro pour parler." : "Ready, allow the microphone to talk.",
   );
   const stopRef = useRef<(() => void) | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -119,7 +119,7 @@ export default function FrontDesk() {
         void runFrontDeskTool("close_session", { session_id: started.session_id }).catch(() => undefined);
       };
       setLive(true);
-      setStatusLine(fr ? "En ligne — dites « Bonjour » ou « Welcome »." : "Live — say hello or choose A / B.");
+      setStatusLine(fr ? "En ligne, dites « Bonjour » ou « Welcome »." : "Live, say hello or choose A / B.");
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (/Permission|NotAllowed|getUserMedia/i.test(msg)) {
@@ -146,7 +146,7 @@ export default function FrontDesk() {
 
   const bookDemoSlot = async (slot: Slot) => {
     if (!sessionId) return;
-    // Demo path without full OTP for UI try: mark via tools after fake auth is heavy —
+    // Demo path without full OTP for UI try: mark via tools after fake auth is heavy ;
     // instead show as “hold” visually by calling create after instructing user to use voice.
     setConfirmed((prev) => [
       ...prev,
@@ -174,8 +174,8 @@ export default function FrontDesk() {
           </h1>
           <p className="text-muted-foreground max-w-2xl">
             {fr
-              ? "Réservez à la voix. L’assistant reste en conversation pendant que le backend vérifie la disponibilité et crée la réservation. Échantillon : Les Services AltShift Inc. — aucun Google / web search."
-              : "Book by voice. Conversation stays live while the backend checks availability and saves bookings. Sample business: Les Services AltShift Inc. — no web search."}
+              ? "Réservez à la voix. L’assistant reste en conversation pendant que le backend vérifie la disponibilité et crée la réservation. Échantillon : Les Services AltShift Inc., aucun Google / web search."
+              : "Book by voice. Conversation stays live while the backend checks availability and saves bookings. Sample business: Les Services AltShift Inc., no web search."}
           </p>
           <p className="text-sm text-foreground">
             {fr ? "Téléphone support :" : "Support phone:"}{" "}
@@ -237,7 +237,7 @@ export default function FrontDesk() {
             <ul className="space-y-2 text-sm max-h-80 overflow-y-auto">
               {slots.length === 0 ? (
                 <li className="text-muted-foreground">
-                  {fr ? "Aucun créneau — déployez front-desk-tools + migration." : "No slots — deploy front-desk-tools + migration."}
+                  {fr ? "Aucun créneau, déployez front-desk-tools + migration." : "No slots, deploy front-desk-tools + migration."}
                 </li>
               ) : (
                 slots.slice(0, 24).map((s) => (
@@ -259,7 +259,7 @@ export default function FrontDesk() {
             <ul className="space-y-2 text-sm">
               {confirmed.length === 0 ? (
                 <li className="text-muted-foreground">
-                  {fr ? "Aucune pour l’instant — confirmez à la voix." : "None yet — confirm by voice."}
+                  {fr ? "Aucune pour l’instant, confirmez à la voix." : "None yet, confirm by voice."}
                 </li>
               ) : (
                 confirmed.map((c, i) => (

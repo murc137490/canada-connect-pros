@@ -51,7 +51,7 @@ export default function AuthCallback() {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         if (cancelled) return;
         if (error) {
-          // Another tab/init may have finished first — accept an existing session.
+          // Another tab/init may have finished first, accept an existing session.
           const { data: existing } = await supabase.auth.getSession();
           if (!existing.session) {
             fail(error.message);

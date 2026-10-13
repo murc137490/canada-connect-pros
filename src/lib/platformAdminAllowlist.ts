@@ -1,6 +1,6 @@
 /**
  * Client-side admin detection uses profiles.is_platform_admin (and related RPCs).
- * Seed / secret allowlists live only in edge functions (`PLATFORM_ADMIN_EMAILS`) —
+ * Seed / secret allowlists live only in edge functions (`PLATFORM_ADMIN_EMAILS`) ;
  * do not hardcode admin emails in the browser bundle.
  */
 

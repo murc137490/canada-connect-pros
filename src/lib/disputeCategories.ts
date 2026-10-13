@@ -17,7 +17,7 @@ export type DisputeCategoryOption = {
   hintKey: string;
 };
 
-/** Valid dispute reasons — only these are accepted in the report flow. */
+/** Valid dispute reasons, only these are accepted in the report flow. */
 export const VALID_DISPUTE_CATEGORIES: DisputeCategoryOption[] = [
   {
     id: "provider_never_arrived",
@@ -81,7 +81,7 @@ export const VALID_DISPUTE_CATEGORIES: DisputeCategoryOption[] = [
   },
 ];
 
-/** Shown as policy — not selectable; refunds typically denied. */
+/** Shown as policy, not selectable; refunds typically denied. */
 export const INVALID_DISPUTE_EXAMPLES = [
   "disputeInvalidSubjective",
   "disputeInvalidChangeOfMind",

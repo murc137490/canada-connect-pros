@@ -10,7 +10,7 @@ type Props = {
   requestLabel?: string;
 };
 
-/** Desktop-style browser mock — wide on PC, compact (not zoomed) on phones. */
+/** Desktop-style browser mock, wide on PC, compact (not zoomed) on phones. */
 export default function MarketplacePreview({
   className,
   variant = "hero",

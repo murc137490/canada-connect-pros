@@ -38,7 +38,7 @@ const handoffs = () => (supabase as any).from("apple_pay_handoffs");
 
 export function applePayHandoffUrl(handoffId: string): string {
   // iPhone must open a public HTTPS host with Apple Pay domain verified.
-  // Never encode localhost / preview hosts into the QR — the phone cannot pay there.
+  // Never encode localhost / preview hosts into the QR, the phone cannot pay there.
   const configured = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") || "";
   const browserHost =
     typeof window !== "undefined" ? window.location.hostname.replace(/^www\./, "").toLowerCase() : "";

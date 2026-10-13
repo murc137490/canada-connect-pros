@@ -53,26 +53,26 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 function displayVal(v: unknown): string {
-  if (v == null || v === "") return "—";
+  if (v == null || v === "") return ";";
   if (typeof v === "boolean") return v ? "Yes" : "No";
   if (typeof v === "object") return JSON.stringify(v);
   return String(v);
 }
 
 function serviceListText(services: ProProfileApprovalSnapshot["services"]): string {
-  if (!services.length) return "—";
+  if (!services.length) return ";";
   return services
     .map((s) => {
       const parts = [s.key.replace("/", " · ")];
       if (s.display_name?.trim()) parts.push(`"${s.display_name.trim()}"`);
-      if (s.description?.trim()) parts.push(`— ${s.description.trim().slice(0, 80)}`);
+      if (s.description?.trim()) parts.push(`; ${s.description.trim().slice(0, 80)}`);
       return parts.join(" ");
     })
     .join("\n");
 }
 
 function languagesText(langs: ProProfileApprovalSnapshot["languages_spoken"]): string {
-  if (!langs.length) return "—";
+  if (!langs.length) return ";";
   return langs.map((l) => `${l.code} (${l.level})`).join(", ");
 }
 

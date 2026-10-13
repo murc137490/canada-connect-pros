@@ -69,7 +69,7 @@ const SHELL_LIGHT_BASE: [number, number, number] = [236, 241, 249];
 const CARD_LIGHT_ANCHOR: [number, number, number] = [255, 255, 255];
 
 /**
- * Cohesive light-mode backgrounds — shell visibly branded; card/side panels brighter for contrast.
+ * Cohesive light-mode backgrounds, shell visibly branded; card/side panels brighter for contrast.
  */
 export function buildProPageLightTones(
   primaryHex: string,

@@ -1,4 +1,4 @@
-/** Local drafts for Make a Request — max 3 per signed-in user. */
+/** Local drafts for Make a Request, max 3 per signed-in user. */
 
 export const MAX_JOB_REQUEST_DRAFTS = 3;
 

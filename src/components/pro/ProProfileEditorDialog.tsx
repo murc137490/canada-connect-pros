@@ -1749,7 +1749,7 @@ export function ProProfileEditorDialog({
                     {rbqVerification && (
                       <p className={`text-sm ${rbqVerification.status === "verified" ? "text-green-700" : "text-amber-700"}`} role="status">
                         {rbqVerification.status === "verified"
-                          ? (locale === "fr" ? `Licence RBQ vérifiée — sous-catégories : ${rbqVerification.subcategories?.join(", ")}` : `RBQ licence verified — subcategories: ${rbqVerification.subcategories?.join(", ")}`)
+                          ? (locale === "fr" ? `Licence RBQ vérifiée, sous-catégories : ${rbqVerification.subcategories?.join(", ")}` : `RBQ licence verified, subcategories: ${rbqVerification.subcategories?.join(", ")}`)
                           : (locale === "fr" ? "Vérification RBQ à examiner. Les sous-catégories et l’admissibilité aux travaux seront examinées." : "RBQ verification needs review. Subcategories and job eligibility require review.")}
                       </p>
                     )}

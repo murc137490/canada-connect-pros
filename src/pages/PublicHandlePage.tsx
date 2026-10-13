@@ -12,7 +12,7 @@ import NotFound from "./NotFound";
 import { isUuidLike } from "@/lib/proShareSlug";
 import { isReservedHandle, normalizeHandle, USERNAME_RE, type ResolvedHandle } from "@/lib/publicHandle";
 
-/** Untyped RPC helper — resolve_public_handle is newer than the generated DB types. */
+/** Untyped RPC helper, resolve_public_handle is newer than the generated DB types. */
 async function resolveHandle(handle: string): Promise<ResolvedHandle> {
   // Keep `this` bound to the client (a detached supabase.rpc throws "reading 'rest'").
   const { data, error } = (await supabase.rpc(
@@ -68,7 +68,7 @@ function MemberCard({ handle, firstName, since }: { handle: string; firstName: s
 }
 
 /**
- * /<username> — the public link for every account.
+ * /<username>, the public link for every account.
  *  - pro      → their public pro page (same visibility rules as /pros/:id)
  *  - client   → a minimal, non-indexed card (first name + member-since year only)
  *  - old name → replaced with the owner's current /<username>

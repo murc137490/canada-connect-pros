@@ -123,7 +123,7 @@ export default function ApplePayHandoffPay() {
         const snapshot = buildBookingInvoiceSnapshotV2({
           proProfileId: draft.proProfileId,
           businessName: pro?.business_name ?? "",
-          supplierAddress: supplierAddress || "—",
+          supplierAddress: supplierAddress || ";",
           supplierGstNumber: pro?.gst_registration_number ?? null,
           supplierQstNumber: pro?.qst_registration_number ?? null,
           serviceName: draft.serviceName,
@@ -244,8 +244,8 @@ export default function ApplePayHandoffPay() {
           <p className="text-sm text-muted-foreground">
             {terms.applePayHandoffDoneHint ??
               (locale === "fr"
-                ? "Vous pouvez revenir à votre ordinateur — le paiement est terminé."
-                : "You can return to your computer — payment is complete.")}
+                ? "Vous pouvez revenir à votre ordinateur, le paiement est terminé."
+                : "You can return to your computer, payment is complete.")}
           </p>
           <Button asChild>
             <Link to="/dashboard">{t.nav?.dashboard ?? "Dashboard"}</Link>
@@ -280,7 +280,7 @@ export default function ApplePayHandoffPay() {
               {terms.applePayHandoffPayTitle ?? "Pay with Apple Pay"}
             </h1>
             <p className="text-xs text-white/80 mt-1">
-              {terms.bookingPayHoldHint ?? "Card hold now — charged only if the pro accepts."}
+              {terms.bookingPayHoldHint ?? "Card hold now, charged only if the pro accepts."}
             </p>
           </div>
           <div className="p-5 space-y-4">

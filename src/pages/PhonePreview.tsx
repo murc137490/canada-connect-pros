@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Iphone from "@/components/Iphone";
 
-/** iPhone 14 / 15 logical CSS viewport — iframe fills this entire area inside the bezel */
+/** iPhone 14 / 15 logical CSS viewport, iframe fills this entire area inside the bezel */
 const PHONE_W = 390;
 const PHONE_H = 844;
 

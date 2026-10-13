@@ -148,7 +148,7 @@ export default function SquareBookingPayment({
           "[Apple Pay] This site is production but Square application ID is sandbox. Verify Apple Pay domain in Sandbox, or switch Edge secrets to Production (SQUARE_ENVIRONMENT=production + production app/location/token).",
         );
       } else if (isProdApp) {
-        // ok — production app id on production host
+        // ok, production app id on production host
       }
     }
   }, [applicationId]);
@@ -346,7 +346,7 @@ export default function SquareBookingPayment({
         <p className="text-xs text-muted-foreground">
           {authorizeOnly
             ? (terms.checkoutAuthorizeHoldLine ??
-                "Card hold only — you are charged if the professional accepts.")
+                "Card hold only, you are charged if the professional accepts.")
             : (terms.checkoutPaymentNetworksLine ??
                 "Visa, Mastercard, Amex, Discover · Apple Pay · Google Pay")}
         </p>

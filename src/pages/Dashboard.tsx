@@ -894,7 +894,7 @@ export default function Dashboard() {
     if (!proProfile && (!force || proProfileLoading)) return;
     const segment = segmentForTab(shellTab);
     if (!segment) {
-      // Favorites / other tabs have no tour — never fall back to account
+      // Favorites / other tabs have no tour, never fall back to account
       setDashTourOpen(false);
       return;
     }
@@ -2984,7 +2984,7 @@ export default function Dashboard() {
               booking_id_verification_status:
                 p.booking_id_verification_status ??
                 (p.booking_id_verification_photo_path ? "verified" : "none"),
-              // Do not expose path to pro UI — status only (LR-007).
+              // Do not expose path to pro UI, status only (LR-007).
               booking_id_verification_photo_path: null,
             };
           },
@@ -3246,7 +3246,7 @@ export default function Dashboard() {
     if (recErr) {
       console.warn("[referrals] reconcile_my_referrals:", recErr.message);
     }
-    // Direct RLS read — avoids Edge Function 401 toast loops on iOS focus/visibility.
+    // Direct RLS read, avoids Edge Function 401 toast loops on iOS focus/visibility.
     const { data, error } = await supabase
       .from("referral_invites")
       .select("id, invitee_email, referral_code, reward_code, reward_days, status, created_at, accepted_at, claimed_at")
@@ -5086,9 +5086,9 @@ export default function Dashboard() {
                       onChange={(e) => setServiceFormCancelPolicy(e.target.value as "free" | "late_fee" | "no_cancel")}
                       className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-white mt-1"
                     >
-                      <option value="free">{locale === "fr" ? "Non — annulation gratuite" : "No — free cancellation"}</option>
+                      <option value="free">{locale === "fr" ? "Non, annulation gratuite" : "No, free cancellation"}</option>
                       <option value="late_fee">
-                        {locale === "fr" ? "Oui — frais si annulation moins de 24 h" : "Yes — fee if cancel less than 24h before"}
+                        {locale === "fr" ? "Oui, frais si annulation moins de 24 h" : "Yes, fee if cancel less than 24h before"}
                       </option>
                       <option value="no_cancel">
                         {locale === "fr" ? "Aucune annulation (frais complets)" : "No cancellation (full charge)"}
@@ -5742,17 +5742,17 @@ export default function Dashboard() {
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="free">
-                      {locale === "fr" ? "1 — Annulation gratuite" : "1 — Free cancellation"}
+                      {locale === "fr" ? "1, Annulation gratuite" : "1, Free cancellation"}
                     </option>
                     <option value="late_fee">
                       {locale === "fr"
-                        ? "2 — Frais si annulation moins de 24 h avant"
-                        : "2 — Fee if cancelled less than 24 hours before"}
+                        ? "2, Frais si annulation moins de 24 h avant"
+                        : "2, Fee if cancelled less than 24 hours before"}
                     </option>
                     <option value="no_cancel">
                       {locale === "fr"
-                        ? "3 — Aucune annulation (frais complets)"
-                        : "3 — No cancellation (full charge)"}
+                        ? "3, Aucune annulation (frais complets)"
+                        : "3, No cancellation (full charge)"}
                     </option>
                   </select>
                 </div>
@@ -6097,8 +6097,8 @@ export default function Dashboard() {
                         upgradeLabel={t.dashboard.upgradeDowngradeLink}
                         ariaLabel={
                           locale === "fr"
-                            ? "Info plan Essentiel — fenêtre de 30 jours"
-                            : "Starter plan info — 30-day window"
+                            ? "Info plan Essentiel, fenêtre de 30 jours"
+                            : "Starter plan info, 30-day window"
                         }
                       />
                     )}
@@ -6303,7 +6303,7 @@ export default function Dashboard() {
                                   </span>
                                 </div>
                                 <div className="text-xs text-muted-foreground mt-1">
-                                  {req.category} · {req.city && req.province ? `${req.city}, ${req.province}` : "—"} ·{" "}
+                                  {req.category} · {req.city && req.province ? `${req.city}, ${req.province}` : ";"} ·{" "}
                                   {new Date(req.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
                                 </div>
                               </div>
@@ -7287,7 +7287,7 @@ export default function Dashboard() {
                         )}
                         {reviewProData.livenessVideoUrl ? (
                           <div className="space-y-2 rounded-lg border border-border/60 p-3">
-                            <p className="text-sm font-medium">{locale === "fr" ? "Vidéo de présence — examen manuel" : "Liveness recording — manual review"}</p>
+                            <p className="text-sm font-medium">{locale === "fr" ? "Vidéo de présence, examen manuel" : "Liveness recording, manual review"}</p>
                             <video controls playsInline preload="metadata" src={reviewProData.livenessVideoUrl} className="max-h-72 w-full rounded-md bg-black" />
                           </div>
                         ) : null}
@@ -8015,7 +8015,7 @@ export default function Dashboard() {
           segment={dashTourSegment}
           open={dashTourOpen}
           onClose={() => {
-            // Any dismiss (Skip / X / overlay) — never auto-show again
+            // Any dismiss (Skip / X / overlay), never auto-show again
             if (user?.id && dashTourSegment) {
               suppressAutoTour(user.id, dashTourSegment);
               dashTourSessionSkip.current.add(dashTourSegment);

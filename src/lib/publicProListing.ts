@@ -8,7 +8,7 @@ const JUNK_BUSINESS_NAMES = new Set(
 /**
  * Pros that may appear in public listings / Better Match.
  * Requires verified status and excludes demo/showcase + obvious test names.
- * Does not delete data — filter only.
+ * Does not delete data, filter only.
  */
 export function isPubliclyListablePro(pro: {
   business_name?: string | null;

@@ -174,18 +174,18 @@ export function normalizeBookingInvoiceSnapshot(
       supplier_qst_display: PLACEHOLDER_TAX,
       professional_name: raw.business_name,
       pro_profile_id: raw.pro_profile_id,
-      service_description: [raw.service_name, raw.duration_label, raw.appointment_summary].filter(Boolean).join(" — "),
+      service_description: [raw.service_name, raw.duration_label, raw.appointment_summary].filter(Boolean).join(", "),
       appointment_summary: raw.appointment_summary,
       preferred_date: raw.preferred_date ?? null,
       preferred_time: raw.preferred_time ?? null,
-      customer_address: "—",
+      customer_address: ";",
       subtotal: raw.subtotal,
       gst: raw.gst,
       qst: raw.qst,
       processing_fee: raw.processing_fee,
       total_cents: raw.total_cents,
       currency: raw.currency,
-      payment_method_label: "—",
+      payment_method_label: ";",
       square_payment_id: raw.square_payment_id ?? null,
       booking_id: bookingId,
       booking_reference_code: publicCodeFromSnapshot(raw) ?? refFromRow,
@@ -215,7 +215,7 @@ export function buildServiceDescriptionDetailed(params: {
   if (params.durationLabel?.trim()) parts.push(params.durationLabel.trim());
   const about = params.serviceAbout?.trim();
   if (about) parts.push(about);
-  return parts.join(" — ");
+  return parts.join(", ");
 }
 
 export function buildBookingInvoiceSnapshotV2(params: {
@@ -287,6 +287,6 @@ export function buildBookingInvoiceSnapshotV2(params: {
     supplier_qst_number: params.supplierQstNumber?.trim() || null,
     service_description_detailed: params.serviceDescriptionDetailed.trim() || params.serviceName.trim(),
     customer_address: params.customerAddress.trim() || "Non fourni / Not provided",
-    payment_method_label: params.paymentMethodLabel.trim() || "—",
+    payment_method_label: params.paymentMethodLabel.trim() || ";",
   };
 }

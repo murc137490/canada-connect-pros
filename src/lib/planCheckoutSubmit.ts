@@ -65,7 +65,7 @@ function shouldTreat401AsSessionMessage(message: string): boolean {
 
 /**
  * Token for Edge Functions: refresh first, then fall back to stored session.
- * We intentionally do **not** require `getUser(jwt)` to succeed here — it can fail transiently
+ * We intentionally do **not** require `getUser(jwt)` to succeed here, it can fail transiently
  * or reject a token that `pro-plan-checkout` would still accept, which falsely showed "session expired".
  */
 async function getValidAccessToken(): Promise<string | null> {
@@ -146,7 +146,7 @@ export async function submitPlanCheckout(body: Record<string, unknown>): Promise
     return { data: null, error: new Error(PLAN_CHECKOUT_SESSION_ERROR) };
   }
 
-  // Prefer explicit fetch (apikey + Authorization) — matches Supabase docs and avoids invoke header edge cases.
+  // Prefer explicit fetch (apikey + Authorization), matches Supabase docs and avoids invoke header edge cases.
   const viaFetch = await invokePlanCheckoutFetch(body, accessToken);
   if (!viaFetch.error) return viaFetch;
 

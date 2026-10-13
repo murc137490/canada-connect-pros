@@ -24,9 +24,9 @@ function isGetAppQuestion(text: string): boolean {
 
 function getAppGuideReply(lang: "en" | "fr"): string {
   if (lang === "fr") {
-    return "AltShift n’est pas sur l’App Store ni le Play Store — ajoutez-la depuis le site sur l’écran d’accueil.\n\n[Android](/get-app/android) · [iPhone](/get-app/ios)";
+    return "AltShift n’est pas sur l’App Store ni le Play Store, ajoutez-la depuis le site sur l’écran d’accueil.\n\n[Android](/get-app/android) · [iPhone](/get-app/ios)";
   }
-  return "AltShift isn’t on the App Store or Play Store — add it from the website to your home screen.\n\n[Android](/get-app/android) · [iPhone](/get-app/ios)";
+  return "AltShift isn’t on the App Store or Play Store, add it from the website to your home screen.\n\n[Android](/get-app/android) · [iPhone](/get-app/ios)";
 }
 
 export async function sendSupportChatMessage(

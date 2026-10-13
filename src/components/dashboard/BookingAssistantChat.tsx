@@ -43,7 +43,7 @@ export default function BookingAssistantChat({
   const copy =
     locale === "fr"
       ? {
-          title: `Assistant — ${businessName}`,
+          title: `Assistant, ${businessName}`,
           intro: `Bonjour! Je réponds uniquement aux questions sur ${businessName}, ses services et votre rendez-vous. Posez une question (préparation, durée, ce qui est inclus, etc.).`,
           placeholder: "Ex. : Que dois-je préparer avant votre visite?",
           thinking: "Réflexion…",
@@ -52,7 +52,7 @@ export default function BookingAssistantChat({
           errorGeneric: "Erreur de l’assistant",
         }
       : {
-          title: `Assistant — ${businessName}`,
+          title: `Assistant, ${businessName}`,
           intro: `Hi! I only answer questions about ${businessName}, their services, and your appointment. Ask about prep, timing, what’s included, etc.`,
           placeholder: "e.g. What should I prepare before the visit?",
           thinking: "Thinking…",
@@ -94,7 +94,7 @@ export default function BookingAssistantChat({
               ? ` price$${s.custom_price_min ?? "?"}-${s.custom_price_max ?? "?"}`
               : "";
           const dur = s.duration_minutes != null ? ` ${s.duration_minutes}min` : "";
-          const desc = s.description ? ` — ${String(s.description).slice(0, 180)}` : "";
+          const desc = s.description ? `, ${String(s.description).slice(0, 180)}` : "";
           return `- ${name}${price}${dur}${desc}`;
         })
         .join("\n");
@@ -111,7 +111,7 @@ export default function BookingAssistantChat({
         p?.business_address ? `Workspace address: ${p.business_address}` : null,
         p?.service_radius_km != null ? `Service radius km: ${p.service_radius_km}` : null,
         p?.price_min != null || p?.price_max != null ? `Listed price range: $${p?.price_min ?? "?"}-$${p?.price_max ?? "?"}` : null,
-        svcLines ? `Services offered:\n${svcLines}` : "Services: (none listed — stick to booking summary only)",
+        svcLines ? `Services offered:\n${svcLines}` : "Services: (none listed, stick to booking summary only)",
       ]
         .filter(Boolean)
         .join("\n");

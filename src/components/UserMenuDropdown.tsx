@@ -75,7 +75,7 @@ export default function UserMenuDropdown({
       const rect = triggerRef.current!.getBoundingClientRect();
       const mobile = window.matchMedia("(max-width: 767px)").matches;
       if (mobile) {
-        // Position via CSS (centered); avoid inline transform — it kills glass open anim + blur.
+        // Position via CSS (centered); avoid inline transform, it kills glass open anim + blur.
         setPanelStyle({
           position: "fixed",
           width: undefined,

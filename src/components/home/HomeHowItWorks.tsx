@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePrefersReducedMotion } from "@/motion/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
+import ScrollFloat from "@/components/motion/ScrollFloat";
 
 /**
  * Stickify-style progress from element top vs viewport.
@@ -166,7 +167,7 @@ export default function HomeHowItWorks() {
             transform: "translate3d(0, calc(var(--how-title-y) * 1px), 0)",
           }}
         >
-          {t.index.howTitle}
+          <ScrollFloat>{t.index.howTitle}</ScrollFloat>
         </h2>
 
         <ol className="relative mt-10 md:mt-14">

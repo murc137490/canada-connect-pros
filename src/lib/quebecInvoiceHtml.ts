@@ -15,7 +15,7 @@ function money(n: number, cur: string) {
 }
 
 function formatInvoiceNumber(inv: NormalizedBookingInvoice): string {
-  if (inv.invoice_number == null) return "—";
+  if (inv.invoice_number == null) return ";";
   const y = new Date(inv.invoice_date_iso).getFullYear();
   return `PS-${y}-${String(inv.invoice_number).padStart(7, "0")}`;
 }
@@ -41,7 +41,7 @@ function formatAppointmentFr(inv: NormalizedBookingInvoice): string {
   if (inv.appointment_summary?.trim()) parts.push(inv.appointment_summary.trim());
   if (inv.preferred_date?.trim()) parts.push(`Date : ${inv.preferred_date.trim()}`);
   if (inv.preferred_time?.trim()) parts.push(`Heure : ${inv.preferred_time.trim()}`);
-  return parts.length > 0 ? parts.join(" · ") : "—";
+  return parts.length > 0 ? parts.join(" · ") : ";";
 }
 
 function formatAppointmentEn(inv: NormalizedBookingInvoice): string {
@@ -49,7 +49,7 @@ function formatAppointmentEn(inv: NormalizedBookingInvoice): string {
   if (inv.appointment_summary?.trim()) parts.push(inv.appointment_summary.trim());
   if (inv.preferred_date?.trim()) parts.push(`Date: ${inv.preferred_date.trim()}`);
   if (inv.preferred_time?.trim()) parts.push(`Time: ${inv.preferred_time.trim()}`);
-  return parts.length > 0 ? parts.join(" · ") : "—";
+  return parts.length > 0 ? parts.join(" · ") : ";";
 }
 
 export type QuebecInvoicePrintOptions = {
@@ -67,7 +67,7 @@ export function buildQuebecBilingualInvoiceHtml(
     ? inv.supplier_address.trim()
     : null;
   const invNo = formatInvoiceNumber(inv);
-  const bookingRef = inv.booking_reference_code?.trim() || "—";
+  const bookingRef = inv.booking_reference_code?.trim() || ";";
   const internalId =
     inv.booking_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(inv.booking_id)
       ? inv.booking_id
@@ -150,12 +150,12 @@ export function buildQuebecBilingualInvoiceHtml(
     </section>
   `;
 
-  return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/><link rel="icon" href="${PREMIERE_FAVICON_DATA_URI}"/><title>${esc(LEGAL_ENTITY_NAME)} — ${esc(invNo)}</title></head>
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/><link rel="icon" href="${PREMIERE_FAVICON_DATA_URI}"/><title>${esc(LEGAL_ENTITY_NAME)}, ${esc(invNo)}</title></head>
 <body style="font-family:system-ui,-apple-system,sans-serif;padding:24px;max-width:720px;margin:0 auto;color:#111;line-height:1.45;">
 ${frBlock}
 <hr style="margin:24px 0;border:none;border-top:1px solid #ccc;"/>
 ${enBlock}
-<p style="margin-top:32px;font-size:11px;color:#888;">${esc(LEGAL_ENTITY_NAME)} — plateforme de mise en relation. Ce document reprend les données fournies au moment du paiement.</p>
-<p style="margin-top:8px;font-size:11px;color:#888;">${esc(LEGAL_ENTITY_NAME)} — connection platform. This document reflects the information provided at the time of payment.</p>
+<p style="margin-top:32px;font-size:11px;color:#888;">${esc(LEGAL_ENTITY_NAME)}, plateforme de mise en relation. Ce document reprend les données fournies au moment du paiement.</p>
+<p style="margin-top:8px;font-size:11px;color:#888;">${esc(LEGAL_ENTITY_NAME)}, connection platform. This document reflects the information provided at the time of payment.</p>
 </body></html>`;
 }

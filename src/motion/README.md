@@ -1,4 +1,4 @@
-# AltShift — Motion
+# AltShift, Motion
 
 ## Hero marketplace animation
 
@@ -33,7 +33,7 @@ How to use it:
 2. Load it with `@rive-app/react-canvas` / `useRive`.
 3. Use the state machine name from the file (often `State Machine 1`) and wire mouse X/Y or the inputs exposed in the editor (e.g. head rotation / blink).
 
-That file’s machines (`Blinking`, `Head rotation`, listeners) do **not** match our hero `Marketplace` + `phase` contract — use a separate React component for it.
+That file’s machines (`Blinking`, `Head rotation`, listeners) do **not** match our hero `Marketplace` + `phase` contract, use a separate React component for it.
 
 ## Stack
 

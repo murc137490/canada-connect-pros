@@ -42,7 +42,7 @@ export default function ServiceCategoryTile({
       viewport={{ once: true, margin: "-24px" }}
       transition={{ duration: 0.4, delay: Math.min(index * 0.04, 0.28), ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        /* Phone: equal 2×2 cells — no featured span */
+        /* Phone: equal 2×2 cells, no featured span */
         "col-span-1",
         featured && "md:col-span-2"
       )}

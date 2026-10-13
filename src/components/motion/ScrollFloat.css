@@ -1,0 +1,16 @@
+.scroll-float {
+  display: inline;
+  white-space: pre-wrap;
+}
+
+.scroll-float-char {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-float-char {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

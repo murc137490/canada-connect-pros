@@ -396,7 +396,7 @@ export default function Auth() {
 
     setResetLoading(true);
     try {
-      // Resend edge function — Auth Custom SMTP is currently rejecting credentials (535).
+      // Resend edge function, Auth Custom SMTP is currently rejecting credentials (535).
       const { data, error } = await supabase.functions.invoke("request-password-reset", {
         body: {
           identifier: value,

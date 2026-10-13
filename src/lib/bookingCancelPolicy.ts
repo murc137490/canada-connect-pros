@@ -1,4 +1,4 @@
-/** Booking cancellation policy — per service (preferred) or profile fallback. */
+/** Booking cancellation policy, per service (preferred) or profile fallback. */
 
 export type BookingCancelPolicy = "free" | "late_fee" | "no_cancel";
 export type BookingCancelFeeType = "percent" | "fixed";
@@ -70,7 +70,7 @@ export function formatResolvedCancelPolicyText(
     if (policy === "no_cancel") {
       return {
         title: "Annulation : non remboursable",
-        short: "Aucune annulation — frais complets",
+        short: "Aucune annulation, frais complets",
         body: "Une fois la réservation confirmée, elle ne peut pas être annulée sans être facturée au complet (100 % du prix du service). En continuant, vous acceptez cette condition.",
       };
     }
@@ -103,7 +103,7 @@ export function formatResolvedCancelPolicyText(
   if (policy === "no_cancel") {
     return {
       title: "Cancellation: non-refundable",
-      short: "No cancellation — full charge",
+      short: "No cancellation, full charge",
       body: "Once this booking is confirmed, it cannot be cancelled without being charged in full (100% of the service price). By continuing, you accept this condition.",
     };
   }

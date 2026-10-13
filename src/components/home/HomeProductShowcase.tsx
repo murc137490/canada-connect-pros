@@ -4,17 +4,11 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import MarketplacePreview from "@/components/home/MarketplacePreview";
 import ScrollReveal from "@/components/motion/ScrollReveal";
+import ScrollFloat from "@/components/motion/ScrollFloat";
 
-/** Blue product story — content fades out/in as you scroll past. */
+/** Blue product story, content fades out/in as you scroll past. */
 export default function HomeProductShowcase() {
   const { t } = useLanguage();
-
-  const journey = [
-    t.index.journey1,
-    t.index.journey2,
-    t.index.journey3,
-    t.index.journey4,
-  ];
 
   return (
     <section className="section-pad bg-primary text-primary-foreground overflow-hidden">
@@ -22,24 +16,9 @@ export default function HomeProductShowcase() {
         <ScrollReveal className="w-full">
           <div className="grid items-center gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14 xl:gap-16">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
-                {t.index.showcaseEyebrow}
-              </p>
               <h2 className="mt-4 font-display text-display-md tracking-tight text-white whitespace-pre-line">
-                {t.index.showcaseTitle}
+                <ScrollFloat>{t.index.showcaseTitle}</ScrollFloat>
               </h2>
-              <p className="mt-4 max-w-sm text-[15px] text-white/65 leading-relaxed">
-                {t.index.showcaseSupport}
-              </p>
-
-              <ol className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-[13px] text-white/75">
-                {journey.map((label, i) => (
-                  <li key={label} className="inline-flex items-center gap-1.5">
-                    <span className="font-semibold text-white/40 tabular-nums">{i + 1}.</span>
-                    <span>{label}</span>
-                  </li>
-                ))}
-              </ol>
 
               <Button
                 size="lg"

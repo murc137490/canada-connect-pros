@@ -6,7 +6,7 @@ import {
   resolveApplePayBrowserCapable,
 } from "@/lib/applePaySdk";
 
-/** @deprecated Prefer resolveApplePayBrowserCapable — kept for call sites. */
+/** @deprecated Prefer resolveApplePayBrowserCapable, kept for call sites. */
 export function isApplePayBrowserCapable(): boolean {
   return isApplePayBrowserCapableSync();
 }

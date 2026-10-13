@@ -50,7 +50,7 @@ export default function MemberIdSettings({
           confirm: "Confirmer",
           taken: "Ce numéro de membre est déjà pris.",
           invalid: "Entrez 4 chiffres.",
-          available: "Disponible — confirmez pour l’adopter.",
+          available: "Disponible, confirmez pour l’adopter.",
           saved: "Numéro de membre mis à jour",
           pinTitle: "NIP vocal (téléphone)",
           pinSave: "Enregistrer le NIP",
@@ -86,7 +86,7 @@ export default function MemberIdSettings({
           confirm: "Confirm",
           taken: "That Member ID is taken.",
           invalid: "Enter 4 digits.",
-          available: "Available — confirm to claim it.",
+          available: "Available, confirm to claim it.",
           saved: "Member ID updated",
           pinTitle: "Voice PIN (phone)",
           pinSave: "Save PIN",
@@ -186,7 +186,7 @@ export default function MemberIdSettings({
       toast({ title: copy.linkCopied });
       window.setTimeout(() => setLinkCopied(false), 1800);
     } catch {
-      /* clipboard blocked — the link stays selectable */
+      /* clipboard blocked, the link stays selectable */
     }
   };
 
@@ -409,7 +409,7 @@ export default function MemberIdSettings({
           </p>
         ) : usernameAvail === "available" ? (
           <p className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1" aria-live="polite">
-            <Check className="size-4" /> {copy.usernameAvailable} — {publicHandleUrl(usernameDraft)}
+            <Check className="size-4" /> {copy.usernameAvailable}, {publicHandleUrl(usernameDraft)}
           </p>
         ) : usernameAvail === "taken" ? (
           <p className="text-sm text-destructive font-medium" aria-live="polite">{copy.usernameTaken}</p>

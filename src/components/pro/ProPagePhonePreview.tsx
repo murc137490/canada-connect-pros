@@ -77,7 +77,7 @@ export default function ProPagePhonePreview({
   const inkDark = bestInkOn(primaryColor || "#49658A") === "#000000";
 
   const statusBarStyle: CSSProperties = {
-    // subtle “dynamic island” pill — still reads as generic phone, not a notch row
+    // subtle “dynamic island” pill, still reads as generic phone, not a notch row
     color: "#fff",
   };
 
@@ -100,7 +100,7 @@ export default function ProPagePhonePreview({
           <div className="mx-auto mb-2 h-5 w-[28%] max-w-[7rem] rounded-full bg-black/18" aria-hidden />
         </div>
 
-        {/* Hero (text only — paint shows through) */}
+        {/* Hero (text only, paint shows through) */}
         <div className={cn("shrink-0 px-3 pb-4 pt-1 text-white", inkDark && "pro-featured-ink-dark")}>
           <div className="mb-2 text-[8px] opacity-80">← Back</div>
           <div className="flex items-center gap-2">

@@ -1,6 +1,6 @@
 import type { Service, ServiceCategory } from "./serviceTypes";
 
-/** Bilingual labels — English is the canonical service name & routing key */
+/** Bilingual labels, English is the canonical service name & routing key */
 export const BILINGUAL_SERVICES: { en: string; fr: string }[] = [
   { en: "Kitchen Remodel", fr: "Rénovation de cuisine" },
   { en: "Bathroom Remodel", fr: "Rénovation de salle de bain" },

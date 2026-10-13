@@ -15,7 +15,7 @@ export const PRIVACY_SECTIONS_EN: PrivacySection[] = [
 
 Person in charge of the protection of personal information (privacy officer):
 support@altshift.ca until a named officer is set
-(Title and contact information are published on the enterprise’s website — Act respecting the protection of personal information in the private sector, CQLR c P-39.1, s. 3.1.)`,
+(Title and contact information are published on the enterprise’s website, Act respecting the protection of personal information in the private sector, CQLR c P-39.1, s. 3.1.)`,
   },
   {
     title: "1. Scope",
@@ -25,16 +25,16 @@ Personal information means any information which relates to a natural person and
   },
   {
     title: "2. What we collect",
-    body: `Category — Examples — Typical sources
-Account — Name, email, phone, password hash, address/service area, language preference — You
-Pro profile — Trade categories, bio, rates, availability, photos you upload — You
-Government photo ID (Clients) — Image of the front of a government photo ID — You (upload)
-Government photo ID, selfie, and liveness recording (Pros) — ID image, selfie, and a short camera video with a movement prompt — You (upload/record)
-Licence / permit numbers — RBQ, BSP, MAPAQ, pesticide, professional-order, SAAQ school recognition numbers, etc. — You; public registers for verification
-Booking data — Service requested, time, location, messages, cancellation events, reviews — You / Pro / Platform
-Payment — Payment status, last-4 / tokenized references; card data handled by Square — Square / you
-Technical — IP address, device/browser data, cookies / similar tech — Automated
-Support — Tickets, chat transcripts (including with AI assistant) — You
+    body: `Category, Examples, Typical sources
+Account, Name, email, phone, password hash, address/service area, language preference, You
+Pro profile, Trade categories, bio, rates, availability, photos you upload, You
+Government photo ID (Clients), Image of the front of a government photo ID, You (upload)
+Government photo ID, selfie, and liveness recording (Pros), ID image, selfie, and a short camera video with a movement prompt, You (upload/record)
+Licence / permit numbers, RBQ, BSP, MAPAQ, pesticide, professional-order, SAAQ school recognition numbers, etc., You; public registers for verification
+Booking data, Service requested, time, location, messages, cancellation events, reviews, You / Pro / Platform
+Payment, Payment status, last-4 / tokenized references; card data handled by Square, Square / you
+Technical, IP address, device/browser data, cookies / similar tech, Automated
+Support, Tickets, chat transcripts (including with AI assistant), You
 
 We determine purposes before collection (P-39.1 s. 4) and collect only what is necessary for those purposes (s. 5).`,
   },
@@ -50,10 +50,10 @@ Improve safety and Platform integrity;
 Comply with law and respond to lawful requests;
 Send service messages; marketing only with valid consent where required.
 
-Sensitive information (including information that is biometric or otherwise intimate, or that entails a high expectation of privacy given context — P-39.1 s. 12) requires express consent for use/communication beyond permitted exceptions (ss. 12–14).`,
+Sensitive information (including information that is biometric or otherwise intimate, or that entails a high expectation of privacy given context, P-39.1 s. 12) requires express consent for use/communication beyond permitted exceptions (ss. 12–14).`,
   },
   {
-    title: "4. Government ID images (Clients) — who sees them",
+    title: "4. Government ID images (Clients), who sees them",
     body: `4.1 Who: Only Company personnel who need access for support/security, and the Pro assigned to that specific booking.
 4.2 Purpose limit: Identity confirmation and safety for that booking only.
 4.3 Pro restrictions: Pros must not download, copy, share, or retain the Client ID after the booking. Access may be logged.
@@ -100,7 +100,7 @@ information used to make a decision about a person: at least one year after the 
   },
   {
     title: "10. Security",
-    body: `We take security measures reasonable given sensitivity, purposes, quantity, distribution, and medium (P-39.1 s. 10) — access controls, encryption in transit where appropriate, logging of ID access, staff training.`,
+    body: `We take security measures reasonable given sensitivity, purposes, quantity, distribution, and medium (P-39.1 s. 10), access controls, encryption in transit where appropriate, logging of ID access, staff training.`,
   },
   {
     title: "11. Cookies and similar technologies",
@@ -123,7 +123,7 @@ We respond in writing within 30 days of a written request to the privacy officer
   },
   {
     title: "14. Confidentiality incidents (breaches)",
-    body: `If a confidentiality incident occurs (unauthorized access, use, communication, or loss — s. 3.6), we take reasonable measures to reduce risk (s. 3.5). If there is a risk of serious injury, we promptly notify the CAI and affected persons (s. 3.5). We keep an incident register (s. 3.8).
+    body: `If a confidentiality incident occurs (unauthorized access, use, communication, or loss, s. 3.6), we take reasonable measures to reduce risk (s. 3.5). If there is a risk of serious injury, we promptly notify the CAI and affected persons (s. 3.5). We keep an incident register (s. 3.8).
 Breach contact: privacy officer above, and support@altshift.ca.`,
   },
   {
@@ -155,7 +155,7 @@ export const PRIVACY_SECTIONS_FR: PrivacySection[] = [
 
 Personne responsable de la protection des renseignements personnels (responsable de la confidentialité) :
 support@altshift.ca jusqu’à la désignation d’un responsable nommé
-(Le titre et les coordonnées sont publiés sur le site Web de l’entreprise — Loi sur la protection des renseignements personnels dans le secteur privé, RLRQ c P-39.1, art. 3.1.)`,
+(Le titre et les coordonnées sont publiés sur le site Web de l’entreprise, Loi sur la protection des renseignements personnels dans le secteur privé, RLRQ c P-39.1, art. 3.1.)`,
   },
   {
     title: "1. Portée",
@@ -165,16 +165,16 @@ Les renseignements personnels s’entendent de tout renseignement qui concerne u
   },
   {
     title: "2. Ce que nous recueillons",
-    body: `Catégorie — Exemples — Sources typiques
-Compte — Nom, courriel, téléphone, empreinte de mot de passe, adresse/zone de service, préférence linguistique — Vous
-Profil Pro — Catégories de métiers, bio, tarifs, disponibilité, photos que vous téléversez — Vous
-Pièce d’identité avec photo (Clients) — Image du recto d’une pièce d’identité avec photo délivrée par le gouvernement — Vous (téléversement)
-Pièce d’identité avec photo, selfie et vidéo de présence (Pros) — Image de la pièce d’identité, selfie et courte vidéo de la caméra avec instruction de mouvement — Vous (téléversement/enregistrement)
-Numéros de licence / permis — RBQ, BSP, MAPAQ, pesticides, ordre professionnel, reconnaissance d’école SAAQ, etc. — Vous; registres publics pour vérification
-Données de réservation — Service demandé, heure, lieu, messages, événements d’annulation, évaluations — Vous / Pro / Plateforme
-Paiement — Statut de paiement, 4 derniers chiffres / références tokenisées; données de carte traitées par Square — Square / vous
-Technique — Adresse IP, données appareil/navigateur, témoins / technologies similaires — Automatisé
-Soutien — Billets, transcriptions de clavardage (y compris avec l’assistant IA) — Vous
+    body: `Catégorie, Exemples, Sources typiques
+Compte, Nom, courriel, téléphone, empreinte de mot de passe, adresse/zone de service, préférence linguistique, Vous
+Profil Pro, Catégories de métiers, bio, tarifs, disponibilité, photos que vous téléversez, Vous
+Pièce d’identité avec photo (Clients), Image du recto d’une pièce d’identité avec photo délivrée par le gouvernement, Vous (téléversement)
+Pièce d’identité avec photo, selfie et vidéo de présence (Pros), Image de la pièce d’identité, selfie et courte vidéo de la caméra avec instruction de mouvement, Vous (téléversement/enregistrement)
+Numéros de licence / permis, RBQ, BSP, MAPAQ, pesticides, ordre professionnel, reconnaissance d’école SAAQ, etc., Vous; registres publics pour vérification
+Données de réservation, Service demandé, heure, lieu, messages, événements d’annulation, évaluations, Vous / Pro / Plateforme
+Paiement, Statut de paiement, 4 derniers chiffres / références tokenisées; données de carte traitées par Square, Square / vous
+Technique, Adresse IP, données appareil/navigateur, témoins / technologies similaires, Automatisé
+Soutien, Billets, transcriptions de clavardage (y compris avec l’assistant IA), Vous
 
 Nous déterminons les finalités avant la collecte (P-39.1 art. 4) et ne recueillons que ce qui est nécessaire à ces finalités (art. 5).`,
   },
@@ -190,10 +190,10 @@ Améliorer la sécurité et l’intégrité de la Plateforme;
 Respecter la loi et répondre aux demandes légitimes;
 Envoyer des messages de service; marketing uniquement avec un consentement valide lorsque requis.
 
-Les renseignements sensibles (y compris les renseignements biométriques ou autrement intimes, ou qui entraînent une forte attente de vie privée compte tenu du contexte — P-39.1 art. 12) exigent un consentement exprès pour l’utilisation/communication au-delà des exceptions permises (arts. 12–14).`,
+Les renseignements sensibles (y compris les renseignements biométriques ou autrement intimes, ou qui entraînent une forte attente de vie privée compte tenu du contexte, P-39.1 art. 12) exigent un consentement exprès pour l’utilisation/communication au-delà des exceptions permises (arts. 12–14).`,
   },
   {
-    title: "4. Images de pièce d’identité délivrée par le gouvernement (Clients) — qui les voit",
+    title: "4. Images de pièce d’identité délivrée par le gouvernement (Clients), qui les voit",
     body: `4.1 Qui : Uniquement le personnel de la Société qui a besoin d’y accéder pour le soutien/la sécurité, et le Pro assigné à cette réservation précise.
 4.2 Limite de finalité : Confirmation d’identité et sécurité pour cette réservation seulement.
 4.3 Restrictions du Pro : Les Pros ne doivent pas télécharger, copier, partager ni conserver la pièce d’identité du Client après la réservation. L’accès peut être consigné.
@@ -240,7 +240,7 @@ renseignements utilisés pour prendre une décision concernant une personne : au
   },
   {
     title: "10. Sécurité",
-    body: `Nous prenons des mesures de sécurité raisonnables compte tenu de la sensibilité, des finalités, de la quantité, de la répartition et du support (P-39.1 art. 10) — contrôles d’accès, chiffrement en transit le cas échéant, consignation de l’accès aux pièces d’identité, formation du personnel.`,
+    body: `Nous prenons des mesures de sécurité raisonnables compte tenu de la sensibilité, des finalités, de la quantité, de la répartition et du support (P-39.1 art. 10), contrôles d’accès, chiffrement en transit le cas échéant, consignation de l’accès aux pièces d’identité, formation du personnel.`,
   },
   {
     title: "11. Témoins et technologies similaires",
@@ -263,7 +263,7 @@ Nous répondons par écrit dans un délai de 30 jours suivant une demande écrit
   },
   {
     title: "14. Incidents de confidentialité (atteintes)",
-    body: `Si un incident de confidentialité survient (accès, utilisation, communication ou perte non autorisés — art. 3.6), nous prenons des mesures raisonnables pour réduire le risque (art. 3.5). S’il y a un risque de préjudice sérieux, nous avisons sans délai la CAI et les personnes concernées (art. 3.5). Nous tenons un registre des incidents (art. 3.8).
+    body: `Si un incident de confidentialité survient (accès, utilisation, communication ou perte non autorisés, art. 3.6), nous prenons des mesures raisonnables pour réduire le risque (art. 3.5). S’il y a un risque de préjudice sérieux, nous avisons sans délai la CAI et les personnes concernées (art. 3.5). Nous tenons un registre des incidents (art. 3.8).
 Contact en cas d’atteinte : responsable de la confidentialité ci-dessus, et support@altshift.ca.`,
   },
   {

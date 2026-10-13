@@ -32,7 +32,7 @@ function readLocaleCookie(): Locale | null {
 
 function writeLocaleCookie(locale: Locale) {
   if (typeof document === "undefined") return;
-  // Preferences cookie — only persist when user allowed preferences (or has not decided yet / legacy).
+  // Preferences cookie, only persist when user allowed preferences (or has not decided yet / legacy).
   const consent = getCookieConsent();
   if (consent && !isCookieAllowed("preferences")) return;
   document.cookie = `${COOKIE_NAME}=${locale}; path=/; max-age=31536000; SameSite=Lax`;

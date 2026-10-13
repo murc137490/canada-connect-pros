@@ -166,9 +166,9 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
       titleEn: "Booking ID verification",
       titleFr: "Vérification d’identité",
       bodyEn:
-        "You may upload a government ID for booking verification. Retention details are subject to legal review — AltShift stores it securely for platform checks.",
+        "You may upload a government ID for booking verification. Retention details are subject to legal review, AltShift stores it securely for platform checks.",
       bodyFr:
-        "Vous pouvez téléverser une pièce d’identité pour la vérification. La conservation est sujette à révision juridique — AltShift la garde de façon sécurisée.",
+        "Vous pouvez téléverser une pièce d’identité pour la vérification. La conservation est sujette à révision juridique, AltShift la garde de façon sécurisée.",
     },
     {
       target: "[data-tour='available-jobs']",
@@ -213,7 +213,7 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
       target: "[data-tour='pro-portfolio']",
       titleEn: "Portfolio",
       titleFr: "Portfolio",
-      bodyEn: "Upload work photos clients see on your public profile — show your craftsmanship.",
+      bodyEn: "Upload work photos clients see on your public profile, show your craftsmanship.",
       bodyFr: "Téléversez des photos de travaux visibles sur votre profil public.",
     },
   ],

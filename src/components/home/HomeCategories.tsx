@@ -4,6 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import { serviceCategories } from "@/data/services";
 import { getCategoryName } from "@/i18n/constants";
 import { useLanguage } from "@/contexts/LanguageContext";
+import ScrollFloat from "@/components/motion/ScrollFloat";
 
 export default function HomeCategories() {
   const { t, locale } = useLanguage();
@@ -15,7 +16,7 @@ export default function HomeCategories() {
         <ScrollReveal>
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <h2 className="font-display text-display-md text-foreground max-w-[16ch]">
-              {t.index.categoriesTitle}
+              <ScrollFloat>{t.index.categoriesTitle}</ScrollFloat>
             </h2>
             <Link
               to="/services"

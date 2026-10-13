@@ -1,5 +1,5 @@
 /**
- * Draft Cookie Policy — FR/EN.
+ * Draft Cookie Policy, FR/EN.
  * (LR-004).
  */
 import { PRIVACY_CONTACT, SUPPORT_EMAIL } from "@/config/legalConfig";
@@ -19,10 +19,10 @@ Contact: ${PRIVACY_CONTACT.email} · Support: ${SUPPORT_EMAIL}`,
   },
   {
     title: "2. Categories",
-    body: `• Necessary — required for security, authentication, load balancing, and core features. These cannot be turned off while using the site.
-• Preferences — language, theme, and similar choices you make.
-• Analytics — optional measurement of site usage (disabled until you opt in).
-• Marketing — optional advertising/remarketing (disabled until you opt in; currently not actively deployed by default).`,
+    body: `• Necessary, required for security, authentication, load balancing, and core features. These cannot be turned off while using the site.
+• Preferences, language, theme, and similar choices you make.
+• Analytics, optional measurement of site usage (disabled until you opt in).
+• Marketing, optional advertising/remarketing (disabled until you opt in; currently not actively deployed by default).`,
   },
   {
     title: "3. Your choices",
@@ -45,10 +45,10 @@ Contact : ${PRIVACY_CONTACT.email} · Soutien : ${SUPPORT_EMAIL}`,
   },
   {
     title: "2. Catégories",
-    body: `• Nécessaires — sécurité, authentification et fonctions de base.
-• Préférences — langue, thème et choix similaires.
-• Analytique — mesure d’utilisation (désactivée jusqu’à consentement).
-• Marketing — publicité/remarketing facultative (désactivée par défaut; non déployée activement par défaut).`,
+    body: `• Nécessaires, sécurité, authentification et fonctions de base.
+• Préférences, langue, thème et choix similaires.
+• Analytique, mesure d’utilisation (désactivée jusqu’à consentement).
+• Marketing, publicité/remarketing facultative (désactivée par défaut; non déployée activement par défaut).`,
   },
   {
     title: "3. Vos choix",

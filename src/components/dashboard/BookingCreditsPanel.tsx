@@ -60,7 +60,7 @@ export default function BookingCreditsPanel({ proProfileId }: { proProfileId: st
         <Coins size={17} className="text-primary" aria-hidden="true" />
         <span className="text-sm font-semibold">{fr ? "Crédit" : "Credit"}</span>
         <span className="text-sm font-bold tabular-nums">
-          {summary === null ? "—" : `${summary.available}${summary.monthly ? `/${summary.monthly}` : ""}`}
+          {summary === null ? ";" : `${summary.available}${summary.monthly ? `/${summary.monthly}` : ""}`}
         </span>
         {summary ? <span className="text-xs text-muted-foreground">· {fr ? "utilisés" : "used"} {summary.usedThisMonth}</span> : null}
       </div>

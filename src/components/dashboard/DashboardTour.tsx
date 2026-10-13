@@ -187,7 +187,7 @@ function measureHighlight(el: Element, isPhone: boolean): HighlightBox {
   };
 }
 
-/** Four dim panels leave a bright hole — content inside the outline stays clear. */
+/** Four dim panels leave a bright hole, content inside the outline stays clear. */
 function SpotlightCutout({
   rect,
   onDismiss,

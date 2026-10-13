@@ -917,9 +917,9 @@ export default function MakeRequest() {
                         {t.makeRequest.budgetAllInLabel ?? "With taxes + booking fee (5% now; 3.8% from Jan. 1, 2027):"}
                       </span>{" "}
                       <span className="tabular-nums font-semibold">
-                        {budgetLive.minAllIn != null ? `$${budgetLive.minAllIn}` : "—"}
+                        {budgetLive.minAllIn != null ? `$${budgetLive.minAllIn}` : ";"}
                         {" – "}
-                        {budgetLive.maxAllIn != null ? `$${budgetLive.maxAllIn}` : "—"}
+                        {budgetLive.maxAllIn != null ? `$${budgetLive.maxAllIn}` : ";"}
                       </span>
                       <p className="text-xs text-muted-foreground mt-1">
                         {t.makeRequest.budgetAllInHint ??

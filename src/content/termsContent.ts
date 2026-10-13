@@ -26,7 +26,7 @@ Before you book, the Platform shows the price elements that apply, including amo
 You must provide accurate information, keep login credentials secure, and use the Platform lawfully.
 
 4. CANCELLATION
-Each Pro listing states a free-cancellation cutoff (for example, cancel free until 24 hours before the appointment). If you cancel after that cutoff, you remain responsible only for the Pro’s actual, reasonably proven damages (for example, materials bought specifically for your job that cannot be reused, or documented travel already incurred)—not a pre-set percentage of the job or an automatic full job price solely because you cancelled. If a booking deposit was collected, any amount beyond proven actual loss will be refunded. If the Pro cancels or fails to perform, you may be entitled to a refund and other remedies at law.
+Each Pro listing states a free-cancellation cutoff (for example, cancel free until 24 hours before the appointment). If you cancel after that cutoff, you remain responsible only for the Pro’s actual, reasonably proven damages (for example, materials bought specifically for your job that cannot be reused, or documented travel already incurred);not a pre-set percentage of the job or an automatic full job price solely because you cancelled. If a booking deposit was collected, any amount beyond proven actual loss will be refunded. If the Pro cancels or fails to perform, you may be entitled to a refund and other remedies at law.
 
 5. GOVERNMENT PHOTO ID
 For some bookings you may be asked to upload the front of a government photo ID. The image is shown only to the Pro assigned to that booking for identity confirmation. Pros must not download, copy, share, or retain it after the booking. Company retains it only as described in the Privacy Policy. Providing ID is voluntary unless necessary for the contract.
@@ -55,7 +55,7 @@ Avant de réserver, la Plateforme affiche les éléments de prix applicables, y 
 Vous devez fournir des renseignements exacts, protéger vos identifiants et utiliser la Plateforme de façon licite.
 
 4. ANNULATION
-Chaque annonce de Pro indique une échéance d’annulation gratuite (par exemple, jusqu’à 24 heures avant le rendez-vous). Si vous annulez après cette échéance, vous n’êtes responsable que des dommages réels, raisonnablement prouvés du Pro (par exemple, matériaux achetés spécifiquement pour votre travail qui ne peuvent être réutilisés, ou déplacements documentés déjà engagés)—et non un pourcentage prédéterminé ni un prix intégral automatique du seul fait que vous avez annulé. Si un dépôt a été perçu, tout montant excédant la perte réelle prouvée sera remboursé. Si le Pro annule ou n’exécute pas, vous pouvez avoir droit au remboursement et à d’autres recours en droit.
+Chaque annonce de Pro indique une échéance d’annulation gratuite (par exemple, jusqu’à 24 heures avant le rendez-vous). Si vous annulez après cette échéance, vous n’êtes responsable que des dommages réels, raisonnablement prouvés du Pro (par exemple, matériaux achetés spécifiquement pour votre travail qui ne peuvent être réutilisés, ou déplacements documentés déjà engagés);et non un pourcentage prédéterminé ni un prix intégral automatique du seul fait que vous avez annulé. Si un dépôt a été perçu, tout montant excédant la perte réelle prouvée sera remboursé. Si le Pro annule ou n’exécute pas, vous pouvez avoir droit au remboursement et à d’autres recours en droit.
 
 5. PIÈCE D’IDENTITÉ
 Pour certaines réservations, on peut vous demander de téléverser le recto d’une pièce d’identité avec photo délivrée par le gouvernement. L’image est montrée uniquement au Pro assigné pour confirmer l’identité. Les Pros ne doivent pas la télécharger, copier, partager ni conserver après la réservation. La Société la conserve uniquement comme décrit dans la Politique de confidentialité. Fournir une pièce d’identité est volontaire sauf si nécessaire au contrat.
@@ -81,13 +81,13 @@ You are an independent contractor under a contract of enterprise / for services 
 You must be 18+, legally able to contract in Québec, complete identity verification (government photo ID, selfie, and the camera-recorded liveness step where required), supply licence/permit numbers for regulated categories, and obtain Company approval before public listing. Liveness recordings are reviewed manually by authorized Company personnel and are not processed through automated face matching.
 
 3. VERIFIED CLAIMS
-Badges such as “licence checked” or “ID reviewed” mean only the limited check described on the Platform as of the stated date—not continuous monitoring, insurance confirmation, skills testing, or criminal background clearance.
+Badges such as “licence checked” or “ID reviewed” mean only the limited check described on the Platform as of the stated date;not continuous monitoring, insurance confirmation, skills testing, or criminal background clearance.
 
 4. FEES AND SUBSCRIPTION
 Subscription prices, Booking Credits, booking fees, and payment terms are shown before checkout and billed via Square. The customer booking fee is 5% of the eligible service amount through December 31, 2026, and 3.8% starting January 1, 2027. No separate fixed Square processing amount is added at checkout. AltShift's application fee is limited to the amount remaining after estimated Square processing costs and can be zero. Square deducts actual processing costs first; these can differ from estimates and may reduce the Pro's net payout. You are responsible for your own taxes. You must not steer Clients off-Platform to avoid fees for bookings that originated on the Platform, except for a documented pre-existing client relationship.
 
 5. CANCELLATION POLICIES YOU MAY OFFER
-You may offer free cancellation until a clearly stated cutoff and/or, after the cutoff, liability for your actual reasonably proven damages—not a pre-set percentage or automatic full charge. Optional fixed-dollar deposits must be precisely disclosed before booking; unused portions must be refunded.
+You may offer free cancellation until a clearly stated cutoff and/or, after the cutoff, liability for your actual reasonably proven damages;not a pre-set percentage or automatic full charge. Optional fixed-dollar deposits must be precisely disclosed before booking; unused portions must be refunded.
 
 6. CLIENT GOVERNMENT ID
 Client ID images for a booking are visible only to you as the assigned Pro, for identity confirmation at the job. You must not download, screenshot, copy, store, share, or retain the image after the booking ends (except as required by law). Breach may result in suspension and liability.
@@ -113,13 +113,13 @@ Vous êtes entrepreneur indépendant en vertu d’un contrat d’entreprise ou p
 Vous devez avoir 18 ans ou plus, être apte à contracter au Québec, compléter la vérification d’identité (pièce d’identité et selfie), fournir les numéros de licence/permis pour les catégories réglementées, et obtenir l’approbation de la Société avant l’annonce publique.
 
 3. MENTIONS « VÉRIFIÉ »
-Les badges tels que « licence vérifiée » ou « pièce d’identité examinée » signifient uniquement le contrôle limité décrit sur la Plateforme à la date indiquée—pas une surveillance continue, une confirmation d’assurance, un test de compétences ou une vérification d’antécédents.
+Les badges tels que « licence vérifiée » ou « pièce d’identité examinée » signifient uniquement le contrôle limité décrit sur la Plateforme à la date indiquée;pas une surveillance continue, une confirmation d’assurance, un test de compétences ou une vérification d’antécédents.
 
 4. FRAIS ET ABONNEMENT
 Les forfaits et frais de plateforme sont ceux affichés à l’inscription et au paiement (facturation via Square). Vous êtes responsable de vos taxes. Vous ne devez pas détourner les Clients hors Plateforme pour éviter les frais, sauf relation client préexistante documentée.
 
 5. POLITIQUES D’ANNULATION
-Vous pouvez offrir une annulation gratuite jusqu’à une échéance claire et/ou, après l’échéance, la responsabilité pour vos dommages réels raisonnablement prouvés—pas un pourcentage prédéterminé ni une facturation intégrale automatique. Les dépôts optionnels à montant fixe doivent être précisément divulgués; toute portion inutilisée doit être remboursée.
+Vous pouvez offrir une annulation gratuite jusqu’à une échéance claire et/ou, après l’échéance, la responsabilité pour vos dommages réels raisonnablement prouvés;pas un pourcentage prédéterminé ni une facturation intégrale automatique. Les dépôts optionnels à montant fixe doivent être précisément divulgués; toute portion inutilisée doit être remboursée.
 
 6. PIÈCE D’IDENTITÉ DU CLIENT
 Les images de pièce d’identité du Client sont visibles uniquement à vous en tant que Pro assigné, pour confirmer l’identité sur place. Vous ne devez pas télécharger, capturer, copier, stocker, partager ni conserver l’image après la réservation (sauf exigence légale). Une violation peut entraîner une suspension et une responsabilité.
@@ -143,13 +143,13 @@ Governing law: Province of Québec and applicable federal law of Canada.`,
   {
     title: "1. Who may use the Platform",
     body: `1.1 You must be 18+ and able to form a binding contract in Québec.
-1.2 You use the Platform for personal / household purposes as a consumer (CPA definition: natural person, except a merchant obtaining goods or services for business purposes — CQLR c P-40.1, s. 1).`,
+1.2 You use the Platform for personal / household purposes as a consumer (CPA definition: natural person, except a merchant obtaining goods or services for business purposes, CQLR c P-40.1, s. 1).`,
   },
   {
     title: "2. What the Platform does",
     body: `2.1 The Platform connects you with independent Pros for home and related services in Québec.
 2.2 Pros are not employees of Company. Company does not perform the trade work unless a separate written promise says so.
-2.3 Listings, rankings, and badges are informational. A “licence checked” or similar badge means only the limited check described on the Platform as of the stated date — not a guarantee of quality, insurance, or continuous compliance.`,
+2.3 Listings, rankings, and badges are informational. A “licence checked” or similar badge means only the limited check described on the Platform as of the stated date, not a guarantee of quality, insurance, or continuous compliance.`,
   },
   {
     title: "3. Account and accuracy",
@@ -165,7 +165,7 @@ Governing law: Province of Québec and applicable federal law of Canada.`,
   {
     title: "5. Distance contracts (online bookings)",
     body: `5.1 Bookings made online without you and the merchant being in one another’s presence may be distance contracts under CPA Division I.1 (ss. 54.1 and following).
-5.2 Before you enter a distance contract, the merchant must disclose required information (identity, description, prices, cancellation/refund conditions, etc. — CPA s. 54.4). You must have an express chance to accept or decline and to correct errors (s. 54.5). You should receive a copy of the contract in a retainable form (ss. 54.6–54.7).
+5.2 Before you enter a distance contract, the merchant must disclose required information (identity, description, prices, cancellation/refund conditions, etc., CPA s. 54.4). You must have an express chance to accept or decline and to correct errors (s. 54.5). You should receive a copy of the contract in a retainable form (ss. 54.6–54.7).
 5.3 Cancellation rights for certain disclosure failures are set out in CPA ss. 54.8–54.13.`,
   },
   {
@@ -180,7 +180,7 @@ Governing law: Province of Québec and applicable federal law of Canada.`,
     body: `7.1 For some bookings, you may be asked to upload the front of a government photo ID.
 7.2 Purpose: help the assigned Pro confirm identity and improve safety for in-home services.
 7.3 Visibility: the ID image is shown only to the Pro assigned to that booking. Pros are contractually forbidden from downloading or retaining it after the booking. Company retains it only as described in the Privacy Policy.
-7.4 Providing ID is voluntary unless necessary for the contract; if you refuse necessary information, Company or the Pro may decline the booking (private-sector privacy Act s. 9 — necessity in case of doubt is presumed non-necessary).
+7.4 Providing ID is voluntary unless necessary for the contract; if you refuse necessary information, Company or the Pro may decline the booking (private-sector privacy Act s. 9, necessity in case of doubt is presumed non-necessary).
 7.5 Details: Privacy Policy.`,
   },
   {
@@ -251,13 +251,13 @@ Droit applicable : Province de Québec et droit fédéral canadien applicable.`,
   {
     title: "1. Qui peut utiliser la Plateforme",
     body: `1.1 Vous devez avoir 18 ans ou plus et être apte à former un contrat liant au Québec.
-1.2 Vous utilisez la Plateforme à des fins personnelles / domestiques à titre de consommateur (définition LPC : personne physique, sauf le commerçant qui se procure un bien ou un service pour les fins de son commerce — RLRQ c P-40.1, art. 1).`,
+1.2 Vous utilisez la Plateforme à des fins personnelles / domestiques à titre de consommateur (définition LPC : personne physique, sauf le commerçant qui se procure un bien ou un service pour les fins de son commerce, RLRQ c P-40.1, art. 1).`,
   },
   {
     title: "2. Ce que fait la Plateforme",
     body: `2.1 La Plateforme vous met en relation avec des Pros indépendants pour des services à domicile et connexes au Québec.
 2.2 Les Pros ne sont pas des salariés de la Société. La Société n’exécute pas le travail de métier sauf promesse écrite distincte.
-2.3 Les annonces, classements et badges sont informatifs. Un badge « licence vérifiée » ou similaire signifie uniquement le contrôle limité décrit sur la Plateforme à la date indiquée — et non une garantie de qualité, d’assurance ou de conformité continue.`,
+2.3 Les annonces, classements et badges sont informatifs. Un badge « licence vérifiée » ou similaire signifie uniquement le contrôle limité décrit sur la Plateforme à la date indiquée, et non une garantie de qualité, d’assurance ou de conformité continue.`,
   },
   {
     title: "3. Compte et exactitude",
@@ -273,7 +273,7 @@ Droit applicable : Province de Québec et droit fédéral canadien applicable.`,
   {
     title: "5. Contrats à distance (réservations en ligne)",
     body: `5.1 Les réservations effectuées en ligne sans que vous et le commerçant ne soyez en présence l’un de l’autre peuvent être des contrats à distance au sens de la section I.1 de la LPC (arts. 54.1 et suivants).
-5.2 Avant de conclure un contrat à distance, le commerçant doit divulguer les renseignements requis (identité, description, prix, conditions d’annulation/remboursement, etc. — LPC art. 54.4). Vous devez avoir une possibilité expresse d’accepter ou de refuser et de corriger les erreurs (art. 54.5). Vous devriez recevoir une copie du contrat sous une forme conservable (arts. 54.6–54.7).
+5.2 Avant de conclure un contrat à distance, le commerçant doit divulguer les renseignements requis (identité, description, prix, conditions d’annulation/remboursement, etc., LPC art. 54.4). Vous devez avoir une possibilité expresse d’accepter ou de refuser et de corriger les erreurs (art. 54.5). Vous devriez recevoir une copie du contrat sous une forme conservable (arts. 54.6–54.7).
 5.3 Les droits d’annulation en cas de certains manquements à la divulgation sont prévus aux arts. 54.8–54.13 de la LPC.`,
   },
   {
@@ -288,7 +288,7 @@ Droit applicable : Province de Québec et droit fédéral canadien applicable.`,
     body: `7.1 Pour certaines réservations, on peut vous demander de téléverser le recto d’une pièce d’identité avec photo délivrée par le gouvernement.
 7.2 Finalité : aider le Pro assigné à confirmer l’identité et améliorer la sécurité des services à domicile.
 7.3 Visibilité : l’image de la pièce d’identité est montrée uniquement au Pro assigné à cette réservation. Les Pros sont contractuellement interdits de la télécharger ou de la conserver après la réservation. La Société la conserve uniquement comme décrit dans la Politique de confidentialité.
-7.4 Fournir une pièce d’identité est volontaire sauf si nécessaire au contrat; si vous refusez des renseignements nécessaires, la Société ou le Pro peut refuser la réservation (Loi sur la protection des renseignements personnels dans le secteur privé art. 9 — en cas de doute, la nécessité est présumée non établie).
+7.4 Fournir une pièce d’identité est volontaire sauf si nécessaire au contrat; si vous refusez des renseignements nécessaires, la Société ou le Pro peut refuser la réservation (Loi sur la protection des renseignements personnels dans le secteur privé art. 9, en cas de doute, la nécessité est présumée non établie).
 7.5 Détails : Politique de confidentialité.`,
   },
   {
@@ -391,10 +391,10 @@ Other Quebec registers (manual public lookup unless an API is available): BSP pu
   },
   {
     title: "4. Fees, subscription, and payment routing",
-    body: `4.1 Subscription plans (amounts may change — always those shown at enrollment):
-Starter — CA$29/month — 10 monthly Booking Credits;
-Growth — CA$39/month — 17 monthly Booking Credits;
-Pro — CA$49/month — 22 monthly Booking Credits.
+    body: `4.1 Subscription plans (amounts may change, always those shown at enrollment):
+Starter, CA$29/month, 10 monthly Booking Credits;
+Growth, CA$39/month, 17 monthly Booking Credits;
+Pro, CA$49/month, 22 monthly Booking Credits.
 Each Booking Credit covers up to CA$100 of eligible booked service value. Credits required are rounded UP to the next whole $100 increment: $100 = 1 credit, $180 = 2 credits, $450 = 5 credits, $800 = 8 credits, and $1,250 = 13 credits. The eligible amount is the Pro’s service amount before taxes, platform fees, payment-processing fees, tips, refundable deposits, and other pass-through charges. Credit availability and expiry are subject to the plan and checkout terms shown to you. This rounding rule is part of the professional agreement and is not a client-facing fee calculation.
 Billed via Square; billing renewals are only charged as presented and authorized at checkout.
 4.2 The customer booking fee is 5% of the eligible service amount through December 31, 2026, and 3.8% starting January 1, 2027. No separate fixed Square processing amount is added at checkout. Square deducts actual processing costs first; AltShift's application fee is limited to any amount remaining after estimated costs and may be zero. Actual costs can differ from estimates and may reduce the Pro's net payout.
@@ -413,8 +413,8 @@ Pre-existing client (provable definition): a Client with whom you can document a
     title: "6. Cancellation policies you may offer Clients",
     body: `6.1 Pros may offer Clients only the following cancellation shapes (exact wording shown to the Client at booking):
 Free cancellation until a clearly stated cutoff (for example, 24 or 48 hours before the appointment); and/or
-After the cutoff: the Client may still cancel, but may be liable for the Pro’s actual damages reasonably proven (for example, non-refundable materials already purchased for that job, documented travel already incurred, or a proven lost booking that could not be refilled) — not a pre-set percentage of the job price and not an automatic “full charge.”
-6.2 Optional booking deposit: a fixed dollar amount precisely disclosed before booking (CPA s. 12 — no costs unless precisely indicated). The deposit may be applied against proven actual loss; any unused portion must be refunded within a reasonable time.
+After the cutoff: the Client may still cancel, but may be liable for the Pro’s actual damages reasonably proven (for example, non-refundable materials already purchased for that job, documented travel already incurred, or a proven lost booking that could not be refilled), not a pre-set percentage of the job price and not an automatic “full charge.”
+6.2 Optional booking deposit: a fixed dollar amount precisely disclosed before booking (CPA s. 12, no costs unless precisely indicated). The deposit may be applied against proven actual loss; any unused portion must be refunded within a reasonable time.
 6.3 Company may mediate disputes in good faith but is not the Client’s guarantor of Pro performance unless a separate written guarantee says so.`,
   },
   {
@@ -513,10 +513,10 @@ Autres registres québécois (consultation publique manuelle sauf API disponible
   },
   {
     title: "4. Frais, abonnement et acheminement des paiements",
-    body: `4.1 Forfaits d’abonnement (les montants peuvent changer — toujours ceux affichés à l’inscription) :
-Départ — 29 $ CA/mois — 10 crédits de réservation par mois;
-Croissance — 39 $ CA/mois — 17 crédits de réservation par mois;
-Pro — 49 $ CA/mois — 22 crédits de réservation par mois.
+    body: `4.1 Forfaits d’abonnement (les montants peuvent changer, toujours ceux affichés à l’inscription) :
+Départ, 29 $ CA/mois, 10 crédits de réservation par mois;
+Croissance, 39 $ CA/mois, 17 crédits de réservation par mois;
+Pro, 49 $ CA/mois, 22 crédits de réservation par mois.
 Chaque crédit couvre jusqu’à 100 $ CA de valeur de service réservée admissible. Les crédits requis sont arrondis AU SUPÉRIEUR à la tranche entière suivante de 100 $ : 100 $ = 1 crédit, 180 $ = 2 crédits, 450 $ = 5 crédits, 800 $ = 8 crédits et 1 250 $ = 13 crédits. La valeur admissible est le montant des services du Pro avant taxes, frais de plateforme, frais de traitement, pourboires, dépôts remboursables et autres montants transmis. Cette règle est une règle de l’entente professionnelle et ne constitue pas un calcul de frais facturés au Client.
 Facturation via Square; les renouvellements ne sont facturés que selon les modalités présentées et autorisées au paiement.
 4.2 Les frais de réservation sont de 5 % du montant admissible du service jusqu’au 31 décembre 2026, puis de 3,8 % à compter du 1er janvier 2027. Aucun montant fixe distinct de traitement Square n’est ajouté au paiement. Square déduit les frais réels de traitement en premier; les frais d’application d’AltShift se limitent au solde après les coûts estimés et peuvent être nuls. Les coûts réels peuvent différer des estimations et réduire le versement net au Pro.
@@ -535,7 +535,7 @@ Client préexistant (définition démontrable) : un Client avec qui vous pouvez 
     title: "6. Politiques d’annulation que vous pouvez offrir aux Clients",
     body: `6.1 Les Pros ne peuvent offrir aux Clients que les formes d’annulation suivantes (libellé exact présenté au Client à la réservation) :
 Annulation gratuite jusqu’à une échéance clairement indiquée (par exemple, 24 ou 48 heures avant le rendez-vous); et/ou
-Après l’échéance : le Client peut toujours annuler, mais peut être tenu responsable des dommages réels du Pro raisonnablement prouvés (par exemple, matériaux non remboursables déjà achetés pour ce travail, déplacements documentés déjà engagés, ou une réservation perdue prouvée qui n’a pu être remplacée) — et non un pourcentage prédéterminé du prix du travail et non une « facturation intégrale » automatique.
+Après l’échéance : le Client peut toujours annuler, mais peut être tenu responsable des dommages réels du Pro raisonnablement prouvés (par exemple, matériaux non remboursables déjà achetés pour ce travail, déplacements documentés déjà engagés, ou une réservation perdue prouvée qui n’a pu être remplacée), et non un pourcentage prédéterminé du prix du travail et non une « facturation intégrale » automatique.
 6.2 Dépôt de réservation optionnel : un montant fixe en dollars précisément divulgué avant la réservation (LPC art. 12). Le dépôt peut être appliqué contre la perte réelle prouvée; toute portion inutilisée doit être remboursée dans un délai raisonnable.
 6.3 La Société peut médier les différends de bonne foi mais n’est pas garante de l’exécution du Pro envers le Client sauf si une garantie écrite distincte le prévoit.`,
   },

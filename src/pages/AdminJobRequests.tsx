@@ -211,7 +211,7 @@ export default function AdminJobRequests() {
                     <p className="text-xs font-mono text-muted-foreground break-all">Request ID: {row.id}</p>
                     <p className="text-xs text-muted-foreground">
                       {t.dashboard.accountMemberId ?? "Member ID"}:{" "}
-                      {row.profiles?.public_user_number ?? "—"} · {row.profiles?.full_name ?? "Client"}
+                      {row.profiles?.public_user_number ?? ";"} · {row.profiles?.full_name ?? "Client"}
                     </p>
 
                     {(row.city || row.postal_code) && (
@@ -307,7 +307,7 @@ export default function AdminJobRequests() {
               <span>
                 <span className="font-medium block">{t.dashboard.adminJobReasonRedo ?? "Redo the request"}</span>
                 <span className="text-xs text-muted-foreground">
-                  {t.dashboard.adminJobReasonRedoHint ?? "No strike — ask the client to submit again properly."}
+                  {t.dashboard.adminJobReasonRedoHint ?? "No strike, ask the client to submit again properly."}
                 </span>
               </span>
             </label>

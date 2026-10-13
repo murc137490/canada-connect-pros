@@ -14,7 +14,7 @@ function categoryMeta(categorySlug: string) {
 
 /**
  * Distinct catalog-backed services as pros list them (display_name when set),
- * for hero "You might also consider" — same slugs/routes as today, richer labels from pros.
+ * for hero "You might also consider", same slugs/routes as today, richer labels from pros.
  */
 export async function fetchProOfferedServiceRecordsForHero(locale: Locale): Promise<ServiceRecordForAI[]> {
   const { data: pros, error: pErr } = await supabase

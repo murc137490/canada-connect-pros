@@ -1,0 +1,4 @@
+.member-counter{position:relative;display:inline-flex;overflow:hidden;align-items:center;gap:.02em;font-variant-numeric:tabular-nums;line-height:1;font-weight:800}
+.member-counter__digit{position:relative;display:inline-block;width:.62em;overflow:hidden}
+.member-counter__number{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+@media(prefers-reduced-motion:reduce){.member-counter__number{transform:none!important}}

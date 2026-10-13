@@ -19,9 +19,9 @@ export type PwaIconTheme = {
   favicon32: string;
   favicon64: string;
   favicon192: string;
-  /** Transparent A cutout — bright S for dark surfaces. */
+  /** Transparent A cutout, bright S for dark surfaces. */
   brandLogo: string;
-  /** Transparent A cutout — darker S for light surfaces. */
+  /** Transparent A cutout, darker S for light surfaces. */
   brandLogoOnLight: string;
   manifestHref: string;
 };
@@ -160,7 +160,7 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
   upsertIconLink({ rel: "icon", href: theme.faviconIco, type: "image/x-icon" });
   upsertIconLink({ rel: "icon", sizes: "32x32", type: "image/png", href: theme.favicon32 });
   upsertIconLink({ rel: "icon", sizes: "64x64", type: "image/png", href: theme.favicon64 });
-  // Opaque install icons — Android ignores transparent cutouts for homescreen
+  // Opaque install icons, Android ignores transparent cutouts for homescreen
   upsertIconLink({ rel: "icon", sizes: "192x192", type: "image/png", href: theme.icon192 });
   upsertIconLink({ rel: "icon", sizes: "512x512", type: "image/png", href: theme.icon512 });
 
@@ -187,7 +187,7 @@ export function applyPwaIconTheme(tier: PwaIconTier) {
     root.dataset.pwaTier = tier;
   }
 
-  // Remount manifest link — required for Android to pick up a different tier's icons
+  // Remount manifest link, required for Android to pick up a different tier's icons
   document.querySelectorAll('link[rel="manifest"]').forEach((el) => el.remove());
   const link = document.createElement("link");
   link.rel = "manifest";

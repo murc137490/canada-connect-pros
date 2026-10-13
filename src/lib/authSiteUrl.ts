@@ -32,7 +32,7 @@ export function getOAuthRedirectOrigin(): string {
       host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host.endsWith(".local");
     const isPreview = host.endsWith(".vercel.app");
     if (isLocal || isPreview) return window.location.origin;
-    // Already on AltShift — stay on the exact host the user is using (www vs apex).
+    // Already on AltShift, stay on the exact host the user is using (www vs apex).
     if (host === "www.altshift.ca" || host === "altshift.ca") {
       return window.location.origin;
     }

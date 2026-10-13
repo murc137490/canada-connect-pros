@@ -16,7 +16,7 @@ export const IPHONE_NOTCH_BAR_HEIGHT = 0;
 
 /** Bezel thickness (px); must match `p-[10px]` on the frame (padding bezel avoids border-radius seam artifacts). */
 export const IPHONE_BEZEL_PX = 10;
-/** Screen area corner radius — concentric with outer `rounded-[2.75rem]` minus bezel. */
+/** Screen area corner radius, concentric with outer `rounded-[2.75rem]` minus bezel. */
 export const IPHONE_INNER_SCREEN_RADIUS = `calc(2.75rem - ${IPHONE_BEZEL_PX}px)`;
 
 export default function Iphone({

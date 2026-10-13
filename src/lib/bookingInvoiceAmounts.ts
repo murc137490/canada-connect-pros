@@ -45,7 +45,7 @@ export type BookingInvoiceComputed = {
   totalDollars: string;
 };
 
-/** @param baseAmountCents — service subtotal in cents (before tax & platform fee). */
+/** @param baseAmountCents, service subtotal in cents (before tax & platform fee). */
 export function computeBookingInvoiceFromBaseCents(baseAmountCents: number, at: Date = new Date()): BookingInvoiceComputed {
   if (!Number.isSafeInteger(baseAmountCents)) throw new RangeError("Service subtotal must be an integer number of cents.");
   const subCents = Math.max(0, baseAmountCents);

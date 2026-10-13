@@ -1,4 +1,4 @@
-/* User menu dropdown — iPhone-style frosted glass */
+/* User menu dropdown, iPhone-style frosted glass */
 
 .user-menu-wrapper {
   position: relative;
@@ -47,7 +47,7 @@
 }
 
 /*
-  Glass shell: NEVER put opacity/filter/isolation on this node —
+  Glass shell: NEVER put opacity/filter/isolation on this node ;
   those break backdrop-filter in Chromium.
 */
 .user-menu-panel {
@@ -83,7 +83,7 @@
   border-radius: inherit;
   overflow-x: hidden;
   overflow-y: auto;
-  /* Even foggy glass — flat fill, no blotchy sheen overlays */
+  /* Even foggy glass, flat fill, no blotchy sheen overlays */
   background: rgba(255, 255, 255, 0.2) !important;
   background-color: rgba(255, 255, 255, 0.2) !important;
   -webkit-backdrop-filter: blur(22px) saturate(160%) !important;

@@ -304,7 +304,7 @@ export default function ProScheduleEditor({
     onUnavailableDatesChange({ ...unavailableDates, [selectedDateStr]: nextVal });
   };
 
-  /** Past days: notes only — never toggle available/unavailable or blocked hours. */
+  /** Past days: notes only, never toggle available/unavailable or blocked hours. */
   const persistPastDayNote = () => {
     if (!selectedDateStr || !selectedIsPast) return;
     const note = localUnavailableNote.trim();
@@ -503,7 +503,7 @@ export default function ProScheduleEditor({
               </>
             ) : (
               <span className="text-xs text-muted-foreground">
-                {t.dashboard?.pastDayNotesOnlyHint ?? "Past day — notes only"}
+                {t.dashboard?.pastDayNotesOnlyHint ?? "Past day, notes only"}
               </span>
             )}
             <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedDateStr(null)}>
