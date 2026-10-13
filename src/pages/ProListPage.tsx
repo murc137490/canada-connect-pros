@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
@@ -43,10 +43,19 @@ export default function ProListPage() {
   const [savedProIds, setSavedProIds] = useState<Set<string>>(new Set());
 
   const category = serviceCategories.find((c) => c.slug === categorySlug);
-  const allServices = getAllServices();
-  const service = allServices.find(
-    (s) => s.slug === serviceSlug && s.categorySlug === categorySlug
-  );
+  const service = useMemo(() => {
+    if (serviceSlug === "any-services") {
+      return {
+        slug: "any-services",
+        name: locale === "fr" ? `Tous les services ${category?.name ?? ""}` : `Any ${category?.name ?? ""} services`,
+        categorySlug: categorySlug ?? "",
+        category: category?.name ?? "",
+        subcategory: "",
+        fr: "",
+      };
+    }
+    return getAllServices().find((s) => s.slug === serviceSlug && s.categorySlug === categorySlug);
+  }, [serviceSlug, categorySlug, category, locale]);
 
   useEffect(() => {
     let active = true;
@@ -80,11 +89,12 @@ export default function ProListPage() {
       }
 
       // Find pro_profiles that have this service
-      const { data: proServices } = await supabase
+      let query = supabase
         .from("pro_services")
         .select("pro_profile_id")
-        .eq("service_slug", serviceSlug || "")
         .eq("category_slug", categorySlug || "");
+      if (serviceSlug !== "any-services") query = query.eq("service_slug", serviceSlug || "");
+      const { data: proServices } = await query;
 
       if (!proServices || proServices.length === 0) {
         setPros([]);
@@ -161,7 +171,7 @@ export default function ProListPage() {
   }, [categorySlug, serviceSlug, jobsMode, authLoading, isShowcaseUser, t.common.proFallback]);
 
   useEffect(() => {
-    if (!categorySlug || !serviceSlug || !service) return;
+    if (!categorySlug || !serviceSlug || !service || serviceSlug === "any-services") return;
     void supabase.rpc("increment_service_browse_stats", {
       p_category_slug: categorySlug,
       p_service_slug: serviceSlug,
@@ -258,7 +268,9 @@ export default function ProListPage() {
           </p>
           {service && (
             <Button variant="outline" size="sm" asChild>
-              <Link to={`/make-request?category_slug=${encodeURIComponent(categorySlug ?? "")}&service_slug=${encodeURIComponent(service.slug)}`}>
+              <Link to={service.slug === "any-services"
+                ? `/make-request?category_slug=${encodeURIComponent(categorySlug ?? "")}`
+                : `/make-request?category_slug=${encodeURIComponent(categorySlug ?? "")}&service_slug=${encodeURIComponent(service.slug)}`}>
                 {locale === "fr" ? "Demander un devis" : "Request a quote"}
               </Link>
             </Button>

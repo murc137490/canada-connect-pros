@@ -310,10 +310,10 @@ function buildServiceCategories(): ServiceCategory[] {
       description: "Tutoring, music, driving, and skills training.",
     },
     pets: {
-      name: "Pets",
+      name: "Pet Grooming & Animal Services",
       icon: "PawPrint",
       color: "category-pets",
-      description: "Walking, grooming, training, and pet care.",
+      description: "Pet grooming, animal care, walking, sitting, and training.",
     },
     wellness: {
       name: "Wellness",

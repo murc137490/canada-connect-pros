@@ -127,6 +127,20 @@ export default function CategoryPage() {
               </div>
             </motion.section>
           ))}
+          <Link
+            to={`/services/${category.slug}/any-services/pros${modeSearch}`}
+            className="group flex items-center justify-between gap-3 rounded-2xl border border-secondary/40 bg-secondary/5 p-5 text-foreground shadow-sm transition hover:border-secondary hover:bg-secondary/10 hover:shadow-md"
+          >
+            <span>
+              <span className="block font-heading text-lg font-bold">
+                {locale === "fr" ? `Tous les services ${name.toLocaleLowerCase("fr")}` : `Any ${name} services`}
+              </span>
+              <span className="mt-1 block text-sm text-muted-foreground">
+                {locale === "fr" ? "Voir les professionnels et les demandes pour toute cette catégorie." : "Browse professionals and requests across this entire category."}
+              </span>
+            </span>
+            <ChevronRight className="shrink-0 transition-transform group-hover:translate-x-1" size={20} />
+          </Link>
         </div>
       </div>
 

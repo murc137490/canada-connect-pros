@@ -18,6 +18,7 @@ type ServiceJob = {
   timing: string | null;
   created_at: string;
   service_slug: string | null;
+  category_slug?: string | null;
   latitude: number | null;
   longitude: number | null;
 };
@@ -99,7 +100,11 @@ export default function ServiceJobsList({ categorySlug, serviceSlug }: Props) {
       if (cancelled) return;
       const aliases = LEGACY_CATEGORIES_BY_SERVICE[serviceSlug] ?? [];
       let matching = ((res.data ?? []) as ServiceJob[]).filter((job) => {
-        if (job.service_slug) return job.service_slug === serviceSlug && (!job.category_slug || job.category_slug === categorySlug);
+        if (job.service_slug) return (serviceSlug === "any-services" || job.service_slug === serviceSlug) && (!job.category_slug || job.category_slug === categorySlug);
+        if (serviceSlug === "any-services") {
+          if (job.category_slug) return job.category_slug === categorySlug;
+          return job.category.trim().toLowerCase() === categorySlug.replaceAll("-", " ");
+        }
         const oldCategory = job.category.trim().toLowerCase();
         return aliases.includes(oldCategory);
       });

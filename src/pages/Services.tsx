@@ -12,7 +12,6 @@ import { Search, ChevronRight, Loader2, LayoutGrid, LocateFixed } from "lucide-r
 import { motion } from "motion/react";
 import MakeRequestButton from "@/components/MakeRequestButton";
 import ServiceCategoryTile from "@/components/ServiceCategoryTile";
-import { popularServiceVisuals, popularServiceSrcSet } from "@/data/categoryVisuals";
 import {
   canadianPostalsEqual,
   detectBrowserLocationPostal,
@@ -30,6 +29,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { MOTION } from "@/motion/types";
 import ProServicesModeSwitcher from "@/components/services/ProServicesModeSwitcher";
+import TopServicesGallery from "@/components/services/TopServicesGallery";
 
 export default function Services() {
   const { locale, t } = useLanguage();
@@ -529,43 +529,8 @@ export default function Services() {
                     ))}
                   </div>
                   {/* Tablet/desktop: image cards */}
-                  <div className="hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-5">
-                    {top5MostSearched.map((s, i) => (
-                      <motion.div
-                        key={`${s.categorySlug}-${s.slug}`}
-                        initial={{ opacity: 0, y: 18 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: i * 0.05, duration: 0.45 }}
-                      >
-                        <Link
-                          to={`/services/${s.categorySlug}/${s.slug}${modeSearch}`}
-                          onClick={guardClick}
-                          className="group relative block overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-lg"
-                        >
-                          <div className="relative aspect-[5/4] overflow-hidden">
-                            <img
-                              src={popularServiceVisuals[s.slug] ?? popularServiceVisuals["plumbing-services"]}
-                              srcSet={popularServiceSrcSet(s.slug) ?? popularServiceSrcSet("plumbing-services")}
-                              sizes="(min-width: 1024px) 18vw, (min-width: 640px) 45vw, 100vw"
-                              alt={getServiceName(s.slug, locale, s.name)}
-                              loading="lazy"
-                              decoding="async"
-                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
-                            <div className="absolute inset-x-0 bottom-0 p-3.5">
-                              <p className="font-heading text-sm font-bold text-white">
-                                {getServiceName(s.slug, locale, s.name)}
-                              </p>
-                              <p className="mt-0.5 text-[11px] text-white/80">
-                                {getCategoryName({ name: s.category, slug: s.categorySlug }, locale)}
-                              </p>
-                            </div>
-                          </div>
-                        </Link>
-                      </motion.div>
-                    ))}
+                  <div className="hidden sm:block">
+                    <TopServicesGallery items={top5MostSearched} onGuardClick={guardClick} modeSearch={modeSearch} />
                   </div>
                 </section>
               )}

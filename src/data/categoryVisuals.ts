@@ -84,8 +84,8 @@ export const categoryVisuals: Record<string, CategoryVisual> = {
     imageAltEn: "Happy dogs outdoors",
     imageAltFr: "Chiens heureux à l'extérieur",
     accent: "hsl(25 70% 45%)",
-    blurbEn: "Walking, grooming, sitting, and training.",
-    blurbFr: "Promenade, toilettage, garde et dressage.",
+    blurbEn: "Pet grooming and animal services.",
+    blurbFr: "Toilettage et services animaliers.",
   }),
   wellness: visual("photo-1544367567-0f2fcb009e0b", {
     imageAltEn: "Wellness and fitness",
@@ -94,9 +94,9 @@ export const categoryVisuals: Record<string, CategoryVisual> = {
     blurbEn: "Training, massage, therapy, and nutrition.",
     blurbFr: "Entraînement, massage, thérapie et nutrition.",
   }),
-  "beauty-personal-care": visual("photo-1522337360788-8b13dee7a37e", {
-    imageAltEn: "Beauty and personal care services",
-    imageAltFr: "Services de beauté et de soins personnels",
+  "beauty-personal-care": visual("photo-1560066984-138dadb4c035", {
+    imageAltEn: "Inclusive modern salon for hair and personal care",
+    imageAltFr: "Salon moderne et inclusif de coiffure et de soins personnels",
     accent: "hsl(330 55% 48%)",
     blurbEn: "Hair, nails, skincare, makeup, and lash and brow services.",
     blurbFr: "Coiffure, ongles, soins de la peau, maquillage, cils et sourcils.",

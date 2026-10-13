@@ -118,6 +118,8 @@ import ProScheduleEditor, {
 } from "@/components/pro/ProScheduleEditor";
 import type { UnavailableDatesMap } from "@/components/pro/AvailabilityCalendar";
 import StarRating from "@/components/pro/StarRating";
+import HoldToConfirmButton from "@/components/HoldToConfirmButton";
+import "@/components/hold-confirm.css";
 import ProPagePhonePreview from "@/components/pro/ProPagePhonePreview";
 import ProPortfolioEditor from "@/components/pro/ProPortfolioEditor";
 import Dock, { type DockItemConfig } from "@/components/Dock";
@@ -5592,12 +5594,12 @@ export default function Dashboard() {
               </Button>
               {!isAdminAccountView ? (
                 <div className="grid grid-cols-1 gap-3 md:col-span-2 md:row-start-8 content-start sm:grid-cols-2">
-                  <button type="button" onClick={() => setAccountDeletionOpen(true)} className="flex h-16 items-center gap-3 rounded-xl border border-destructive/30 bg-background p-4 text-left transition-colors hover:bg-muted/30">
+                  <HoldToConfirmButton onHold={() => setAccountDeletionOpen(true)} className="transition-colors hover:bg-muted/30">
                     <Trash2 className="h-5 w-5 shrink-0 text-destructive" />
                     <span className="font-heading text-sm font-semibold text-foreground">
                       {locale === "fr" ? "Suppression de compte" : "Account Deletion"}
                     </span>
-                  </button>
+                  </HoldToConfirmButton>
                   <button type="button" onClick={() => setBookingIdVerificationOpen(true)} className="flex h-16 items-center gap-3 rounded-xl border bg-background p-4 text-left transition-colors hover:bg-muted/30" data-tour="account-id-verification">
                     <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15 ring-1 ring-amber-500/40">
                       <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden />

@@ -45,7 +45,7 @@ export const SERVICE_CATEGORY_NAMES_FR: Record<string, string> = {
   "business": "Services aux entreprises",
   "events": "Événements et divertissement",
   "lessons": "Cours et tutorat",
-  "pets": "Animaux",
+  "pets": "Toilettage et services animaliers",
   "wellness": "Mieux-être",
   "beauty-personal-care": "Beauté et soins personnels",
   "moving": "Déménagement et entreposage",
