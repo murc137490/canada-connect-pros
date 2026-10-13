@@ -734,7 +734,7 @@ export default function HeroSection() {
                 shineFade={36}
                 thickness={1.1}
                 glow={0.7}
-                followMouse
+                followMouse={false}
                 proximity={220}
               />
             </span>
