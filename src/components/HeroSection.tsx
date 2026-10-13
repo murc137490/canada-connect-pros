@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
-import { Sparkles, ArrowRight, LocateFixed, Loader2 } from "lucide-react";
+import { ArrowRight, LocateFixed, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MOTION } from "@/motion/types";
 import { getAllServices, getCategorySummariesForAI, getFlatServiceRecords } from "@/data/services";
@@ -558,57 +558,7 @@ export default function HeroSection() {
               </motion.button>
             </div>
 
-            <div className="relative z-20 mt-7 w-full max-w-3xl">
-              <form id="hero-search" onSubmit={handleSubmit} className="hero-how-pill rounded-[2rem] border border-white/50 bg-white/55 p-3 shadow-[0_18px_70px_rgba(31,38,135,0.18)] backdrop-blur-2xl transition-[box-shadow,transform,background-color] duration-300 hover:-translate-y-1 hover:bg-white/70 hover:shadow-[0_24px_80px_rgba(31,38,135,0.24)] focus-within:-translate-y-1 focus-within:bg-white/80 focus-within:shadow-[0_24px_80px_rgba(31,38,135,0.26)] dark:border-white/15 dark:bg-white/10 dark:hover:bg-white/15 dark:focus-within:bg-white/[0.14]">
-                <label htmlFor="hero-need" className="sr-only">{t.index.heroProjectPlaceholder}</label>
-                <div className="flex min-h-[5.45rem] items-center gap-3 rounded-[1.5rem] px-4 sm:px-7">
-                  <Sparkles className="hidden size-7 shrink-0 text-primary sm:block" aria-hidden="true" />
-                  <input
-                    id="hero-need"
-                    type="text"
-                    autoComplete="off"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder={t.index.heroProjectPlaceholder}
-                    className="min-w-0 flex-1 bg-transparent py-3 text-center text-[1.41rem] font-semibold tracking-tight text-foreground outline-none placeholder:text-foreground/70 focus:text-left sm:text-[2.14rem] md:text-[2.35rem]"
-                    aria-describedby="hero-service-recommendations"
-                  />
-                  {loading ? <Loader2 className="size-6 shrink-0 animate-spin text-primary" /> : null}
-                  <button type="submit" aria-label={locale === "fr" ? "Rechercher un service" : "Search services"} className="inline-flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:size-14">
-                    <ArrowRight className="size-6" />
-                  </button>
-                </div>
-              </form>
-              <div id="hero-service-recommendations" aria-live="polite" className="mx-auto mt-4 max-w-4xl">
-                {loading && query.trim().length >= 2 ? <p className="text-center text-sm text-muted-foreground">{t.index.heroAiThinking}</p> : null}
-                {error && !loading ? <p className="text-center text-sm text-muted-foreground">{t.index.heroAiError}</p> : null}
-                {!loading && !error && query.trim().length >= 2 && hasResults ? (
-                  <div className="flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-border/60 bg-background/75 p-3 shadow-lg backdrop-blur-xl">
-                    {clarifyingMessage ? <p className="w-full text-center text-sm text-muted-foreground">{clarifyingMessage}</p> : null}
-                    {bestMatch?.serviceName ? (
-                      <button type="button" onClick={() => bestMatch.categorySlug && bestMatch.serviceSlug ? goToProsFromSlugs(bestMatch.categorySlug, bestMatch.serviceSlug) : goToService(bestMatch.serviceName!)} className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-sm hover:opacity-90">
-                        {getServiceName(bestMatch.serviceSlug ?? "", locale, bestMatch.serviceName)}<ArrowRight size={15} />
-                      </button>
-                    ) : null}
-                    {followUpMatches.slice(0, 3).map((item) => (
-                      <button key={`${item.categorySlug}/${item.serviceSlug}`} type="button" onClick={() => goToProsFromSlugs(item.categorySlug, item.serviceSlug)} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">
-                        {getServiceName(item.serviceSlug, locale, item.serviceName)}<ArrowRight size={14} />
-                      </button>
-                    ))}
-                    {suggestions.slice(0, 3).map((item, index) => {
-                      const service = findServiceByName(item);
-                      return (
-                        <button key={`${item}-${index}`} type="button" onClick={() => service ? goToProsFromSlugs(service.categorySlug, service.serviceSlug) : goToService(item)} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">
-                          {service ? getServiceName(service.serviceSlug, locale, item) : item}<ArrowRight size={14} />
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-                        <div className="mt-8 max-w-xl scroll-mt-28">
+            <div className="mt-8 max-w-xl scroll-mt-28">
               <p className="mb-2.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 {t.index.heroSearchLabel}
               </p>
@@ -675,6 +625,52 @@ export default function HeroSection() {
 
           <div className="relative mt-6 flex justify-center lg:mt-0 lg:justify-end">
             <BookingPhoneMock alwaysLive />
+          </div>
+        </div>
+        <div className="relative z-20 mx-auto mt-9 w-full max-w-4xl">
+          <form
+            id="hero-search"
+            onSubmit={handleSubmit}
+            className="hero-how-pill relative overflow-hidden rounded-full border border-white/75 bg-white/35 px-5 py-2.5 shadow-[0_20px_70px_rgba(24,27,31,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-[30px] backdrop-saturate-150 transition-[background-color,box-shadow,transform] duration-500 hover:bg-white/45 hover:shadow-[0_24px_76px_rgba(24,27,31,0.15),inset_0_1px_0_rgba(255,255,255,0.95)] focus-within:bg-white/50 focus-within:shadow-[0_24px_76px_rgba(24,27,31,0.16),inset_0_1px_0_rgba(255,255,255,1)] dark:border-white/20 dark:bg-white/[0.08] dark:shadow-[0_20px_70px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] dark:hover:bg-white/[0.11] dark:focus-within:bg-white/[0.12]">
+            <label htmlFor="hero-need" className="sr-only">{t.index.heroProjectPlaceholder}</label>
+            <input
+              id="hero-need"
+              type="text"
+              autoComplete="off"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t.index.heroProjectPlaceholder}
+              className="min-h-[4.6rem] w-full bg-transparent px-3 py-3 text-center text-[1.41rem] font-semibold tracking-tight text-foreground outline-none placeholder:text-foreground/70 sm:min-h-[5.2rem] sm:text-[2.14rem] md:text-[2.35rem]"
+              aria-describedby="hero-service-recommendations"
+            />
+            <button type="submit" className="sr-only">{locale === "fr" ? "Rechercher" : "Search"}</button>
+          </form>
+          <div id="hero-service-recommendations" aria-live="polite" className="mx-auto mt-4 max-w-4xl">
+            {loading && query.trim().length >= 2 ? <p className="text-center text-sm text-muted-foreground">{t.index.heroAiThinking}</p> : null}
+            {error && !loading ? <p className="text-center text-sm text-muted-foreground">{t.index.heroAiError}</p> : null}
+            {!loading && !error && query.trim().length >= 2 && hasResults ? (
+              <div className="flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-border/60 bg-background/75 p-3 shadow-lg backdrop-blur-xl">
+                {clarifyingMessage ? <p className="w-full text-center text-sm text-muted-foreground">{clarifyingMessage}</p> : null}
+                {bestMatch?.serviceName ? (
+                  <button type="button" onClick={() => bestMatch.categorySlug && bestMatch.serviceSlug ? goToProsFromSlugs(bestMatch.categorySlug, bestMatch.serviceSlug) : goToService(bestMatch.serviceName!)} className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-sm hover:opacity-90">
+                    {getServiceName(bestMatch.serviceSlug ?? "", locale, bestMatch.serviceName)}<ArrowRight size={15} />
+                  </button>
+                ) : null}
+                {followUpMatches.slice(0, 3).map((item) => (
+                  <button key={`${item.categorySlug}/${item.serviceSlug}`} type="button" onClick={() => goToProsFromSlugs(item.categorySlug, item.serviceSlug)} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">
+                    {getServiceName(item.serviceSlug, locale, item.serviceName)}<ArrowRight size={14} />
+                  </button>
+                ))}
+                {suggestions.slice(0, 3).map((item, index) => {
+                  const service = findServiceByName(item);
+                  return (
+                    <button key={`${item}-${index}`} type="button" onClick={() => service ? goToProsFromSlugs(service.categorySlug, service.serviceSlug) : goToService(item)} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">
+                      {service ? getServiceName(service.serviceSlug, locale, item) : item}<ArrowRight size={14} />
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

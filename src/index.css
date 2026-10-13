@@ -1509,8 +1509,6 @@ html.cream .footer-wordmark { color: #342b20; }
 .story-arrival-phone { animation: story-phone-out 2.4s ease-in-out both; }
 .story-arrival-home { animation: story-panel-enter .7s .2s cubic-bezier(.2,.8,.2,1) both; }
 .story-arrival-pro { animation: story-pro-arrival 2s 1s cubic-bezier(.2,.8,.2,1) both; }
-.hero-how-pill { animation: hero-pill-soft-shake 2.6s 1s ease-in-out 1; }
-@keyframes hero-pill-soft-shake { 0%, 84%, 100% { transform: translateX(0); } 87% { transform: translateX(-3px); } 90% { transform: translateX(3px); } 93% { transform: translateX(-2px); } 96% { transform: translateX(2px); } }
 @media (prefers-reduced-motion: reduce) {
   .story-search-panel, .story-query, .story-pro-card, .story-compare-panel, .story-compare-card, .story-compare-value, .story-confirm, .story-chat-message, .story-arrival-phone, .story-arrival-home, .story-arrival-pro, .hero-how-pill { animation: none !important; }
 }
