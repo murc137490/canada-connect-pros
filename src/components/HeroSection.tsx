@@ -605,6 +605,7 @@ export default function HeroSection() {
                   text={line}
                   className="h-[clamp(6rem,10vw,9rem)] w-full"
                   fontSize={138}
+                  align="left"
                   fontWeight={800}
                   color="currentColor"
                   accentColor="#B39445"
