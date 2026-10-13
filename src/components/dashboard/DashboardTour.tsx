@@ -29,6 +29,8 @@ type HighlightBox = {
   radius: string;
 };
 
+type TourCardSize = { width: number; height: number };
+
 const TOUR_OUTLINE = "#4EA1FF";
 
 function useIsPhone() {
@@ -187,6 +189,45 @@ function measureHighlight(el: Element, isPhone: boolean): HighlightBox {
   };
 }
 
+function placeDesktopTourCard(rect: HighlightBox | null, size: TourCardSize): { left: number; top: number } {
+  const margin = 16;
+  const gap = 18;
+  const width = Math.min(size.width || 448, window.innerWidth - margin * 2);
+  const height = Math.min(size.height || 280, window.innerHeight - margin * 2);
+  const center = {
+    left: (window.innerWidth - width) / 2,
+    top: (window.innerHeight - height) / 2,
+  };
+  if (!rect) return center;
+
+  const candidates = [
+    center,
+    { left: rect.left - width - gap, top: rect.top + (rect.height - height) / 2 },
+    { left: rect.left + rect.width + gap, top: rect.top + (rect.height - height) / 2 },
+    { left: center.left, top: rect.top - height - gap },
+    { left: center.left, top: rect.top + rect.height + gap },
+  ];
+  const isClear = (p: { left: number; top: number }) => {
+    if (p.left < margin || p.top < margin || p.left + width > window.innerWidth - margin || p.top + height > window.innerHeight - margin) return false;
+    return p.left + width <= rect.left - gap || p.left >= rect.left + rect.width + gap ||
+      p.top + height <= rect.top - gap || p.top >= rect.top + rect.height + gap;
+  };
+  const clearCandidates = candidates.filter(isClear);
+  if (!clearCandidates.length) return center;
+
+  // Prefer the centered reading position. When it would cover the highlighted card,
+  // try either side first, then above or below if the target spans the screen.
+  const preferred = clearCandidates.find((p) => p === center);
+  if (preferred) return preferred;
+  const sideCandidates = clearCandidates.slice(1, 3);
+  const choices = sideCandidates.length ? sideCandidates : clearCandidates.slice(3);
+  return choices.sort((a, b) => {
+    const da = Math.hypot(a.left - center.left, a.top - center.top);
+    const db = Math.hypot(b.left - center.left, b.top - center.top);
+    return da - db;
+  })[0] ?? center;
+}
+
 /** Four dim panels leave a bright hole, content inside the outline stays clear. */
 function SpotlightCutout({
   rect,
@@ -249,6 +290,8 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<HighlightBox | null>(null);
   const [spotlightReady, setSpotlightReady] = useState(false);
+  const [desktopCardSize, setDesktopCardSize] = useState<TourCardSize>({ width: 448, height: 280 });
+  const desktopCardRef = useRef<HTMLDivElement>(null);
   const isPhone = useIsPhone();
 
   const step = steps[index];
@@ -368,6 +411,23 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
     };
   }, [open, step, isPhone, spotlightReady]);
 
+  useLayoutEffect(() => {
+    if (!open || isPhone || !desktopCardRef.current) return;
+    const card = desktopCardRef.current;
+    const measure = () => {
+      const { width, height } = card.getBoundingClientRect();
+      setDesktopCardSize((previous) =>
+        Math.abs(previous.width - width) > 1 || Math.abs(previous.height - height) > 1
+          ? { width, height }
+          : previous,
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, [open, isPhone, step]);
+
   const finish = useCallback(() => {
     suppressAutoTour(userId, segment);
     onFinished();
@@ -383,9 +443,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
 
   if (!open || !step) return null;
 
-  const cardTopDesktop = rect
-    ? Math.min(window.innerHeight - 220, rect.top + rect.height + 12)
-    : window.innerHeight / 2 - 100;
+  const desktopCardPosition = placeDesktopTourCard(rect, desktopCardSize);
 
   return createPortal(
     <AnimatePresence>
@@ -415,7 +473,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
             role="dialog"
             aria-modal="true"
             data-tour-sheet
-            className="absolute inset-x-0 bottom-0 z-[91] flex max-h-[min(42vh,18rem)] flex-col rounded-t-2xl border border-border bg-card text-card-foreground shadow-2xl"
+            className="absolute inset-x-0 bottom-0 z-[91] flex max-h-[min(56vh,26rem)] flex-col rounded-t-2xl border border-border bg-card text-card-foreground shadow-2xl"
             style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -442,7 +500,7 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
                   <X size={18} />
                 </button>
               </div>
-              <p className="min-h-0 flex-1 overflow-y-auto pr-1 text-sm leading-relaxed text-muted-foreground overscroll-contain">
+              <p className="min-h-0 flex-1 overflow-y-auto pr-1 text-base leading-6 text-muted-foreground overscroll-contain">
                 {fr ? step.bodyFr : step.bodyEn}
               </p>
               <div className="mt-3 flex shrink-0 items-center justify-between gap-2 border-t border-border/60 pt-3">
@@ -460,8 +518,9 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
             role="dialog"
             aria-modal="true"
             data-tour-sheet
-            className="absolute left-1/2 z-[91] w-[min(92vw,22rem)] -translate-x-1/2 rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-xl"
-            style={{ top: cardTopDesktop }}
+            ref={desktopCardRef}
+            className="absolute z-[91] flex max-h-[82vh] w-[min(92vw,28rem)] flex-col rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-xl"
+            style={{ top: desktopCardPosition.top, left: desktopCardPosition.left }}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.18, ease: MOTION.ease }}
@@ -485,8 +544,8 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
                 <X size={16} />
               </button>
             </div>
-            <p className="text-sm leading-relaxed text-muted-foreground">{fr ? step.bodyFr : step.bodyEn}</p>
-            <div className="mt-4 flex items-center justify-between gap-2">
+            <p className="min-h-0 flex-1 overflow-y-auto text-base leading-7 text-muted-foreground">{fr ? step.bodyFr : step.bodyEn}</p>
+            <div className="mt-4 flex shrink-0 items-center justify-between gap-2 border-t border-border/60 pt-3">
               <Button type="button" variant="ghost" size="sm" onClick={onClose}>
                 {fr ? "Plus tard" : "Skip"}
               </Button>
