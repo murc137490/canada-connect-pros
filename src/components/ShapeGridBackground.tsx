@@ -36,7 +36,8 @@ export default function ShapeGridBackground() {
     if (!container || !canvas || !ctx) return;
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const pointer = { x: 0, y: 0, targetX: 0, targetY: 0, inside: false, power: 0 };
+    const pointer = { x: 0, y: 0, inside: false, lastX: 0, lastY: 0, hasLast: false };
+    const litCells = new Map<string, { i: number; j: number; value: number }>();
     const ripples: Ripple[] = [];
     let palette = getPalette();
     let width = 1;
@@ -65,10 +66,21 @@ export default function ShapeGridBackground() {
         offsetX = (offsetX + Math.SQRT1_2 * 30 * dt) % CELL;
         offsetY = (offsetY - Math.SQRT1_2 * 30 * dt) % CELL;
       }
-      const follow = 1 - Math.exp(-dt * 12);
-      pointer.x += (pointer.targetX - pointer.x) * follow;
-      pointer.y += (pointer.targetY - pointer.y) * follow;
-      pointer.power += ((pointer.inside ? 1 : 0) - pointer.power) * (1 - Math.exp(-dt * (pointer.inside ? 10 : 4)));
+      const trailDecay = Math.exp(-dt / 0.6);
+      for (const [key, cell] of litCells) {
+        cell.value *= trailDecay;
+        if (cell.value < 0.015) litCells.delete(key);
+      }
+      const gridStartX = -((offsetX % CELL) + CELL);
+      const gridStartY = -((offsetY % CELL) + CELL);
+      const stampCell = (x: number, y: number) => {
+        const i = Math.floor((x - gridStartX) / CELL);
+        const j = Math.floor((y - gridStartY) / CELL);
+        const key = `${i}:${j}`;
+        const existing = litCells.get(key);
+        litCells.set(key, { i, j, value: Math.max(existing?.value ?? 0, 1) });
+      };
+      if (pointer.inside) stampCell(pointer.x, pointer.y);
       while (ripples.length && now - ripples[0].started > RIPPLE_MS) ripples.shift();
 
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -87,8 +99,8 @@ export default function ShapeGridBackground() {
       ctx.lineWidth = 1;
       ctx.strokeStyle = palette.line;
       ctx.beginPath();
-      const startX = -((offsetX % CELL) + CELL);
-      const startY = -((offsetY % CELL) + CELL);
+      const startX = gridStartX;
+      const startY = gridStartY;
       for (let x = startX; x <= width + CELL; x += CELL) {
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
@@ -99,28 +111,20 @@ export default function ShapeGridBackground() {
       }
       ctx.stroke();
 
-      const radius = CELL * 1.5;
-      if (pointer.power > 0.005) {
-        const left = Math.floor((pointer.x - radius) / CELL) * CELL;
-        const top = Math.floor((pointer.y - radius) / CELL) * CELL;
-        for (let x = left; x <= pointer.x + radius; x += CELL) {
-          for (let y = top; y <= pointer.y + radius; y += CELL) {
-            const cx = x + CELL / 2;
-            const cy = y + CELL / 2;
-            const strength = Math.exp(-((cx - pointer.x) ** 2 + (cy - pointer.y) ** 2) / (2 * radius ** 2)) * pointer.power;
-            if (strength < 0.025) continue;
-            ctx.globalAlpha = strength;
-            ctx.fillStyle = palette.fill;
-            ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
-            ctx.globalAlpha = strength * 0.72;
-            ctx.strokeStyle = palette.hover;
-            ctx.lineWidth = 1 + strength * 0.6;
-            ctx.shadowColor = palette.hover;
-            ctx.shadowBlur = 10 * strength;
-            ctx.strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1);
-            ctx.shadowBlur = 0;
-          }
-        }
+      for (const cell of litCells.values()) {
+        const strength = cell.value;
+        const x = startX + cell.i * CELL;
+        const y = startY + cell.j * CELL;
+        ctx.globalAlpha = strength * 0.72;
+        ctx.fillStyle = palette.fill;
+        ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+        ctx.globalAlpha = strength;
+        ctx.strokeStyle = palette.hover;
+        ctx.lineWidth = 1 + strength * 0.35;
+        ctx.shadowColor = palette.hover;
+        ctx.shadowBlur = 8 * strength;
+        ctx.strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1);
+        ctx.shadowBlur = 0;
       }
 
       for (const ripple of ripples) {
@@ -172,7 +176,7 @@ export default function ShapeGridBackground() {
       }
 
       if (introRadius !== Infinity && elapsed < INTRO_MS) ctx.restore();
-      if (!reduceMotion || pointer.power > 0.005 || ripples.length) frame = requestAnimationFrame(draw);
+      if (!reduceMotion || litCells.size || ripples.length) frame = requestAnimationFrame(draw);
       else previousTime = 0;
     };
 
@@ -194,13 +198,36 @@ export default function ShapeGridBackground() {
       const y = event.clientY - rect.top;
       pointer.inside = x >= 0 && y >= 0 && x <= rect.width && y <= rect.height;
       if (pointer.inside) {
-        pointer.targetX = x;
-        pointer.targetY = y;
+        if (pointer.hasLast) {
+          const distance = Math.hypot(x - pointer.lastX, y - pointer.lastY);
+          const samples = Math.max(1, Math.ceil(distance / (CELL * 0.25)));
+          for (let step = 1; step <= samples; step++) {
+            const progress = step / samples;
+            const px = pointer.lastX + (x - pointer.lastX) * progress;
+            const py = pointer.lastY + (y - pointer.lastY) * progress;
+            const gridX = -((offsetX % CELL) + CELL);
+            const gridY = -((offsetY % CELL) + CELL);
+            const i = Math.floor((px - gridX) / CELL);
+            const j = Math.floor((py - gridY) / CELL);
+            const key = `${i}:${j}`;
+            litCells.set(key, { i, j, value: 1 });
+          }
+        } else {
+          const gridX = -((offsetX % CELL) + CELL);
+          const gridY = -((offsetY % CELL) + CELL);
+          const i = Math.floor((x - gridX) / CELL);
+          const j = Math.floor((y - gridY) / CELL);
+          litCells.set(`${i}:${j}`, { i, j, value: 1 });
+        }
+        pointer.x = pointer.lastX = x;
+        pointer.y = pointer.lastY = y;
+        pointer.hasLast = true;
       }
       wake();
     };
     const onPointerLeave = () => {
       pointer.inside = false;
+      pointer.hasLast = false;
       wake();
     };
     const onPointerDown = (event: PointerEvent) => {
