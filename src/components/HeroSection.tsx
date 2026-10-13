@@ -29,6 +29,7 @@ import { proPublicPath } from "@/lib/publicHandle";
 import BookingPhoneMock from "@/components/BookingPhoneMock";
 import HeroPostalTiltMap from "@/components/HeroPostalTiltMap";
 import { Button } from "@/components/ui/button";
+import "@/styles/hero-twitch.css";
 
 const SEARCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-suggestions`;
 
@@ -94,6 +95,28 @@ function findServiceByName(serviceName: string): { categorySlug: string; service
   });
   if (tokenHit) return { categorySlug: tokenHit.categorySlug, serviceSlug: tokenHit.slug };
   return null;
+}
+
+const TECH_SUPPORT_QUERY = /\b(iphone|ipad|android|mobile|smartphone|cell phone|computer|laptop|macbook|tablet|it support|tech support|device repair)\b/i;
+const GENERIC_QUERY_WORDS = new Set("i want to learn about help support repair fixing fix service services the a an my for me with how can you please need looking get and le la les des de du un une pour apprendre aide soutien réparation service services comment veux voudrais mon ma mes avec obtenir chercher".split(" "));
+
+function findDirectProServiceMatch(query: string, records: ServiceRecordForAI[]): ServiceRecordForAI | null {
+  const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const queryTerms = normalize(query).split(/[^a-z0-9]+/).filter((word) => word.length >= 4 && !GENERIC_QUERY_WORDS.has(word));
+  if (!queryTerms.length) return null;
+
+  let best: ServiceRecordForAI | null = null;
+  let bestScore = 0;
+  for (const record of records) {
+    const nameTerms = new Set(normalize(record.name).split(/[^a-z0-9]+/).filter(Boolean));
+    const matched = queryTerms.filter((word) => nameTerms.has(word));
+    const score = matched.reduce((total, word) => total + Math.min(word.length, 10), 0);
+    if (score > bestScore) {
+      best = record;
+      bestScore = score;
+    }
+  }
+  return best;
 }
 
 export default function HeroSection() {
@@ -384,8 +407,10 @@ export default function HeroSection() {
         setProNameMatches(proHits);
 
         if (response.ok) {
-          setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
-          setClarifyingMessage(data.clarifyingMessage ?? null);
+          const techFocused = TECH_SUPPORT_QUERY.test(cleaned);
+          const directProService = techFocused ? findDirectProServiceMatch(cleaned, proOfferedRecords) : null;
+          setSuggestions(techFocused ? [] : Array.isArray(data.suggestions) ? data.suggestions : []);
+          setClarifyingMessage(techFocused ? null : data.clarifyingMessage ?? null);
           let match = data.bestMatch ?? null;
           if (!match?.serviceSlug) {
             const local = findServiceByName(cleaned);
@@ -399,6 +424,22 @@ export default function HeroSection() {
               };
             }
           }
+          const itSupport = aiCatalog.serviceRecords.find((record) => record.slug === "it-support");
+          if (techFocused && directProService) {
+            match = {
+              serviceName: directProService.name,
+              categoryName: directProService.categoryName,
+              serviceSlug: directProService.slug,
+              categorySlug: directProService.categorySlug,
+            };
+          } else if (techFocused && itSupport) {
+            match = {
+              serviceName: itSupport.name,
+              categoryName: itSupport.categoryName,
+              serviceSlug: itSupport.slug,
+              categorySlug: itSupport.categorySlug,
+            };
+          }
           setBestMatch(match);
           const follow =
             Array.isArray(data.followUpMatches) && data.followUpMatches.length > 0
@@ -406,10 +447,18 @@ export default function HeroSection() {
               : Array.isArray(data.topFour) && data.topFour.length > 1
                 ? data.topFour.slice(1, 4)
                 : [];
-          setFollowUpMatches(follow.filter((x) => x?.serviceSlug));
+          if (techFocused) {
+            setFollowUpMatches(directProService && itSupport && directProService.name.toLowerCase() !== itSupport.name.toLowerCase()
+              ? [{ serviceName: itSupport.name, serviceSlug: itSupport.slug, categorySlug: itSupport.categorySlug, categoryName: itSupport.categoryName }]
+              : []);
+          } else {
+            setFollowUpMatches(follow.filter((x) => x?.serviceSlug));
+          }
         } else {
+          const techFocused = TECH_SUPPORT_QUERY.test(cleaned);
+          const directProService = techFocused ? findDirectProServiceMatch(cleaned, proOfferedRecords) : null;
           const local = findServiceByName(cleaned);
-          if (local) {
+          if (!techFocused && local) {
             const svc = getAllServices().find((s) => s.slug === local.serviceSlug && s.categorySlug === local.categorySlug);
             setBestMatch({
               serviceName: svc?.name ?? cleaned,
@@ -419,6 +468,25 @@ export default function HeroSection() {
             });
             setSuggestions([]);
             setError(false);
+          } else if (techFocused) {
+            const itSupport = aiCatalog.serviceRecords.find((record) => record.slug === "it-support");
+            const selected = directProService ?? itSupport;
+            if (selected) {
+              setBestMatch({
+                serviceName: selected.name,
+                categoryName: selected.categoryName,
+                serviceSlug: selected.slug,
+                categorySlug: selected.categorySlug,
+              });
+              setFollowUpMatches(directProService && itSupport && directProService.name.toLowerCase() !== itSupport.name.toLowerCase()
+                ? [{ serviceName: itSupport.name, serviceSlug: itSupport.slug, categorySlug: itSupport.categorySlug, categoryName: itSupport.categoryName }]
+                : []);
+              setSuggestions([]);
+              setError(false);
+            } else {
+              setSuggestions([]);
+              setError(true);
+            }
           } else {
             setSuggestions([]);
             setError(true);
@@ -653,7 +721,9 @@ export default function HeroSection() {
                 {clarifyingMessage ? <p className="w-full text-center text-sm text-muted-foreground">{clarifyingMessage}</p> : null}
                 {bestMatch?.serviceName ? (
                   <button type="button" onClick={() => bestMatch.categorySlug && bestMatch.serviceSlug ? goToProsFromSlugs(bestMatch.categorySlug, bestMatch.serviceSlug) : goToService(bestMatch.serviceName!)} className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-sm hover:opacity-90">
-                    {getServiceName(bestMatch.serviceSlug ?? "", locale, bestMatch.serviceName)}<ArrowRight size={15} />
+                    {proOfferedRecords.some((record) => record.name === bestMatch.serviceName && record.slug === bestMatch.serviceSlug && record.categorySlug === bestMatch.categorySlug)
+                      ? bestMatch.serviceName
+                      : getServiceName(bestMatch.serviceSlug ?? "", locale, bestMatch.serviceName)}<ArrowRight size={15} />
                   </button>
                 ) : null}
                 {followUpMatches.slice(0, 3).map((item) => (

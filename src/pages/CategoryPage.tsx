@@ -10,6 +10,7 @@ import { ArrowLeft, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import NotFound from "@/pages/NotFound";
 import CategoryLottie from "@/components/CategoryLottie";
+import ProServicesModeSwitcher from "@/components/services/ProServicesModeSwitcher";
 
 export default function CategoryPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -32,6 +33,7 @@ export default function CategoryPage() {
 
   return (
     <Layout>
+      <ProServicesModeSwitcher />
       <section className="relative overflow-hidden border-b border-border">
         <div className="absolute inset-0">
           <img

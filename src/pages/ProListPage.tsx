@@ -19,6 +19,7 @@ import { filterAdvertiseableProIds } from "@/lib/filterAdvertiseablePros";
 import { isDemoAccount, isDemoProProfile } from "@/lib/demoAccount";
 import { isPubliclyListablePro } from "@/lib/publicProListing";
 import ServiceJobsList from "@/components/services/ServiceJobsList";
+import ProServicesModeSwitcher from "@/components/services/ProServicesModeSwitcher";
 
 export default function ProListPage() {
   const { categorySlug, serviceSlug } = useParams<{ categorySlug: string; serviceSlug: string }>();
@@ -225,6 +226,7 @@ export default function ProListPage() {
 
   return (
     <Layout>
+      <ProServicesModeSwitcher />
       <div className="bg-primary text-primary-foreground">
         <div className="container py-10">
           <Link
