@@ -612,6 +612,13 @@ export default function HeroSection() {
                 ) : postalError ? (
                   <p className="px-0.5 text-xs text-destructive">{postalError}</p>
                 ) : null}
+                {postalResolved ? (
+                  <HeroPostalTiltMap
+                    lat={postalResolved.lat}
+                    lng={postalResolved.lng}
+                    className="mt-2"
+                  />
+                ) : null}
               </div>
             </div>
           </div>
@@ -620,7 +627,7 @@ export default function HeroSection() {
             <BookingPhoneMock alwaysLive />
           </div>
         </div>
-        <div className="relative z-20 mx-auto -mt-2 w-full max-w-5xl lg:-mt-12">
+        <div className="relative z-20 mx-auto -mt-6 w-full max-w-5xl lg:-mt-16">
           <form id="hero-search" onSubmit={handleSubmit} className="hero-how-pill rounded-[2rem] border border-white/50 bg-white/55 p-3 shadow-[0_18px_70px_rgba(31,38,135,0.18)] backdrop-blur-2xl transition-[box-shadow,transform,background-color] duration-300 hover:-translate-y-1 hover:bg-white/70 hover:shadow-[0_24px_80px_rgba(31,38,135,0.24)] focus-within:-translate-y-1 focus-within:bg-white/80 focus-within:shadow-[0_24px_80px_rgba(31,38,135,0.26)] dark:border-white/15 dark:bg-white/10 dark:hover:bg-white/15 dark:focus-within:bg-white/[0.14]">
             <label htmlFor="hero-need" className="sr-only">{t.index.heroProjectPlaceholder}</label>
             <div className="flex min-h-[5.75rem] items-center gap-3 rounded-[1.5rem] px-4 sm:px-7">
@@ -632,7 +639,7 @@ export default function HeroSection() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={t.index.heroProjectPlaceholder}
-                className="min-w-0 flex-1 bg-transparent py-3 text-center text-[1.65rem] font-semibold tracking-tight text-foreground outline-none placeholder:text-foreground/70 focus:text-left sm:text-[2.5rem] md:text-[2.75rem]"
+                className="min-w-0 flex-1 bg-transparent py-3 text-center text-[1.485rem] font-semibold tracking-tight text-foreground outline-none placeholder:text-foreground/70 focus:text-left sm:text-[2.25rem] md:text-[2.475rem]"
                 aria-describedby="hero-service-recommendations"
               />
               {loading ? <Loader2 className="size-6 shrink-0 animate-spin text-primary" /> : null}
