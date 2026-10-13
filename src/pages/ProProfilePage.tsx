@@ -240,6 +240,7 @@ export default function ProProfilePage({ proIdOverride }: { proIdOverride?: stri
   const [clientBookingIdPath, setClientBookingIdPath] = useState<string | null>(null);
   const [bookingClientRenewAnnually, setBookingClientRenewAnnually] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
+  const [credentialDetailsOpen, setCredentialDetailsOpen] = useState(false);
   const [resolvedPhotoUrls, setResolvedPhotoUrls] = useState<Record<string, string>>({});
   const [lightboxImageDark, setLightboxImageDark] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"about" | "services" | "credentials">("about");
@@ -1399,28 +1400,28 @@ export default function ProProfilePage({ proIdOverride }: { proIdOverride?: stri
                   {portfolioPhotos.length > 0 && (
                     <section>
                       <h2 className="font-heading text-lg font-semibold text-foreground mb-3">Portfolio</h2>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                         {portfolioPhotos.map((photo) => {
                           const displayUrl = resolvedPhotoUrls[photo.id] ?? photo.url;
                           return (
                             <button
                               key={photo.id}
                               type="button"
-                              className="relative rounded-lg overflow-hidden border border-border aspect-square p-0 block w-full text-left cursor-pointer hover:ring-2 hover:ring-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                              className="flex min-w-0 w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-left cursor-pointer hover:ring-2 hover:ring-primary focus:outline-none focus:ring-2 focus:ring-primary"
                               onClick={() => setLightboxPhoto(displayUrl)}
                               aria-label={photo.caption || t.common.workPhoto}
                             >
-                              <StorageDisplayImage
-                                bucket="pro-photos"
-                                url={photo.url}
-                                alt={photo.caption || t.common.workPhoto}
-                                className="w-full h-full object-cover pointer-events-none"
-                              />
-                              {photo.caption && (
-                                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 p-2">
-                                  <p className="text-xs text-white">{photo.caption}</p>
-                                </div>
-                              )}
+                              <span className="flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-muted/30 p-2 sm:p-3">
+                                <StorageDisplayImage
+                                  bucket="pro-photos"
+                                  url={photo.url}
+                                  alt={photo.caption || t.common.workPhoto}
+                                  className="h-full w-full object-contain pointer-events-none"
+                                />
+                              </span>
+                              <span className="flex min-h-14 items-center border-t border-border px-3 py-2.5 text-xs leading-relaxed text-foreground sm:text-sm">
+                                {photo.caption || (locale === "fr" ? `Photo de projet de ${fullName}` : `Project photo by ${fullName}`)}
+                              </span>
                             </button>
                           );
                         })}
@@ -1448,10 +1449,35 @@ export default function ProProfilePage({ proIdOverride }: { proIdOverride?: stri
                         ))}
                       </div>
                       <p className="text-sm text-muted-foreground mt-2">
-                        {fullName} · <button type="button" className="text-primary hover:underline">{t.profile?.viewCredentialDetails ?? "View credential details"}</button>
+                        {fullName} · <button type="button" onClick={() => setCredentialDetailsOpen(true)} className="text-primary hover:underline">{t.profile?.viewCredentialDetails ?? "View credential details"}</button>
                       </p>
                     </section>
                   )}
+                  <Dialog open={credentialDetailsOpen} onOpenChange={setCredentialDetailsOpen}>
+                    <DialogContent className="max-w-lg">
+                      <DialogHeader>
+                        <DialogTitle>{fullName} · {t.profile?.viewCredentialDetails ?? "Credential details"}</DialogTitle>
+                        <DialogDescription>
+                          {locale === "fr" ? "Licences professionnelles et état de leur vérification sur AltShift." : "Professional licences and their verification status on AltShift."}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-3">
+                        {licenses.map((lic) => (
+                          <div key={lic.license_number} className="rounded-lg border border-border p-4">
+                            <p className="font-semibold">{lic.license_type}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {locale === "fr" ? "Numéro de licence" : "Licence number"}: {lic.license_number}
+                            </p>
+                            <p className={`mt-2 text-sm font-medium ${lic.is_verified ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
+                              {lic.is_verified
+                                ? (locale === "fr" ? "Vérifiée sur AltShift" : "Verified on AltShift")
+                                : (locale === "fr" ? "En attente de vérification" : "Verification pending")}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                   <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
                     {t.profile?.credentialsVerificationDisclaimer ??
                       "AltShift verifies certain credentials where applicable, but verification does not constitute an endorsement, guarantee, certification or warranty of the provider's work."}
