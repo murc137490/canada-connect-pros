@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { animate, motion, useMotionValue } from "motion/react";
-import { Expand, Loader2, MapPin, Navigation, X } from "lucide-react";
+import { Expand, Loader2, MapPin, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { distanceKm, geocodeAddress } from "@/lib/geocode";
 import { triggerMapResize, whenGoogleMapsReady } from "@/lib/loadGoogleMapsJs";
@@ -10,6 +11,8 @@ type Locale = "en" | "fr";
 
 type Booking = {
   id: string;
+  public_booking_code?: string | null;
+  invoice_number?: number | null;
   created_at: string;
   preferred_date?: string | null;
   preferred_time?: string | null;
@@ -30,6 +33,7 @@ type Point = {
   date: string;
   time: string | null;
   service: string;
+  address: string;
 };
 
 type MapMarker = { setMap: (map: GoogleMap | null) => void; addListener: (event: string, callback: () => void) => void };
@@ -117,6 +121,8 @@ export default function ProUpcomingJobsMap({
   const [mapRadiusKm, setMapRadiusKm] = useState(Math.min(100, Math.max(5, defaultRadiusKm ?? 50)));
   const [selected, setSelected] = useState<Point | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     setMapRadiusKm(Math.min(100, Math.max(5, defaultRadiusKm ?? 50)));
@@ -149,6 +155,7 @@ export default function ProUpcomingJobsMap({
         date,
         time: booking.preferred_time?.slice(0, 5) ?? null,
         service: proBookingServiceLabel(booking, locale) || (fr ? "Service" : "Service"),
+        address,
       } satisfies Point;
     })).then((rows) => {
       if (cancelled) return;
@@ -205,6 +212,9 @@ export default function ProUpcomingJobsMap({
         });
         map.setCenter(proLocation);
         map.setZoom(mapRadiusKm <= 10 ? 11 : mapRadiusKm <= 25 ? 10 : mapRadiusKm <= 50 ? 9 : 8);
+      } else if (selected) {
+        map.setCenter({ lat: selected.lat, lng: selected.lng });
+        map.setZoom(15);
       } else if (visiblePoints.length) {
         const mapBounds = new maps.LatLngBounds();
         if (proLocation) mapBounds.extend(proLocation);
@@ -234,12 +244,20 @@ export default function ProUpcomingJobsMap({
       });
       setMapError(false);
     }).catch(() => { if (!cancelled) setMapError(true); });
-    return () => { cancelled = true; };
-  }, [visiblePoints, areaEnabled, mapRadiusKm, proLocation, locale]);
+    return () => {
+      cancelled = true;
+      markers.current.forEach((marker) => marker.setMap(null));
+      markers.current = [];
+      circle.current?.setMap(null);
+      circle.current = null;
+      mapInstance.current = null;
+    };
+  }, [visiblePoints, areaEnabled, mapRadiusKm, proLocation, locale, expanded, selected]);
 
   useEffect(() => () => {
     markers.current.forEach((marker) => marker.setMap(null));
     circle.current?.setMap(null);
+    mapInstance.current = null;
   }, []);
 
   useEffect(() => {
@@ -269,55 +287,42 @@ export default function ProUpcomingJobsMap({
     { id: "upcoming", label: fr ? "À venir" : "Upcoming" },
   ];
 
-  return (
+  const nearbyBookings = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase();
+    return points
+      .filter((point) => {
+        if (!query) return true;
+        const bookingNumber = [point.booking.public_booking_code, point.booking.invoice_number, point.booking.id]
+          .filter((value) => value !== null && value !== undefined)
+          .join(" ")
+          .toLocaleLowerCase();
+        return [point.clientName, point.address, bookingNumber].some((value) => value.toLocaleLowerCase().includes(query));
+      })
+      .sort((a, b) => {
+        if (!proLocation) return a.date.localeCompare(b.date);
+        return distanceKm(proLocation.lat, proLocation.lng, a.lat, a.lng) - distanceKm(proLocation.lat, proLocation.lng, b.lat, b.lng);
+      });
+  }, [points, proLocation, searchQuery]);
+
+  const selectBooking = (point: Point) => {
+    setPeriod("upcoming");
+    setAreaEnabled(false);
+    setSelected(point);
+    setSearchQuery("");
+    setSearchOpen(false);
+    mapInstance.current?.setCenter({ lat: point.lat, lng: point.lng });
+    mapInstance.current?.setZoom(15);
+  };
+
+  const mapView = (
     <section
       className={expanded
-        ? "fixed inset-0 z-[100] m-0 flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col overflow-y-auto rounded-none border-0 bg-background p-4 sm:p-6"
+        ? "fixed inset-0 z-[9999] m-0 h-[100dvh] max-h-[100dvh] w-screen max-w-none overflow-hidden rounded-none border-0 bg-[#101b1d] p-0"
         : "relative rounded-xl border bg-card p-2"}
       aria-label={fr ? "Carte des réservations à venir" : "Upcoming bookings map"}
     >
-      {expanded ? (
-        <div className="mb-4 flex shrink-0 items-start justify-between gap-4">
-          <div>
-            <h3 className="flex items-center gap-2 font-heading text-lg font-bold text-foreground">
-              <MapPin className="size-5 text-primary" aria-hidden />{fr ? "Réservations à venir" : "Upcoming jobs"}
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {fr ? "Repères des réservations acceptées, payées et avec déplacement." : "Pins show accepted, paid bookings that require travel."}
-            </p>
-          </div>
-          <Button type="button" variant="outline" size="icon" aria-label={fr ? "Fermer la carte" : "Close map"} onClick={() => setExpanded(false)}>
-            <X className="size-4" aria-hidden />
-          </Button>
-        </div>
-      ) : null}
-
-      {expanded ? (
-        <div className="mb-4 flex shrink-0 flex-wrap items-center gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {periodOptions.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => setPeriod(option.id)}
-                aria-pressed={period === option.id}
-                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${period === option.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
-              >{option.label}</button>
-            ))}
-          </div>
-          <label className="ml-auto flex cursor-pointer items-center gap-2 text-sm text-foreground">
-            <input type="checkbox" checked={areaEnabled} onChange={(event) => setAreaEnabled(event.target.checked)} className="size-4 accent-primary" />
-            {fr ? "Zone de service" : "Service area"}
-          </label>
-        </div>
-      ) : null}
-
-      {expanded && areaEnabled ? (
-        <ElasticRadiusSlider value={mapRadiusKm} onChange={setMapRadiusKm} locale={locale} />
-      ) : null}
-
-      <div className={expanded ? "relative min-h-[250px] flex-1 overflow-hidden rounded-xl border border-border/70" : "relative overflow-hidden rounded-lg"}>
-        <div ref={mapElement} className={expanded ? "h-full min-h-[250px] w-full bg-muted/40" : "h-[190px] w-full bg-muted/40"} />
+      <div className={expanded ? "absolute inset-0 overflow-hidden" : "relative overflow-hidden rounded-lg"}>
+        <div ref={mapElement} className={expanded ? "h-full min-h-full w-full bg-[#101b1d]" : "h-[190px] w-full bg-muted/40"} />
         {!expanded && !mapError ? (
           <button
             type="button"
@@ -332,27 +337,63 @@ export default function ProUpcomingJobsMap({
         ) : null}
         {mapError ? <div className="absolute inset-0 z-20 grid place-items-center bg-background/90 px-4 text-center text-sm text-muted-foreground">{fr ? "La carte est temporairement indisponible." : "The map is temporarily unavailable."}</div> : null}
         {loading ? <div className="absolute left-3 top-3 z-20 inline-flex items-center gap-2 rounded-md bg-background/90 px-2.5 py-1.5 text-xs text-muted-foreground"><Loader2 className="size-3.5 animate-spin" />{fr ? "Localisation des réservations…" : "Locating bookings…"}</div> : null}
-        {expanded && !loading && visiblePoints.length === 0 && !mapError ? <div className="absolute inset-x-3 bottom-3 z-10 rounded-md bg-background/95 px-3 py-2 text-center text-xs text-muted-foreground">{fr ? "Aucune réservation payée à afficher pour cette période et ce rayon." : "No paid bookings to show for this period and radius."}</div> : null}
+        {expanded && !loading && visiblePoints.length === 0 && !mapError ? <div className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-xs text-white/80 backdrop-blur">{fr ? "Aucune réservation payée pour cette période et ce rayon." : "No paid bookings for this period and radius."}</div> : null}
       </div>
 
       {expanded ? (
-        <div className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span>{visiblePoints.length} {fr ? (visiblePoints.length === 1 ? "réservation" : "réservations") : (visiblePoints.length === 1 ? "booking" : "bookings")}</span>
-          {proLocation ? <span className="inline-flex items-center gap-1"><Navigation className="size-3" aria-hidden />{fr ? "Zone centrée sur votre profil" : "Area centered on your profile"}</span> : null}
-        </div>
-      ) : null}
-
-      {expanded && selected ? (
-        <div className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/20 p-3">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-foreground">{selected.clientName}</p>
-            <p className="text-xs text-muted-foreground">{selected.service} · {formatDate(selected.date, locale)}{selected.time ? ` · ${selected.time}` : ""}</p>
+        <>
+          <div className="absolute left-3 top-3 z-30 flex max-w-[calc(100vw-1.5rem)] flex-wrap gap-1.5 rounded-2xl bg-white/95 p-2 shadow-xl backdrop-blur sm:left-5 sm:top-5">
+            {periodOptions.map((option) => (
+              <button key={option.id} type="button" onClick={() => setPeriod(option.id)} aria-pressed={period === option.id}
+                className={`rounded-full px-3 py-2 text-xs font-medium transition-colors ${period === option.id ? "bg-primary text-primary-foreground" : "text-slate-600 hover:bg-slate-100"}`}>
+                {option.label}
+              </button>
+            ))}
+            <label className="flex cursor-pointer items-center gap-2 border-l border-slate-200 px-3 text-xs font-medium text-slate-700">
+              <input type="checkbox" checked={areaEnabled} onChange={(event) => setAreaEnabled(event.target.checked)} className="size-4 accent-primary" />
+              {fr ? "Zone" : "Area"}
+            </label>
           </div>
-          <Button type="button" size="sm" variant="outline" onClick={() => onOpenBooking(selected.booking.id)}>{fr ? "Voir la réservation" : "View booking"}</Button>
-        </div>
+          {areaEnabled ? <div className="absolute bottom-5 left-3 z-30 w-[min(26rem,calc(100vw-1.5rem))] rounded-2xl bg-white/95 p-2 shadow-xl backdrop-blur sm:bottom-6 sm:left-5"><ElasticRadiusSlider value={mapRadiusKm} onChange={setMapRadiusKm} locale={locale} /></div> : null}
+          <div className="absolute right-3 top-3 z-40 flex w-[min(25rem,calc(100vw-1.5rem))] items-start gap-2 sm:right-5 sm:top-5">
+            <div className="relative min-w-0 flex-1">
+              <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2.5 shadow-xl ring-1 ring-black/5">
+                <Search className="size-4 shrink-0 text-slate-500" aria-hidden />
+                <input value={searchQuery} onFocus={() => setSearchOpen(true)} onChange={(event) => { setSearchQuery(event.target.value); setSearchOpen(true); }}
+                  placeholder={fr ? "Nom, adresse ou no de réservation" : "Client, address or booking number"}
+                  aria-label={fr ? "Rechercher une réservation par client, adresse ou numéro" : "Search bookings by client, address or number"}
+                  className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-500" />
+                {searchQuery ? <button type="button" aria-label={fr ? "Effacer la recherche" : "Clear search"} onClick={() => setSearchQuery("")} className="rounded-full p-1 text-slate-500 hover:bg-slate-100"><X className="size-4" /></button> : null}
+              </div>
+              {searchOpen ? <div className="absolute right-0 top-[calc(100%+0.5rem)] max-h-[min(65vh,34rem)] w-full overflow-y-auto rounded-2xl bg-white p-1.5 shadow-2xl ring-1 ring-black/10">
+                <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{fr ? "Réservations les plus proches" : "Closest bookings"}</p>
+                {nearbyBookings.length ? nearbyBookings.map((point) => {
+                  const distance = proLocation ? distanceKm(proLocation.lat, proLocation.lng, point.lat, point.lng) : null;
+                  const number = point.booking.public_booking_code || (point.booking.invoice_number ? `#${point.booking.invoice_number}` : `#${point.booking.id.slice(0, 8).toUpperCase()}`);
+                  return <button key={point.booking.id} type="button" onClick={() => selectBooking(point)} className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                    <MapPin className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                    <span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-2"><span className="truncate text-sm font-semibold text-slate-900">{point.clientName}</span><span className="shrink-0 text-xs text-slate-500">{distance === null ? "" : `${distance.toFixed(1)} km`}</span></span>
+                      <span className="mt-0.5 block truncate text-xs text-slate-600">{point.address}</span><span className="mt-1 block truncate text-[11px] text-slate-500">{number} · {formatDate(point.date, locale)}{point.time ? ` · ${point.time}` : ""}</span></span>
+                  </button>;
+                }) : <p className="px-3 py-4 text-sm text-slate-500">{fr ? "Aucune réservation trouvée." : "No bookings found."}</p>}
+              </div> : null}
+            </div>
+            <Button type="button" variant="outline" size="icon" aria-label={fr ? "Fermer la carte" : "Close map"} onClick={() => { setExpanded(false); setSearchOpen(false); }} className="size-11 shrink-0 rounded-2xl border-0 bg-white text-slate-800 shadow-xl hover:bg-slate-100">
+              <X className="size-5" aria-hidden />
+            </Button>
+          </div>
+          {searchOpen ? <button aria-label={fr ? "Fermer les résultats de recherche" : "Close search results"} className="fixed inset-0 z-20 cursor-default" onClick={() => setSearchOpen(false)} /> : null}
+          {selected ? <div className="absolute bottom-5 right-3 z-30 flex max-w-[min(28rem,calc(100vw-1.5rem))] items-center gap-3 rounded-2xl bg-white p-3 shadow-2xl sm:bottom-6 sm:right-5">
+            <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-slate-900">{selected.clientName}</p><p className="truncate text-xs text-slate-600">{selected.address}</p><p className="truncate text-xs text-slate-500">{selected.service} · {formatDate(selected.date, locale)}{selected.time ? ` · ${selected.time}` : ""}</p></div>
+            <Button type="button" size="sm" onClick={() => onOpenBooking(selected.booking.id)}>{fr ? "Réservation" : "Booking"}</Button>
+          </div> : null}
+          {loading ? <div className="absolute bottom-5 left-1/2 z-30 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-xs text-white shadow-lg backdrop-blur"><Loader2 className="mr-2 inline size-3.5 animate-spin" />{fr ? "Localisation…" : "Locating…"}</div> : null}
+        </>
       ) : null}
     </section>
   );
+
+  return expanded && typeof document !== "undefined" ? createPortal(mapView, document.body) : mapView;
 }
 
 function ElasticRadiusSlider({ value, onChange, locale }: { value: number; onChange: (value: number) => void; locale: Locale }) {
@@ -362,7 +403,7 @@ function ElasticRadiusSlider({ value, onChange, locale }: { value: number; onCha
   const handlePointerUp = () => animate(stretch, 1, { type: "spring", stiffness: 300, damping: 14, bounce: 0.35 });
 
   return (
-    <div className="mb-4 flex shrink-0 items-center gap-3 rounded-lg border border-border/70 bg-card px-3 py-2.5 sm:max-w-xl">
+    <div className="flex items-center gap-3 rounded-lg px-2 py-1.5">
       <MapPin className="size-4 shrink-0 text-muted-foreground" aria-hidden />
       <motion.div className="min-w-0 flex-1" style={{ scaleX: stretch }}>
         <input
