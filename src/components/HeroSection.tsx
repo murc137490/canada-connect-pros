@@ -627,7 +627,7 @@ export default function HeroSection() {
             <BookingPhoneMock alwaysLive />
           </div>
         </div>
-        <div className="relative z-20 mx-auto mt-9 w-full max-w-4xl -translate-y-8 lg:-translate-y-[22rem]">
+        <div className="relative z-20 mx-auto mt-9 w-full max-w-4xl -translate-y-8 lg:-translate-y-[24rem]">
           <form
             id="hero-search"
             onSubmit={handleSubmit}
@@ -640,7 +640,7 @@ export default function HeroSection() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t.index.heroProjectPlaceholder}
-              className="min-h-[4.6rem] w-full bg-transparent px-3 py-3 text-center text-[1.41rem] font-semibold tracking-tight text-foreground outline-none placeholder:text-foreground/70 sm:min-h-[5.2rem] sm:text-[2.14rem] md:text-[2.35rem]"
+              className={`min-h-[4.6rem] w-full bg-transparent px-3 py-3 text-center font-semibold tracking-tight text-foreground outline-none placeholder:text-foreground/70 ${locale === "fr" ? "text-[1.45rem] sm:text-[2.2rem] md:text-[2.42rem]" : "text-[1.41rem] sm:text-[2.14rem] md:text-[2.35rem]"} sm:min-h-[5.2rem]`}
               aria-describedby="hero-service-recommendations"
             />
             <button type="submit" className="sr-only">{locale === "fr" ? "Rechercher" : "Search"}</button>

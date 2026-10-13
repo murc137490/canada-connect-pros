@@ -5441,7 +5441,7 @@ export default function Dashboard() {
 
           <TabsContent forceMount value="account" className="mx-auto w-full max-w-[1480px] space-y-6 2xl:grid 2xl:grid-cols-12 2xl:items-start 2xl:gap-4 2xl:space-y-0">
             <div className="contents">
-              <aside className="flex flex-col gap-4 2xl:col-start-1 2xl:col-span-3">
+              <aside className="flex flex-col gap-4 2xl:col-start-1 2xl:col-span-3 2xl:row-span-2">
                 <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-6 text-center">
                   <ClickableProfileAvatar
                     className="h-24 w-24"
@@ -5466,7 +5466,7 @@ export default function Dashboard() {
                   />
                 </div>
               </aside>
-              <form onSubmit={saveAccount} className="grid min-w-0 grid-cols-1 gap-4 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-2 md:p-8 2xl:col-start-4 2xl:col-span-6" data-tour="account-profile">
+              <form onSubmit={saveAccount} className="grid min-w-0 grid-cols-1 gap-4 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-2 md:p-8 2xl:col-start-4 2xl:col-span-6 2xl:row-span-2" data-tour="account-profile">
               <div className="space-y-2 md:col-start-1 md:row-start-1">
                 <Label htmlFor="acc-name">{t.dashboard.accountName}</Label>
                 <Input id="acc-name" value={accountForm.full_name} onChange={(e) => setAccountForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Ryan Smith" />
