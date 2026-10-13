@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
-import { Sparkles, ArrowRight, LocateFixed, Loader2, MapPin } from "lucide-react";
+import { Sparkles, ArrowRight, LocateFixed, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MOTION } from "@/motion/types";
 import { getAllServices, getCategorySummariesForAI, getFlatServiceRecords } from "@/data/services";
@@ -99,7 +99,6 @@ function findServiceByName(serviceName: string): { categorySlug: string; service
 export default function HeroSection() {
   const { t, locale } = useLanguage();
   const [query, setQuery] = useState("");
-  const [needNudge, setNeedNudge] = useState(false);
   const [postalCode, setPostalCode] = useState("");
   const [postalResolved, setPostalResolved] = useState<{
     lat: number;
@@ -121,36 +120,12 @@ export default function HeroSection() {
   const [proNameMatches, setProNameMatches] = useState<ProBusinessSearchHit[]>([]);
   const navigate = useNavigate();
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const postalEditedRef = useRef(false);
   const postalResolvedRef = useRef(postalResolved);
   postalResolvedRef.current = postalResolved;
   const locationDetectOnceRef = useRef(false);
   const [locating, setLocating] = useState(false);
-  const [textareaFocused, setTextareaFocused] = useState(false);
   const [browseLeaving, setBrowseLeaving] = useState(false);
-  const needIsWaiting = Boolean(postalResolved) && query.trim().length === 0 && !textareaFocused;
-
-  useEffect(() => {
-    if (!needIsWaiting) {
-      setNeedNudge(false);
-      return;
-    }
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let nudgeTimer = 0;
-    const kick = () => {
-      setNeedNudge(true);
-      window.clearTimeout(nudgeTimer);
-      nudgeTimer = window.setTimeout(() => setNeedNudge(false), 520);
-    };
-    const first = window.setTimeout(kick, 450);
-    const interval = window.setInterval(kick, 2600);
-    return () => {
-      window.clearTimeout(first);
-      window.clearInterval(interval);
-      window.clearTimeout(nudgeTimer);
-    };
-  }, [needIsWaiting]);
 
   const goBrowseServices = useCallback(() => {
     if (browseLeaving) return;
@@ -480,55 +455,35 @@ export default function HeroSection() {
     };
   }, [query, runSearch]);
 
-  // Auto-grow textarea when user types or when AI content appears; keep small when idle and empty
-  const isActive =
-    textareaFocused ||
-    query.length > 0 ||
-    loading ||
-    suggestions.length > 0 ||
-    followUpMatches.length > 0 ||
-    bestMatch != null;
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    if (!isActive) {
-      el.style.height = "";
-      return;
-    }
-    const minH = 40;
-    const maxH = 128;
-    el.style.height = "";
-    const next = Math.min(maxH, Math.max(minH, el.scrollHeight));
-    el.style.height = `${next}px`;
-  }, [query, isActive, loading, suggestions.length, bestMatch, followUpMatches.length]);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!normalizedPostal) return;
     if (query.trim()) {
       const q = query.trim();
-      if (!postalResolved) {
+      if (normalizedPostal && !postalResolved) {
         void resolvePostal();
         return;
       }
-      const geoParams = new URLSearchParams({
-        postal: normalizedPostal,
-        lat: String(postalResolved.lat),
-        lng: String(postalResolved.lng),
-      });
-      if (postalResolved.city) geoParams.set("city", postalResolved.city);
-      if (postalResolved.province) geoParams.set("province", postalResolved.province);
+      const geoParams = new URLSearchParams();
+      if (postalResolved && normalizedPostal) {
+        geoParams.set("postal", normalizedPostal);
+        geoParams.set("lat", String(postalResolved.lat));
+        geoParams.set("lng", String(postalResolved.lng));
+        if (postalResolved.city) geoParams.set("city", postalResolved.city);
+        if (postalResolved.province) geoParams.set("province", postalResolved.province);
+      }
+      const queryString = geoParams.toString();
+      const suffix = queryString ? `?${queryString}` : "";
       const localService = findServiceByName(q);
       if (localService) {
-        navigate(`/services/${localService.categorySlug}/${localService.serviceSlug}/pros?${geoParams.toString()}`);
+        navigate(`/services/${localService.categorySlug}/${localService.serviceSlug}/pros${suffix}`);
         return;
       }
       if (bestMatch?.categorySlug && bestMatch?.serviceSlug) {
-        navigate(`/services/${bestMatch.categorySlug}/${bestMatch.serviceSlug}/pros?${geoParams.toString()}`);
+        navigate(`/services/${bestMatch.categorySlug}/${bestMatch.serviceSlug}/pros${suffix}`);
         return;
       }
       if (bestMatch || suggestions.length > 0 || followUpMatches.length > 0 || proNameMatches.length > 0) {
-        navigate(`/services?q=${encodeURIComponent(q)}&${geoParams.toString()}`);
+        navigate(`/services?q=${encodeURIComponent(q)}${queryString ? `&${queryString}` : ""}`);
       } else {
         runSearch(q);
       }
@@ -538,14 +493,23 @@ export default function HeroSection() {
   const goToService = (serviceName: string) => {
     const resolved = findServiceByName(serviceName);
     if (resolved) {
-      navigate(`/services/${resolved.categorySlug}/${resolved.serviceSlug}/pros`);
+      goToProsFromSlugs(resolved.categorySlug, resolved.serviceSlug);
     } else {
       navigate(`/services?q=${encodeURIComponent(serviceName)}`);
     }
   };
 
   const goToProsFromSlugs = (categorySlug: string, serviceSlug: string) => {
-    navigate(`/services/${categorySlug}/${serviceSlug}/pros`);
+    const params = new URLSearchParams();
+    if (postalResolved && normalizedPostal) {
+      params.set("postal", normalizedPostal);
+      params.set("lat", String(postalResolved.lat));
+      params.set("lng", String(postalResolved.lng));
+      if (postalResolved.city) params.set("city", postalResolved.city);
+      if (postalResolved.province) params.set("province", postalResolved.province);
+    }
+    const suffix = params.toString();
+    navigate(`/services/${categorySlug}/${serviceSlug}/pros${suffix ? `?${suffix}` : ""}`);
   };
 
   const hasResults =
@@ -554,9 +518,6 @@ export default function HeroSection() {
     bestMatch != null ||
     followUpMatches.length > 0 ||
     proNameMatches.length > 0;
-
-  const resultChipClass =
-    "inline-flex items-center gap-2 rounded-full border border-border bg-background px-3.5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted";
 
   return (
     <motion.section
@@ -597,257 +558,117 @@ export default function HeroSection() {
               </motion.button>
             </div>
 
-            <form id="hero-search" onSubmit={handleSubmit} className="mt-8 max-w-xl scroll-mt-28">
+                        <div className="mt-8 max-w-xl scroll-mt-28">
               <p className="mb-2.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 {t.index.heroSearchLabel}
               </p>
               <div className="border border-border bg-card p-3 sm:p-3.5 space-y-2.5" style={{ borderRadius: "10px" }}>
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="hero-postal" className="text-[12px] font-medium text-muted-foreground">
-                    {t.index.heroPostalHint}
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="hero-postal"
-                      type="text"
-                      inputMode="text"
-                      autoComplete="postal-code"
-                      placeholder={t.index.heroPostalExample}
-                      value={postalCode}
-                      onChange={(e) => {
-                        postalEditedRef.current = true;
-                        const next = formatCanadianPostalInput(e.target.value);
-                        setPostalCode(next);
-                        setPostalResolved(null);
-                        setPostalError(null);
-                        if (!next.trim()) clearBrowsePostalLocation();
-                      }}
-                      onFocus={() => {
-                        if (!postalCode.trim()) void applyDetectedLocation({ fromEmptyFocus: true });
-                      }}
-                      onBlur={() => {
-                        postalEditedRef.current = false;
-                        if (normalizedPostal) void resolvePostal();
-                      }}
-                      maxLength={7}
-                      className={`w-full sm:max-w-[9.5rem] border bg-background px-3 py-2.5 text-sm font-semibold tracking-wide text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 ${
-                        postalError
-                          ? "border-destructive"
-                          : postalResolved
-                            ? "border-border"
-                            : "border-border"
-                      }`}
-                      style={{ borderRadius: "7px" }}
-                      disabled={locating}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => void applyDetectedLocation()}
-                      disabled={locating || postalLoading}
-                      title={t.index.heroPostalUseLocation}
-                      aria-label={t.index.heroPostalUseLocation}
-                      className="inline-flex h-[2.75rem] w-[2.75rem] shrink-0 items-center justify-center border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
-                      style={{ borderRadius: "7px" }}
-                    >
-                      {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="relative min-w-0">
-                  <label htmlFor="hero-need" className="sr-only">
-                    {t.index.heroProjectPlaceholder}
-                  </label>
-                  <textarea
-                    id="hero-need"
-                    ref={textareaRef}
-                    placeholder={t.index.heroNeedAfterPostal}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onFocus={() => setTextareaFocused(true)}
-                    onBlur={() => setTextareaFocused(false)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        const form = (e.target as HTMLTextAreaElement).form;
-                        if (form) form.requestSubmit();
-                      }
+                <label htmlFor="hero-postal" className="text-[12px] font-medium text-muted-foreground">
+                  {t.index.heroPostalHint}
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="hero-postal"
+                    type="text"
+                    inputMode="text"
+                    autoComplete="postal-code"
+                    placeholder={t.index.heroPostalExample}
+                    value={postalCode}
+                    onChange={(e) => {
+                      postalEditedRef.current = true;
+                      const next = formatCanadianPostalInput(e.target.value);
+                      setPostalCode(next);
+                      setPostalResolved(null);
+                      setPostalError(null);
+                      if (!next.trim()) clearBrowsePostalLocation();
                     }}
-                    rows={1}
-                    className={`w-full min-h-[2.75rem] max-h-32 resize-none overflow-y-auto border border-border/70 bg-muted/40 px-3 py-2.5 pr-10 text-sm text-foreground outline-none transition-[height] duration-300 placeholder:text-muted-foreground/70 focus:border-border focus:bg-background disabled:opacity-50 sm:text-[15px] ${
-                      needNudge ? "hero-need-waiting" : ""
-                    }`}
-                    style={{ overflowWrap: "break-word", borderRadius: "7px" }}
-                    disabled={!normalizedPostal || !postalResolved}
+                    onFocus={() => {
+                      if (!postalCode.trim()) void applyDetectedLocation({ fromEmptyFocus: true });
+                    }}
+                    onBlur={() => {
+                      postalEditedRef.current = false;
+                      if (normalizedPostal) void resolvePostal();
+                    }}
+                    maxLength={7}
+                    className={`w-full sm:max-w-[9.5rem] border bg-background px-3 py-2.5 text-sm font-semibold tracking-wide text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 ${postalError ? "border-destructive" : "border-border"}`}
+                    style={{ borderRadius: "7px" }}
+                    disabled={locating}
                   />
-                  {loading && (
-                    <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
-                      <Sparkles className="animate-pulse text-accent" size={18} />
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => void applyDetectedLocation()}
+                    disabled={locating || postalLoading}
+                    title={t.index.heroPostalUseLocation}
+                    aria-label={t.index.heroPostalUseLocation}
+                    className="inline-flex h-[2.75rem] w-[2.75rem] shrink-0 items-center justify-center border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                    style={{ borderRadius: "7px" }}
+                  >
+                    {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+                  </button>
                 </div>
-
-                {query.trim() ? (
-                  <div className="space-y-2 pt-0.5">
-                    <p className="text-sm text-foreground">{t.index.heroCantFind}</p>
-                    <Button asChild size="sm" className="h-9">
-                      <Link
-                        to={`/make-request?description=${encodeURIComponent(query.trim())}${
-                          normalizedPostal ? `&postal=${encodeURIComponent(normalizedPostal)}` : ""
-                        }`}
-                      >
-                        {t.index.ctaPublish}
-                      </Link>
-                    </Button>
-                  </div>
-                ) : null}
-
-                {postalResolved ? (
-                  <p className="px-0.5 text-xs text-muted-foreground">
-                    {postalResolved.city
-                      ? `${postalResolved.city}${postalResolved.province ? `, ${postalResolved.province}` : ""} · ${normalizedPostal}`
-                      : normalizedPostal}
-                  </p>
-                ) : null}
+                {postalResolved ? <p className="px-0.5 text-xs text-muted-foreground">{normalizedPostal}</p> : null}
                 {postalLoading || locating ? (
                   <p className="px-0.5 text-xs text-muted-foreground">{t.makeRequest.step3Detecting}</p>
                 ) : postalError ? (
                   <p className="px-0.5 text-xs text-destructive">{postalError}</p>
                 ) : null}
-
-                {postalResolved ? (
-                  <HeroPostalTiltMap
-                    key={`${postalResolved.lat},${postalResolved.lng}`}
-                    lat={postalResolved.lat}
-                    lng={postalResolved.lng}
-                    className="pt-0.5"
-                  />
-                ) : null}
-
-                {loading && (
-                  <div className="mt-3 space-y-2 border-t border-border/70 pt-3">
-                    <p className="text-xs font-medium text-muted-foreground">{t.index.heroAiThinking}</p>
-                    <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
-                      <div className="ai-thinking-gauge h-full w-full rounded-full" />
-                    </div>
-                  </div>
-                )}
-
-                {error && !loading && (
-                  <div className="mt-3 border-t border-border/70 pt-3">
-                    <p className="text-sm text-muted-foreground">{t.index.heroAiError}</p>
-                    <a href="/support" className="mt-1 inline-block text-sm font-semibold text-primary underline-offset-2 hover:underline">
-                      {t.index.heroAiErrorSupport ?? "Contact support"}
-                    </a>
-                  </div>
-                )}
-
-                {hasResults && !loading && (
-                  <div className="mt-3 space-y-3 border-t border-border/70 pt-3 text-left">
-                    {clarifyingMessage && (
-                      <p className="text-sm text-muted-foreground">{clarifyingMessage}</p>
-                    )}
-                    {bestMatch?.serviceName &&
-                      (() => {
-                        const resolved =
-                          bestMatch.serviceSlug && bestMatch.categorySlug
-                            ? { categorySlug: bestMatch.categorySlug, serviceSlug: bestMatch.serviceSlug }
-                            : findServiceByName(bestMatch.serviceName);
-                        const categoryLabel =
-                          resolved && bestMatch.categoryName
-                            ? getCategoryName({ name: bestMatch.categoryName, slug: resolved.categorySlug }, locale)
-                            : bestMatch.categoryName ?? "";
-                        const serviceLabel = resolved
-                          ? getServiceName(resolved.serviceSlug, locale, bestMatch.serviceName)
-                          : bestMatch.serviceName;
-                        return (
-                          <div>
-                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                              {t.index.heroBestMatch}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  bestMatch.serviceSlug && bestMatch.categorySlug
-                                    ? goToProsFromSlugs(bestMatch.categorySlug, bestMatch.serviceSlug)
-                                    : goToService(bestMatch.serviceName!)
-                                }
-                                className={resultChipClass}
-                              >
-                                {categoryLabel ? `${categoryLabel} → ${serviceLabel}` : serviceLabel}
-                                <ArrowRight size={14} />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    {proNameMatches.length > 0 && (
-                      <>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                          {t.index.heroProMatches}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {proNameMatches.map((pro) => (
-                            <button
-                              key={pro.proProfileId}
-                              type="button"
-                              onClick={() => navigate(proPublicPath({ id: pro.proProfileId, share_slug: pro.shareSlug }))}
-                              className={resultChipClass}
-                            >
-                              {pro.businessName}
-                              {pro.fullName && pro.fullName.toLowerCase() !== pro.businessName.toLowerCase()
-                                ? ` (${pro.fullName})`
-                                : ""}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                    {followUpMatches.length > 0 && (
-                      <>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                          {t.index.heroFollowUpServices}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {followUpMatches.map((m, idx) => {
-                            const followLabel = getServiceName(m.serviceSlug, locale, m.serviceName);
-                            return (
-                              <button
-                                key={`${m.serviceSlug}-${idx}`}
-                                type="button"
-                                onClick={() => goToProsFromSlugs(m.categorySlug, m.serviceSlug)}
-                                className={resultChipClass}
-                              >
-                                {followLabel}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
               </div>
-            </form>
+            </div>
           </div>
 
           <div className="relative mt-6 flex justify-center lg:mt-0 lg:justify-end">
             <BookingPhoneMock alwaysLive />
           </div>
         </div>
-        <motion.div
-          className="hero-how-pill mx-auto mt-5 flex w-fit max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-white/45 bg-white/50 px-5 py-2.5 text-center text-sm font-semibold text-foreground shadow-[0_8px_32px_rgba(31,38,135,0.12)] backdrop-blur-xl transition-[box-shadow,transform,background-color] duration-300 hover:-translate-y-1 hover:bg-white/65 hover:shadow-[0_14px_40px_rgba(31,38,135,0.18)] dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
-          animate={needNudge ? { x: [0, -2, 2, -1, 1, 0] } : { x: 0 }}
-          transition={{ duration: 0.42, ease: "easeInOut" }}
-          aria-label={`${t.index.heroProjectPlaceholder} ${postalResolved?.city ? `${postalResolved.city}, ${postalResolved.province ?? "QC"} · ${normalizedPostal}` : "Montréal, QC · H2Y 1C6"}`}
-        >
-          <span>{t.index.heroProjectPlaceholder}</span>
-          <span className="inline-flex items-center gap-1.5 font-medium text-muted-foreground dark:text-white/75">
-            <MapPin className="size-3.5" aria-hidden="true" />
-            {postalResolved?.city ? `${postalResolved.city}, ${postalResolved.province ?? "QC"} · ${normalizedPostal}` : "Montréal, QC · H2Y 1C6"}
-          </span>
-        </motion.div>
+        <div className="relative z-20 mx-auto -mt-2 w-full max-w-5xl lg:-mt-12">
+          <form id="hero-search" onSubmit={handleSubmit} className="hero-how-pill rounded-[2rem] border border-white/50 bg-white/55 p-3 shadow-[0_18px_70px_rgba(31,38,135,0.18)] backdrop-blur-2xl transition-[box-shadow,transform,background-color] duration-300 hover:-translate-y-1 hover:bg-white/70 hover:shadow-[0_24px_80px_rgba(31,38,135,0.24)] focus-within:-translate-y-1 focus-within:bg-white/80 focus-within:shadow-[0_24px_80px_rgba(31,38,135,0.26)] dark:border-white/15 dark:bg-white/10 dark:hover:bg-white/15 dark:focus-within:bg-white/[0.14]">
+            <label htmlFor="hero-need" className="sr-only">{t.index.heroProjectPlaceholder}</label>
+            <div className="flex min-h-[5.75rem] items-center gap-3 rounded-[1.5rem] px-4 sm:px-7">
+              <Sparkles className="hidden size-7 shrink-0 text-primary sm:block" aria-hidden="true" />
+              <input
+                id="hero-need"
+                type="text"
+                autoComplete="off"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t.index.heroProjectPlaceholder}
+                className="min-w-0 flex-1 bg-transparent py-3 text-center text-[1.65rem] font-semibold tracking-tight text-foreground outline-none placeholder:text-foreground/70 focus:text-left sm:text-[2.5rem] md:text-[2.75rem]"
+                aria-describedby="hero-service-recommendations"
+              />
+              {loading ? <Loader2 className="size-6 shrink-0 animate-spin text-primary" /> : null}
+              <button type="submit" aria-label={locale === "fr" ? "Rechercher un service" : "Search services"} className="inline-flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:size-14">
+                <ArrowRight className="size-6" />
+              </button>
+            </div>
+          </form>
+          <div id="hero-service-recommendations" aria-live="polite" className="mx-auto mt-4 max-w-4xl">
+            {loading && query.trim().length >= 2 ? <p className="text-center text-sm text-muted-foreground">{t.index.heroAiThinking}</p> : null}
+            {error && !loading ? <p className="text-center text-sm text-muted-foreground">{t.index.heroAiError}</p> : null}
+            {!loading && !error && query.trim().length >= 2 && hasResults ? (
+              <div className="flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-border/60 bg-background/75 p-3 shadow-lg backdrop-blur-xl">
+                {clarifyingMessage ? <p className="w-full text-center text-sm text-muted-foreground">{clarifyingMessage}</p> : null}
+                {bestMatch?.serviceName ? (
+                  <button type="button" onClick={() => bestMatch.categorySlug && bestMatch.serviceSlug ? goToProsFromSlugs(bestMatch.categorySlug, bestMatch.serviceSlug) : goToService(bestMatch.serviceName!)} className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-sm hover:opacity-90">
+                    {getServiceName(bestMatch.serviceSlug ?? "", locale, bestMatch.serviceName)}<ArrowRight size={15} />
+                  </button>
+                ) : null}
+                {followUpMatches.slice(0, 3).map((item) => (
+                  <button key={`${item.categorySlug}/${item.serviceSlug}`} type="button" onClick={() => goToProsFromSlugs(item.categorySlug, item.serviceSlug)} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">
+                    {getServiceName(item.serviceSlug, locale, item.serviceName)}<ArrowRight size={14} />
+                  </button>
+                ))}
+                {suggestions.slice(0, 3).map((item, index) => {
+                  const service = findServiceByName(item);
+                  return (
+                    <button key={`${item}-${index}`} type="button" onClick={() => service ? goToProsFromSlugs(service.categorySlug, service.serviceSlug) : goToService(item)} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">
+                      {service ? getServiceName(service.serviceSlug, locale, item) : item}<ArrowRight size={14} />
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        </div>
       </div>
     </motion.section>
   );
