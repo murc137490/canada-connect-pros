@@ -597,11 +597,8 @@ export default function HeroSection() {
       <div className="container-page">
         <div className="grid items-start gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-14 xl:gap-20">
           <div className="min-w-0">
-            <p className="font-heading text-[13px] font-extrabold tracking-[-0.01em] text-foreground">
-              {t.index.heroBrand}
-            </p>
             <h1 className="sr-only">{t.index.heroProjectTitle.replace("\n", " ")}</h1>
-            <div className="hero-project-title mt-5 w-full text-foreground" aria-hidden="true">
+            <div className="hero-project-title mt-2 w-full text-foreground" aria-hidden="true">
               {t.index.heroProjectTitle.split("\n").map((line, index) => (
                 <TechText
                   key={`${index}-${line}`}
@@ -748,7 +745,7 @@ export default function HeroSection() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t.index.heroProjectPlaceholder}
-              className={`relative z-10 min-h-[4.6rem] w-full bg-transparent px-3 py-3 text-center font-semibold tracking-tight text-foreground outline-none placeholder:text-foreground/70 ${locale === "fr" ? "text-[1.45rem] sm:text-[2.2rem] md:text-[2.42rem]" : "text-[1.41rem] sm:text-[2.14rem] md:text-[2.35rem]"} sm:min-h-[5.2rem]`}
+              className={`relative z-10 min-h-[4.6rem] w-full bg-transparent px-3 py-3 text-center font-semibold tracking-tight text-foreground outline-none placeholder:text-foreground/70 ${locale === "fr" ? "text-[clamp(0.86rem,3.8vw,2rem)] sm:text-[2rem]" : "text-[clamp(1.05rem,4.8vw,2rem)] sm:text-[2rem]"} sm:min-h-[5.2rem]`}
               aria-describedby="hero-service-recommendations"
             />
             <button type="submit" className="sr-only">{locale === "fr" ? "Rechercher" : "Search"}</button>
