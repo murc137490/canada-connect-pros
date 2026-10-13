@@ -68,35 +68,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let platformAdminSyncUserId: string | null = null;
-    const syncPlatformAdmin = (session: Session | null) => {
-      const userId = session?.user.id;
-      if (!session?.access_token || !userId || platformAdminSyncUserId === userId) return;
-
-      // Supabase warns against starting another Supabase request inside
-      // onAuthStateChange: auth-js still holds its session lock while callbacks
-      // run. Defer the admin check until after the callback has returned.
-      platformAdminSyncUserId = userId;
-      window.setTimeout(() => {
-        void supabase.functions
-          .invoke("ensure-platform-admin", { method: "POST" })
-          .then(({ error }) => {
-            if (error && platformAdminSyncUserId === userId) platformAdminSyncUserId = null;
-          })
-          .catch(() => {
-            if (platformAdminSyncUserId === userId) platformAdminSyncUserId = null;
-            /* non-fatal: admin UI still uses env + profiles.is_platform_admin */
-          });
-      }, 0);
-    };
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
       signalAppReady();
-      if (event === "SIGNED_OUT") platformAdminSyncUserId = null;
-      syncPlatformAdmin(session);
     });
 
     return () => subscription.unsubscribe();

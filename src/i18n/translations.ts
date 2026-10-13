@@ -574,7 +574,7 @@ export const translations = {
       faq5a: "We're expanding from city to city across Canada - building a community of trusted local pros and clients, one neighbourhood at a time.",
       faq6q: "How do I download the AltShift app?",
       faq6a:
-        "There is no App Store or Play Store listing. Install AltShift from the website onto your home screen — ask the AI assistant, or open the Android and iPhone guides linked in the chat greeting.",
+        "AltShift can be installed from this website. On iPhone, open it in Safari and choose Share → Add to Home Screen. On Android, open it in Chrome and choose Install app or Add to Home screen.",
     },
     footer: {
       tagline: "Local pros, clear quotes, easy booking.",
@@ -2498,7 +2498,7 @@ export const translations = {
       faq5a: "Nous nous développons de ville en ville partout au Canada - en bâtissant une communauté de pros et de clients de confiance, un quartier à la fois.",
       faq6q: "Comment télécharger l'application AltShift ?",
       faq6a:
-        "Il n'y a pas d'App Store ni de Play Store. Installez AltShift depuis le site sur l'écran d'accueil — demandez à l'assistant IA, ou ouvrez les guides Android et iPhone liés dans le message d'accueil du chat.",
+        "AltShift s’installe depuis ce site. Sur iPhone, ouvrez-le dans Safari puis choisissez Partager → Sur l’écran d’accueil. Sur Android, ouvrez-le dans Chrome puis choisissez Installer l’application ou Ajouter à l’écran d’accueil.",
     },
     footer: {
       tagline: "Pros locaux, prix clairs, réservation simple.",

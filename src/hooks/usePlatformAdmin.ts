@@ -4,6 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { canUsePlatformAdminTools, isPlatformAdminEmail, isSuperAdminEmail } from "@/lib/platformAdmin";
 import { supabase } from "@/integrations/supabase/client";
 
+const ADMIN_STATUS_CACHE_MS = 15_000;
+const adminStatusRequests = new Map<string, { promise: Promise<boolean>; expiresAt: number }>();
+
 function emailsForUser(user: User | null | undefined): string[] {
   if (!user) return [];
   const out = new Set<string>();
@@ -34,9 +37,25 @@ export function usePlatformAdmin() {
 
   const listed = userIsListedAdmin(user);
 
-  const loadAdminFlag = async (userId: string) => {
-    const { data } = await supabase.from("profiles").select("is_platform_admin").eq("user_id", userId).maybeSingle();
-    return data?.is_platform_admin === true;
+  const syncAdminStatus = (userId: string) => {
+    const cached = adminStatusRequests.get(userId);
+    if (cached && cached.expiresAt > Date.now()) return cached.promise;
+
+    const promise = (async () => {
+      // Several mounted consumers (Layout, Dashboard, menus) share one sync
+      // request. Parallel auth/function calls can otherwise contend on the
+      // Supabase session lock during dashboard startup.
+      await supabase.functions.invoke("ensure-platform-admin", { method: "POST" }).catch(() => undefined);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("is_platform_admin")
+        .eq("user_id", userId)
+        .maybeSingle();
+      return !error && data?.is_platform_admin === true;
+    })().catch(() => false);
+
+    adminStatusRequests.set(userId, { promise, expiresAt: Date.now() + ADMIN_STATUS_CACHE_MS });
+    return promise;
   };
 
   useEffect(() => {
@@ -48,8 +67,7 @@ export function usePlatformAdmin() {
     let cancelled = false;
     void (async () => {
       // Server allowlist / secrets decide; never rely on emails shipped in the JS bundle.
-      await supabase.functions.invoke("ensure-platform-admin", { method: "POST" }).catch(() => {});
-      const isAdminProfile = await loadAdminFlag(user.id);
+      const isAdminProfile = await syncAdminStatus(user.id);
       if (!cancelled) {
         setSyncedFlag(isAdminProfile || listed);
         setReady(true);

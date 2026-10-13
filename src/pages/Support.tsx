@@ -87,12 +87,12 @@ export default function Support() {
 
               <div className="space-y-3">
                 {[
+                  { q: t.support.faq6q, a: t.support.faq6a, mostAsked: true },
                   { q: t.support.faq1q, a: t.support.faq1a },
                   { q: t.support.faq2q, a: t.support.faq2a },
                   { q: t.support.faq3q, a: t.support.faq3a },
                   { q: t.support.faq4q, a: t.support.faq4a },
                   { q: t.support.faq5q, a: t.support.faq5a },
-                  { q: t.support.faq6q, a: t.support.faq6a },
                 ].map((faq, i) => (
                   <div key={`${locale}-${i}`} className="glass-card rounded-2xl overflow-hidden">
                     <button
@@ -102,7 +102,7 @@ export default function Support() {
                       aria-expanded={openFaq === i}
                       aria-label={openFaq === i ? "Close" : "See more"}
                     >
-                      <span className="font-semibold text-foreground pr-4 min-h-[1.5em] flex items-center">
+                      <span className="font-semibold text-foreground pr-4 min-h-[1.5em] flex flex-wrap items-center">
                         <TextType
                           text={faq.q}
                           as="span"
@@ -114,6 +114,7 @@ export default function Support() {
                           startOnVisible
                           className="inline"
                         />
+                        {faq.mostAsked && <span className="ml-2 inline-flex shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">{locale === "fr" ? "Question la plus posée" : "Most asked question"}</span>}
                       </span>
                       <Plus
                         size={20}
@@ -199,24 +200,6 @@ export default function Support() {
                       }`}
                     >
                       {msg.role === "assistant" ? <ChatMessageContent text={msg.content} /> : msg.content}
-                      {msg.role === "assistant" &&
-                        i === 0 &&
-                        !messages.some((m) => m.role === "user") && (
-                          <div className="flex flex-wrap gap-2">
-                            <Link
-                              to="/get-app/android"
-                              className="inline-flex items-center rounded-full border border-border bg-background/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-foreground/5"
-                            >
-                              {t.support.getAppAndroid ?? "Android"}
-                            </Link>
-                            <Link
-                              to="/get-app/ios"
-                              className="inline-flex items-center rounded-full border border-border bg-background/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-foreground/5"
-                            >
-                              {t.support.getAppIphone ?? "iPhone"}
-                            </Link>
-                          </div>
-                        )}
                     </div>
                   </div>
                 ))}
