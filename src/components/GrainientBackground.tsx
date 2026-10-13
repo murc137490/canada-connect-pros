@@ -40,10 +40,12 @@ void main() {
   vec2 uv = gl_FragCoord.xy / uResolution;
   vec2 p = uv - 0.5;
   p.x *= uResolution.x / uResolution.y;
-  vec2 flow = vec2(uTime * 0.14, -uTime * 0.095);
+  vec2 flow = vec2(uTime * 0.32, -uTime * 0.23);
   float n = noise(p * 2.1 + flow);
   float n2 = noise(p * 3.4 - flow * 0.72 + 4.7);
-  float band = uv.x * 0.68 + uv.y * 0.26 + (n - 0.5) * 0.34 + (n2 - 0.5) * 0.13;
+  float waves = sin(p.x * 3.2 + uTime * 0.52) * cos(p.y * 2.6 - uTime * 0.37);
+  waves += sin((p.x + p.y) * 4.4 - uTime * 0.31) * 0.35;
+  float band = uv.x * 0.68 + uv.y * 0.26 + (n - 0.5) * 0.34 + (n2 - 0.5) * 0.13 + waves * 0.12;
   vec2 pointer = uPointer - 0.5;
   pointer.x *= uResolution.x / uResolution.y;
   vec2 delta = p - pointer;
