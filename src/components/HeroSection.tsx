@@ -627,11 +627,11 @@ export default function HeroSection() {
             <BookingPhoneMock alwaysLive />
           </div>
         </div>
-        <div className="relative z-20 mx-auto mt-9 w-full max-w-4xl">
+        <div className="relative z-20 mx-auto mt-9 w-full max-w-4xl -translate-y-8">
           <form
             id="hero-search"
             onSubmit={handleSubmit}
-            className="hero-how-pill relative overflow-hidden rounded-full border border-white/75 bg-white/35 px-5 py-2.5 shadow-[0_20px_70px_rgba(24,27,31,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-[30px] backdrop-saturate-150 transition-[background-color,box-shadow,transform] duration-500 hover:bg-white/45 hover:shadow-[0_24px_76px_rgba(24,27,31,0.15),inset_0_1px_0_rgba(255,255,255,0.95)] focus-within:bg-white/50 focus-within:shadow-[0_24px_76px_rgba(24,27,31,0.16),inset_0_1px_0_rgba(255,255,255,1)] dark:border-white/20 dark:bg-white/[0.08] dark:shadow-[0_20px_70px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] dark:hover:bg-white/[0.11] dark:focus-within:bg-white/[0.12]">
+            className="hero-how-pill relative scale-[0.95] origin-center overflow-hidden rounded-full border border-white/75 bg-white/35 px-5 py-2.5 shadow-[0_20px_70px_rgba(24,27,31,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-[30px] backdrop-saturate-150 transition-[background-color,box-shadow,transform] duration-500 hover:bg-white/45 hover:shadow-[0_24px_76px_rgba(24,27,31,0.15),inset_0_1px_0_rgba(255,255,255,0.95)] focus-within:bg-white/50 focus-within:shadow-[0_24px_76px_rgba(24,27,31,0.16),inset_0_1px_0_rgba(255,255,255,1)] dark:border-white/20 dark:bg-white/[0.08] dark:shadow-[0_20px_70px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] dark:hover:bg-white/[0.11] dark:focus-within:bg-white/[0.12]">
             <label htmlFor="hero-need" className="sr-only">{t.index.heroProjectPlaceholder}</label>
             <input
               id="hero-need"
