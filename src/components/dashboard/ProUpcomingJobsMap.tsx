@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, MapPin, Navigation } from "lucide-react";
+import { animate, motion, useMotionValue } from "motion/react";
+import { Expand, Loader2, MapPin, Navigation, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { distanceKm, geocodeAddress } from "@/lib/geocode";
-import { whenGoogleMapsReady } from "@/lib/loadGoogleMapsJs";
+import { triggerMapResize, whenGoogleMapsReady } from "@/lib/loadGoogleMapsJs";
 import { proBookingServiceLabel } from "@/lib/proBookingRequestDisplay";
 
 type Locale = "en" | "fr";
@@ -115,6 +116,7 @@ export default function ProUpcomingJobsMap({
   const [areaEnabled, setAreaEnabled] = useState(true);
   const [mapRadiusKm, setMapRadiusKm] = useState(Math.min(100, Math.max(5, defaultRadiusKm ?? 50)));
   const [selected, setSelected] = useState<Point | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     setMapRadiusKm(Math.min(100, Math.max(5, defaultRadiusKm ?? 50)));
@@ -244,6 +246,22 @@ export default function ProUpcomingJobsMap({
     if (selected && !visiblePoints.some((point) => point.booking.id === selected.booking.id)) setSelected(null);
   }, [selected, visiblePoints]);
 
+  useEffect(() => {
+    if (!expanded) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const resizeTimer = window.setTimeout(() => triggerMapResize(mapInstance.current), 120);
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setExpanded(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.clearTimeout(resizeTimer);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [expanded]);
+
   const periodOptions = [
     { id: "today", label: fr ? "Aujourd’hui" : "Today" },
     { id: "week", label: fr ? "Cette semaine" : "This week" },
@@ -252,56 +270,80 @@ export default function ProUpcomingJobsMap({
   ];
 
   return (
-    <section className="rounded-xl border bg-card p-4 sm:p-5" aria-label={fr ? "Carte des réservations à venir" : "Upcoming bookings map"}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="flex items-center gap-2 font-heading font-bold text-foreground">
-            <MapPin className="size-4 text-primary" aria-hidden />{fr ? "Carte des réservations à venir" : "Upcoming jobs map"}
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {fr ? "Les repères montrent les réservations acceptées et payées avec déplacement." : "Pins show accepted, paid bookings that require travel."}
-          </p>
-        </div>
-        <label className="flex cursor-pointer items-center gap-2 text-sm">
-          <input type="checkbox" checked={areaEnabled} onChange={(event) => setAreaEnabled(event.target.checked)} className="size-4 accent-primary" />
-          {fr ? "Zone de service" : "Service area"}
-        </label>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {periodOptions.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            onClick={() => setPeriod(option.id)}
-            aria-pressed={period === option.id}
-            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${period === option.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:text-foreground"}`}
-          >{option.label}</button>
-        ))}
-      </div>
-
-      {areaEnabled ? (
-        <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="shrink-0">{fr ? "Rayon de la carte" : "Map radius"}</span>
-          <input aria-label={fr ? "Rayon de la carte en kilomètres" : "Map radius in kilometres"} type="range" min={5} max={100} step={5} value={mapRadiusKm} onChange={(event) => setMapRadiusKm(Number(event.target.value))} className="h-2 w-full max-w-56 accent-primary" />
-          <span className="w-12 shrink-0 text-right tabular-nums">{mapRadiusKm} km</span>
+    <section
+      className={expanded
+        ? "fixed inset-0 z-[100] m-0 flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col overflow-y-auto rounded-none border-0 bg-background p-4 sm:p-6"
+        : "relative rounded-xl border bg-card p-2"}
+      aria-label={fr ? "Carte des réservations à venir" : "Upcoming bookings map"}
+    >
+      {expanded ? (
+        <div className="mb-4 flex shrink-0 items-start justify-between gap-4">
+          <div>
+            <h3 className="flex items-center gap-2 font-heading text-lg font-bold text-foreground">
+              <MapPin className="size-5 text-primary" aria-hidden />{fr ? "Réservations à venir" : "Upcoming jobs"}
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {fr ? "Repères des réservations acceptées, payées et avec déplacement." : "Pins show accepted, paid bookings that require travel."}
+            </p>
+          </div>
+          <Button type="button" variant="outline" size="icon" aria-label={fr ? "Fermer la carte" : "Close map"} onClick={() => setExpanded(false)}>
+            <X className="size-4" aria-hidden />
+          </Button>
         </div>
       ) : null}
 
-      <div className="relative mt-3 overflow-hidden rounded-lg border border-border/70">
-        <div ref={mapElement} className="h-[230px] w-full bg-muted/40" />
-        {mapError ? <div className="absolute inset-0 grid place-items-center bg-background/90 px-4 text-center text-sm text-muted-foreground">{fr ? "La carte est temporairement indisponible." : "The map is temporarily unavailable."}</div> : null}
-        {loading ? <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-md bg-background/90 px-2.5 py-1.5 text-xs text-muted-foreground"><Loader2 className="size-3.5 animate-spin" />{fr ? "Localisation des réservations…" : "Locating bookings…"}</div> : null}
-        {!loading && visiblePoints.length === 0 && !mapError ? <div className="absolute inset-x-3 bottom-3 rounded-md bg-background/95 px-3 py-2 text-center text-xs text-muted-foreground">{fr ? "Aucune réservation payée à afficher pour cette période et ce rayon." : "No paid bookings to show for this period and radius."}</div> : null}
+      {expanded ? (
+        <div className="mb-4 flex shrink-0 flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {periodOptions.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setPeriod(option.id)}
+                aria-pressed={period === option.id}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${period === option.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
+              >{option.label}</button>
+            ))}
+          </div>
+          <label className="ml-auto flex cursor-pointer items-center gap-2 text-sm text-foreground">
+            <input type="checkbox" checked={areaEnabled} onChange={(event) => setAreaEnabled(event.target.checked)} className="size-4 accent-primary" />
+            {fr ? "Zone de service" : "Service area"}
+          </label>
+        </div>
+      ) : null}
+
+      {expanded && areaEnabled ? (
+        <ElasticRadiusSlider value={mapRadiusKm} onChange={setMapRadiusKm} locale={locale} />
+      ) : null}
+
+      <div className={expanded ? "relative min-h-[250px] flex-1 overflow-hidden rounded-xl border border-border/70" : "relative overflow-hidden rounded-lg"}>
+        <div ref={mapElement} className={expanded ? "h-full min-h-[250px] w-full bg-muted/40" : "h-[190px] w-full bg-muted/40"} />
+        {!expanded && !mapError ? (
+          <button
+            type="button"
+            className="absolute inset-0 z-10 flex items-end justify-end p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label={fr ? "Ouvrir la carte en plein écran" : "Open map full screen"}
+            onClick={() => setExpanded(true)}
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm">
+              <Expand className="size-3.5" aria-hidden />{fr ? "Agrandir" : "Expand map"}
+            </span>
+          </button>
+        ) : null}
+        {mapError ? <div className="absolute inset-0 z-20 grid place-items-center bg-background/90 px-4 text-center text-sm text-muted-foreground">{fr ? "La carte est temporairement indisponible." : "The map is temporarily unavailable."}</div> : null}
+        {loading ? <div className="absolute left-3 top-3 z-20 inline-flex items-center gap-2 rounded-md bg-background/90 px-2.5 py-1.5 text-xs text-muted-foreground"><Loader2 className="size-3.5 animate-spin" />{fr ? "Localisation des réservations…" : "Locating bookings…"}</div> : null}
+        {expanded && !loading && visiblePoints.length === 0 && !mapError ? <div className="absolute inset-x-3 bottom-3 z-10 rounded-md bg-background/95 px-3 py-2 text-center text-xs text-muted-foreground">{fr ? "Aucune réservation payée à afficher pour cette période et ce rayon." : "No paid bookings to show for this period and radius."}</div> : null}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span>{visiblePoints.length} {fr ? (visiblePoints.length === 1 ? "réservation" : "réservations") : (visiblePoints.length === 1 ? "booking" : "bookings")}</span>
-        {proLocation ? <span className="inline-flex items-center gap-1"><Navigation className="size-3" aria-hidden />{fr ? "Zone centrée sur votre profil" : "Area centered on your profile"}</span> : null}
-      </div>
+      {expanded ? (
+        <div className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>{visiblePoints.length} {fr ? (visiblePoints.length === 1 ? "réservation" : "réservations") : (visiblePoints.length === 1 ? "booking" : "bookings")}</span>
+          {proLocation ? <span className="inline-flex items-center gap-1"><Navigation className="size-3" aria-hidden />{fr ? "Zone centrée sur votre profil" : "Area centered on your profile"}</span> : null}
+        </div>
+      ) : null}
 
-      {selected ? (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/20 p-3">
+      {expanded && selected ? (
+        <div className="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/20 p-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">{selected.clientName}</p>
             <p className="text-xs text-muted-foreground">{selected.service} · {formatDate(selected.date, locale)}{selected.time ? ` · ${selected.time}` : ""}</p>
@@ -310,5 +352,34 @@ export default function ProUpcomingJobsMap({
         </div>
       ) : null}
     </section>
+  );
+}
+
+function ElasticRadiusSlider({ value, onChange, locale }: { value: number; onChange: (value: number) => void; locale: Locale }) {
+  const stretch = useMotionValue(1);
+  const fr = locale === "fr";
+  const handlePointerDown = () => animate(stretch, 1.035, { type: "spring", stiffness: 360, damping: 18 });
+  const handlePointerUp = () => animate(stretch, 1, { type: "spring", stiffness: 300, damping: 14, bounce: 0.35 });
+
+  return (
+    <div className="mb-4 flex shrink-0 items-center gap-3 rounded-lg border border-border/70 bg-card px-3 py-2.5 sm:max-w-xl">
+      <MapPin className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+      <motion.div className="min-w-0 flex-1" style={{ scaleX: stretch }}>
+        <input
+          aria-label={fr ? "Rayon de service en kilomètres" : "Service radius in kilometres"}
+          type="range"
+          min={5}
+          max={100}
+          step={5}
+          value={value}
+          onChange={(event) => onChange(Number(event.target.value))}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          className="h-2 w-full cursor-pointer accent-primary"
+        />
+      </motion.div>
+      <span className="w-14 shrink-0 text-right text-sm font-medium tabular-nums text-foreground">{value} km</span>
+    </div>
   );
 }
