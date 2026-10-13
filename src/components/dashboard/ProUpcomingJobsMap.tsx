@@ -123,6 +123,7 @@ export default function ProUpcomingJobsMap({
   const [expanded, setExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [mapReadyVersion, setMapReadyVersion] = useState(0);
 
   useEffect(() => {
     setMapRadiusKm(Math.min(100, Math.max(5, defaultRadiusKm ?? 50)));
@@ -172,6 +173,8 @@ export default function ProUpcomingJobsMap({
     return true;
   }), [points, bounds.from, bounds.to, areaEnabled, proLocation, mapRadiusKm]);
 
+  // Keep the Google Map instance alive while the user changes date and radius filters.
+  // Only recreate it when the map container moves into or out of the fullscreen portal.
   useEffect(() => {
     let cancelled = false;
     if (!mapElement.current) return;
@@ -180,52 +183,55 @@ export default function ProUpcomingJobsMap({
       if (cancelled || !mapElement.current) return;
       const maps = (window as MapsWindow).google?.maps;
       if (!maps) throw new Error("Google Maps is unavailable");
-      const mapCenter = proLocation ?? (visiblePoints[0] ? { lat: visiblePoints[0].lat, lng: visiblePoints[0].lng } : { lat: 45.4, lng: -72.73 });
-      if (!mapInstance.current) {
-        mapInstance.current = new maps.Map(mapElement.current, {
-          center: mapCenter,
-          zoom: 10,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-          clickableIcons: false,
-          gestureHandling: "cooperative",
-          backgroundColor: "#101b1d",
-        });
-      }
-      const map = mapInstance.current;
+      const mapCenter = proLocation ?? { lat: 45.4, lng: -72.73 };
+      mapInstance.current = new maps.Map(mapElement.current, {
+        center: mapCenter,
+        zoom: 10,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        clickableIcons: false,
+        gestureHandling: expanded ? "greedy" : "cooperative",
+        backgroundColor: "#101b1d",
+      });
+      setMapReadyVersion((version) => version + 1);
+      setMapError(false);
+    }).catch(() => { if (!cancelled) setMapError(true); });
+    return () => {
+      cancelled = true;
       markers.current.forEach((marker) => marker.setMap(null));
       markers.current = [];
       circle.current?.setMap(null);
       circle.current = null;
+      mapInstance.current = null;
+    };
+  }, [expanded, proLocation]);
 
-      if (areaEnabled && proLocation) {
-        circle.current = new maps.Circle({
-          map,
-          center: proLocation,
-          radius: mapRadiusKm * 1000,
-          fillColor: "#35a985",
-          fillOpacity: 0.08,
-          strokeColor: "#35a985",
-          strokeOpacity: 0.7,
-          strokeWeight: 1.5,
-        });
-        map.setCenter(proLocation);
-        map.setZoom(mapRadiusKm <= 10 ? 11 : mapRadiusKm <= 25 ? 10 : mapRadiusKm <= 50 ? 9 : 8);
-      } else if (selected) {
-        map.setCenter({ lat: selected.lat, lng: selected.lng });
-        map.setZoom(15);
-      } else if (visiblePoints.length) {
-        const mapBounds = new maps.LatLngBounds();
-        if (proLocation) mapBounds.extend(proLocation);
-        visiblePoints.forEach((point) => mapBounds.extend({ lat: point.lat, lng: point.lng }));
-        map.fitBounds(mapBounds, 28);
-      } else {
-        map.setCenter(mapCenter);
-        map.setZoom(10);
-      }
+  // Refresh only markers and the radius overlay. Keep the map object and camera position.
+  useEffect(() => {
+    const map = mapInstance.current;
+    const maps = (window as MapsWindow).google?.maps;
+    if (!map || !maps) return;
 
-      visiblePoints.forEach((point) => {
+    markers.current.forEach((marker) => marker.setMap(null));
+    markers.current = [];
+    circle.current?.setMap(null);
+    circle.current = null;
+
+    if (areaEnabled && proLocation) {
+      circle.current = new maps.Circle({
+        map,
+        center: proLocation,
+        radius: mapRadiusKm * 1000,
+        fillColor: "#35a985",
+        fillOpacity: 0.08,
+        strokeColor: "#35a985",
+        strokeOpacity: 0.7,
+        strokeWeight: 1.5,
+      });
+    }
+
+    visiblePoints.forEach((point) => {
         const marker = new maps.Marker({
           map,
           position: { lat: point.lat, lng: point.lng },
@@ -242,17 +248,13 @@ export default function ProUpcomingJobsMap({
         marker.addListener("click", () => setSelected(point));
         markers.current.push(marker);
       });
-      setMapError(false);
-    }).catch(() => { if (!cancelled) setMapError(true); });
-    return () => {
-      cancelled = true;
-      markers.current.forEach((marker) => marker.setMap(null));
-      markers.current = [];
-      circle.current?.setMap(null);
-      circle.current = null;
-      mapInstance.current = null;
-    };
-  }, [visiblePoints, areaEnabled, mapRadiusKm, proLocation, locale, expanded, selected]);
+  }, [visiblePoints, areaEnabled, mapRadiusKm, proLocation, locale, mapReadyVersion]);
+
+  useEffect(() => {
+    if (!selected || !mapInstance.current) return;
+    mapInstance.current.setCenter({ lat: selected.lat, lng: selected.lng });
+    mapInstance.current.setZoom(15);
+  }, [selected, mapReadyVersion]);
 
   useEffect(() => () => {
     markers.current.forEach((marker) => marker.setMap(null));
