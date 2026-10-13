@@ -5441,7 +5441,7 @@ export default function Dashboard() {
 
           <TabsContent forceMount value="account" className="mx-auto w-full max-w-[1480px] space-y-6 2xl:grid 2xl:grid-cols-12 2xl:items-start 2xl:gap-4 2xl:space-y-0">
             <div className="contents">
-              <aside className="flex flex-col gap-4 2xl:col-start-1 2xl:col-span-3 2xl:row-span-2">
+              <aside className="flex flex-col gap-4 2xl:col-start-1 2xl:col-span-3 2xl:row-span-2 2xl:self-stretch">
                 <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-6 text-center">
                   <ClickableProfileAvatar
                     className="h-24 w-24"
@@ -5466,7 +5466,7 @@ export default function Dashboard() {
                   />
                 </div>
               </aside>
-              <form onSubmit={saveAccount} className="grid min-w-0 grid-cols-1 gap-4 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-2 md:p-8 2xl:col-start-4 2xl:col-span-6 2xl:row-start-1 2xl:row-span-2" data-tour="account-profile">
+              <form onSubmit={saveAccount} className="grid min-w-0 grid-cols-1 gap-4 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-2 md:p-8 2xl:col-start-4 2xl:col-span-6 2xl:row-start-1 2xl:row-span-2 2xl:grid-rows-[repeat(7,min-content)_minmax(16rem,1fr)] 2xl:self-stretch" data-tour="account-profile">
               <div className="space-y-2 md:col-start-1 md:row-start-1">
                 <Label htmlFor="acc-name">{t.dashboard.accountName}</Label>
                 <Input id="acc-name" value={accountForm.full_name} onChange={(e) => setAccountForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Ryan Smith" />
@@ -5591,14 +5591,14 @@ export default function Dashboard() {
                 {t.dashboard.saveAccount}
               </Button>
               {!isAdminAccountView ? (
-                <div className="grid grid-cols-1 gap-3 md:col-span-2 md:row-start-8 sm:grid-cols-2">
-                  <button type="button" onClick={() => setAccountDeletionOpen(true)} className="flex min-h-16 items-center gap-3 rounded-xl border border-destructive/30 bg-background p-4 text-left transition-colors hover:bg-muted/30">
+                <div className="grid grid-cols-1 gap-3 md:col-span-2 md:row-start-8 sm:grid-cols-2 2xl:h-full">
+                  <button type="button" onClick={() => setAccountDeletionOpen(true)} className="flex h-full min-h-16 items-center gap-3 rounded-xl border border-destructive/30 bg-background p-4 text-left transition-colors hover:bg-muted/30">
                     <Trash2 className="h-5 w-5 shrink-0 text-destructive" />
                     <span className="font-heading text-sm font-semibold text-foreground">
                       {locale === "fr" ? "Suppression de compte" : "Account Deletion"}
                     </span>
                   </button>
-                  <button type="button" onClick={() => setBookingIdVerificationOpen(true)} className="flex min-h-16 items-center gap-3 rounded-xl border bg-background p-4 text-left transition-colors hover:bg-muted/30" data-tour="account-id-verification">
+                  <button type="button" onClick={() => setBookingIdVerificationOpen(true)} className="flex h-full min-h-16 items-center gap-3 rounded-xl border bg-background p-4 text-left transition-colors hover:bg-muted/30" data-tour="account-id-verification">
                     <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15 ring-1 ring-amber-500/40">
                       <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden />
                     </span>
