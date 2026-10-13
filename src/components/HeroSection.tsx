@@ -601,13 +601,13 @@ export default function HeroSection() {
               {t.index.heroBrand}
             </p>
             <h1 className="sr-only">{t.index.heroProjectTitle.replace("\n", " ")}</h1>
-            <div className="hero-project-title mt-5 w-full max-w-[14ch] text-foreground sm:max-w-[16ch]" aria-hidden="true">
+            <div className="hero-project-title mt-5 w-full text-foreground" aria-hidden="true">
               {t.index.heroProjectTitle.split("\n").map((line, index) => (
                 <TechText
                   key={`${index}-${line}`}
                   text={line}
-                  className="h-[clamp(3.5rem,8vw,7rem)] w-full"
-                  fontSize={112}
+                  className="h-[clamp(6rem,10vw,9rem)] w-full"
+                  fontSize={138}
                   fontWeight={800}
                   color="currentColor"
                   accentColor="#B39445"
@@ -617,7 +617,7 @@ export default function HeroSection() {
                   selection={false}
                   labels={false}
                   draggable={false}
-                  sweep={false}
+                  sweep
                 />
               ))}
             </div>
@@ -729,12 +729,14 @@ export default function HeroSection() {
                 lineColor="#B39445"
                 baseColor="#31594D"
                 intensity={0.85}
-                idleIntensity={0.08}
+                idleIntensity={0.2}
                 shineSize={8}
                 shineFade={36}
                 thickness={1.1}
                 glow={0.7}
                 followMouse={false}
+                autoAnimate
+                speed={0.45}
                 proximity={220}
               />
             </span>
