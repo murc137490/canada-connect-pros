@@ -39,8 +39,13 @@ function SceneContent({ scene, french, active }: { scene: number; french: boolea
           <div className="grid gap-3 sm:grid-cols-2">
             {[["Jamie M.", "4.9", "CA$95", french ? "Aujourd’hui" : "Today", "JM"], ["Taylor R.", "4.6", "CA$130", french ? "Demain" : "Tomorrow", "TR"]].map(([name, rating, price, day, initials], index) => (
               <article key={name} className={`story-compare-card rounded-xl border bg-card p-4 shadow-sm ${index === 0 ? "border-emerald-500/50" : ""}`} style={{ animationDelay: `${index * 150}ms` }}>
-                <div className="flex items-center justify-between gap-2"><span className="flex items-center gap-2 font-bold"><span className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">{initials}</span>{name}</span>{index === 0 ? <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">{french ? "Meilleure correspondance" : "Best match"}</span> : null}</div>
-                <div className="mt-3 grid grid-cols-3 gap-1 text-center"><div className="story-compare-value rounded-lg bg-muted/40 p-1.5"><p className="text-[9px] uppercase text-muted-foreground">{french ? "Prix" : "Price"}</p><p className="mt-1 text-xs font-bold">{price}</p></div><div className="story-compare-value rounded-lg bg-muted/40 p-1.5"><p className="text-[9px] uppercase text-muted-foreground">{french ? "Avis" : "Reviews"}</p><p className="mt-1 inline-flex items-center gap-1 text-xs font-bold"><Star size={11} className="fill-amber-400 text-amber-400" />{rating}</p></div><div className="story-compare-value rounded-lg bg-muted/40 p-1.5"><p className="text-[9px] uppercase text-muted-foreground">{french ? "Dispo" : "Available"}</p><p className="mt-1 text-[10px] font-bold">{day}</p></div></div>
+                {index === 0 ? <div className="mb-2"><span className="inline-flex rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-bold text-white">{french ? "Meilleure correspondance" : "Best match"}</span></div> : null}
+                <div className="flex items-center gap-2 font-bold"><span className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">{initials}</span>{name}</div>
+                <div className="mt-3 grid grid-cols-3 gap-1 text-center">
+                  <div className="story-compare-value flex items-center justify-center rounded-lg bg-muted/40 p-1.5"><p className="text-xs font-bold">{price.replace("CA$", "")}$</p></div>
+                  <div className="story-compare-value flex items-center justify-center rounded-lg bg-muted/40 p-1.5"><p className="inline-flex items-center gap-1 text-xs font-bold"><Star size={11} className="fill-amber-400 text-amber-400" />{rating}</p></div>
+                  <div className="story-compare-value rounded-lg bg-muted/40 p-1.5"><p className="text-[9px] uppercase text-muted-foreground">{french ? "Disponible" : "Available"}</p><p className="mt-1 text-[10px] font-bold">{day}</p></div>
+                </div>
                 {index === 0 ? <button type="button" tabIndex={-1} aria-hidden="true" className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-bold text-primary-foreground">{french ? "Voir le profil · Réserver Jamie" : "View profile · Book Jamie"}<ArrowRight size={15} /></button> : null}
               </article>
             ))}
@@ -63,7 +68,7 @@ function SceneContent({ scene, french, active }: { scene: number; french: boolea
           <div className="space-y-2 rounded-xl border bg-background/90 p-3 shadow-sm">
             <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground"><MessageCircle size={12} />{french ? "Messages" : "Messages"}</div>
             <p className="story-chat-message max-w-[92%] rounded-xl rounded-tl-sm bg-muted px-3 py-2 text-xs leading-relaxed">{french ? "Je serai là dans 20 minutes." : "I’ll be there in 20 minutes."}</p>
-            <p className="story-chat-message ml-auto max-w-[92%] rounded-xl rounded-tr-sm bg-primary px-3 py-2 text-xs leading-relaxed text-primary-foreground">{french ? "Parfait ! À tout à l’heure." : "Perfect! See you then."}</p>
+            <p className="story-chat-message ml-auto max-w-[92%] rounded-xl rounded-tr-sm bg-primary px-3 py-2 text-xs leading-relaxed text-primary-foreground" style={{ animationDelay: "1s" }}>{french ? "Parfait ! À tout à l’heure." : "Perfect! See you then."}</p>
           </div>
         </div>
       ) : null}
