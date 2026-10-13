@@ -15,8 +15,8 @@ export default function HomeCategories() {
       <div className="container-page">
         <ScrollReveal>
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <h2 className="font-display text-display-md text-foreground max-w-[16ch]">
-              <ScrollFloat>{t.index.categoriesTitle}</ScrollFloat>
+            <h2 className="font-display text-[clamp(1.3rem,5.8vw,3rem)] whitespace-nowrap text-foreground max-w-none">
+              <ScrollFloat style={{ whiteSpace: "nowrap" }}>{t.index.categoriesTitle}</ScrollFloat>
             </h2>
             <Link
               to="/services"
