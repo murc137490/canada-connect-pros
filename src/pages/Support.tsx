@@ -88,11 +88,11 @@ export default function Support() {
               <div className="space-y-3">
                 {[
                   { q: t.support.faq6q, a: t.support.faq6a, mostAsked: true },
-                  { q: t.support.faq1q, a: t.support.faq1a },
-                  { q: t.support.faq2q, a: t.support.faq2a },
-                  { q: t.support.faq3q, a: t.support.faq3a },
-                  { q: t.support.faq4q, a: t.support.faq4a },
-                  { q: t.support.faq5q, a: t.support.faq5a },
+                  { q: t.support.faq1q, a: t.support.faq1a, mostAsked: false },
+                  { q: t.support.faq2q, a: t.support.faq2a, mostAsked: false },
+                  { q: t.support.faq3q, a: t.support.faq3a, mostAsked: false },
+                  { q: t.support.faq4q, a: t.support.faq4a, mostAsked: false },
+                  { q: t.support.faq5q, a: t.support.faq5a, mostAsked: false },
                 ].map((faq, i) => (
                   <div key={`${locale}-${i}`} className="glass-card rounded-2xl overflow-hidden">
                     <button
