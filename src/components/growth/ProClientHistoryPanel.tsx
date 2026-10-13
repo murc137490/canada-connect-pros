@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, Loader2, Repeat, Users } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ChevronDown, FileText, Loader2, Mail, Repeat, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +34,8 @@ export type CrmClient = {
   next_visit: string | null;
   last_activity: string | null;
   note: string | null;
+  reminder_enabled?: boolean;
+  reminder_weeks?: number | null;
   bookings: CrmBooking[];
 };
 
@@ -61,6 +64,8 @@ export default function ProClientHistoryPanel({ proProfileId, lang, clients, loa
   const [openId, setOpenId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [savingReminderId, setSavingReminderId] = useState<string | null>(null);
+  const [emailRecipients, setEmailRecipients] = useState<Record<string, string>>({});
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -80,6 +85,21 @@ export default function ProClientHistoryPanel({ proProfileId, lang, clients, loa
       return;
     }
     toast({ title: c.noteSaved });
+    onChanged();
+  };
+
+  const saveReminderPreference = async (cl: CrmClient, enabled: boolean, weeks: number | null) => {
+    setSavingReminderId(cl.client_id);
+    const { error } = await untypedDb.from("pro_client_reminder_preferences").upsert(
+      { pro_profile_id: proProfileId, client_id: cl.client_id, enabled, weeks },
+      { onConflict: "pro_profile_id,client_id" },
+    );
+    setSavingReminderId(null);
+    if (error) {
+      toast({ title: c.sendRemindersToClient, description: growthErrorMessage(error, lang), variant: "destructive" });
+      return;
+    }
+    toast({ title: lang === "fr" ? "Préférence de rappel enregistrée" : "Reminder preference saved" });
     onChanged();
   };
 
@@ -133,6 +153,34 @@ export default function ProClientHistoryPanel({ proProfileId, lang, clients, loa
                   </button>
                   {open ? (
                     <div className="space-y-4 border-t border-border/70 p-3 sm:p-4">
+                      <div className="rounded-lg border border-border/70 p-3 space-y-3">
+                        <label className="flex items-center gap-2 text-sm font-medium">
+                          <input
+                            type="checkbox"
+                            checked={cl.reminder_enabled !== false}
+                            disabled={savingReminderId === cl.client_id}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => void saveReminderPreference(cl, e.target.checked, cl.reminder_weeks ?? null)}
+                            className="size-4 accent-primary"
+                          />
+                          {c.sendRemindersToClient}
+                          {savingReminderId === cl.client_id ? <Loader2 className="size-4 animate-spin" aria-label={lang === "fr" ? "Enregistrement" : "Saving"} /> : null}
+                        </label>
+                        <div className="grid gap-1.5 sm:max-w-sm">
+                          <label htmlFor={`crm-reminder-weeks-${cl.client_id}`} className="text-xs text-muted-foreground">{c.reminderInterval}</label>
+                          <select
+                            id={`crm-reminder-weeks-${cl.client_id}`}
+                            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                            value={cl.reminder_weeks == null ? "global" : String(cl.reminder_weeks)}
+                            disabled={savingReminderId === cl.client_id || cl.reminder_enabled === false}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => void saveReminderPreference(cl, cl.reminder_enabled !== false, e.target.value === "global" ? null : Number(e.target.value))}
+                          >
+                            <option value="global">{c.sameInterval} ({reminderWeeks} {c.weeks})</option>
+                            {[2, 4, 6, 8, 12, 26, 52].map((w) => <option key={w} value={w}>{w} {c.weeks}</option>)}
+                          </select>
+                        </div>
+                      </div>
                       <div>
                         <label className="text-sm font-medium" htmlFor={`crm-note-${cl.client_id}`}>{c.notes}</label>
                         <Textarea
@@ -170,7 +218,42 @@ export default function ProClientHistoryPanel({ proProfileId, lang, clients, loa
                               <span className="flex items-center gap-2">
                                 {b.paid_cents ? <span className="text-xs text-muted-foreground">{formatMoneyCents(b.paid_cents, lang)}</span> : null}
                                 <Badge variant="outline" className="text-[10px]">{c.status[b.status] ?? b.status}</Badge>
+                                <Button asChild type="button" size="sm" variant="outline" className="h-8 gap-1.5">
+                                  <Link to={`/dashboard?tab=invoices&bookingId=${encodeURIComponent(b.id)}`}>
+                                    <FileText className="size-3.5" aria-hidden /> {c.invoice}
+                                  </Link>
+                                </Button>
                               </span>
+                              <div className="flex w-full flex-wrap items-center justify-end gap-2 pt-1">
+                                <Input
+                                  type="email"
+                                  className="h-8 w-full sm:max-w-xs"
+                                  aria-label={c.emailRecipient}
+                                  placeholder={c.emailRecipient}
+                                  value={emailRecipients[b.id] ?? ""}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) => setEmailRecipients((values) => ({ ...values, [b.id]: e.target.value }))}
+                                />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 gap-1.5"
+                                  disabled={!/^\S+@\S+\.\S+$/.test(emailRecipients[b.id] ?? "")}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const recipient = emailRecipients[b.id].trim();
+                                    const service = serviceSlugLabel(b.service_slug) || (lang === "fr" ? "service" : "service");
+                                    const subject = lang === "fr" ? `Suivi de votre réservation ${service}` : `Following up on your ${service} booking`;
+                                    const body = lang === "fr"
+                                      ? `Bonjour ${name},\n\nJe vous écris au sujet de notre réservation.\nService : ${service}\nDate : ${formatYmd(b.date, lang)}${b.time ? ` à ${String(b.time).slice(0, 5)}` : ""}\nStatut : ${c.status[b.status] ?? b.status}${b.paid_cents ? `\nMontant payé : ${formatMoneyCents(b.paid_cents, lang)}` : ""}\nRéférence : ${b.code ?? b.id}\n\n`
+                                      : `Hi ${name},\n\nI’m following up about our booking.\nService: ${service}\nDate: ${formatYmd(b.date, lang)}${b.time ? ` at ${String(b.time).slice(0, 5)}` : ""}\nStatus: ${c.status[b.status] ?? b.status}${b.paid_cents ? `\nAmount paid: ${formatMoneyCents(b.paid_cents, lang)}` : ""}\nReference: ${b.code ?? b.id}\n\n`;
+                                    window.location.href = `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                                  }}
+                                >
+                                  <Mail className="size-3.5" aria-hidden /> {c.emailDraft}
+                                </Button>
+                              </div>
                             </li>
                           ))}
                         </ul>

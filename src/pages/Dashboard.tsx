@@ -992,6 +992,17 @@ export default function Dashboard() {
     return () => window.clearTimeout(t);
   }, [searchParams, jobRequests.length, proProfile?.is_verified]);
 
+  useEffect(() => {
+    const bookingId = searchParams.get("bookingId");
+    if (searchParams.get("tab") !== "invoices" || !bookingId) return;
+    const timer = window.setTimeout(() => {
+      const invoice = document.getElementById(`invoice-${bookingId}`);
+      invoice?.scrollIntoView({ behavior: "smooth", block: "center" });
+      invoice?.focus({ preventScroll: true });
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [searchParams, clientBookings, proBookings, activeTab]);
+
   /** Wait for pro profile (or a cached verified flag) before painting the client dock. */
   const dashboardDockReady =
     isAdminDashboardShell || !proProfileLoading || cachedProVerified !== null;
@@ -6718,7 +6729,16 @@ export default function Dashboard() {
 
           <TabsContent forceMount value="invoices" className="mx-auto w-full max-w-[1480px] space-y-4">
             {(() => {
-              const invoiceRows = clientBookings.filter((b) => b.status !== "declined");
+              const invoiceRows = [
+                ...clientBookings.filter((b) => b.status !== "declined"),
+                ...proBookings.filter((b) => b.status !== "declined").map((b) => ({
+                  ...b,
+                  business_name: proProfile?.business_name || (locale === "fr" ? "Facture de réservation" : "Booking invoice"),
+                  pro_profile_id: proProfile?.id ?? "",
+                  pro_service_at_workspace_only: false,
+                  is_pro_invoice: true,
+                })),
+              ];
               const statusLabel = (code: string) =>
                 code === "pending"
                   ? t.dashboard.bookingStatusPending
@@ -6739,7 +6759,9 @@ export default function Dashboard() {
                 return (
                   <div
                     key={booking.id}
-                    className={`relative min-w-0 animate-in fade-in duration-500 ${justMoved ? (pinned ? "slide-in-from-left-6" : "slide-in-from-right-6") : ""}`}
+                    id={`invoice-${booking.id}`}
+                    tabIndex={-1}
+                    className={`relative min-w-0 scroll-mt-24 rounded-xl transition-shadow ${searchParams.get("bookingId") === booking.id ? "ring-2 ring-primary shadow-lg" : ""} animate-in fade-in duration-500 ${justMoved ? (pinned ? "slide-in-from-left-6" : "slide-in-from-right-6") : ""}`}
                   >
                     <div className="relative z-10 -mb-3 flex justify-end px-3">
                       <Button
