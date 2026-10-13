@@ -71,6 +71,7 @@ import ProBookingRequestCard from "@/components/pro/ProBookingRequestCard";
 import ProBookingRequestDetailDialog from "@/components/pro/ProBookingRequestDetailDialog";
 import ProSmsAutomationSettings from "@/components/dashboard/ProSmsAutomationSettings";
 import ProGrowthTools from "@/components/growth/ProGrowthTools";
+import ProUpcomingJobsMap from "@/components/dashboard/ProUpcomingJobsMap";
 import BookingSeriesPanel from "@/components/growth/BookingSeriesPanel";
 import RepeatBookingDialog from "@/components/growth/RepeatBookingDialog";
 import { GROWTH_COPY, growthErrorMessage, tierStringHasGrowthTools } from "@/lib/growthTools";
@@ -6123,6 +6124,17 @@ export default function Dashboard() {
                 </div>
                 {proProfile?.id ? (
                   <div className="space-y-4" data-tour="booking-pro-tools">
+                    <ProUpcomingJobsMap
+                      proProfileId={proProfile.id}
+                      bookings={proBookings}
+                      clientProfiles={clientProfiles}
+                      locale={locale === "fr" ? "fr" : "en"}
+                      proLocation={proProfile.latitude != null && proProfile.longitude != null
+                        ? { lat: proProfile.latitude, lng: proProfile.longitude }
+                        : null}
+                      defaultRadiusKm={proProfile.service_radius_km ?? null}
+                      onOpenBooking={setProBookingDetailId}
+                    />
                     <ProSmsAutomationSettings
                       proProfileId={proProfile.id}
                       locale={locale === "fr" ? "fr" : "en"}

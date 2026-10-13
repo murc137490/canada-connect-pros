@@ -68,11 +68,6 @@ export default function BookingCreditsPanel({ proProfileId }: { proProfileId: st
         <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 font-medium text-muted-foreground hover:text-foreground">
           <History size={13} aria-hidden="true" />{fr ? "Détails et activité" : "Details and activity"}
         </summary>
-        <p className="mt-2 leading-relaxed">
-          {fr
-            ? "Les demandes et les devis n’utilisent pas de crédits. Les crédits sont réservés à l’acceptation et consommés lorsque le travail est terminé."
-            : "Requests and quotes don't use credits. Credits are reserved when a booking is accepted and consumed when the work is completed."}
-        </p>
         <Link to="/pro-plans" className="mt-2 inline-block font-semibold text-primary underline-offset-4 hover:underline">{fr ? "Gérer le forfait" : "Manage plan"}</Link>
         {summary ? (
           <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
