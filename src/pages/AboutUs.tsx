@@ -6,6 +6,7 @@ import GradientText from "@/components/GradientText";
 import { Button } from "@/components/ui/button";
 import { Handshake, Home, Sparkles } from "lucide-react";
 import AnimatedCounter from "@/components/AnimatedCounter";
+import GrainientBackground from "@/components/GrainientBackground";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function AboutUs() {
@@ -26,15 +27,10 @@ export default function AboutUs() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-page">
-        <section className="relative overflow-hidden border-b border-border/40">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.55]"
-            style={{
-              background:
-                "radial-gradient(ellipse 80% 60% at 20% 0%, hsl(160 45% 42% / 0.18), transparent 55%), radial-gradient(ellipse 70% 50% at 90% 20%, hsl(210 40% 45% / 0.12), transparent 50%)",
-            }}
-          />
+      <div className="relative isolate min-h-screen overflow-hidden">
+        <GrainientBackground />
+        <div className="about-grainient-wash" />
+        <section className="relative z-10 overflow-hidden border-b border-border/40">
           <div className="container relative px-4 md:px-6 pt-16 md:pt-24 pb-14 md:pb-20 max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground mb-4">
               {a.eyebrow}
@@ -51,7 +47,7 @@ export default function AboutUs() {
         </section>
 
         {memberCount !== null && (
-          <section className="container max-w-3xl px-4 md:px-6 pt-9" aria-label={a.memberCountTitle}>
+          <section className="container relative z-10 max-w-3xl px-4 md:px-6 pt-9" aria-label={a.memberCountTitle}>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-border/70 bg-card/70 px-5 py-4 shadow-sm backdrop-blur-sm">
               <AnimatedCounter value={memberCount} className="text-foreground" fontSize={48} />
               <p className="max-w-sm text-sm font-medium leading-relaxed text-muted-foreground sm:text-base">{a.memberCountTitle}</p>
@@ -59,7 +55,7 @@ export default function AboutUs() {
           </section>
         )}
 
-        <div className="container px-4 md:px-6 py-12 md:py-16 max-w-3xl space-y-14 md:space-y-16">
+        <div className="container relative z-10 px-4 md:px-6 py-12 md:py-16 max-w-3xl space-y-14 md:space-y-16">
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-foreground">
               <Home className="h-5 w-5 shrink-0 opacity-70" aria-hidden />
