@@ -4,17 +4,17 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePrefersReducedMotion } from "@/motion/usePrefersReducedMotion";
 
 const STORAGE_KEY = "altshift-mini-guides-enabled";
-const LOOP_MS = 21_500;
+const LOOP_MS = 15_200;
 const SCENES = [
   { at: 0, title: { en: "Describe what you need", fr: "Décrivez votre besoin" }, summary: { en: "Pros near you", fr: "Pros près de vous" } },
-  { at: 5_200, title: { en: "Compare professionals", fr: "Comparez les professionnels" }, summary: { en: "Choose what matters to you", fr: "Choisissez ce qui compte" } },
-  { at: 10_700, title: { en: "Booking confirmed", fr: "Réservation confirmée" }, summary: { en: "Your appointment is set", fr: "Votre rendez-vous est fixé" } },
-  { at: 16_100, title: { en: "Stay in touch", fr: "Restez en contact" }, summary: { en: "Message your professional", fr: "Écrivez à votre professionnel" } },
+  { at: 3_700, title: { en: "Compare professionals", fr: "Comparez les professionnels" }, summary: { en: "Choose what matters to you", fr: "Choisissez ce qui compte" } },
+  { at: 7_400, title: { en: "Booking confirmed", fr: "Réservation confirmée" }, summary: { en: "Your appointment is set", fr: "Votre rendez-vous est fixé" } },
+  { at: 11_300, title: { en: "Stay in touch", fr: "Restez en contact" }, summary: { en: "Message your professional", fr: "Écrivez à votre professionnel" } },
 ] as const;
 
 function SceneContent({ scene, french, active }: { scene: number; french: boolean; active: boolean }) {
   return (
-    <div className={`story-scene story-scene-${scene} ${active ? "story-scene-active" : ""} relative flex h-[390px] items-center justify-center overflow-hidden rounded-[1.5rem] border bg-gradient-to-br from-primary/10 via-background to-secondary/20 p-3 transition-all duration-500 sm:h-[410px] sm:p-4 xl:h-[430px] ${active ? "scale-[1.025] border-primary/60 shadow-xl" : "border-border/70 opacity-80"}`}>
+    <div className={`story-scene story-scene-${scene} ${active ? "story-scene-active" : ""} relative flex h-[390px] items-center justify-center overflow-hidden rounded-[1.5rem] border bg-gradient-to-br from-primary/10 via-background to-secondary/20 p-3 transition-[transform,box-shadow,opacity] duration-300 will-change-transform sm:h-[410px] sm:p-4 xl:h-[430px] ${active ? "z-20 scale-[1.08] border-border/70 opacity-100 shadow-xl sm:scale-[1.16] xl:scale-[1.25]" : "border-border/70 opacity-80"}`}>
       <div className="pointer-events-none absolute -right-10 -top-16 size-56 rounded-full bg-primary/10 blur-3xl" />
       {scene === 0 ? (
         <div className="story-search-panel relative w-full max-w-xl rounded-2xl border border-border/70 bg-background/95 p-4 shadow-2xl backdrop-blur sm:p-6">
@@ -22,7 +22,7 @@ function SceneContent({ scene, french, active }: { scene: number; french: boolea
           <div className="story-searchbar flex items-center gap-2 rounded-xl border border-primary/35 bg-card px-3 py-2.5 text-sm shadow-sm"><Search size={16} className="shrink-0 text-primary" /><span className="story-query truncate">{french ? "Réparation plomberie" : "Plumbing repair"}</span><span className="ml-auto rounded-lg bg-primary px-2.5 py-1.5 text-[10px] font-bold text-primary-foreground">{french ? "Rechercher" : "Search"}</span></div>
           <div className="story-results mt-3 grid grid-cols-3 gap-1.5">
             {[ ["Jamie M.", "4.9", "CA$95", french ? "Aujourd’hui" : "Today"], ["Jordan P.", "4.9", "CA$105", french ? "Aujourd’hui" : "Today"], ["Taylor R.", "4.6", "CA$130", french ? "Demain" : "Tomorrow"] ].map(([name, rating, price, day], i) => (
-              <article key={name} className="story-pro-card min-w-0 rounded-xl border bg-card p-2 shadow-sm" style={{ animationDelay: `${i * 350}ms` }}>
+              <article key={name} className="story-pro-card min-w-0 rounded-xl border bg-card p-2 shadow-sm" style={{ animationDelay: `${i * 120}ms` }}>
                 <div className="flex min-w-0 items-center gap-1"><span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary">{name.split(" ").map((x) => x[0]).join("")}</span><span className="truncate text-[10px] font-semibold sm:text-xs">{name}</span></div>
                 <div className="mt-2 flex flex-wrap items-center gap-1 text-[10px]"><span className="inline-flex items-center gap-0.5"><Star size={10} className="fill-amber-400 text-amber-400" />{rating}</span><span className="text-muted-foreground">·</span><span className="font-bold">{price}</span></div>
                 <p className="mt-1 text-[10px] text-muted-foreground">{day}</p>
@@ -37,7 +37,7 @@ function SceneContent({ scene, french, active }: { scene: number; french: boolea
           <div className="mb-4 flex items-center justify-between gap-3"><h3 className="font-heading text-lg font-bold sm:text-xl">{french ? "Plomberie · Réparation" : "Plumbing · Repair"}</h3><span className="text-xs text-muted-foreground">{french ? "Choisissez selon vos priorités" : "Choose what matters to you"}</span></div>
           <div className="grid gap-3 sm:grid-cols-2">
             {[["Jamie M.", "4.9", "CA$95", french ? "Aujourd’hui" : "Today", "JM"], ["Taylor R.", "4.6", "CA$130", french ? "Demain" : "Tomorrow", "TR"]].map(([name, rating, price, day, initials], index) => (
-              <article key={name} className={`story-compare-card rounded-xl border bg-card p-4 shadow-sm ${index === 0 ? "border-emerald-500/50" : ""}`} style={{ animationDelay: `${index * 450}ms` }}>
+              <article key={name} className={`story-compare-card rounded-xl border bg-card p-4 shadow-sm ${index === 0 ? "border-emerald-500/50" : ""}`} style={{ animationDelay: `${index * 150}ms` }}>
                 <div className="flex items-center justify-between gap-2"><span className="flex items-center gap-2 font-bold"><span className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">{initials}</span>{name}</span>{index === 0 ? <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">{french ? "Meilleure correspondance" : "Best match"}</span> : null}</div>
                 <div className="mt-3 grid grid-cols-3 gap-1 text-center"><div className="story-compare-value rounded-lg bg-muted/40 p-1.5"><p className="text-[9px] uppercase text-muted-foreground">{french ? "Prix" : "Price"}</p><p className="mt-1 text-xs font-bold">{price}</p></div><div className="story-compare-value rounded-lg bg-muted/40 p-1.5"><p className="text-[9px] uppercase text-muted-foreground">{french ? "Avis" : "Reviews"}</p><p className="mt-1 inline-flex items-center gap-1 text-xs font-bold"><Star size={11} className="fill-amber-400 text-amber-400" />{rating}</p></div><div className="story-compare-value rounded-lg bg-muted/40 p-1.5"><p className="text-[9px] uppercase text-muted-foreground">{french ? "Dispo" : "Available"}</p><p className="mt-1 text-[10px] font-bold">{day}</p></div></div>
                 {index === 0 ? <button type="button" tabIndex={-1} aria-hidden="true" className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-bold text-primary-foreground">{french ? "Voir le profil · Réserver Jamie" : "View profile · Book Jamie"}<ArrowRight size={15} /></button> : null}
