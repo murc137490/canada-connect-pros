@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, CreditCard, MapPin, MessageCircle, Search, ShieldCheck, Star, Wrench } from "lucide-react";
+import { Check, CreditCard, MapPin, MessageCircle, Search, ShieldCheck, Star, Wrench } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePrefersReducedMotion } from "@/motion/usePrefersReducedMotion";
 import RiveGuideScene from "@/components/home/RiveGuideScene";
@@ -22,7 +22,7 @@ function SceneContent({ scene, french, active }: { scene: number; french: boolea
           <div className="mb-3 flex items-center gap-2 text-sm font-bold"><span className="flex size-8 items-center justify-center rounded-xl bg-primary/10 text-primary"><Wrench size={16} /></span>{french ? "Service" : "Service"}</div>
           <div className="story-searchbar flex items-center gap-2 rounded-xl border border-primary/35 bg-card px-3 py-2.5 text-sm shadow-sm"><Search size={16} className="shrink-0 text-primary" /><span className="story-query truncate">{french ? "Réparation plomberie" : "Plumbing repair"}</span><span className="ml-auto rounded-lg bg-primary px-2.5 py-1.5 text-[10px] font-bold text-primary-foreground">{french ? "Rechercher" : "Search"}</span></div>
           <div className="story-results mt-3 grid grid-cols-3 gap-1.5">
-            {[ ["Émilie B.", "4.9", "CA$95", french ? "Aujourd’hui" : "Today"], ["Félix T.", "4.9", "CA$105", french ? "Aujourd’hui" : "Today"], ["Olivier G.", "4.6", "CA$130", french ? "Demain" : "Tomorrow"] ].map(([name, rating, price, day], i) => (
+            {[ ["Émilie B.", "4.9", "CA$95", french ? "Aujourd’hui" : "Today"], ["Félix T.", "4.9", "CA$105", french ? "Aujourd’hui" : "Today"], ["Jean G.", "4.6", "CA$130", french ? "Demain" : "Tomorrow"] ].map(([name, rating, price, day], i) => (
               <article key={name} className="story-pro-card min-w-0 rounded-xl border bg-card p-2 shadow-sm" style={{ animationDelay: `${i * 120}ms` }}>
                 <div className="flex min-w-0 items-center gap-1"><span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary">{name.split(" ").map((x) => x[0]).join("")}</span><span className="truncate text-[10px] font-semibold sm:text-xs">{name}</span></div>
                 <div className="mt-2 flex flex-wrap items-center gap-1 text-[10px]"><span className="inline-flex items-center gap-0.5"><Star size={10} className="fill-amber-400 text-amber-400" />{rating}</span><span className="text-muted-foreground">·</span><span className="font-bold">{price}</span></div>
@@ -37,16 +37,16 @@ function SceneContent({ scene, french, active }: { scene: number; french: boolea
         <div className="story-compare-panel relative w-full max-w-2xl rounded-2xl border border-border/70 bg-background/95 p-4 shadow-2xl sm:p-6">
           <div className="mb-4 flex items-center justify-between gap-3"><h3 className="font-heading text-lg font-bold sm:text-xl">{french ? "Plomberie · Réparation" : "Plumbing · Repair"}</h3><span className="text-xs text-muted-foreground">{french ? "Choisissez selon vos priorités" : "Choose what matters to you"}</span></div>
           <div className="grid gap-3 sm:grid-cols-2">
-            {[["Émilie B.", "4.9", "CA$95", french ? "Aujourd’hui" : "Today", "ÉB"], ["Olivier G.", "4.6", "CA$130", french ? "Demain" : "Tomorrow", "OG"]].map(([name, rating, price, day, initials], index) => (
+            {[["Émilie B.", "4.9", "CA$95", french ? "Aujourd’hui" : "Today", "ÉB"], ["Jean G.", "4.6", "CA$130", french ? "Demain" : "Tomorrow", "JG"]].map(([name, rating, price, day, initials], index) => (
               <article key={name} className={`story-compare-card min-w-0 overflow-hidden rounded-xl border bg-card p-4 shadow-sm ${index === 0 ? "border-emerald-500/50" : ""}`} style={{ animationDelay: `${index * 150}ms` }}>
                 {index === 0 ? <div className="mb-2"><span className="inline-flex rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-bold text-white">{french ? "Meilleure correspondance" : "Best match"}</span></div> : null}
                 <div className="flex items-center gap-2 font-bold"><span className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">{initials}</span>{name}</div>
                 <div className="mt-3 grid grid-cols-3 gap-1 text-center">
                   <div className="story-compare-value flex items-center justify-center rounded-lg bg-muted/40 p-1.5"><p className="text-xs font-bold">{price.replace("CA$", "")}$</p></div>
                   <div className="story-compare-value flex items-center justify-center rounded-lg bg-muted/40 p-1.5"><p className="inline-flex items-center gap-1 text-xs font-bold"><Star size={11} className="fill-amber-400 text-amber-400" />{rating}</p></div>
-                  <div className="story-compare-value rounded-lg bg-muted/40 p-1.5"><p className="text-[9px] uppercase text-muted-foreground">{french ? "Disponible" : "Available"}</p><p className="mt-1 text-[10px] font-bold">{day}</p></div>
+                  <div className="story-compare-value min-w-0 rounded-lg bg-muted/40 p-1.5"><p className="whitespace-nowrap text-[8px] uppercase leading-tight text-muted-foreground">{french ? "Dispo" : "Available"}</p><p className="mt-1 whitespace-nowrap text-[10px] font-bold">{day}</p></div>
                 </div>
-                {index === 0 ? <button type="button" tabIndex={-1} aria-hidden="true" className="mt-2 flex w-full min-w-0 items-center justify-center gap-1 rounded-lg bg-primary px-2 py-1.5 text-[9px] font-bold text-primary-foreground whitespace-nowrap sm:text-[10px]">{french ? "Voir le profil · Réserver Émilie" : "View profile · Book Émilie"}<ArrowRight size={12} className="shrink-0" /></button> : null}
+                {index === 0 ? <button type="button" tabIndex={-1} aria-hidden="true" className="mt-2 flex min-h-10 w-full min-w-0 items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground whitespace-nowrap">{french ? "Voir le profil" : "View profile"}</button> : null}
               </article>
             ))}
           </div>
