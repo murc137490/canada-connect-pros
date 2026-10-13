@@ -4223,7 +4223,7 @@ export default function Dashboard() {
 
       <div className="min-h-screen bg-gradient-page dark:text-white flex flex-col items-center w-full">
       <div
-        className={`relative w-full py-8 md:py-12 px-4 md:px-6 ${showAdminAside || (showReferralFriendAside && shellTab === "account") ? "2xl:pl-80" : ""} ${proProfile?.is_verified && !isAdminDashboardShell ? "2xl:pr-80" : ""}`}
+        className={`relative w-full py-8 md:py-12 px-4 md:px-6 ${showAdminAside || (showReferralFriendAside && shellTab === "account") || (proProfile?.is_verified && !isAdminDashboardShell) ? "2xl:pl-80" : ""} ${proProfile?.is_verified && !isAdminDashboardShell ? "2xl:pr-80" : ""}`}
       >
       {showAdminAside && (
         <aside className="hidden lg:block fixed left-4 top-24 z-30 w-80 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border border-amber-500/30 bg-card p-4 shadow-sm">
@@ -5596,7 +5596,7 @@ export default function Dashboard() {
             {!isAdminAccountView ? (
             <Dialog open={accountDeletionOpen} onOpenChange={setAccountDeletionOpen}>
             <DialogTrigger asChild>
-              <button type="button" className="flex min-h-24 w-full items-center gap-3 rounded-xl border border-destructive/30 bg-card p-6 text-left transition-colors hover:bg-muted/30 2xl:col-start-1 2xl:col-span-6 2xl:row-start-3">
+              <button type="button" className="flex min-h-24 w-full items-center gap-3 rounded-xl border border-destructive/30 bg-card p-6 text-left transition-colors hover:bg-muted/30 2xl:col-start-4 2xl:col-span-3 2xl:row-start-3">
                 <Trash2 className="h-5 w-5 shrink-0 text-destructive" />
                 <span className="font-heading font-semibold text-foreground">
                   {locale === "fr" ? "Suppression de compte" : "Account Deletion"}
@@ -5817,7 +5817,7 @@ export default function Dashboard() {
             {!isAdminAccountView ? (
             <Dialog open={bookingIdVerificationOpen} onOpenChange={setBookingIdVerificationOpen}>
               <DialogTrigger asChild>
-                <button type="button" className="flex min-h-24 w-full items-center gap-3 rounded-xl border bg-card p-6 text-left transition-colors hover:bg-muted/30 2xl:col-start-7 2xl:col-span-6 2xl:row-start-3" data-tour="account-id-verification">
+                <button type="button" className="flex min-h-24 w-full items-center gap-3 rounded-xl border bg-card p-6 text-left transition-colors hover:bg-muted/30 2xl:col-start-7 2xl:col-span-3 2xl:row-start-3" data-tour="account-id-verification">
                 <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 ring-1 ring-amber-500/40">
                   <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden />
                 </span>
