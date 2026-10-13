@@ -5441,7 +5441,7 @@ export default function Dashboard() {
 
           <TabsContent forceMount value="account" className="mx-auto w-full max-w-[1480px] space-y-6 2xl:grid 2xl:grid-cols-12 2xl:items-start 2xl:gap-4 2xl:space-y-0">
             <div className="contents">
-              <aside className="flex flex-col gap-4 2xl:col-start-1 2xl:col-span-3 2xl:row-span-2">
+              <aside className="flex flex-col gap-4 2xl:col-start-1 2xl:col-span-3">
                 <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-6 text-center">
                   <ClickableProfileAvatar
                     className="h-24 w-24"
@@ -5466,7 +5466,7 @@ export default function Dashboard() {
                   />
                 </div>
               </aside>
-              <form onSubmit={saveAccount} className="grid min-w-0 grid-cols-1 gap-4 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-2 md:p-8 2xl:col-start-4 2xl:col-span-6 2xl:row-span-2" data-tour="account-profile">
+              <form onSubmit={saveAccount} className="grid min-w-0 grid-cols-1 gap-4 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-2 md:p-8 2xl:col-start-4 2xl:col-span-6" data-tour="account-profile">
               <div className="space-y-2 md:col-start-1 md:row-start-1">
                 <Label htmlFor="acc-name">{t.dashboard.accountName}</Label>
                 <Input id="acc-name" value={accountForm.full_name} onChange={(e) => setAccountForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Ryan Smith" />
@@ -5596,7 +5596,7 @@ export default function Dashboard() {
             {!isAdminAccountView ? (
             <Dialog open={accountDeletionOpen} onOpenChange={setAccountDeletionOpen}>
             <DialogTrigger asChild>
-              <button type="button" className="flex min-h-24 w-full items-center gap-3 rounded-xl border border-destructive/30 bg-card p-6 text-left transition-colors hover:bg-muted/30 2xl:col-start-4 2xl:col-span-3 2xl:row-start-3">
+              <button type="button" className="flex min-h-24 w-full items-center gap-3 rounded-xl border border-destructive/30 bg-card p-6 text-left transition-colors hover:bg-muted/30 2xl:col-start-4 2xl:col-span-3 2xl:row-start-2">
                 <Trash2 className="h-5 w-5 shrink-0 text-destructive" />
                 <span className="font-heading font-semibold text-foreground">
                   {locale === "fr" ? "Suppression de compte" : "Account Deletion"}
@@ -5817,7 +5817,7 @@ export default function Dashboard() {
             {!isAdminAccountView ? (
             <Dialog open={bookingIdVerificationOpen} onOpenChange={setBookingIdVerificationOpen}>
               <DialogTrigger asChild>
-                <button type="button" className="flex min-h-24 w-full items-center gap-3 rounded-xl border bg-card p-6 text-left transition-colors hover:bg-muted/30 2xl:col-start-7 2xl:col-span-3 2xl:row-start-3" data-tour="account-id-verification">
+                <button type="button" className="flex min-h-24 w-full items-center gap-3 rounded-xl border bg-card p-6 text-left transition-colors hover:bg-muted/30 2xl:col-start-7 2xl:col-span-3 2xl:row-start-2" data-tour="account-id-verification">
                 <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 ring-1 ring-amber-500/40">
                   <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden />
                 </span>
