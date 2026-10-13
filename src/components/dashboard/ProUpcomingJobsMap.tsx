@@ -167,7 +167,7 @@ export default function ProUpcomingJobsMap({
     let cancelled = false;
     if (!mapElement.current) return;
     if (!MAPS_KEY) { setMapError(true); return; }
-    void whenGoogleMapsReady(MAPS_KEY).then(() => {
+    void whenGoogleMapsReady(MAPS_KEY, false).then(() => {
       if (cancelled || !mapElement.current) return;
       const maps = (window as MapsWindow).google?.maps;
       if (!maps) throw new Error("Google Maps is unavailable");

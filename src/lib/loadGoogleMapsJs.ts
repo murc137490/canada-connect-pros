@@ -10,7 +10,8 @@ type MapsWindow = Window & {
   };
 };
 
-let loading: Promise<void> | null = null;
+let mapsLoading: Promise<void> | null = null;
+let placesLoading: Promise<void> | null = null;
 
 function mapsWindow(): MapsWindow {
   return window as MapsWindow;
@@ -25,12 +26,11 @@ async function waitForImportLibrary(): Promise<NonNullable<MapsWindow["google"]>
   throw new Error("Google Maps importLibrary missing");
 }
 
-export function whenGoogleMapsReady(apiKey: string): Promise<void> {
+export function whenGoogleMapsReady(apiKey: string, includePlaces = true): Promise<void> {
   const maps = mapsWindow().google?.maps;
-  if (maps?.Map && maps.places) return Promise.resolve();
   if (!apiKey) return Promise.reject(new Error("missing maps key"));
-  if (!loading) {
-    loading = (async () => {
+  if (!mapsLoading) {
+    mapsLoading = (async () => {
       const existing = document.querySelector('script[data-altshift-maps="1"]') as HTMLScriptElement | null;
       if (!mapsWindow().google?.maps && !existing) {
         await new Promise<void>((resolve, reject) => {
@@ -45,14 +45,25 @@ export function whenGoogleMapsReady(apiKey: string): Promise<void> {
       }
       const ready = await waitForImportLibrary();
       await ready.importLibrary?.("maps");
-      await ready.importLibrary?.("places");
       if (!mapsWindow().google?.maps?.Map) throw new Error("Google Maps unavailable");
     })().catch((err) => {
-      loading = null;
+      mapsLoading = null;
       throw err;
     });
   }
-  return loading;
+  if (!includePlaces) return mapsLoading;
+  if (maps?.places) return mapsLoading;
+  if (!placesLoading) {
+    placesLoading = mapsLoading.then(async () => {
+      const ready = await waitForImportLibrary();
+      await ready.importLibrary?.("places");
+      if (!mapsWindow().google?.maps?.places) throw new Error("Google Places library unavailable");
+    }).catch((err) => {
+      placesLoading = null;
+      throw err;
+    });
+  }
+  return placesLoading;
 }
 
 export function triggerMapResize(map: { setCenter?: (c: { lat: number; lng: number }) => void } | null): void {
