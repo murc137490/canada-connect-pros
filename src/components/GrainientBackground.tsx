@@ -13,6 +13,7 @@ uniform vec2 uResolution;
 uniform float uTime;
 uniform vec2 uPointer;
 uniform float uPointerOn;
+uniform vec3 uRamp[5];
 out vec4 outColor;
 
 float hash(vec2 p) {
@@ -27,15 +28,13 @@ float noise(vec2 p) {
              mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0)), f.x), f.y);
 }
 vec3 ramp(float t) {
-  vec3 a = vec3(0.071, 0.059, 0.090); // #120f17
-  vec3 b = vec3(0.165, 0.059, 0.039); // #2a0f0a
-  vec3 c = vec3(0.604, 0.204, 0.067); // #9a3411
-  vec3 d = vec3(0.976, 0.451, 0.086); // #f97316
-  vec3 e = vec3(0.996, 0.843, 0.682); // #fed7ae
-  if (t < 0.25) return mix(a, b, smoothstep(0.0, 0.25, t));
-  if (t < 0.50) return mix(b, c, smoothstep(0.25, 0.50, t));
-  if (t < 0.75) return mix(c, d, smoothstep(0.50, 0.75, t));
-  return mix(d, e, smoothstep(0.75, 1.0, t));
+  float scaled = clamp(t, 0.0, 1.0) * 4.0;
+  int index = min(int(floor(scaled)), 3);
+  float blend = smoothstep(0.0, 1.0, fract(scaled));
+  if (index == 0) return mix(uRamp[0], uRamp[1], blend);
+  if (index == 1) return mix(uRamp[1], uRamp[2], blend);
+  if (index == 2) return mix(uRamp[2], uRamp[3], blend);
+  return mix(uRamp[3], uRamp[4], blend);
 }
 void main() {
   vec2 uv = gl_FragCoord.xy / uResolution;
@@ -96,11 +95,22 @@ export default function GrainientBackground() {
       time: gl.getUniformLocation(program, "uTime"),
       pointer: gl.getUniformLocation(program, "uPointer"),
       pointerOn: gl.getUniformLocation(program, "uPointerOn"),
+      ramp: gl.getUniformLocation(program, "uRamp[0]"),
     };
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const pointer = { x: 0.5, y: 0.5, active: 0 };
+    const palettes = {
+      dark: ["#071722", "#073b49", "#087f8c", "#168b70", "#a1e8c2"],
+      cream: ["#f3ead8", "#d4dfcc", "#9ebca5", "#537e70", "#315c58"],
+      light: ["#f4fbff", "#d9f2ef", "#a6d9d1", "#5daea5", "#267783"],
+    };
+    const paletteToRgb = (hex: string) => {
+      const value = hex.replace("#", "");
+      return [0, 2, 4].map((offset) => parseInt(value.slice(offset, offset + 2), 16) / 255);
+    };
+    let activePalette = "";
     let width = 1;
     let height = 1;
     let time = 0;
@@ -126,6 +136,15 @@ export default function GrainientBackground() {
       gl.uniform1f(uniforms.time, time);
       gl.uniform2f(uniforms.pointer, pointer.x, pointer.y);
       gl.uniform1f(uniforms.pointerOn, pointer.active);
+      const theme = document.documentElement.classList.contains("dark")
+        ? "dark"
+        : document.documentElement.classList.contains("cream")
+          ? "cream"
+          : "light";
+      if (theme !== activePalette) {
+        activePalette = theme;
+        gl.uniform3fv(uniforms.ramp, new Float32Array(palettes[theme].flatMap(paletteToRgb)));
+      }
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       if (!reduced) raf = requestAnimationFrame(draw);
     };
@@ -143,13 +162,16 @@ export default function GrainientBackground() {
     const onPointerMove = (event: PointerEvent) => {
       const rect = root.getBoundingClientRect();
       pointer.x = (event.clientX - rect.left) / Math.max(rect.width, 1);
-      pointer.y = 1 - (event.clientY - rect.top) / Math.max(rect.height, 1);
-      pointer.active = pointer.x >= 0 && pointer.x <= 1 && pointer.y >= 0 && pointer.y <= 1 ? 1 : 0;
+      const y = (event.clientY - rect.top) / Math.max(rect.height, 1);
+      pointer.y = 1 - y;
+      pointer.active = pointer.x >= 0 && pointer.x <= 1 && y >= 0 && y <= 1 ? 1 : 0;
       wake();
     };
     const onPointerLeave = () => { pointer.active = 0; wake(); };
     const onVisibility = () => { last = 0; wake(); };
     const resizeObserver = new ResizeObserver(resize);
+    const themeObserver = new MutationObserver(() => wake());
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     const intersection = new IntersectionObserver(([entry]) => {
       visible = Boolean(entry?.isIntersecting);
       if (visible) { last = 0; wake(); }
@@ -157,8 +179,8 @@ export default function GrainientBackground() {
     });
     resizeObserver.observe(root);
     intersection.observe(root);
-    root.addEventListener("pointermove", onPointerMove, { passive: true });
-    root.addEventListener("pointerleave", onPointerLeave, { passive: true });
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    document.documentElement.addEventListener("pointerleave", onPointerLeave);
     document.addEventListener("visibilitychange", onVisibility);
     resize();
     wake();
@@ -167,9 +189,10 @@ export default function GrainientBackground() {
       disposed = true;
       cancelAnimationFrame(raf);
       resizeObserver.disconnect();
+      themeObserver.disconnect();
       intersection.disconnect();
-      root.removeEventListener("pointermove", onPointerMove);
-      root.removeEventListener("pointerleave", onPointerLeave);
+      window.removeEventListener("pointermove", onPointerMove);
+      document.documentElement.removeEventListener("pointerleave", onPointerLeave);
       document.removeEventListener("visibilitychange", onVisibility);
       gl.deleteVertexArray(vao);
       gl.deleteProgram(program);
