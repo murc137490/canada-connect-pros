@@ -40,13 +40,15 @@ void main() {
   vec2 uv = gl_FragCoord.xy / uResolution;
   vec2 p = uv - 0.5;
   p.x *= uResolution.x / uResolution.y;
-  float n = noise(p * 2.1 + vec2(uTime * 0.06, -uTime * 0.035));
-  float band = uv.x * 0.68 + uv.y * 0.26 + (n - 0.5) * 0.2;
+  vec2 flow = vec2(uTime * 0.14, -uTime * 0.095);
+  float n = noise(p * 2.1 + flow);
+  float n2 = noise(p * 3.4 - flow * 0.72 + 4.7);
+  float band = uv.x * 0.68 + uv.y * 0.26 + (n - 0.5) * 0.34 + (n2 - 0.5) * 0.13;
   vec2 pointer = uPointer - 0.5;
   pointer.x *= uResolution.x / uResolution.y;
   vec2 delta = p - pointer;
-  float lens = exp(-dot(delta, delta) * 9.0) * uPointerOn;
-  band += lens * sin(length(delta) * 30.0 - uTime * 1.6) * 0.035;
+  float lens = exp(-dot(delta, delta) * 5.0) * uPointerOn;
+  band += lens * sin(length(delta) * 24.0 - uTime * 2.2) * 0.075;
   vec3 color = ramp(clamp(band, 0.0, 1.0));
   float grain = hash(gl_FragCoord.xy + floor(uTime * 12.0)) - 0.5;
   color += grain * 0.035;
@@ -102,9 +104,9 @@ export default function GrainientBackground() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const pointer = { x: 0.5, y: 0.5, active: 0 };
     const palettes = {
-      dark: ["#071722", "#073b49", "#087f8c", "#168b70", "#a1e8c2"],
-      cream: ["#f3ead8", "#d4dfcc", "#9ebca5", "#537e70", "#315c58"],
-      light: ["#f4fbff", "#d9f2ef", "#a6d9d1", "#5daea5", "#267783"],
+      dark: ["#061a2b", "#063b59", "#087f9f", "#087f68", "#75d8a1"],
+      cream: ["#f6eddb", "#e4e4cf", "#b9d1bb", "#78aa91", "#397c72"],
+      light: ["#f5fbff", "#d7f1f4", "#9edbd6", "#58b7a5", "#267b83"],
     };
     const paletteToRgb = (hex: string) => {
       const value = hex.replace("#", "");

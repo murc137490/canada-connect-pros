@@ -5,8 +5,8 @@
   overflow: hidden;
   pointer-events: none;
   background: linear-gradient(125deg, #071722, #073b49 28%, #087f8c 56%, #168b70 78%, #a1e8c2);
-  background-size: 220% 220%;
-  animation: grainient-background-drift 18s ease-in-out infinite alternate;
+  background-size: 260% 260%;
+  animation: grainient-background-drift 11s ease-in-out infinite alternate;
 }
 
 .grainient-background__canvas {
@@ -27,15 +27,15 @@
 }
 
 html.dark .grainient-background {
-  background-image: linear-gradient(125deg, #071722, #073b49 28%, #087f8c 56%, #168b70 78%, #a1e8c2);
+  background-image: linear-gradient(125deg, #061a2b, #063b59 28%, #087f9f 56%, #087f68 78%, #75d8a1);
 }
 
 html.cream .grainient-background {
-  background-image: linear-gradient(125deg, #f3ead8, #d4dfcc 28%, #9ebca5 56%, #537e70 78%, #315c58);
+  background-image: linear-gradient(125deg, #f6eddb, #e4e4cf 28%, #b9d1bb 56%, #78aa91 78%, #397c72);
 }
 
 html:not(.dark):not(.cream) .grainient-background {
-  background-image: linear-gradient(125deg, #f4fbff, #d9f2ef 28%, #a6d9d1 56%, #5daea5 78%, #267783);
+  background-image: linear-gradient(125deg, #f5fbff, #d7f1f4 28%, #9edbd6 56%, #58b7a5 78%, #267b83);
 }
 
 html.dark .about-grainient-wash { background: hsl(var(--background) / 0.14); }
@@ -43,8 +43,9 @@ html.cream .about-grainient-wash { background: hsl(var(--background) / 0.18); }
 html:not(.dark):not(.cream) .about-grainient-wash { background: hsl(var(--background) / 0.18); }
 
 @keyframes grainient-background-drift {
-  from { background-position: 0% 25%; }
-  to { background-position: 100% 75%; }
+  0% { background-position: 0% 18%; }
+  50% { background-position: 78% 88%; }
+  100% { background-position: 18% 0%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

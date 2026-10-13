@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useLanguage } from "@/contexts/LanguageContext";
-import GradientText from "@/components/GradientText";
 import { Button } from "@/components/ui/button";
 import { Handshake, Home, Sparkles } from "lucide-react";
 import AnimatedCounter from "@/components/AnimatedCounter";
@@ -35,11 +34,9 @@ export default function AboutUs() {
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground mb-4">
               {a.eyebrow}
             </p>
-            <GradientText colors={["#007A56", "#2C698C", "#1a1a1a"]} animationSpeed={12} className="inline-block">
-              <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-left">
-                {a.title}
-              </h1>
-            </GradientText>
+            <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-left text-foreground">
+              {a.title}
+            </h1>
             <p className="mt-5 text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl">
               {a.lead}
             </p>

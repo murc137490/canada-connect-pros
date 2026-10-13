@@ -13,7 +13,7 @@ Deno.serve(async (request: Request) => {
   const headers = {
     "Access-Control-Allow-Origin": corsOrigin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
     "Content-Type": "application/json; charset=utf-8",
@@ -22,7 +22,9 @@ Deno.serve(async (request: Request) => {
   };
 
   if (request.method === "OPTIONS") return new Response("ok", { headers });
-  if (request.method !== "GET") {
+  // supabase.functions.invoke uses POST by default. Keep GET available for
+  // direct read-only checks while accepting the SDK's default method.
+  if (request.method !== "GET" && request.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
   }
   if (!allowedOrigins.has(origin)) {
