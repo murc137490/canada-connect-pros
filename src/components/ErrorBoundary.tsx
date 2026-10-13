@@ -1,4 +1,4 @@
-import { Component, type CSSProperties, type ErrorInfo, type ReactNode } from "react";
+import { Component, useState, type CSSProperties, type ErrorInfo, type ReactNode } from "react";
 import { SUPPORT_EMAIL, SUPPORT_PHONE, SUPPORT_PHONE_TEL } from "@/config/legalConfig";
 
 interface Props {
@@ -48,6 +48,8 @@ const COPY = {
     getHelp: "Go to Support",
     email: "Email",
     phone: "Phone",
+    copyDetails: "Copy error details",
+    copied: "Copied",
   },
   fr: {
     title: "Une erreur est survenue",
@@ -57,6 +59,8 @@ const COPY = {
     getHelp: "Aller à l’aide",
     email: "Courriel",
     phone: "Téléphone",
+    copyDetails: "Copier les détails de l’erreur",
+    copied: "Copié",
   },
 } as const;
 
@@ -64,10 +68,13 @@ const COPY = {
 export function AppErrorScreen({
   onRetry,
   locale: localeProp,
+  errorMessage,
 }: {
   onRetry?: () => void;
   locale?: "en" | "fr";
+  errorMessage?: string;
 }) {
+  const [copied, setCopied] = useState(false);
   const locale = localeProp ?? readLocale();
   const c = COPY[locale];
   const dark = readPrefersDark();
@@ -246,6 +253,27 @@ export function AppErrorScreen({
           </a>
         </div>
 
+        {errorMessage ? (
+          <button
+            type="button"
+            onClick={() => {
+              const details = `AltShift dashboard error\nPage: ${window.location.pathname}\nError: ${errorMessage}`;
+              if (!navigator.clipboard?.writeText) return;
+              void navigator.clipboard.writeText(details).then(() => setCopied(true)).catch(() => setCopied(false));
+            }}
+            style={{
+              ...btnBase,
+              marginBottom: 20,
+              background: "transparent",
+              color: muted,
+              border: `1px solid ${border}`,
+              fontSize: "0.8rem",
+            }}
+          >
+            {copied ? c.copied : c.copyDetails}
+          </button>
+        ) : null}
+
         <div
           style={{
             borderTop: `1px solid ${border}`,
@@ -293,6 +321,7 @@ export default class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) return this.props.fallback;
       return (
         <AppErrorScreen
+          errorMessage={safeErrorSummary(this.state.error)}
           onRetry={() => {
             this.setState({ hasError: false, error: null });
             try {
@@ -306,4 +335,14 @@ export default class ErrorBoundary extends Component<Props, State> {
     }
     return this.props.children;
   }
+}
+
+function safeErrorSummary(error: Error): string {
+  return (error.message || error.name || "Unknown rendering error")
+    .replace(/https?:\/\/\S+/gi, "[URL]")
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[email]")
+    .replace(/\b(?:\+?\d[\d ().-]{7,}\d)\b/g, "[phone]")
+    .replace(/\b[0-9a-f]{8}-[0-9a-f-]{27,}\b/gi, "[id]")
+    .replace(/\s+/g, " ")
+    .slice(0, 200);
 }
