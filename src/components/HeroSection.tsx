@@ -627,7 +627,7 @@ export default function HeroSection() {
             <BookingPhoneMock alwaysLive />
           </div>
         </div>
-        <div className="relative z-20 mx-auto mt-9 w-full max-w-4xl -translate-y-8 lg:-translate-y-[24rem]">
+        <div className="relative z-20 mx-auto mt-9 w-full max-w-4xl -translate-y-10 lg:-translate-y-[26rem]">
           <form
             id="hero-search"
             onSubmit={handleSubmit}

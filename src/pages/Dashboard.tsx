@@ -59,7 +59,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
@@ -5466,7 +5466,7 @@ export default function Dashboard() {
                   />
                 </div>
               </aside>
-              <form onSubmit={saveAccount} className="grid min-w-0 grid-cols-1 gap-4 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-2 md:p-8 2xl:col-start-4 2xl:col-span-6 2xl:row-span-2" data-tour="account-profile">
+              <form onSubmit={saveAccount} className="grid min-w-0 grid-cols-1 gap-4 rounded-xl border bg-card p-5 sm:p-6 md:grid-cols-2 md:p-8 2xl:col-start-4 2xl:col-span-6 2xl:row-start-1 2xl:row-span-2" data-tour="account-profile">
               <div className="space-y-2 md:col-start-1 md:row-start-1">
                 <Label htmlFor="acc-name">{t.dashboard.accountName}</Label>
                 <Input id="acc-name" value={accountForm.full_name} onChange={(e) => setAccountForm((p) => ({ ...p, full_name: e.target.value }))} placeholder="e.g. Ryan Smith" />
@@ -5590,19 +5590,27 @@ export default function Dashboard() {
                 {accountSaving && <Loader2 size={16} className="animate-spin" />}
                 {t.dashboard.saveAccount}
               </Button>
+              {!isAdminAccountView ? (
+                <div className="grid grid-cols-1 gap-3 md:col-span-2 md:row-start-8 sm:grid-cols-2">
+                  <button type="button" onClick={() => setAccountDeletionOpen(true)} className="flex min-h-16 items-center gap-3 rounded-xl border border-destructive/30 bg-background p-4 text-left transition-colors hover:bg-muted/30">
+                    <Trash2 className="h-5 w-5 shrink-0 text-destructive" />
+                    <span className="font-heading text-sm font-semibold text-foreground">
+                      {locale === "fr" ? "Suppression de compte" : "Account Deletion"}
+                    </span>
+                  </button>
+                  <button type="button" onClick={() => setBookingIdVerificationOpen(true)} className="flex min-h-16 items-center gap-3 rounded-xl border bg-background p-4 text-left transition-colors hover:bg-muted/30" data-tour="account-id-verification">
+                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15 ring-1 ring-amber-500/40">
+                      <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden />
+                    </span>
+                    <span className="font-heading text-sm font-semibold text-foreground">{t.dashboard.accountBookingIdVerificationTitle}</span>
+                  </button>
+                </div>
+              ) : null}
               </form>
             </div>
             <div className="contents">
             {!isAdminAccountView ? (
             <Dialog open={accountDeletionOpen} onOpenChange={setAccountDeletionOpen}>
-            <DialogTrigger asChild>
-              <button type="button" className="flex min-h-24 w-full items-center gap-3 rounded-xl border border-destructive/30 bg-card p-6 text-left transition-colors hover:bg-muted/30 2xl:col-start-4 2xl:col-span-3 2xl:row-start-2">
-                <Trash2 className="h-5 w-5 shrink-0 text-destructive" />
-                <span className="font-heading font-semibold text-foreground">
-                  {locale === "fr" ? "Suppression de compte" : "Account Deletion"}
-                </span>
-              </button>
-            </DialogTrigger>
             <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{locale === "fr" ? "Suppression de compte" : "Account Deletion"}</DialogTitle>
@@ -5816,16 +5824,6 @@ export default function Dashboard() {
             ) : null}
             {!isAdminAccountView ? (
             <Dialog open={bookingIdVerificationOpen} onOpenChange={setBookingIdVerificationOpen}>
-              <DialogTrigger asChild>
-                <button type="button" className="flex min-h-24 w-full items-center gap-3 rounded-xl border bg-card p-6 text-left transition-colors hover:bg-muted/30 2xl:col-start-7 2xl:col-span-3 2xl:row-start-2" data-tour="account-id-verification">
-                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 ring-1 ring-amber-500/40">
-                  <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden />
-                </span>
-                <h3 className="font-heading font-semibold text-foreground">
-                  {t.dashboard.accountBookingIdVerificationTitle}
-                </h3>
-                </button>
-              </DialogTrigger>
               <DialogContent id="account-booking-id-verification" className="max-h-[90vh] max-w-xl overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{t.dashboard.accountBookingIdVerificationTitle}</DialogTitle>
@@ -6073,6 +6071,7 @@ export default function Dashboard() {
               </div>
             ) : proProfile?.is_verified && !proViewingMyRequests ? (
               <div className="mx-auto w-full max-w-[1480px] space-y-4 xl:grid xl:grid-cols-[minmax(0,1.3fr)_minmax(22rem,.9fr)] xl:items-start xl:gap-4 xl:space-y-0">
+                <div className="space-y-4 xl:row-span-2">
                 <div
                   data-tour="schedule-calendar"
                   className="rounded-xl border bg-card p-4 sm:p-6 md:p-8"
@@ -6152,6 +6151,51 @@ export default function Dashboard() {
                   {locale === "fr" ? "Enregistrer l’horaire" : "Save schedule"}
                 </Button>
                 </div>
+                <div id="received-quotes" className="rounded-xl border border-border bg-muted/20 p-5 sm:p-6 scroll-mt-24">
+                  <h4 className="font-heading font-bold text-foreground mb-1">{t.dashboard.quotesReceivedSection}</h4>
+                  <p className="text-sm text-muted-foreground mb-4">{t.dashboard.quotesReceivedHint}</p>
+                  {jobRequests.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {locale === "fr" ? "Aucune demande pour l’instant." : "No requests yet."}
+                    </p>
+                  ) : (
+                    <ul className="space-y-4">
+                      {jobRequests.map((req) => {
+                        const quotes = jobQuotesByRequestId[req.id] ?? [];
+                        return (
+                          <li key={req.id} className="rounded-lg border bg-card p-4">
+                            <div className="flex flex-wrap items-center gap-2 font-medium text-foreground">
+                              <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-500" aria-hidden />
+                              <span className="min-w-0">{req.description}</span>
+                              <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                                {(t.dashboard.quotesReceivedCount ?? "{{count}} quote(s)").replace(
+                                  "{{count}}",
+                                  String(quotes.length)
+                                )}
+                              </span>
+                            </div>
+                            {quotes.length > 0 ? (
+                              <ul className="mt-3 space-y-2">
+                                {quotes.map((q) => (
+                                  <li key={q.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 p-3 text-sm">
+                                    <div>
+                                      <span className="font-medium">{q.business_name || "Pro"}</span>
+                                      {q.price_cents != null && <span className="ml-2">${(q.price_cents / 100).toFixed(0)}</span>}
+                                    </div>
+                                    <span className="text-muted-foreground capitalize">{q.status}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="mt-2 text-sm text-muted-foreground">{t.dashboard.quotesReceivedEmpty}</p>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+                </div>
                 <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">
                   <div data-tour="booking-requests" className="rounded-xl">
                     <div className="mb-3 flex items-center justify-between gap-2">
@@ -6203,50 +6247,6 @@ export default function Dashboard() {
                   ) : null}
                 </div>
 
-                <div id="received-quotes" className="rounded-xl border border-border bg-muted/20 p-5 sm:p-6 scroll-mt-24">
-                  <h4 className="font-heading font-bold text-foreground mb-1">{t.dashboard.quotesReceivedSection}</h4>
-                  <p className="text-sm text-muted-foreground mb-4">{t.dashboard.quotesReceivedHint}</p>
-                  {jobRequests.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      {locale === "fr" ? "Aucune demande pour l’instant." : "No requests yet."}
-                    </p>
-                  ) : (
-                    <ul className="space-y-4">
-                      {jobRequests.map((req) => {
-                        const quotes = jobQuotesByRequestId[req.id] ?? [];
-                        return (
-                          <li key={req.id} className="rounded-lg border bg-card p-4">
-                            <div className="flex flex-wrap items-center gap-2 font-medium text-foreground">
-                              <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-500" aria-hidden />
-                              <span className="min-w-0">{req.description}</span>
-                              <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                                {(t.dashboard.quotesReceivedCount ?? "{{count}} quote(s)").replace(
-                                  "{{count}}",
-                                  String(quotes.length)
-                                )}
-                              </span>
-                            </div>
-                            {quotes.length > 0 ? (
-                              <ul className="mt-3 space-y-2">
-                                {quotes.map((q) => (
-                                  <li key={q.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 p-3 text-sm">
-                                    <div>
-                                      <span className="font-medium">{q.business_name || "Pro"}</span>
-                                      {q.price_cents != null && <span className="ml-2">${(q.price_cents / 100).toFixed(0)}</span>}
-                                    </div>
-                                    <span className="text-muted-foreground capitalize">{q.status}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="mt-2 text-sm text-muted-foreground">{t.dashboard.quotesReceivedEmpty}</p>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
                 {proProfile?.is_verified ? (
                   <div className="flex justify-center">
                     <DashboardTourHelpButton onClick={() => replayDashTour("bookings")} />
