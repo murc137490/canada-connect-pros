@@ -38,10 +38,13 @@ void main() {
   float phase = x * uWaves * 6.28318 + pct * 8.0 + time * 0.72;
   float wave = sin(phase + 0.22 * sin(phase * 0.43 + pct * 5.0));
   float secondary = sin(phase * 0.55 - time * 0.29 + pct * 13.0);
-  float noise = (hash(vec2(index, floor(x * 18.0))) - 0.5) * uFray * envelope;
+  float noiseX = x * 7.0;
+  float noiseBlend = smoothstep(0.0, 1.0, fract(noiseX));
+  float noise = mix(hash(vec2(index, floor(noiseX))), hash(vec2(index, floor(noiseX) + 1.0)), noiseBlend);
+  noise = (noise - 0.5) * uFray * envelope;
   float mouseReach = exp(-pow((x - uMouse.x) * 3.2, 2.0));
-  float mouseBend = (uMouse.y - 0.5) * mouseReach * envelope * 0.045;
-  float y = (pct - 0.5) * uDistance + envelope * uAmplitude * (wave * 0.037 + secondary * 0.009) + noise * 0.025 + mouseBend;
+  float mouseBend = (uMouse.y - 0.5) * mouseReach * envelope * 0.12;
+  float y = (pct - 0.5) * uDistance + envelope * uAmplitude * (wave * 0.13 + secondary * 0.035) + noise * 0.035 + mouseBend;
   float halfWidth = (uThickness * (1.0 - pct * 0.58) + 0.55) / max(min(uResolution.x, uResolution.y), 1.0);
   float sideOffset = aPoint.y * halfWidth * 2.0;
   vec2 local = vec2((x - 0.5) * uFrame.x, y * uFrame.y + sideOffset * uFrame.y);
@@ -83,12 +86,12 @@ function rgb(hex: string): [number, number, number] {
 function getPalette(): Palette {
   const root = document.documentElement;
   if (root.classList.contains("dark")) {
-    return { line: rgb("#55c9d5"), accent: rgb("#59d39a") };
+    return { line: rgb("#b9e4e8"), accent: rgb("#61cba0") };
   }
   if (root.classList.contains("cream")) {
-    return { line: rgb("#527b72"), accent: rgb("#879b68") };
+    return { line: rgb("#5c8176"), accent: rgb("#8d9f6c") };
   }
-  return { line: rgb("#3d899b"), accent: rgb("#4e9a70") };
+  return { line: rgb("#4c91a0"), accent: rgb("#529b75") };
 }
 
 export default function ThreadsBackground() {
@@ -150,6 +153,7 @@ export default function ThreadsBackground() {
     let width = 1;
     let height = 1;
     let lineCount = 64;
+    let segmentCount = 0;
     let elapsed = 0;
     let previousTime = 0;
     let raf = 0;
@@ -181,18 +185,18 @@ export default function ThreadsBackground() {
       gl.uniform2f(u.resolution, canvas.width, canvas.height);
       gl.uniform2f(u.frame, frameWidth, frameHeight);
       gl.uniform2f(u.mouse, pointer.x, 1 - pointer.y);
-      gl.uniform1f(u.amplitude, 1.15);
-      gl.uniform1f(u.distance, 0.78);
+      gl.uniform1f(u.amplitude, 1.7);
+      gl.uniform1f(u.distance, 0.42);
       gl.uniform1f(u.count, lineCount);
       gl.uniform1f(u.waves, 1.05);
       gl.uniform1f(u.split, 0.04);
-      gl.uniform1f(u.fray, 0.24);
-      gl.uniform1f(u.thickness, 1.15 * ratio);
+      gl.uniform1f(u.fray, 0.5);
+      gl.uniform1f(u.thickness, 0.6 * ratio);
       gl.uniform1f(u.angle, radians);
       gl.uniform1f(u.reduced, reducedMotion ? 1 : 0);
       gl.uniform3fv(u.color, palette.line);
       gl.uniform3fv(u.accent, palette.accent);
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, lineCount);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, (segmentCount + 1) * 2, lineCount);
       gl.bindVertexArray(null);
       if (!reducedMotion) raf = requestAnimationFrame(draw);
       else raf = 0;
@@ -210,6 +214,14 @@ export default function ThreadsBackground() {
       canvas.width = Math.max(1, Math.round(width * dpr));
       canvas.height = Math.max(1, Math.round(height * dpr));
       lineCount = width < 600 ? 52 : width < 1000 ? 72 : 90;
+      segmentCount = Math.max(96, Math.min(640, Math.round(width / 3)));
+      const points = new Float32Array((segmentCount + 1) * 4);
+      for (let i = 0; i <= segmentCount; i++) {
+        const x = i / segmentCount;
+        points.set([x, -1, x, 1], i * 4);
+      }
+      gl.bindBuffer(gl.ARRAY_BUFFER, lineBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, points, gl.STATIC_DRAW);
       wake();
     };
     const pointerMove = (event: PointerEvent) => {
