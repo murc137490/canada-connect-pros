@@ -65,7 +65,9 @@ export default function ProClientHistoryPanel({ proProfileId, lang, clients, loa
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savingReminderId, setSavingReminderId] = useState<string | null>(null);
+  const [loadingEmailId, setLoadingEmailId] = useState<string | null>(null);
   const [emailRecipients, setEmailRecipients] = useState<Record<string, string>>({});
+  const [otherRecipientOpen, setOtherRecipientOpen] = useState<Record<string, boolean>>({});
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -101,6 +103,30 @@ export default function ProClientHistoryPanel({ proProfileId, lang, clients, loa
     }
     toast({ title: lang === "fr" ? "Préférence de rappel enregistrée" : "Reminder preference saved" });
     onChanged();
+  };
+
+  const openEmailDraft = (cl: CrmClient, booking: CrmBooking, recipient: string) => {
+    const service = serviceSlugLabel(booking.service_slug) || "service";
+    const subject = lang === "fr" ? `Suivi de votre réservation ${service}` : `Following up on your ${service} booking`;
+    const body = lang === "fr"
+      ? `Bonjour ${cl.client_name || c.unnamed},\n\nJe vous écris au sujet de notre réservation.\nService : ${service}\nDate : ${formatYmd(booking.date, lang)}${booking.time ? ` à ${String(booking.time).slice(0, 5)}` : ""}\nStatut : ${c.status[booking.status] ?? booking.status}${booking.paid_cents ? `\nMontant payé : ${formatMoneyCents(booking.paid_cents, lang)}` : ""}\nRéférence : ${booking.code ?? booking.id}\n\n`
+      : `Hi ${cl.client_name || c.unnamed},\n\nI’m following up about our booking.\nService: ${service}\nDate: ${formatYmd(booking.date, lang)}${booking.time ? ` at ${String(booking.time).slice(0, 5)}` : ""}\nStatus: ${c.status[booking.status] ?? booking.status}${booking.paid_cents ? `\nAmount paid: ${formatMoneyCents(booking.paid_cents, lang)}` : ""}\nReference: ${booking.code ?? booking.id}\n\n`;
+    window.location.assign(`mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+  };
+
+  const emailClient = async (cl: CrmClient, booking: CrmBooking) => {
+    setLoadingEmailId(booking.id);
+    const { data, error } = await untypedDb.rpc("pro_get_paid_booking_client_email", { p_booking_id: booking.id });
+    setLoadingEmailId(null);
+    if (error || typeof data !== "string" || !data.includes("@")) {
+      toast({
+        title: c.emailClient,
+        description: lang === "fr" ? "Courriel indisponible pour cette réservation." : "Email is unavailable for this booking.",
+        variant: "destructive",
+      });
+      return;
+    }
+    openEmailDraft(cl, booking, data);
   };
 
   return (
@@ -225,34 +251,62 @@ export default function ProClientHistoryPanel({ proProfileId, lang, clients, loa
                                 </Button>
                               </span>
                               <div className="flex w-full flex-wrap items-center justify-end gap-2 pt-1">
-                                <Input
-                                  type="email"
-                                  className="h-8 w-full sm:max-w-xs"
-                                  aria-label={c.emailRecipient}
-                                  placeholder={c.emailRecipient}
-                                  value={emailRecipients[b.id] ?? ""}
-                                  onClick={(e) => e.stopPropagation()}
-                                  onChange={(e) => setEmailRecipients((values) => ({ ...values, [b.id]: e.target.value }))}
-                                />
+                                {b.paid_cents && ["accepted", "completed"].includes(b.status) ? (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 gap-1.5"
+                                    disabled={loadingEmailId === b.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      void emailClient(cl, b);
+                                    }}
+                                  >
+                                    {loadingEmailId === b.id ? <Loader2 className="size-3.5 animate-spin" /> : <Mail className="size-3.5" aria-hidden />}
+                                    {c.emailClient}
+                                  </Button>
+                                ) : (
+                                  <span className="mr-auto text-xs text-muted-foreground">{c.emailUnavailable}</span>
+                                )}
                                 <Button
                                   type="button"
                                   size="sm"
-                                  variant="outline"
-                                  className="h-8 gap-1.5"
-                                  disabled={!/^\S+@\S+\.\S+$/.test(emailRecipients[b.id] ?? "")}
+                                  variant="ghost"
+                                  className="h-8"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    const recipient = emailRecipients[b.id].trim();
-                                    const service = serviceSlugLabel(b.service_slug) || (lang === "fr" ? "service" : "service");
-                                    const subject = lang === "fr" ? `Suivi de votre réservation ${service}` : `Following up on your ${service} booking`;
-                                    const body = lang === "fr"
-                                      ? `Bonjour ${name},\n\nJe vous écris au sujet de notre réservation.\nService : ${service}\nDate : ${formatYmd(b.date, lang)}${b.time ? ` à ${String(b.time).slice(0, 5)}` : ""}\nStatut : ${c.status[b.status] ?? b.status}${b.paid_cents ? `\nMontant payé : ${formatMoneyCents(b.paid_cents, lang)}` : ""}\nRéférence : ${b.code ?? b.id}\n\n`
-                                      : `Hi ${name},\n\nI’m following up about our booking.\nService: ${service}\nDate: ${formatYmd(b.date, lang)}${b.time ? ` at ${String(b.time).slice(0, 5)}` : ""}\nStatus: ${c.status[b.status] ?? b.status}${b.paid_cents ? `\nAmount paid: ${formatMoneyCents(b.paid_cents, lang)}` : ""}\nReference: ${b.code ?? b.id}\n\n`;
-                                    window.location.href = `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                                    setOtherRecipientOpen((state) => ({ ...state, [b.id]: !state[b.id] }));
                                   }}
                                 >
-                                  <Mail className="size-3.5" aria-hidden /> {c.emailDraft}
+                                  {otherRecipientOpen[b.id] ? c.cancelEmailAnother : c.emailAnother}
                                 </Button>
+                                {otherRecipientOpen[b.id] ? (
+                                  <>
+                                    <Input
+                                      type="email"
+                                      className="h-8 w-full sm:max-w-xs"
+                                      aria-label={c.emailRecipient}
+                                      placeholder={c.emailRecipient}
+                                      value={emailRecipients[b.id] ?? ""}
+                                      onClick={(e) => e.stopPropagation()}
+                                      onChange={(e) => setEmailRecipients((values) => ({ ...values, [b.id]: e.target.value }))}
+                                    />
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 gap-1.5"
+                                      disabled={!/^\S+@\S+\.\S+$/.test(emailRecipients[b.id] ?? "")}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openEmailDraft(cl, b, emailRecipients[b.id].trim());
+                                      }}
+                                    >
+                                      <Mail className="size-3.5" aria-hidden /> {c.emailDraft}
+                                    </Button>
+                                  </>
+                                ) : null}
                               </div>
                             </li>
                           ))}
