@@ -152,7 +152,6 @@ import { getCategoryName } from "@/i18n/constants";
 import { getServiceName } from "@/i18n/serviceTranslations";
 import { serviceCategories } from "@/data/services";
 import { PRO_PAGE_COLOR_SCHEMES, DEFAULT_PRO_PAGE_COLOR_SCHEME, getSchemeById, resolveProPageScheme, schemeLabel } from "@/data/proPageColorSchemes";
-import { SERVICE_TAG_OPTIONS } from "@/data/serviceTags";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { PRO_BOOKING_SELECT, useProBookingsRealtime, type ProBookingRealtimeRow } from "@/hooks/useProBookingsRealtime";
 import { distanceKm, extractCanadianPostal, geocodePostalToLocation } from "@/lib/geocode";
@@ -4385,7 +4384,7 @@ export default function Dashboard() {
         )}
         {!isAdminDashboardShell && user?.id ? (
           <div className="mb-6 md:mb-8 flex flex-wrap items-center justify-center gap-2">
-            {segmentForTab(shellTab) && (proProfile || segmentForTab(shellTab) === "account") ? (
+            {segmentForTab(shellTab) ? (
               <Button
                 type="button"
                 variant="outline"
@@ -4682,25 +4681,6 @@ export default function Dashboard() {
                                 </button>
                               );
                             })}
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground mb-2">{t.dashboard.serviceTags ?? "Service tags"}</p>
-                          <div className="flex max-w-full flex-wrap gap-2 overflow-hidden">
-                            {SERVICE_TAG_OPTIONS.map((tag) => (
-                              <label key={tag} className="inline-flex max-w-full cursor-pointer items-center gap-1.5">
-                                <input
-                                  type="checkbox"
-                                  checked={proServiceTags.includes(tag)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) setProServiceTags((prev) => [...prev, tag]);
-                                    else setProServiceTags((prev) => prev.filter((t) => t !== tag));
-                                  }}
-                                  className="rounded border-input"
-                                />
-                                <span className="min-w-0 break-words text-sm text-foreground">{tag}</span>
-                              </label>
-                            ))}
                           </div>
                         </div>
                       </div>
@@ -5457,7 +5437,7 @@ export default function Dashboard() {
                     <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
                   </div>
                 </div>
-                <div className="flex-1 rounded-xl border bg-card p-4 sm:p-5">
+                <div className="flex-1 rounded-xl border bg-card p-4 sm:p-5" data-tour="account-identifiers">
                   <MemberIdSettings
                     currentMemberId={(profile as { public_user_number?: string | null } | null)?.public_user_number ?? null}
                     locale={locale === "fr" ? "fr" : "en"}
@@ -5958,7 +5938,7 @@ export default function Dashboard() {
             </Dialog>
             ) : null}
             {proProfile?.is_verified && isPaidSubscriptionPlanId(proSubscriptionPlanId) && (
-              <div className={`w-full rounded-xl p-[2px] 2xl:col-start-10 2xl:col-span-3 2xl:row-start-2 ${PLAN_TIER_BORDER_CLASS[currentPlanTheme]}`}>
+              <div className={`w-full rounded-xl p-[2px] 2xl:col-start-10 2xl:col-span-3 2xl:row-start-2 ${PLAN_TIER_BORDER_CLASS[currentPlanTheme]}`} data-tour="account-plan">
                 <div className="rounded-[calc(0.75rem-2px)] border border-border/70 bg-card p-6 md:p-8">
                 <h3 className="font-heading font-bold mb-3 max-w-full min-w-0 text-balance break-words leading-snug current-plan-rainbow-heading">
                   {t.dashboard.myCurrentPlan}
@@ -5990,13 +5970,6 @@ export default function Dashboard() {
                     : subscriptionTierNormalized === "growth"
                       ? (t.plans?.bestForGrowth ?? "")
                       : (t.plans?.bestForPro ?? "")}
-                </p>
-                <p className="text-xs text-muted-foreground mb-4">
-                  {subscriptionTierNormalized === "starter"
-                    ? (t.dashboard.subscriptionInfoStarter ??
-                      "You?re on the Starter plan today. When you upgrade to Growth or Pro, your subscription will renew monthly from your upgrade date.")
-                    : (t.dashboard.subscriptionInfoPaid ??
-                      "Your subscription renews monthly from your billing date. You can change plans anytime.")}
                 </p>
                 <Button variant="outline" size="sm" asChild>
                   <Link to="/pro-plans">{t.dashboard.upgradeDowngradeLink}</Link>
@@ -6050,22 +6023,6 @@ export default function Dashboard() {
                   <ul className="mt-3 space-y-3">
                     {proBookings.slice(1).map((b) => renderProBookingRequestCard(b))}
                   </ul>
-                ) : null}
-                {proProfile?.id ? (
-                  <div className="mt-6">
-                    <ProSmsAutomationSettings
-                      proProfileId={proProfile.id}
-                      locale={locale === "fr" ? "fr" : "en"}
-                      enabled={hasSmsBookingAutomation(subscriptionTierNormalized)}
-                    />
-                    <div className="mt-4">
-                      <ProGrowthTools
-                        proProfileId={proProfile.id}
-                        lang={locale === "fr" ? "fr" : "en"}
-                        tier={subscriptionTierNormalized}
-                      />
-                    </div>
-                  </div>
                 ) : null}
                 <div className="flex justify-center">
                   <DashboardTourHelpButton onClick={() => replayDashTour("bookings")} />
@@ -6153,6 +6110,20 @@ export default function Dashboard() {
                   {locale === "fr" ? "Enregistrer l’horaire" : "Save schedule"}
                 </Button>
                 </div>
+                {proProfile?.id ? (
+                  <div className="space-y-4" data-tour="booking-pro-tools">
+                    <ProSmsAutomationSettings
+                      proProfileId={proProfile.id}
+                      locale={locale === "fr" ? "fr" : "en"}
+                      enabled={hasSmsBookingAutomation(subscriptionTierNormalized)}
+                    />
+                    <ProGrowthTools
+                      proProfileId={proProfile.id}
+                      lang={locale === "fr" ? "fr" : "en"}
+                      tier={subscriptionTierNormalized}
+                    />
+                  </div>
+                ) : null}
                 <div id="received-quotes" className="rounded-xl border border-border bg-muted/20 p-5 sm:p-6 scroll-mt-24">
                   <h4 className="font-heading font-bold text-foreground mb-1">{t.dashboard.quotesReceivedSection}</h4>
                   <p className="text-sm text-muted-foreground mb-4">{t.dashboard.quotesReceivedHint}</p>
@@ -6230,22 +6201,6 @@ export default function Dashboard() {
                     <ul className="mt-3 space-y-3">
                       {proBookings.slice(1).map((b) => renderProBookingRequestCard(b))}
                     </ul>
-                  ) : null}
-                  {proProfile?.id ? (
-                    <div className="mt-6">
-                      <ProSmsAutomationSettings
-                        proProfileId={proProfile.id}
-                        locale={locale === "fr" ? "fr" : "en"}
-                        enabled={hasSmsBookingAutomation(subscriptionTierNormalized)}
-                      />
-                      <div className="mt-4">
-                        <ProGrowthTools
-                          proProfileId={proProfile.id}
-                          lang={locale === "fr" ? "fr" : "en"}
-                          tier={subscriptionTierNormalized}
-                        />
-                      </div>
-                    </div>
                   ) : null}
                 </div>
 
@@ -6694,11 +6649,11 @@ export default function Dashboard() {
 
           <TabsContent forceMount value="favorites" className="mx-auto w-full max-w-[1480px] space-y-4">
             {savedProsLoading ? (
-              <div className="flex justify-center py-12">
+              <div className="flex justify-center py-12" data-tour="favorites-panel">
                 <Loader2 className="animate-spin text-muted-foreground" size={32} />
               </div>
             ) : savedPros.length === 0 ? (
-              <div className="rounded-xl border bg-card p-6 md:p-8 text-center text-muted-foreground">
+              <div className="rounded-xl border bg-card p-6 md:p-8 text-center text-muted-foreground" data-tour="favorites-panel">
                 <Heart size={40} className="mx-auto mb-3 opacity-50" />
                 <p className="mb-4">{t.dashboard.emptyFavorites}</p>
                 <Button asChild variant="outline">
@@ -6706,7 +6661,7 @@ export default function Dashboard() {
                 </Button>
               </div>
             ) : (
-              <div className="rounded-xl border bg-card p-6 md:p-8">
+              <div className="rounded-xl border bg-card p-6 md:p-8" data-tour="favorites-panel">
                 <h3 className="font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
                   <Heart size={20} className="text-red-500" /> {t.dashboard.favorites}
                 </h3>

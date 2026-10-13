@@ -1,11 +1,12 @@
 /** Segmented first-time dashboard tutorial (pro-focused). Stored per user in localStorage. */
 
-export type DashTourSegment = "account" | "pro" | "bookings" | "reviews" | "invoices";
+export type DashTourSegment = "account" | "pro" | "bookings" | "favorites" | "reviews" | "invoices";
 
 export const DASH_TOUR_SEGMENTS: DashTourSegment[] = [
   "account",
   "pro",
   "bookings",
+  "favorites",
   "reviews",
   "invoices",
 ];
@@ -26,7 +27,7 @@ type TourState = {
 };
 
 function storageKey(userId: string) {
-  return `altshift:dash-tour:${userId}`;
+  return `altshift:dash-tour:v2:${userId}`;
 }
 
 function readState(userId: string): TourState {
@@ -128,6 +129,7 @@ export function segmentForTab(tab: string | null | undefined): DashTourSegment |
   if (t === "account") return "account";
   if (t === "pro") return "pro";
   if (t === "bookings") return "bookings";
+  if (t === "favorites") return "favorites";
   if (t === "reviews") return "reviews";
   if (t === "invoices") return "invoices";
   return null;
@@ -144,13 +146,22 @@ export type TourStep = {
 export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
   account: [
     {
+      target: "[data-tour='account-identifiers']",
+      titleEn: "Member ID, username & public link",
+      titleFr: "Numéro de membre, nom d’utilisateur et lien public",
+      bodyEn:
+        "Your phone number identifies the same account in client and pro mode. Your Member ID is also a sign-in option. A username can be used to sign in and forms your public link. If you change it, the old link redirects and stays reserved for 90 days. Your Voice PIN protects Front Desk calls; the PIN itself is never displayed.",
+      bodyFr:
+        "Votre numéro de téléphone identifie le même compte en mode client et professionnel. Le numéro de membre permet aussi de se connecter. Votre nom d’utilisateur sert à vous connecter et forme votre lien public. Si vous le changez, l’ancien lien redirige vers le nouveau et reste réservé pendant 90 jours. Votre NIP vocal protège les appels au service téléphonique; les chiffres ne sont jamais affichés.",
+    },
+    {
       target: "[data-tour='account-profile']",
       titleEn: "My account",
       titleFr: "Mon compte",
       bodyEn:
-        "Update your name, phone, postal code, and preferred email language. This info is used for bookings and receipts.",
+        "Update your name, phone, Québec postal code, invoice address, email language, birthday, and main service category. These details are used for bookings, receipts, and your account profile.",
       bodyFr:
-        "Mettez à jour votre nom, téléphone, code postal et langue de courriel. Ces infos servent aux réservations et reçus.",
+        "Mettez à jour votre nom, téléphone, code postal du Québec, adresse de facturation, langue des courriels, date de naissance et catégorie principale. Ces renseignements servent aux réservations, aux reçus et à votre compte.",
     },
     {
       target: "[data-tour='account-cancel-policy']",
@@ -171,6 +182,15 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
         "Vous pouvez téléverser une pièce d’identité pour la vérification. La conservation est sujette à révision juridique, AltShift la garde de façon sécurisée.",
     },
     {
+      target: "[data-tour='account-plan']",
+      titleEn: "Plan & Booking Credits",
+      titleFr: "Forfait et crédits de réservation",
+      bodyEn:
+        "Paid plans renew monthly from their billing date, and you can change plans anytime. The plan card lists the included tools and monthly Booking Credits. Credits are used for eligible bookings, not for posting a request or receiving a quote.",
+      bodyFr:
+        "Les forfaits payants se renouvellent chaque mois à partir de leur date de facturation et vous pouvez les changer en tout temps. La carte présente les outils inclus et les crédits de réservation mensuels. Les crédits servent aux réservations admissibles, pas à la publication d’une demande ni à la réception d’un devis.",
+    },
+    {
       target: "[data-tour='available-jobs']",
       titleEn: "Available jobs near you",
       titleFr: "Travaux disponibles près de vous",
@@ -182,18 +202,18 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
   ],
   pro: [
     {
-      target: "[data-tour='pro-stats']",
-      titleEn: "Your pro stats",
-      titleFr: "Vos statistiques",
-      bodyEn: "Leads, profile views, reviews, and ranking help you see how clients discover you.",
-      bodyFr: "Les leads, vues, avis et classement montrent comment les clients vous trouvent.",
-    },
-    {
       target: "[data-tour='pro-avatar-square']",
       titleEn: "Photo & Square",
       titleFr: "Photo et Square",
       bodyEn: "Add a personal photo. When Square is connected, the check above your name opens your Square dashboard.",
       bodyFr: "Ajoutez une photo. Quand Square est relié, la coche au-dessus de votre nom ouvre votre tableau de bord Square.",
+    },
+    {
+      target: "[data-tour='pro-stats']",
+      titleEn: "Your pro stats",
+      titleFr: "Vos statistiques",
+      bodyEn: "Leads, profile views, reviews, and ranking help you see how clients discover you.",
+      bodyFr: "Les demandes, vues du profil, avis et classement montrent comment les clients vous trouvent.",
     },
     {
       target: "[data-tour='pro-featured']",
@@ -228,13 +248,42 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
         "Utilisez le calendrier et le modèle hebdomadaire pour vos disponibilités. Cliquez un jour pour une journée complète ou des plages bloquées, puis enregistrez. Essentiel = fenêtre glissante de 30 jours.",
     },
     {
+      target: "[data-tour='booking-pro-tools']",
+      titleEn: "Texts, client history & repeat bookings",
+      titleFr: "Textos, historique client et réservations répétées",
+      bodyEn:
+        "SMS automation depends on your plan. Growth tools include private client notes, optional rebooking reminders, and repeat bookings. Reminder rules prevent messages when a client already has an upcoming booking or opted out. Repeat visits are scheduled as normal bookings and can be paused or cancelled.",
+      bodyFr:
+        "L’automatisation par texto dépend de votre forfait. Les outils Croissance comprennent des notes privées sur les clients, des rappels de nouvelle réservation facultatifs et les réservations répétées. Les rappels ne sont pas envoyés si un client a déjà une réservation à venir ou s’est désabonné. Les visites répétées sont planifiées comme des réservations normales et peuvent être mises en pause ou annulées.",
+    },
+    {
+      target: "[data-tour='received-quotes']",
+      titleEn: "Your requests & quotes",
+      titleFr: "Vos demandes et devis",
+      bodyEn:
+        "Requests you posted appear here with the number of quotes received. Open a request to compare professional responses and decide whether to continue.",
+      bodyFr:
+        "Les demandes que vous avez publiées apparaissent ici avec le nombre de devis reçus. Ouvrez une demande pour comparer les réponses des professionnels et décider de la suite.",
+    },
+    {
       target: "[data-tour='booking-requests']",
       titleEn: "Booking requests",
       titleFr: "Demandes de réservation",
       bodyEn:
-        "New client requests show up here one at a time in this list. Accept or deny each one; when you complete a job, upload 2–3 proof photos for your protection.",
+        "New client requests appear here. Review the requested service and schedule, then accept or decline. When a job is completed, upload the requested proof photos if prompted.",
       bodyFr:
-        "Les nouvelles demandes clients apparaissent ici dans cette liste. Acceptez ou refusez chacune; à la fin d’un job, téléversez 2–3 photos de preuve pour votre protection.",
+        "Les nouvelles demandes des clients apparaissent ici. Vérifiez le service demandé et l’horaire, puis acceptez ou refusez. À la fin d’un travail, téléversez les photos de preuve demandées si l’application vous le propose.",
+    },
+  ],
+  favorites: [
+    {
+      target: "[data-tour='favorites-panel']",
+      titleEn: "Saved pros",
+      titleFr: "Professionnels enregistrés",
+      bodyEn:
+        "Keep professionals you may want to book later in one place. Open a profile to review its services, availability, and booking options, or remove a pro from this list.",
+      bodyFr:
+        "Gardez au même endroit les professionnels que vous pourriez réserver plus tard. Ouvrez un profil pour consulter ses services, ses disponibilités et les options de réservation, ou retirez-le de la liste.",
     },
   ],
   reviews: [
@@ -243,9 +292,9 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
       titleEn: "Reviews",
       titleFr: "Avis",
       bodyEn:
-        "Other people’s review text stays locked until you leave your own review. Stars stay hidden while a review is locked.",
+        "Review panels separate feedback you received, feedback from professionals, and reviews you wrote. Other people’s review text stays locked until you leave your own review; ratings stay hidden while a review is locked.",
       bodyFr:
-        "Le texte des avis reste verrouillé jusqu’à ce que vous laissiez le vôtre. Les étoiles restent masquées tant que c’est verrouillé.",
+        "Les sections séparent les avis reçus, ceux des professionnels et ceux que vous avez rédigés. Le texte des autres avis reste verrouillé jusqu’à ce que vous laissiez le vôtre; les notes restent masquées pendant le verrouillage.",
     },
   ],
   invoices: [
@@ -254,9 +303,9 @@ export const TOUR_STEPS: Record<DashTourSegment, TourStep[]> = {
       titleEn: "Invoices",
       titleFr: "Factures",
       bodyEn:
-        "Paid booking receipts appear here with the service amount, AltShift’s platform fee, and taxes. If you have none yet, this tab explains what will show once you pay.",
+        "Paid booking receipts appear here with the service amount, platform fee, and taxes. Pin a receipt to move it into the right-hand column; use the left column for the rest. If no receipt is listed yet, this tab will fill in after your first paid booking.",
       bodyFr:
-        "Les reçus des réservations payées apparaissent ici avec le montant du service, les frais de réservation et les taxes. S’il n’y en a pas encore, cet onglet explique ce qui s’affichera après un paiement.",
+        "Les reçus des réservations payées apparaissent ici avec le montant du service, les frais de plateforme et les taxes. Épinglez un reçu pour le déplacer dans la colonne de droite; les autres restent à gauche. Si aucun reçu n’est encore affiché, cet onglet se remplira après votre première réservation payée.",
     },
   ],
 };

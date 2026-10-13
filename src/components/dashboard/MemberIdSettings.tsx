@@ -41,7 +41,6 @@ export default function MemberIdSettings({
   const [pinDraft, setPinDraft] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
   const [pinSaving, setPinSaving] = useState(false);
-  const [pinLoading, setPinLoading] = useState(true);
 
   const copy =
     locale === "fr"
@@ -59,11 +58,7 @@ export default function MemberIdSettings({
           pinInvalid: "Le NIP doit contenir 4 à 6 chiffres.",
           pinSaved: "NIP vocal enregistré",
           pinCleared: "NIP vocal supprimé",
-          pinStatusOn: "NIP vocal actif",
-          pinStatusOff: "Aucun NIP vocal",
-          memberHint: "Votre numéro de membre sert à vous connecter et à vous identifier par téléphone.",
           usernameTitle: "Nom d’utilisateur",
-          usernameHint: "Vous pouvez vous connecter avec votre nom d’utilisateur ou votre numéro de membre.",
           usernameNone: "Aucun nom d’utilisateur pour l’instant.",
           usernameSave: "Enregistrer",
           usernameSaved: "Nom d’utilisateur mis à jour",
@@ -78,7 +73,6 @@ export default function MemberIdSettings({
           linkCopy: "Copier",
           linkCopied: "Lien copié",
           linkOpen: "Ouvrir",
-          linkHint: "Changer votre nom d’utilisateur change ce lien. L’ancien lien redirige vers le nouveau; personne d’autre ne peut le prendre pendant 90 jours.",
           linkNone: "Choisissez un nom d’utilisateur pour obtenir votre lien public.",
         }
       : {
@@ -95,11 +89,7 @@ export default function MemberIdSettings({
           pinInvalid: "PIN must be 4–6 digits.",
           pinSaved: "Voice PIN saved",
           pinCleared: "Voice PIN removed",
-          pinStatusOn: "Voice PIN is set",
-          pinStatusOff: "No voice PIN yet",
-          memberHint: "Your Member ID lets you log in and identifies you by phone.",
           usernameTitle: "Username",
-          usernameHint: "You can log in with your username or your Member ID.",
           usernameNone: "No username yet.",
           usernameSave: "Save",
           usernameSaved: "Username updated",
@@ -114,7 +104,6 @@ export default function MemberIdSettings({
           linkCopy: "Copy",
           linkCopied: "Link copied",
           linkOpen: "Open",
-          linkHint: "Changing your username changes this link. Your old link redirects to the new one, and nobody else can take it for 90 days.",
           linkNone: "Pick a username to get your public link.",
         };
 
@@ -226,11 +215,9 @@ export default function MemberIdSettings({
 
   useEffect(() => {
     let cancelled = false;
-    setPinLoading(true);
     void (async () => {
       const { data, error } = await supabase.rpc("my_voice_pin_status" as never);
       if (cancelled) return;
-      setPinLoading(false);
       if (error) return;
       const row = data as { ok?: boolean; has_pin?: boolean } | null;
       setHasPin(!!row?.has_pin);
@@ -366,7 +353,6 @@ export default function MemberIdSettings({
             <Loader2 className="size-3 animate-spin" /> …
           </p>
         ) : null}
-        <p className="text-xs text-muted-foreground mt-1.5">{copy.memberHint}</p>
       </div>
 
       <div className="border-t pt-4 space-y-2">
@@ -419,9 +405,7 @@ export default function MemberIdSettings({
           <p className="text-sm text-destructive font-medium" aria-live="polite">{copy.usernameHeld}</p>
         ) : usernameAvail === "invalid" ? (
           <p className="text-sm text-destructive" aria-live="polite">{copy.usernameInvalid}</p>
-        ) : (
-          <p className="text-xs text-muted-foreground">{copy.usernameHint}</p>
-        )}
+        ) : null}
 
         <div className="rounded-lg border border-border/70 bg-muted/30 px-3 py-2.5">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{copy.linkLabel}</p>
@@ -448,15 +432,11 @@ export default function MemberIdSettings({
           ) : (
             <p className="mt-1 text-sm text-muted-foreground">{copy.linkNone}</p>
           )}
-          <p className="mt-1.5 text-xs text-muted-foreground">{copy.linkHint}</p>
         </div>
       </div>
 
       <div className="border-t pt-4 space-y-2">
         <Label>{copy.pinTitle}</Label>
-        <p className="text-sm font-medium">
-          {pinLoading ? "…" : hasPin ? copy.pinStatusOn : copy.pinStatusOff}
-        </p>
         <div className="flex flex-wrap gap-2 items-center">
           <Input
             type="password"

@@ -6,14 +6,14 @@ import MarketplacePreview from "@/components/home/MarketplacePreview";
 import ScrollReveal from "@/components/motion/ScrollReveal";
 import ScrollFloat from "@/components/motion/ScrollFloat";
 
-/** Blue product story, content fades out/in as you scroll past. */
+/** Blue product story stays visible after it enters the viewport. */
 export default function HomeProductShowcase() {
   const { t } = useLanguage();
 
   return (
     <section className="section-pad bg-primary text-primary-foreground overflow-hidden">
       <div className="container-page">
-        <ScrollReveal className="w-full">
+        <ScrollReveal className="w-full" once amount={0.1} margin="0px 0px 0px 0px">
           <div className="grid items-center gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14 xl:gap-16">
             <div>
               <h2 className="mt-4 font-display text-display-md tracking-tight text-white whitespace-pre-line">

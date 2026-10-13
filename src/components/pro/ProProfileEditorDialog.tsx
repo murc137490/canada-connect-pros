@@ -21,7 +21,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { serviceCategories } from "@/data/services";
 import { PRO_PAGE_COLOR_SCHEMES, DEFAULT_PRO_PAGE_COLOR_SCHEME, getSchemeById, resolveProPageScheme, schemeLabel } from "@/data/proPageColorSchemes";
-import { SERVICE_TAG_OPTIONS } from "@/data/serviceTags";
 import {
   CANADIAN_LANGUAGES,
   YEARS_EXPERIENCE_OPTIONS,
@@ -1601,25 +1600,6 @@ export function ProProfileEditorDialog({
 
           <div className="space-y-4 rounded-xl border border-border p-4">
             <Label className="text-base font-semibold">{t.createPro.pageAesthetic ?? "Personalize your page"}</Label>
-            <div>
-              <p className="text-sm font-medium text-foreground mb-2">{t.dashboard?.serviceTags ?? "Service tags"}</p>
-              <div className="flex flex-wrap gap-2">
-                {SERVICE_TAG_OPTIONS.map((tag) => (
-                  <label key={tag} className="inline-flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={proServiceTags.includes(tag)}
-                      onChange={(e) => {
-                        if (e.target.checked) setProServiceTags((prev) => [...prev, tag]);
-                        else setProServiceTags((prev) => prev.filter((x) => x !== tag));
-                      }}
-                      className="rounded border-input"
-                    />
-                    <span className="text-sm text-foreground">{tag}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
             <div>
               <p className="text-sm font-medium text-foreground mb-2">{t.createPro.colorSchemeLabel ?? "Color scheme"}</p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
