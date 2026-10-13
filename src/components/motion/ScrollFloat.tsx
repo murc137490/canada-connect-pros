@@ -13,7 +13,7 @@ interface ScrollFloatProps extends HTMLAttributes<HTMLSpanElement> {
 
 export default function ScrollFloat({ children, className = "", animationDuration = 0.85, stagger = 0.025, ...props }: ScrollFloatProps) {
   const ref = useRef<HTMLSpanElement>(null);
-  const characters = useMemo(() => Array.from(children), [children]);
+  const words = useMemo(() => children.split(/(\s+)/u), [children]);
 
   useEffect(() => {
     const element = ref.current;
@@ -39,9 +39,15 @@ export default function ScrollFloat({ children, className = "", animationDuratio
 
   return (
     <span ref={ref} className={`scroll-float ${className}`} aria-label={children} {...props}>
-      {characters.map((character, index) => (
-        <span className="scroll-float-char" aria-hidden="true" key={`${index}-${character}`}>
-          {character === " " ? "\u00a0" : character}
+      {words.map((word, wordIndex) => /^\s+$/u.test(word) ? (
+        <span aria-hidden="true" key={`space-${wordIndex}`}>{word}</span>
+      ) : (
+        <span className="scroll-float-word" aria-hidden="true" key={`word-${wordIndex}`}>
+          {Array.from(word).map((character, characterIndex) => (
+            <span className="scroll-float-char" key={`${characterIndex}-${character}`}>
+              {character}
+            </span>
+          ))}
         </span>
       ))}
     </span>

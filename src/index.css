@@ -157,6 +157,11 @@
   *, *::before, *::after {
     box-sizing: border-box;
   }
+  :where(body, body *) {
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
+  }
   * {
     @apply border-border;
   }
