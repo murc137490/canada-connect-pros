@@ -3,7 +3,7 @@ import Layout from "@/components/Layout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Handshake, Home, Sparkles } from "lucide-react";
-import ColorBendsBackground from "@/components/ColorBendsBackground";
+import GradientBlindsBackground from "@/components/GradientBlindsBackground";
 
 export default function AboutUs() {
   const { t } = useLanguage();
@@ -11,8 +11,8 @@ export default function AboutUs() {
   return (
     <Layout>
       <div className="relative isolate min-h-screen overflow-hidden">
-        <ColorBendsBackground />
-        <section className="relative z-10 overflow-hidden border-b border-border/40">
+        <GradientBlindsBackground />
+        <section className="relative z-10 overflow-hidden">
           <div className="container relative px-4 md:px-6 pt-16 md:pt-24 pb-14 md:pb-20 max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground mb-4">
               {a.eyebrow}
