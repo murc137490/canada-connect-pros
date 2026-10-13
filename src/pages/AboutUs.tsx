@@ -5,20 +5,24 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Handshake, Home, Sparkles } from "lucide-react";
 import AnimatedCounter from "@/components/AnimatedCounter";
-import GrainientBackground from "@/components/GrainientBackground";
+import ColorBendsBackground from "@/components/ColorBendsBackground";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function AboutUs() {
   const { t } = useLanguage();
   const a = t.about;
-  const [memberCount, setMemberCount] = useState<number | null>(null);
+  const [memberCounts, setMemberCounts] = useState<{ users: number; professionals: number } | null>(null);
 
   useEffect(() => {
     let active = true;
-    void supabase.functions.invoke<{ count: number }>("public-member-count")
+    void supabase.functions.invoke<{ users: number; professionals: number }>("public-member-count")
       .then(({ data, error }) => {
-        if (active && !error && Number.isSafeInteger(data?.count) && data.count >= 0) {
-          setMemberCount(data.count);
+        if (
+          active && !error &&
+          Number.isSafeInteger(data?.users) && data.users >= 0 &&
+          Number.isSafeInteger(data?.professionals) && data.professionals >= 0
+        ) {
+          setMemberCounts({ users: data.users, professionals: data.professionals });
         }
       });
     return () => { active = false; };
@@ -27,8 +31,7 @@ export default function AboutUs() {
   return (
     <Layout>
       <div className="relative isolate min-h-screen overflow-hidden">
-        <GrainientBackground />
-        <div className="about-grainient-wash" />
+        <ColorBendsBackground />
         <section className="relative z-10 overflow-hidden border-b border-border/40">
           <div className="container relative px-4 md:px-6 pt-16 md:pt-24 pb-14 md:pb-20 max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground mb-4">
@@ -43,11 +46,18 @@ export default function AboutUs() {
           </div>
         </section>
 
-        {memberCount !== null && (
+        {memberCounts !== null && (
           <section className="container relative z-10 max-w-3xl px-4 md:px-6 pt-9" aria-label={a.memberCountTitle}>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-border/70 bg-card/70 px-5 py-4 shadow-sm backdrop-blur-sm">
-              <AnimatedCounter value={memberCount} className="text-foreground" fontSize={48} />
-              <p className="max-w-sm text-sm font-medium leading-relaxed text-muted-foreground sm:text-base">{a.memberCountTitle}</p>
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-foreground">
+              <div className="flex items-baseline gap-2">
+                <AnimatedCounter value={memberCounts.professionals} className="text-foreground" fontSize={42} />
+                <span className="text-sm font-medium text-muted-foreground sm:text-base">{a.memberCountProsLabel}</span>
+              </div>
+              <span aria-hidden="true" className="h-8 w-px bg-foreground/20" />
+              <div className="flex items-baseline gap-2">
+                <AnimatedCounter value={memberCounts.users} className="text-foreground" fontSize={42} />
+                <span className="text-sm font-medium text-muted-foreground sm:text-base">{a.memberCountUsersLabel}</span>
+              </div>
             </div>
           </section>
         )}

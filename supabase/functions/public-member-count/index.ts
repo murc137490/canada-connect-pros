@@ -41,11 +41,15 @@ Deno.serve(async (request: Request) => {
   const admin = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const { count, error } = await admin.from("profiles").select("user_id", { count: "exact", head: true });
-  if (error || count === null) {
-    console.error("Unable to count registered member profiles", error?.message);
+  const [{ count: users, error: usersError }, { count: professionals, error: professionalsError }] = await Promise.all([
+    admin.from("profiles").select("user_id", { count: "exact", head: true }),
+    admin.from("pro_profiles").select("user_id", { count: "exact", head: true })
+      .eq("is_verified", true).is("application_declined_at", null),
+  ]);
+  if (usersError || professionalsError || users === null || professionals === null) {
+    console.error("Unable to count public AltShift accounts", usersError?.message ?? professionalsError?.message);
     return new Response(JSON.stringify({ error: "Count temporarily unavailable" }), { status: 503, headers });
   }
 
-  return new Response(JSON.stringify({ count }), { status: 200, headers });
+  return new Response(JSON.stringify({ users, professionals }), { status: 200, headers });
 });

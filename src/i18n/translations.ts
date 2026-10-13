@@ -592,7 +592,9 @@ export const translations = {
     about: {
       eyebrow: "AltShift · Granby",
       title: "About us",
-      memberCountTitle: "people have joined AltShift",
+      memberCountTitle: "AltShift professionals and clients",
+      memberCountProsLabel: "professionals",
+      memberCountUsersLabel: "users, including pros",
       lead:
         "We're here for small businesses and neighbours in Granby, helping people earn from their skills and households find trustworthy local help.",
       granbyTitle: "Rooted in Granby",
@@ -2510,7 +2512,9 @@ export const translations = {
     about: {
       eyebrow: "AltShift · Granby",
       title: "Un peu sur nous",
-      memberCountTitle: "personnes ont rejoint AltShift",
+      memberCountTitle: "Les professionnels et les clients d'AltShift",
+      memberCountProsLabel: "professionnels",
+      memberCountUsersLabel: "utilisateurs, pros compris",
       lead:
         "On est là pour les petites entreprises et les voisins de Granby, pour aider les gens à tirer un revenu de leurs compétences et les foyers à trouver de l'aide locale digne de confiance.",
       granbyTitle: "Ancrés à Granby",
