@@ -339,15 +339,15 @@ export default function ProUpcomingJobsMap({
         ) : null}
         {mapError ? <div className="absolute inset-0 z-20 grid place-items-center bg-background/90 px-4 text-center text-sm text-muted-foreground">{fr ? "La carte est temporairement indisponible." : "The map is temporarily unavailable."}</div> : null}
         {loading ? <div className="absolute left-3 top-3 z-20 inline-flex items-center gap-2 rounded-md bg-background/90 px-2.5 py-1.5 text-xs text-muted-foreground"><Loader2 className="size-3.5 animate-spin" />{fr ? "Localisation des réservations…" : "Locating bookings…"}</div> : null}
-        {expanded && !loading && visiblePoints.length === 0 && !mapError ? <div className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-xs text-white/80 backdrop-blur">{fr ? "Aucune réservation payée pour cette période et ce rayon." : "No paid bookings for this period and radius."}</div> : null}
+        {expanded && !loading && visiblePoints.length === 0 && !mapError ? <div className="absolute bottom-24 left-1/2 z-10 w-max max-w-[calc(100%-1.5rem)] -translate-x-1/2 rounded-full bg-black/75 px-4 py-2 text-center text-xs text-white/90 backdrop-blur sm:bottom-5">{fr ? "Aucune réservation payée pour cette période et ce rayon." : "No paid bookings for this period and radius."}</div> : null}
       </div>
 
       {expanded ? (
         <>
-          <div className="absolute left-3 top-3 z-30 flex max-w-[calc(100vw-1.5rem)] flex-wrap gap-1.5 rounded-2xl bg-white/95 p-2 shadow-xl backdrop-blur sm:left-5 sm:top-5">
+          <div className="absolute left-3 right-3 top-[4.5rem] z-30 flex max-w-none flex-nowrap gap-1.5 overflow-x-auto rounded-2xl bg-white/95 p-2 shadow-xl backdrop-blur sm:left-5 sm:right-auto sm:top-5 sm:max-w-[calc(100vw-1.5rem)]">
             {periodOptions.map((option) => (
               <button key={option.id} type="button" onClick={() => setPeriod(option.id)} aria-pressed={period === option.id}
-                className={`rounded-full px-3 py-2 text-xs font-medium transition-colors ${period === option.id ? "bg-primary text-primary-foreground" : "text-slate-600 hover:bg-slate-100"}`}>
+                className={`shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition-colors ${period === option.id ? "bg-primary text-primary-foreground" : "text-slate-600 hover:bg-slate-100"}`}>
                 {option.label}
               </button>
             ))}
@@ -357,7 +357,7 @@ export default function ProUpcomingJobsMap({
             </label>
           </div>
           {areaEnabled ? <div className="absolute bottom-5 left-3 z-30 w-[min(26rem,calc(100vw-1.5rem))] rounded-2xl bg-white/95 p-2 shadow-xl backdrop-blur sm:bottom-6 sm:left-5"><ElasticRadiusSlider value={mapRadiusKm} onChange={setMapRadiusKm} locale={locale} /></div> : null}
-          <div className="absolute right-3 top-3 z-40 flex w-[min(25rem,calc(100vw-1.5rem))] items-start gap-2 sm:right-5 sm:top-5">
+          <div className="absolute right-3 top-3 z-40 flex w-[calc(100vw-4.5rem)] items-start gap-2 sm:right-5 sm:top-5 sm:w-[min(25rem,calc(100vw-1.5rem))]">
             <div className="relative min-w-0 flex-1">
               <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2.5 shadow-xl ring-1 ring-black/5">
                 <Search className="size-4 shrink-0 text-slate-500" aria-hidden />
