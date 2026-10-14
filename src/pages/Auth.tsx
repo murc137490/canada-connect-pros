@@ -51,12 +51,29 @@ function safeRedirect(raw: string | null): string {
   return v;
 }
 
+/** The Create Pro Account signup route is opt-in through the dedicated pro onboarding link only. */
+function safeSignupRedirect(raw: string | null): string {
+  const redirect = safeRedirect(raw);
+  if (!redirect.startsWith("/create-pro-account")) return redirect;
+
+  try {
+    const target = new URL(redirect, "https://www.altshift.ca");
+    return target.pathname === "/create-pro-account" && target.searchParams.get("onboarding") === "1"
+      ? "/create-pro-account?onboarding=1"
+      : "/dashboard";
+  } catch {
+    return "/dashboard";
+  }
+}
+
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get("mode") === "signup" ? "signup" : "login";
-  const redirect = safeRedirect(searchParams.get("redirect"));
-  const referralCode = searchParams.get("ref")?.trim() || "";
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
+  const redirect = mode === "signup"
+    ? safeSignupRedirect(searchParams.get("redirect"))
+    : safeRedirect(searchParams.get("redirect"));
+  const referralCode = searchParams.get("ref")?.trim() || "";
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   /** Login form accepts Member ID, username, or email. */
