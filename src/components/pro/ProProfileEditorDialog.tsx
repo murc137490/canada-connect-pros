@@ -405,7 +405,7 @@ export function ProProfileEditorDialog({
     const serviceName = listServicesForPrimaryCategory(categorySlug).find((service) => service.slug === serviceSlug)?.name ?? serviceSlug;
     return `${categorySlug} ${serviceName}`;
   });
-  const hasRbqRegulatedServices = selectedServiceNames.some((name) => /plumb|plomberie|electri|électri|hvac|cvac|heating|chauffage|roofing|toiture|gas fitting|gaz|construction|renovation|rénovation/i.test(name));
+  const hasRbqRegulatedServices = selectedServiceNames.some((name) => /home-improvement|plumb|plomberie|electri|électri|hvac|cvac|heating|chauffage|furnace|furn|air.?condition|cooling|roof|toit|gas fitting|gaz|construction|renovation|rénovation/i.test(name));
   const needsTradeLicense = hasRbqRegulatedServices || selectedServiceNames.some((name) => /nurse|infirm|physi|physioth|occupational therapist|ergothé|acupunct|chiropract|psycholog|psychotherap|social worker|travailleur social|sexolog|psychoeduc|psychoéduc/i.test(name));
   const credentialAuthorityOptions = [
     ...(hasRbqRegulatedServices ? ["RBQ"] : []),
