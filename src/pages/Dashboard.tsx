@@ -1357,9 +1357,14 @@ export default function Dashboard() {
 
   const handleSquareConnect = useCallback(async () => {
     if (!proProfile?.id || !session?.access_token) return;
+    // Open synchronously from the click so mobile browsers allow the Square flow
+    // in a separate tab while leaving the dashboard available.
+    const squareTab = window.open("about:blank", "_blank");
+    if (squareTab) squareTab.opener = null;
     const base = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim();
     const anon = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim();
     if (!base) {
+      squareTab?.close();
       toast({
         title: t.dashboard.squareOAuthErrorToast,
         description: "VITE_SUPABASE_URL is not set.",
@@ -1380,6 +1385,7 @@ export default function Dashboard() {
       });
       const data = (await res.json().catch(() => ({}))) as { authorize_url?: string; details?: string; error?: string };
       if (!res.ok) {
+        squareTab?.close();
         toast({
           title: t.dashboard.squareOAuthErrorToast,
           description: data.details ?? data.error ?? res.statusText,
@@ -1387,19 +1393,37 @@ export default function Dashboard() {
         });
         return;
       }
-      if (typeof data.authorize_url === "string" && data.authorize_url.startsWith("http")) {
-        window.location.href = data.authorize_url;
+      let authorizeUrl: URL | null = null;
+      try {
+        authorizeUrl = new URL(data.authorize_url ?? "");
+      } catch {
+        authorizeUrl = null;
+      }
+      if (
+        authorizeUrl?.protocol === "https:" &&
+        (authorizeUrl.hostname === "squareup.com" || authorizeUrl.hostname.endsWith(".squareup.com"))
+      ) {
+        if (squareTab && !squareTab.closed) squareTab.location.replace(authorizeUrl.href);
+        else window.location.assign(authorizeUrl.href);
       } else {
+        squareTab?.close();
         toast({
           title: t.dashboard.squareOAuthErrorToast,
           description: "Invalid authorize URL from server.",
           variant: "destructive",
         });
       }
+    } catch {
+      squareTab?.close();
+      toast({
+        title: t.dashboard.squareOAuthErrorToast,
+        description: locale === "fr" ? "Impossible d’ouvrir la connexion Square. Réessayez." : "Could not open the Square connection. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSquareConnectLoading(false);
     }
-  }, [proProfile?.id, session?.access_token, toast, t.dashboard]);
+  }, [proProfile?.id, session?.access_token, toast, t.dashboard, locale]);
 
   useEffect(() => {
     if (!user || !isAdmin) return;
