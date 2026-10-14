@@ -590,7 +590,7 @@ export const translations = {
       title: "About us",
       communityTitle: "AltShift community",
       professionalsCountLabel: "professionals",
-      usersCountLabel: "users, including pros",
+      usersCountLabel: "users",
       lead:
         "We're here for small businesses and neighbours in Granby, helping people earn from their skills and households find trustworthy local help.",
       granbyTitle: "Rooted in Granby",
@@ -2506,7 +2506,7 @@ export const translations = {
       title: "Un peu sur nous",
       communityTitle: "La communauté AltShift",
       professionalsCountLabel: "professionnels",
-      usersCountLabel: "utilisateurs, pros compris",
+      usersCountLabel: "utilisateurs",
       lead:
         "On est là pour les petites entreprises et les voisins de Granby, pour aider les gens à tirer un revenu de leurs compétences et les foyers à trouver de l'aide locale digne de confiance.",
       granbyTitle: "Ancrés à Granby",

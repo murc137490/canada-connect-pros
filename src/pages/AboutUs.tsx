@@ -34,11 +34,11 @@ export default function AboutUs() {
             {counts && (
               <div className="absolute right-4 top-4 grid grid-cols-2 gap-4 text-right md:right-6 md:top-6 md:gap-6" aria-label={a.communityTitle}>
                 <div>
-                  <AnimatedCounter value={counts.professionals} className="text-foreground text-2xl font-bold sm:text-3xl" />
+                  <AnimatedCounter value={counts.professionals} className="text-blue-500 text-2xl font-bold sm:text-3xl" />
                   <p className="mt-1 text-[11px] font-medium leading-tight text-muted-foreground sm:text-xs">{a.professionalsCountLabel}</p>
                 </div>
                 <div>
-                  <AnimatedCounter value={counts.users} className="text-foreground text-2xl font-bold sm:text-3xl" />
+                  <AnimatedCounter value={counts.users} className="text-green-600 dark:text-green-500 text-2xl font-bold sm:text-3xl" />
                   <p className="mt-1 text-[11px] font-medium leading-tight text-muted-foreground sm:text-xs">{a.usersCountLabel}</p>
                 </div>
               </div>
