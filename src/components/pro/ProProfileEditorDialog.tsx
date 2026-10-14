@@ -960,8 +960,36 @@ export function ProProfileEditorDialog({
               : "overflow-hidden sm:max-w-3xl w-[calc(100%-1.5rem)] max-h-[min(92vh,920px)] rounded-2xl sm:rounded-3xl border-border/40 shadow-2xl",
           )}
         >
-          <DialogHeader className="relative isolate shrink-0 space-y-1.5 overflow-hidden border-b border-border/50 bg-muted/20 px-5 py-5 text-left sm:px-6 sm:py-6">
-            {onboarding && (
+          {onboarding && fullPage && (
+            <Particles
+              particleColors={["#60a5fa", "#34d399", "#ffffff"]}
+              particleCount={110}
+              particleSpread={14}
+              speed={0.08}
+              particleBaseSize={58}
+              sizeRandomness={0.8}
+              glow={0.32}
+              twinkle={0.28}
+              depthOfField={0}
+              connections={false}
+              moveParticlesOnHover
+              hoverEffect="parallax"
+              particleHoverFactor={0.35}
+              hoverRadius={140}
+              clickBurst={false}
+              intro
+              className="pointer-events-none fixed inset-0 z-0 opacity-70"
+              style={{ position: "fixed", inset: 0, width: "100vw", height: "100dvh", pointerEvents: "none" }}
+            />
+          )}
+          <DialogHeader className={cn(
+            "relative isolate shrink-0 space-y-1.5 px-5 py-5 text-left sm:px-6 sm:py-6",
+            fullPage ? "z-10 overflow-visible bg-transparent" : "overflow-hidden border-b border-border/50 bg-muted/20",
+          )}>
+            {fullPage && (
+              <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-1/2 z-0 w-screen -translate-x-1/2 border-b border-border/50 bg-muted/20" />
+            )}
+            {!fullPage && onboarding && (
               <Particles
                 particleColors={["#60a5fa", "#34d399", "#ffffff"]}
                 particleCount={72}
@@ -996,7 +1024,7 @@ export function ProProfileEditorDialog({
           </DialogHeader>
 
           {!profileDataLoaded || onboardingMissingForNew ? (
-            <div className="flex flex-1 flex-col items-center justify-center px-2 py-6">
+            <div className={cn("flex flex-1 flex-col items-center justify-center px-2 py-6", fullPage && "relative z-10")}>
               <BootLoadingScreen
                 fullScreen={false}
                 label={locale === "fr" ? "Chargement…" : "Loading…"}
@@ -1007,7 +1035,7 @@ export function ProProfileEditorDialog({
               <div
                 className={cn(
                   fullPage
-                    ? "w-full px-5 py-5 sm:px-6 sm:py-6"
+                    ? "relative z-10 w-full px-5 py-5 sm:px-6 sm:py-6"
                     : "min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 py-5 sm:px-6 sm:py-6",
                   "[&_section]:rounded-2xl [&_section]:border-border/50 [&_section]:shadow-sm",
                   "[&_.rounded-lg]:rounded-2xl",
@@ -1893,7 +1921,10 @@ export function ProProfileEditorDialog({
                 </form>
               </div>
 
-              <DialogFooter className="shrink-0 flex-row items-center justify-between gap-3 border-t border-border/50 bg-background px-5 py-4 sm:px-6 sm:py-4">
+              <DialogFooter className={cn(
+                "shrink-0 flex-row items-center justify-between gap-3 border-t border-border/50 px-5 py-4 sm:px-6 sm:py-4",
+                fullPage ? "relative z-10 bg-background/85 backdrop-blur-sm" : "bg-background",
+              )}>
                 <DialogClose asChild>
                   <Button type="button" variant="outline" className="rounded-full px-5">
                     {t.common.cancel}
