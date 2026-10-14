@@ -33,6 +33,15 @@ type TourCardSize = { width: number; height: number };
 
 const TOUR_OUTLINE = "#4EA1FF";
 
+function splitTourBody(body: string): string[] {
+  return body
+    .replace(/;\s*/gu, ";\n")
+    .replace(/([.!?])\s+(?=[A-ZÀ-ÖØ-Þ“«])/gu, "$1\n")
+    .split("\n")
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
 function useIsPhone() {
   const [phone, setPhone] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(max-width: 639px)").matches : false,
@@ -500,9 +509,11 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
                   <X size={18} />
                 </button>
               </div>
-              <p className="min-h-0 flex-1 overflow-y-auto pr-1 text-base leading-6 text-muted-foreground overscroll-contain">
-                {fr ? step.bodyFr : step.bodyEn}
-              </p>
+              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 text-base leading-6 text-muted-foreground overscroll-contain">
+                {splitTourBody(fr ? step.bodyFr : step.bodyEn).map((paragraph, paragraphIndex) => (
+                  <p key={paragraphIndex}>{paragraph}</p>
+                ))}
+              </div>
               <div className="mt-3 flex shrink-0 items-center justify-between gap-2 border-t border-border/60 pt-3">
                 <Button type="button" variant="ghost" size="sm" className="min-h-10 px-3" onClick={onClose}>
                   {fr ? "Plus tard" : "Skip"}
@@ -544,7 +555,11 @@ export function DashboardTour({ userId, segment, open, onClose, onFinished }: Pr
                 <X size={16} />
               </button>
             </div>
-            <p className="min-h-0 flex-1 overflow-y-auto text-base leading-7 text-muted-foreground">{fr ? step.bodyFr : step.bodyEn}</p>
+            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto text-base leading-7 text-muted-foreground">
+              {splitTourBody(fr ? step.bodyFr : step.bodyEn).map((paragraph, paragraphIndex) => (
+                <p key={paragraphIndex}>{paragraph}</p>
+              ))}
+            </div>
             <div className="mt-4 flex shrink-0 items-center justify-between gap-2 border-t border-border/60 pt-3">
               <Button type="button" variant="ghost" size="sm" onClick={onClose}>
                 {fr ? "Plus tard" : "Skip"}
