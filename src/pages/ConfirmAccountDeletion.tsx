@@ -108,8 +108,7 @@ export default function ConfirmAccountDeletion() {
             <p className="text-sm text-muted-foreground leading-relaxed">
               {locale === "fr" ? (
                 <>
-                  Votre demande de suppression a été confirmée. Conformément à la Loi 25 du Québec, toutes vos données
-                  personnelles, profils et photos seront <strong>définitivement supprimés dans 24 heures</strong>
+                  Toutes vos données personnelles, profils et photos seront <strong>définitivement supprimés dans 24 heures</strong>
                   {scheduledAt ? ` (le ${new Date(scheduledAt).toLocaleString("fr-CA")})` : ""}.
                 </>
               ) : (
