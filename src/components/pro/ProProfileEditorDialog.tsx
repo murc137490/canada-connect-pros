@@ -179,6 +179,8 @@ export function ProProfileEditorDialog({
   const [insuranceDocumentFile, setInsuranceDocumentFile] = useState<File | null>(null);
   const [licenseDocumentFile, setLicenseDocumentFile] = useState<File | null>(null);
   const [tradeLicenseNumber, setTradeLicenseNumber] = useState("");
+  const [credentialAuthority, setCredentialAuthority] = useState("");
+  const [customCredentialAuthority, setCustomCredentialAuthority] = useState("");
   const [rbqVerification, setRbqVerification] = useState<{ status: "verified" | "needs_review"; reason?: string; official_name?: string; subcategories?: string[] } | null>(null);
   const [rbqChecking, setRbqChecking] = useState(false);
 
@@ -403,8 +405,22 @@ export function ProProfileEditorDialog({
     const serviceName = listServicesForPrimaryCategory(categorySlug).find((service) => service.slug === serviceSlug)?.name ?? serviceSlug;
     return `${categorySlug} ${serviceName}`;
   });
-  const hasPlumbingServices = selectedServiceNames.some((name) => /plumb|plomberie/i.test(name));
-  const needsTradeLicense = selectedServiceNames.some((name) => /plumb|plomberie|electri|électri|hvac|cvac|heating|roofing|toiture|gas fitting|gaz/i.test(name));
+  const hasRbqRegulatedServices = selectedServiceNames.some((name) => /plumb|plomberie|electri|électri|hvac|cvac|heating|chauffage|roofing|toiture|gas fitting|gaz|construction|renovation|rénovation/i.test(name));
+  const needsTradeLicense = hasRbqRegulatedServices || selectedServiceNames.some((name) => /nurse|infirm|physi|physioth|occupational therapist|ergothé|acupunct|chiropract|psycholog|psychotherap|social worker|travailleur social|sexolog|psychoeduc|psychoéduc/i.test(name));
+  const credentialAuthorityOptions = [
+    ...(hasRbqRegulatedServices ? ["RBQ"] : []),
+    ...(selectedServiceNames.some((name) => /nurse|infirm/i.test(name)) ? ["OIIQ"] : []),
+    ...(selectedServiceNames.some((name) => /physi|physioth/i.test(name)) ? ["OPPQ"] : []),
+    ...(selectedServiceNames.some((name) => /occupational therapist|ergothé/i.test(name)) ? ["OEQ"] : []),
+    ...(selectedServiceNames.some((name) => /acupunct/i.test(name)) ? ["OAQ"] : []),
+    ...(selectedServiceNames.some((name) => /chiropract/i.test(name)) ? ["OCQ"] : []),
+    ...(selectedServiceNames.some((name) => /psycholog/i.test(name)) ? ["OPQ"] : []),
+    ...(selectedServiceNames.some((name) => /psychotherap/i.test(name)) ? ["OPQ"] : []),
+    ...(selectedServiceNames.some((name) => /social worker|travailleur social/i.test(name)) ? ["OTSTCFQ"] : []),
+    ...(selectedServiceNames.some((name) => /sexolog/i.test(name)) ? ["OPSQ"] : []),
+    ...(selectedServiceNames.some((name) => /psychoeduc|psychoéduc/i.test(name)) ? ["OPPÉDQ"] : []),
+  ].filter((authority, index, all) => all.indexOf(authority) === index);
+  const selectedCredentialAuthority = credentialAuthority === "OTHER" ? customCredentialAuthority.trim() : credentialAuthority;
 
   const verifyRbqLicense = async (proProfileId?: string) => {
     setRbqChecking(true);
@@ -473,7 +489,7 @@ export function ProProfileEditorDialog({
       });
       return;
     }
-    if (needsTradeLicense && (!tradeLicenseNumber.trim() || (!hasPlumbingServices && !licenseDocumentFile) || !form.insurance || !insuranceDocumentFile)) {
+    if (needsTradeLicense && (!tradeLicenseNumber.trim() || (!hasRbqRegulatedServices && !licenseDocumentFile) || !form.insurance || !insuranceDocumentFile || !selectedCredentialAuthority || (credentialAuthority === "OTHER" && !customCredentialAuthority.trim()))) {
       toast({
         title: t.createPro.toastRequired,
         description: locale === "fr"
@@ -706,7 +722,7 @@ export function ProProfileEditorDialog({
       if (form.insurance && insuranceDocumentFile) {
         await uploadVerificationDocument(insuranceDocumentFile, "insurance_certificate");
       }
-      if (needsTradeLicense && (licenseDocumentFile || hasPlumbingServices)) {
+      if (needsTradeLicense && (licenseDocumentFile || hasRbqRegulatedServices)) {
         const normalizedLicenseNumber = tradeLicenseNumber.trim();
         const { data: existingLicense } = await supabase
           .from("pro_licenses")
@@ -718,7 +734,7 @@ export function ProProfileEditorDialog({
           const { error: licenseError } = await supabase.from("pro_licenses").insert({
             pro_profile_id: profileId,
             license_number: normalizedLicenseNumber,
-            license_type: hasPlumbingServices ? "RBQ" : "TRADE",
+            license_type: selectedCredentialAuthority || "OTHER",
             holder_name: form.legalBusinessName.trim() || form.firstNameOrBusiness.trim(),
             is_verified: false,
             verification_data: null,
@@ -726,7 +742,7 @@ export function ProProfileEditorDialog({
           if (licenseError) throw licenseError;
         }
         if (licenseDocumentFile) await uploadVerificationDocument(licenseDocumentFile, "trade_license");
-        if (hasPlumbingServices) {
+        if (hasRbqRegulatedServices && credentialAuthority === "RBQ") {
           // Registry lookup runs again with the saved profile ID; the Edge Function
           // verifies ownership before persisting its trusted result.
           await verifyRbqLicense(profileId);
@@ -1048,7 +1064,7 @@ export function ProProfileEditorDialog({
                   </div>
                 ) : null}
 
-                <form id="pro-profile-editor-form" onSubmit={handleSubmit} className="space-y-6 md:space-y-8 pb-2">
+                <form id="pro-profile-editor-form" onSubmit={handleSubmit} className="pro-account-form space-y-6 md:space-y-8 pb-2">
           <section className="rounded-lg border border-border/80 bg-muted/20 p-4 space-y-4">
             <div>
               <h2 className="font-semibold text-foreground dark:text-white">{t.dashboard?.accountDetailsTitle ?? "Account details"}</h2>
@@ -1289,7 +1305,6 @@ export function ProProfileEditorDialog({
           <div className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
             <div>
               <p className="font-medium">{locale === "fr" ? "Vérification de présence" : "Liveness check"}</p>
-              <p className="text-sm text-muted-foreground">{locale === "fr" ? "Enregistrez une courte vidéo en suivant l’instruction. Une personne de l’équipe examinera la vidéo avec votre pièce d’identité et votre selfie." : "Record a short video following the prompt. A team member will manually review it with your ID and selfie."}</p>
             </div>
             <p className="text-sm font-medium">{livenessChallenge}</p>
             <video ref={livenessPreviewRef} muted playsInline className="max-h-48 w-full rounded-lg bg-black object-cover" aria-label={locale === "fr" ? "Aperçu de la caméra" : "Camera preview"} />
@@ -1768,13 +1783,20 @@ export function ProProfileEditorDialog({
             )}
             {needsTradeLicense && (
               <div className="space-y-2 rounded-lg border border-amber-500/40 p-3">
+                <Label htmlFor="credential-authority">{locale === "fr" ? "Ordre ou organisme de délivrance" : "Issuing regulator or order"}</Label>
+                <select id="credential-authority" value={credentialAuthority} onChange={(event) => setCredentialAuthority(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground">
+                  <option value="">{locale === "fr" ? "Choisir l’ordre ou l’organisme" : "Choose an order or regulator"}</option>
+                  {credentialAuthorityOptions.map((authority) => <option key={authority} value={authority}>{authority}</option>)}
+                  <option value="OTHER">{locale === "fr" ? "Autre" : "Other"}</option>
+                </select>
+                {credentialAuthority === "OTHER" && <Input value={customCredentialAuthority} onChange={(event) => setCustomCredentialAuthority(event.target.value)} placeholder={locale === "fr" ? "Nom de l’ordre ou de l’organisme" : "Order or regulator name"} aria-label={locale === "fr" ? "Nom de l’ordre ou de l’organisme" : "Order or regulator name"} />}
                 <Label htmlFor="trade-license-number">
-                  {hasPlumbingServices
+                  {credentialAuthority === "RBQ"
                     ? (locale === "fr" ? "Numéro de licence RBQ" : "RBQ licence number")
                     : (locale === "fr" ? "Numéro de licence professionnelle" : "Professional licence number")}
                 </Label>
-                <Input id="trade-license-number" value={tradeLicenseNumber} onChange={(event) => setTradeLicenseNumber(event.target.value)} placeholder={hasPlumbingServices ? "1234-5678-90" : undefined} />
-                {hasPlumbingServices && (
+                <Input id="trade-license-number" value={tradeLicenseNumber} onChange={(event) => setTradeLicenseNumber(event.target.value)} placeholder={credentialAuthority === "RBQ" ? "1234-5678-90" : undefined} />
+                {hasRbqRegulatedServices && credentialAuthority === "RBQ" && (
                   <>
                     <Button type="button" variant="outline" disabled={rbqChecking || !/^\d{4}-\d{4}-\d{2}$/.test(tradeLicenseNumber.trim())} onClick={() => void verifyRbqLicense()}>
                       {rbqChecking ? (locale === "fr" ? "Vérification…" : "Checking…") : (locale === "fr" ? "Vérifier la licence RBQ" : "Verify RBQ licence")}
@@ -1799,7 +1821,13 @@ export function ProProfileEditorDialog({
                   <Upload size={16} />
                   {licenseDocumentFile?.name ?? (locale === "fr" ? "Ajouter une preuve de licence" : "Add licence evidence")}
                 </Button>
-                <p className="text-xs text-muted-foreground">{locale === "fr" ? "Le registre public confirme la licence et ses sous-catégories. L’admissibilité à chaque travail peut aussi dépendre du lieu et du travail précis." : "The public registry confirms the licence and its subcategories. Eligibility for each job may also depend on location and the specific work."}</p>
+                {credentialAuthority === "RBQ" && rbqVerification?.status === "verified" ? (
+                  <p className="flex items-center gap-2 text-sm font-medium text-emerald-600" role="status"><span aria-hidden>✓</span>{locale === "fr" ? "Licence vérifiée par le registre actif de la RBQ" : "Licence verified against the RBQ active licence registry"}</p>
+                ) : credentialAuthority === "RBQ" ? (
+                  <p className="text-xs text-muted-foreground">{locale === "fr" ? "La vérification en ligne est disponible pour la RBQ. Un résultat incertain doit être examiné." : "Online registry verification is available for RBQ. Uncertain results require review."}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{locale === "fr" ? "Cette preuve sera examinée manuellement. Les registres des ordres ne proposent pas tous une API publique de validation." : "This credential will be reviewed manually. Professional orders do not all provide a public verification API."}</p>
+                )}
               </div>
             )}
           </div>

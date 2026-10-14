@@ -215,6 +215,7 @@ import { errorMessage } from "@/lib/errorMessage";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import AdminStaffManager from "@/components/admin/AdminStaffManager";
 import AdminAccountDeletions from "@/components/admin/AdminAccountDeletions";
+import AdminSiteRecommendations from "@/components/admin/AdminSiteRecommendations";
 import AdminMemberIdGate from "@/components/admin/AdminMemberIdGate";
 import { getProPublicContactBlacklistReasons } from "@/lib/proPublicContactBlacklist";
 import SquareBookingPayment from "@/components/SquareBookingPayment";
@@ -6934,6 +6935,7 @@ export default function Dashboard() {
                 </div>
               ) : (
               <>
+              <AdminSiteRecommendations />
               <div className="rounded-xl border bg-card p-6 md:p-8">
                 <h2 className="font-heading text-xl font-bold text-foreground mb-4 flex flex-wrap items-center gap-2">
                   <ShieldCheck size={24} className="shrink-0" />

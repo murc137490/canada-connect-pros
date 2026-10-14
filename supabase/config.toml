@@ -103,3 +103,7 @@ verify_jwt = false
 # RBQ registry verification requires an authenticated professional account.
 [functions.verify-rbq-license]
 verify_jwt = true
+
+# Public About page recommendation form. Function validates topic, optional account, and throttles by hashed IP.
+[functions.site-recommendation]
+verify_jwt = false

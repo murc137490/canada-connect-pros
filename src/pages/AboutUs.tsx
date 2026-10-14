@@ -7,11 +7,34 @@ import ShapeGridBackground from "@/components/ShapeGridBackground";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Textarea } from "@/components/ui/textarea";
+import { CheckCircle2, Loader2, Send } from "lucide-react";
 
 export default function AboutUs() {
   const { t } = useLanguage();
   const a = t.about;
+  const { user } = useAuth();
   const [counts, setCounts] = useState<{ users: number; professionals: number } | null>(null);
+  const [hasProAccount, setHasProAccount] = useState(false);
+  const [target, setTarget] = useState<"client" | "professional" | "other">("client");
+  const [otherTarget, setOtherTarget] = useState("");
+  const [issue, setIssue] = useState("");
+  const [solution, setSolution] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [sendError, setSendError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!user) {
+      setHasProAccount(false);
+      return;
+    }
+    void supabase.from("pro_profiles").select("id").eq("user_id", user.id).limit(1).maybeSingle()
+      .then(({ data }) => { if (active) setHasProAccount(Boolean(data)); });
+    return () => { active = false; };
+  }, [user]);
 
   useEffect(() => {
     let active = true;
@@ -24,6 +47,26 @@ export default function AboutUs() {
     const dailyRefresh = window.setInterval(() => void loadCounts(), 24 * 60 * 60 * 1000);
     return () => { active = false; window.clearInterval(dailyRefresh); };
   }, []);
+
+  const submitRecommendation = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (sending || issue.trim().length < 8) return;
+    setSending(true);
+    setSent(false);
+    setSendError(false);
+    const { data, error } = await supabase.functions.invoke("site-recommendation", {
+      body: { target, other_target: target === "other" ? otherTarget.trim() : "", issue: issue.trim(), solution: solution.trim() },
+    });
+    setSending(false);
+    if (error || data?.error) {
+      setSendError(true);
+      return;
+    }
+    setSent(true);
+    setIssue("");
+    setSolution("");
+    setOtherTarget("");
+  };
 
   return (
     <Layout>
@@ -53,6 +96,7 @@ export default function AboutUs() {
               <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
                 {a.lead}
               </p>
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">{a.growthNote}</p>
             </div>
           </div>
         </section>
@@ -97,6 +141,37 @@ export default function AboutUs() {
                 <Link to="/make-request">{a.ctaClient}</Link>
               </Button>
             </div>
+          </section>
+
+          <section className="rounded-2xl border border-border/70 bg-card/80 p-5 text-left shadow-sm md:p-7" aria-labelledby="recommendation-title">
+            <h2 id="recommendation-title" className="font-heading text-2xl font-bold text-foreground">{a.recommendationTitle}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a.recommendationIntro}</p>
+            <form onSubmit={(event) => void submitRecommendation(event)} className="mt-5 space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="recommendation-target" className="text-sm font-medium">{a.recommendationTarget}</label>
+                <select id="recommendation-target" value={target} onChange={(event) => setTarget(event.target.value as typeof target)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground">
+                  <option value="client">{a.recommendationClient}</option>
+                  {hasProAccount && <option value="professional">{a.recommendationPro}</option>}
+                  <option value="other">{a.recommendationOther}</option>
+                </select>
+              </div>
+              {target === "other" && <input value={otherTarget} onChange={(event) => setOtherTarget(event.target.value)} maxLength={100} required placeholder={a.recommendationOtherPlaceholder} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-foreground/50" />}
+              <div className="space-y-2">
+                <label htmlFor="recommendation-issue" className="text-sm font-medium">{a.recommendationIssue}</label>
+                <Textarea id="recommendation-issue" value={issue} onChange={(event) => setIssue(event.target.value)} minLength={8} maxLength={3000} required placeholder={a.recommendationIssuePlaceholder} rows={4} />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="recommendation-solution" className="text-sm font-medium">{a.recommendationSolution}</label>
+                <Textarea id="recommendation-solution" value={solution} onChange={(event) => setSolution(event.target.value)} maxLength={3000} placeholder={a.recommendationSolutionPlaceholder} rows={3} />
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button type="submit" disabled={sending || issue.trim().length < 8 || (target === "other" && !otherTarget.trim())} className="gap-2">
+                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}{sending ? a.recommendationSending : a.recommendationSend}
+                </Button>
+                {sent && <p role="status" className="inline-flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400"><CheckCircle2 className="h-4 w-4" />{a.recommendationSent}</p>}
+                {sendError && <p role="alert" className="text-sm text-destructive">{a.recommendationError}</p>}
+              </div>
+            </form>
           </section>
         </div>
       </div>

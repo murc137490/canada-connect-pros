@@ -29,6 +29,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Placeholder copy in the professional application form should read clearly
+   as an example without competing with entered values or field labels. */
+.pro-account-form input::placeholder,
+.pro-account-form textarea::placeholder {
+  color: hsl(var(--foreground) / 0.52);
+  opacity: 1;
+}
+
 @layer base {
   :root {
     /* AltShift, warm stone paper, ink, navy signature, maple used sparingly */
