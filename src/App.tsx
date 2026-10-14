@@ -55,6 +55,7 @@ import PwaIconTheme from "@/components/PwaIconTheme";
 import AboutUs from "./pages/AboutUs";
 import PublicHandlePage from "./pages/PublicHandlePage";
 import FrontDesk from "./pages/FrontDesk";
+import LivenessPhoneCapture from "./pages/LivenessPhoneCapture";
 
 const queryClient = new QueryClient();
 
@@ -109,6 +110,7 @@ const App = () => (
               <Route path="/pro-plans/cancel" element={<ProPlanCancel />} />
               <Route path="/pro-plans/checkout" element={<Navigate to="/pro-plans" replace />} />
               <Route path="/create-pro-account" element={<MonitorAdminGuard><CreateProAccount /></MonitorAdminGuard>} />
+              <Route path="/liveness-capture" element={<><PrivateNoIndex /><LivenessPhoneCapture /></>} />
               <Route path="/pro-onboarding/start" element={<MonitorAdminGuard><ProOnboardingStart /></MonitorAdminGuard>} />
               <Route path="/pro-onboarding/tier" element={<MonitorAdminGuard><ProOnboardingTier /></MonitorAdminGuard>} />
               <Route path="/dashboard" element={<><PrivateNoIndex /><Dashboard /></>} />

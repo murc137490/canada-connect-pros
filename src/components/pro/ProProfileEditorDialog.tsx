@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import QRCode from "qrcode";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Dialog,
@@ -163,16 +164,18 @@ export function ProProfileEditorDialog({
   const [dayModalNote, setDayModalNote] = useState("");
   const profileInputRef = useRef<HTMLInputElement>(null);
   const beforeAfterInputRef = useRef<HTMLInputElement>(null);
-  const personalPhotoInputRef = useRef<HTMLInputElement>(null);
   const idDocumentInputRef = useRef<HTMLInputElement>(null);
   const insuranceDocumentInputRef = useRef<HTMLInputElement>(null);
   const licenseDocumentInputRef = useRef<HTMLInputElement>(null);
   const livenessPreviewRef = useRef<HTMLVideoElement>(null);
   const livenessStreamRef = useRef<MediaStream | null>(null);
   const [livenessVideoFile, setLivenessVideoFile] = useState<File | null>(null);
+  const [livenessHandoff, setLivenessHandoff] = useState<{ id: string; url: string; qr: string; status: "pending" | "uploaded" | "expired" } | null>(null);
+  const [desktopCapture, setDesktopCapture] = useState(false);
+  const [handoffCreating, setHandoffCreating] = useState(false);
   const [livenessRecording, setLivenessRecording] = useState(false);
   const [livenessConsent, setLivenessConsent] = useState(false);
-  const [livenessChallenge] = useState(() => {
+  const [livenessChallenge, setLivenessChallenge] = useState(() => {
     const prompts = locale === "fr" ? LIVENESS_CHALLENGES_FR : LIVENESS_CHALLENGES;
     return prompts[Math.floor(Math.random() * prompts.length)];
   });
@@ -184,7 +187,52 @@ export function ProProfileEditorDialog({
   const [rbqVerification, setRbqVerification] = useState<{ status: "verified" | "needs_review"; reason?: string; official_name?: string; subcategories?: string[] } | null>(null);
   const [rbqChecking, setRbqChecking] = useState(false);
 
-  useEffect(() => () => livenessStreamRef.current?.getTracks().forEach((track) => track.stop()), []);
+  useEffect(() => {
+    const desktop = () => (navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile !== true && window.matchMedia("(pointer: fine) and (min-width: 768px)").matches;
+    setDesktopCapture(desktop());
+    const media = window.matchMedia("(pointer: fine) and (min-width: 768px)");
+    const update = () => setDesktopCapture(desktop());
+    media.addEventListener("change", update);
+    return () => {
+      media.removeEventListener("change", update);
+      livenessStreamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!livenessHandoff || livenessHandoff.status !== "pending") return;
+    let alive = true;
+    const poll = async () => {
+      const { data, error } = await supabase.functions.invoke("liveness-handoff", { body: { action: "status", handoffId: livenessHandoff.id } });
+      if (!alive) return;
+      if (error || data?.status === "expired") {
+        setLivenessHandoff((current) => current ? { ...current, status: "expired" } : current);
+        return;
+      }
+      if (data?.status !== "uploaded") return;
+      setLivenessHandoff((current) => current ? { ...current, status: "uploaded" } : current);
+      setLivenessChallenge(String(data.challenge || livenessChallenge));
+      toast({ title: locale === "fr" ? "Vidéo reçue" : "Video received", description: locale === "fr" ? "La vidéo est prête pour l’examen manuel." : "The video is ready for manual review." });
+    };
+    void poll();
+    const timer = window.setInterval(() => void poll(), 2500);
+    return () => { alive = false; window.clearInterval(timer); };
+  }, [livenessHandoff?.id, livenessHandoff?.status, livenessChallenge, locale, toast]);
+
+  const createLivenessHandoff = async () => {
+    if (!livenessConsent || handoffCreating) return;
+    setHandoffCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("liveness-handoff", { body: { action: "create", locale } });
+      if (error || !data?.token || !data?.handoffId || !data?.challenge) throw error ?? new Error("Could not create phone handoff");
+      const url = `${window.location.origin}/liveness-capture#token=${encodeURIComponent(data.token)}`;
+      const qr = await QRCode.toDataURL(url, { width: 256, margin: 2, errorCorrectionLevel: "M" });
+      setLivenessChallenge(data.challenge);
+      setLivenessHandoff({ id: data.handoffId, url, qr, status: "pending" });
+    } catch (error) {
+      toast({ title: locale === "fr" ? "Impossible de créer le code QR" : "Could not create QR code", description: error instanceof Error ? error.message : undefined, variant: "destructive" });
+    } finally { setHandoffCreating(false); }
+  };
 
   const recordLivenessCheck = async () => {
     if (livenessRecording) return;
@@ -206,6 +254,7 @@ export function ProProfileEditorDialog({
       recorder.onstop = () => {
         const video = new File([new Blob(chunks, { type: recordingType })], `liveness-${Date.now()}.${recordingType.includes("mp4") ? "mp4" : "webm"}`, { type: recordingType.split(";")[0] });
         setLivenessVideoFile(video);
+        setLivenessHandoff(null);
         stream.getTracks().forEach((track) => track.stop());
         livenessStreamRef.current = null;
         setLivenessRecording(false);
@@ -236,7 +285,6 @@ export function ProProfileEditorDialog({
     legalBusinessName: "",
     businessAddress: "",
     profilePhotoFile: null as File | null,
-    personalPhotoFile: null as File | null,
     idDocumentFile: null as File | null,
     shortBio: "",
     yearsExperience: null as number | null,
@@ -271,7 +319,6 @@ export function ProProfileEditorDialog({
   const { accountFields, setAccountFields, loaded: profileDataLoaded, hasExistingProfile, proEdit, phoneOnFile } =
     useLoadExistingProProfile(user?.id, !!user);
   const [profileApplied, setProfileApplied] = useState(false);
-  const [existingPersonalPhotoUrl, setExistingPersonalPhotoUrl] = useState<string | null>(null);
   const [existingIdDocumentUrl, setExistingIdDocumentUrl] = useState<string | null>(null);
   const [existingGalleryUrls, setExistingGalleryUrls] = useState<string[]>([]);
   const [isProVerified, setIsProVerified] = useState(false);
@@ -322,7 +369,6 @@ export function ProProfileEditorDialog({
     setPageAccentColor(proEdit.pageAccentColor);
     setPageBackgroundColor(proEdit.pageBackgroundColor);
     setPageColorSchemeId(resolveProPageScheme(proEdit.pagePrimaryColor).id);
-    setExistingPersonalPhotoUrl(proEdit.existingPersonalPhotoUrl);
     setExistingIdDocumentUrl(proEdit.existingIdDocumentUrl);
     setExistingGalleryUrls(proEdit.existingGalleryUrls);
     setIsProVerified(proEdit.isVerified);
@@ -546,11 +592,7 @@ export function ProProfileEditorDialog({
         return;
       }
     }
-    if (!form.personalPhotoFile && !existingPersonalPhotoUrl) {
-      toast({ title: t.createPro.toastRequired, description: t.createPro.personalPhotoLabel, variant: "destructive" });
-      return;
-    }
-    if (!isEditMode && (!livenessVideoFile || !livenessConsent)) {
+    if (!isEditMode && ((!livenessVideoFile && livenessHandoff?.status !== "uploaded") || !livenessConsent)) {
       toast({ title: locale === "fr" ? "Vérification de présence requise" : "Liveness check required", description: locale === "fr" ? "Enregistrez la courte vidéo et donnez votre consentement avant de continuer." : "Record the short video and provide consent before continuing.", variant: "destructive" });
       return;
     }
@@ -596,12 +638,7 @@ export function ProProfileEditorDialog({
       let profileId: string | undefined = existing?.id;
 
       const ext = (f: File) => f.name.split(".").pop() || "jpg";
-      let personalPhotoUrl: string | null = null;
       let idDocumentUrl: string | null = null;
-      if (form.personalPhotoFile) {
-        const path = `${user.id}/private/personal-${Date.now()}.${ext(form.personalPhotoFile)}`;
-        personalPhotoUrl = await uploadFile(path, form.personalPhotoFile, VERIFICATION_BUCKET);
-      }
       if (form.idDocumentFile) {
         const path = `${user.id}/private/id-${Date.now()}.${ext(form.idDocumentFile)}`;
         idDocumentUrl = await uploadFile(path, form.idDocumentFile, VERIFICATION_BUCKET);
@@ -628,8 +665,6 @@ export function ProProfileEditorDialog({
         profile_last_edited_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-      if (personalPhotoUrl) payload.personal_photo_url = personalPhotoUrl;
-      else if (existingPersonalPhotoUrl) payload.personal_photo_url = existingPersonalPhotoUrl;
       if (idDocumentUrl) payload.id_document_url = idDocumentUrl;
       else if (existingIdDocumentUrl) payload.id_document_url = existingIdDocumentUrl;
       if (Object.keys(unavailableDates).length > 0 || availableDateOverrides.length > 0) {
@@ -704,7 +739,10 @@ export function ProProfileEditorDialog({
         if (error) throw error;
       };
 
-      if (livenessVideoFile) {
+      if (livenessHandoff?.status === "uploaded") {
+        const { data, error } = await supabase.functions.invoke("liveness-handoff", { body: { action: "consume", handoffId: livenessHandoff.id, profileId } });
+        if (error || !data?.ok) throw error ?? new Error("Phone liveness recording could not be attached to the application.");
+      } else if (livenessVideoFile) {
         if (livenessVideoFile.size > 25 * 1024 * 1024) throw new Error("Liveness recording must be 25 MB or smaller.");
         const videoExt = livenessVideoFile.type === "video/mp4" ? "mp4" : "webm";
         const path = `${user.id}/verification/${profileId}/liveness-${Date.now()}-${crypto.randomUUID()}.${videoExt}`;
@@ -1272,36 +1310,6 @@ export function ProProfileEditorDialog({
             <p>{t.createPro.securityNotice}</p>
           </div>
 
-          <div className="space-y-2">
-            <Label>{t.createPro.personalPhotoLabel}</Label>
-            <input
-              ref={personalPhotoInputRef}
-              type="file"
-              accept={ACCEPT_IMAGES}
-              className="hidden"
-              onChange={(e) => setForm((p) => ({ ...p, personalPhotoFile: e.target.files?.[0] ?? null }))}
-            />
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => personalPhotoInputRef.current?.click()}
-              >
-                <Upload size={16} /> {t.createPro.chooseFile}
-              </Button>
-              {form.personalPhotoFile && (
-                <span className="text-sm text-muted-foreground truncate">
-                  {form.personalPhotoFile.name}
-                  <button type="button" onClick={() => setForm((p) => ({ ...p, personalPhotoFile: null }))} className="ml-1 text-destructive">
-                    <X size={14} />
-                  </button>
-                </span>
-              )}
-            </div>
-          </div>
-
           <div className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
             <div>
               <p className="font-medium">{locale === "fr" ? "Vérification de présence" : "Liveness check"}</p>
@@ -1316,6 +1324,26 @@ export function ProProfileEditorDialog({
               <Button type="button" variant="outline" disabled={livenessRecording} onClick={() => void recordLivenessCheck()}>{livenessRecording ? (locale === "fr" ? "Enregistrement…" : "Recording…") : (locale === "fr" ? "Enregistrer 8 secondes" : "Record 8 seconds")}</Button>
               {livenessVideoFile ? <span className="text-sm text-muted-foreground">{locale === "fr" ? "Vidéo prête pour examen manuel" : "Video ready for manual review"}</span> : null}
             </div>
+            {desktopCapture && !livenessVideoFile && (
+              <div className="space-y-3 border-t border-border/60 pt-3">
+                <p className="text-sm text-muted-foreground">{locale === "fr" ? "Sur ordinateur ? Scannez ce code avec votre téléphone pour enregistrer la vérification." : "On a computer? Scan this code with your phone to record the liveness check."}</p>
+                <Button type="button" variant="outline" disabled={!livenessConsent || handoffCreating || livenessHandoff?.status === "uploaded"} onClick={() => void createLivenessHandoff()}>
+                  {handoffCreating ? (locale === "fr" ? "Création…" : "Creating…") : livenessHandoff?.status === "uploaded" ? (locale === "fr" ? "Vidéo reçue" : "Video received") : (locale === "fr" ? "Continuer sur téléphone" : "Continue on phone")}
+                </Button>
+                {livenessHandoff && (
+                  <div className="flex flex-wrap items-center gap-4">
+                    <img src={livenessHandoff.qr} alt={locale === "fr" ? "Code QR de vérification temporaire" : "Temporary verification QR code"} className="h-48 w-48 rounded-lg bg-white p-2" />
+                    <div className="max-w-sm text-sm text-muted-foreground">
+                      {livenessHandoff.status === "uploaded"
+                        ? (locale === "fr" ? "Vidéo reçue et liée à votre demande." : "Video received and linked to your application.")
+                        : livenessHandoff.status === "expired"
+                          ? (locale === "fr" ? "Code expiré. Créez un nouveau code QR." : "Code expired. Create a new QR code.")
+                          : (locale === "fr" ? "Scannez le code, suivez la consigne à l’écran et gardez cette page ouverte. Le code expire dans 10 minutes." : "Scan the code, follow the on-screen prompt, and keep this page open. The code expires in 10 minutes.")}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

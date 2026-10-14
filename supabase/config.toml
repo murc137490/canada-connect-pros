@@ -3,6 +3,11 @@ project_id = "qjiwudwzhkdekxkscuuk"
 [functions.verify-rbq-license]
 verify_jwt = false
 
+# The phone capture uses a short-lived, one-use QR capability; owner actions
+# validate the session inside the function and phone actions validate the token.
+[functions.liveness-handoff]
+verify_jwt = false
+
 [functions.seed-demo-pro]
 verify_jwt = false
 
