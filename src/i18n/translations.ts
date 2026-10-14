@@ -2759,7 +2759,7 @@ export const translations = {
       colorSchemeLabel: "Palette de couleurs",
       colorSchemeHint: "Choisissez une palette. L'aperçu se met à jour immédiatement.",
       schemeNavyTeal: "Rose poudré",
-      schemeForestGreen: "Terracotta brûlée",
+      schemeForestGreen: "Terracotta",
       schemeForestGreenDark: "Vert forêt (fond sombre)",
       schemeBurgundy: "Or antique",
       schemeSlateBlue: "Forêt profonde",

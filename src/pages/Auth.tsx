@@ -213,6 +213,7 @@ export default function Auth() {
           emailLanguage,
           referralCode: ref || undefined,
           username: requestedUsername || undefined,
+          redirectPath: redirect,
         });
         toast({ title: t.auth.toastCreated });
         if (hasSession) {

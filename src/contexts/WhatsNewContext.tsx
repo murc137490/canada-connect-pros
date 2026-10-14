@@ -31,6 +31,7 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
     { id: string; created_at: string; pro_unread?: boolean | null }[]
   >([]);
   const [isVerifiedPro, setIsVerifiedPro] = useState(false);
+  const [proProfileCreatedAt, setProProfileCreatedAt] = useState<string | null>(null);
   const [pendingReviewNotices, setPendingReviewNotices] = useState<PendingReviewNotice[]>([]);
   const [platformAnnouncements, setPlatformAnnouncements] = useState<PlatformWhatsNewRow[]>([]);
   const [jobModerationNotices, setJobModerationNotices] = useState<
@@ -45,6 +46,7 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
       setClientBookings([]);
       setProBookings([]);
       setIsVerifiedPro(false);
+      setProProfileCreatedAt(null);
       setPendingReviewNotices([]);
       setPlatformAnnouncements([]);
       setJobModerationNotices([]);
@@ -58,7 +60,7 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
         .eq("client_id", user.id)
         .order("created_at", { ascending: false })
         .limit(30),
-      supabase.from("pro_profiles").select("id, is_verified").eq("user_id", user.id).maybeSingle(),
+      supabase.from("pro_profiles").select("id, is_verified, created_at, updated_at").eq("user_id", user.id).maybeSingle(),
       fetchActivePlatformWhatsNewAnnouncements(),
       fetchJobRequestModerationNotices(user.id),
       supabase.from("pro_application_review_notices")
@@ -74,6 +76,7 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
     const proId = proRes.data?.id;
     const verified = proRes.data?.is_verified === true;
     setIsVerifiedPro(verified);
+    setProProfileCreatedAt(proRes.data?.updated_at ?? proRes.data?.created_at ?? null);
     if (proId && verified) {
       const { data: pb } = await supabase
         .from("bookings")
@@ -187,6 +190,7 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
     platformAnnouncements,
     jobModerationNotices,
     proApplicationNotices,
+    proProfileCreatedAt,
     isVerifiedPro,
     isPlatformAdmin,
   });

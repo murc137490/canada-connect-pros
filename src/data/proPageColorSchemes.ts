@@ -20,12 +20,12 @@ export interface ProPageColorScheme {
 
 export const PRO_PAGE_COLOR_SCHEMES: ProPageColorScheme[] = [
   { id: "dustyRose", name: { en: "Dusty Rose", fr: "Rose poudré" }, primary: "#B86F7A", secondary: "#C3868F", accent: "#F5EBEC", background: "#FBF6F7", ink: "#000000" },
-  { id: "burntTerracotta", name: { en: "Burnt Terracotta", fr: "Terre cuite brûlée" }, primary: "#B7654A", secondary: "#C37E67", accent: "#F5E9E6", background: "#FBF6F4", ink: "#000000" },
+  { id: "burntTerracotta", name: { en: "Burnt Terracotta", fr: "Terracotta" }, primary: "#B7654A", secondary: "#C37E67", accent: "#F5E9E6", background: "#FBF6F4", ink: "#000000" },
   { id: "antiqueGold", name: { en: "Antique Gold", fr: "Or antique" }, primary: "#B39445", secondary: "#BFA563", accent: "#F4F0E5", background: "#FAF9F4", ink: "#000000" },
   { id: "deepForest", name: { en: "Deep Forest", fr: "Forêt profonde" }, primary: "#31594D", secondary: "#28493F", accent: "#E2E8E6", background: "#F3F5F4", ink: "#FFFFFF" },
   { id: "cobaltSlate", name: { en: "Cobalt Slate", fr: "Ardoise cobalt" }, primary: "#49658A", secondary: "#3C5371", accent: "#E6E9EF", background: "#F4F6F8", ink: "#FFFFFF" },
   { id: "aubergine", name: { en: "Aubergine", fr: "Aubergine" }, primary: "#5A3F61", secondary: "#4A3450", accent: "#E8E4E9", background: "#F5F3F6", ink: "#FFFFFF" },
-  { id: "oxblood", name: { en: "Oxblood", fr: "Sang de bœuf" }, primary: "#682F3B", secondary: "#552730", accent: "#EAE2E4", background: "#F6F3F3", ink: "#FFFFFF" },
+  { id: "oxblood", name: { en: "Oxblood", fr: "Oxblood" }, primary: "#682F3B", secondary: "#552730", accent: "#EAE2E4", background: "#F6F3F3", ink: "#FFFFFF" },
   { id: "charcoal", name: { en: "Charcoal", fr: "Charbon" }, primary: "#292929", secondary: "#222222", accent: "#E1E1E1", background: "#F2F2F2", ink: "#FFFFFF" },
 ];
 

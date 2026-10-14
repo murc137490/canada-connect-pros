@@ -21,10 +21,11 @@ export function useWhatsNewItems(opts: {
   platformAnnouncements: BroadcastRow[];
   jobModerationNotices: ModerationNotice[];
   proApplicationNotices: ProApplicationNotice[];
+  proProfileCreatedAt: string | null;
   isVerifiedPro: boolean;
   isPlatformAdmin?: boolean;
 }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const {
     clientBookings,
     proBookings,
@@ -32,6 +33,7 @@ export function useWhatsNewItems(opts: {
     platformAnnouncements,
     jobModerationNotices,
     proApplicationNotices,
+    proProfileCreatedAt,
     isVerifiedPro,
     isPlatformAdmin,
   } = opts;
@@ -111,6 +113,19 @@ export function useWhatsNewItems(opts: {
       });
     }
 
+    if (proProfileCreatedAt) {
+      items.push({
+        id: "pro-account-details-reminder",
+        kind: "platform",
+        title: locale === "fr" ? "Complétez les détails de votre compte" : "Finish setting up your account",
+        body: locale === "fr"
+          ? "Ajoutez vos renseignements de compte, notamment un NIP vocal pour sécuriser les appels au service téléphonique."
+          : "Add your account details, including a Voice PIN to secure calls to Front Desk.",
+        href: "/dashboard?tab=account",
+        createdAt: proProfileCreatedAt,
+      });
+    }
+
     if (!isPlatformAdmin) {
       items.push({
         id: "platform-welcome",
@@ -130,6 +145,7 @@ export function useWhatsNewItems(opts: {
     platformAnnouncements,
     jobModerationNotices,
     proApplicationNotices,
+    proProfileCreatedAt,
     isVerifiedPro,
     isPlatformAdmin,
     t.dashboard.whatsNewBookingClient,
@@ -142,5 +158,6 @@ export function useWhatsNewItems(opts: {
     t.dashboard.whatsNewProNeedsInfoTitle,
     t.dashboard.whatsNewProNeedsInfoBody,
     t.dashboard.whatsNewProNeedsInfoFallback,
+    locale,
   ]);
 }

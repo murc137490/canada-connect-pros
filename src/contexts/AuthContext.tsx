@@ -32,6 +32,7 @@ interface AuthContextType {
     emailLanguage?: "en" | "fr";
     referralCode?: string;
     username?: string;
+    redirectPath?: string;
   }) => Promise<{ hasSession: boolean }>;
   /** Password login with a Member ID or username (never email). */
   signIn: (identifier: string, password: string) => Promise<{ kind: LoginIdentifierKind; value: string }>;
@@ -87,8 +88,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     emailLanguage?: "en" | "fr";
     referralCode?: string;
     username?: string;
+    redirectPath?: string;
   }) => {
-    const { email, password, fullName, phone, emailLanguage = "en", referralCode, username } = params;
+    const { email, password, fullName, phone, emailLanguage = "en", referralCode, username, redirectPath } = params;
     const trimmedEmail = email.trim();
     const trimmedName = fullName.trim();
     const trimmedPhone = phone?.trim() || "";
@@ -106,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Requested login username; the database assigns a unique one if taken.
           username: username?.trim().toLowerCase() || undefined,
         },
-        emailRedirectTo: `${getPublicSiteOrigin()}/auth/callback`,
+        emailRedirectTo: `${getPublicSiteOrigin()}/auth/callback${redirectPath ? `?redirect=${encodeURIComponent(redirectPath.startsWith("/") && !redirectPath.startsWith("//") ? redirectPath : "/dashboard")}` : ""}`,
       },
     });
     if (error) {

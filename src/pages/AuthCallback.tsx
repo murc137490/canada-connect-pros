@@ -76,7 +76,11 @@ export default function AuthCallback() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      let next = peekOAuthRedirect(searchParams.get("redirect") || "/");
+      const callbackRedirect = searchParams.get("redirect");
+      const safeCallbackRedirect = callbackRedirect?.startsWith("/") && !callbackRedirect.startsWith("//") && !callbackRedirect.startsWith("/\\") && !callbackRedirect.startsWith("/auth")
+        ? callbackRedirect
+        : null;
+      let next = safeCallbackRedirect ?? peekOAuthRedirect("/");
       if (user?.id) {
         const { data: prof } = await supabase
           .from("profiles")

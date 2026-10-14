@@ -454,14 +454,13 @@ export function ProProfileEditorDialog({
   const hasRbqRegulatedServices = selectedServiceNames.some((name) => /home-improvement|plumb|plomberie|electri|électri|hvac|cvac|heating|chauffage|furnace|furn|air.?condition|cooling|roof|toit|gas fitting|gaz|construction|renovation|rénovation/i.test(name));
   const needsTradeLicense = hasRbqRegulatedServices || selectedServiceNames.some((name) => /nurse|infirm|physi|physioth|occupational therapist|ergothé|acupunct|chiropract|psycholog|psychotherap|social worker|travailleur social|sexolog|psychoeduc|psychoéduc/i.test(name));
   const credentialAuthorityOptions = [
-    ...(hasRbqRegulatedServices ? ["RBQ"] : []),
+    "RBQ",
     ...(selectedServiceNames.some((name) => /nurse|infirm/i.test(name)) ? ["OIIQ"] : []),
     ...(selectedServiceNames.some((name) => /physi|physioth/i.test(name)) ? ["OPPQ"] : []),
     ...(selectedServiceNames.some((name) => /occupational therapist|ergothé/i.test(name)) ? ["OEQ"] : []),
     ...(selectedServiceNames.some((name) => /acupunct/i.test(name)) ? ["OAQ"] : []),
     ...(selectedServiceNames.some((name) => /chiropract/i.test(name)) ? ["OCQ"] : []),
-    ...(selectedServiceNames.some((name) => /psycholog/i.test(name)) ? ["OPQ"] : []),
-    ...(selectedServiceNames.some((name) => /psychotherap/i.test(name)) ? ["OPQ"] : []),
+    ...(selectedServiceNames.some((name) => /psycholog|psychotherap/i.test(name)) ? ["OPQ"] : []),
     ...(selectedServiceNames.some((name) => /social worker|travailleur social/i.test(name)) ? ["OTSTCFQ"] : []),
     ...(selectedServiceNames.some((name) => /sexolog/i.test(name)) ? ["OPSQ"] : []),
     ...(selectedServiceNames.some((name) => /psychoeduc|psychoéduc/i.test(name)) ? ["OPPÉDQ"] : []),
@@ -1766,9 +1765,15 @@ export function ProProfileEditorDialog({
             />
           </div>
 
-            {needsTradeLicense && (
-              <div className="space-y-2 rounded-lg border border-amber-500/40 p-3">
-                <Label htmlFor="credential-authority">{locale === "fr" ? "Ordre ou organisme de délivrance" : "Issuing regulator or order"}</Label>
+            <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
+                <div>
+                  <Label htmlFor="credential-authority">{locale === "fr" ? "Ordre ou organisme de délivrance" : "Issuing regulator or order"}</Label>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {locale === "fr"
+                      ? "Choisissez l’ordre ou l’organisme lié à vos services. La vérification en ligne est offerte pour la RBQ; les autres preuves sont examinées manuellement."
+                      : "Choose the order or regulator related to your services. Online verification is available for RBQ; other credentials are reviewed manually."}
+                  </p>
+                </div>
                 <select id="credential-authority" value={credentialAuthority} onChange={(event) => setCredentialAuthority(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground">
                   <option value="">{locale === "fr" ? "Choisir l’ordre ou l’organisme" : "Choose an order or regulator"}</option>
                   {credentialAuthorityOptions.map((authority) => <option key={authority} value={authority}>{authority}</option>)}
@@ -1813,8 +1818,7 @@ export function ProProfileEditorDialog({
                 ) : (
                   <p className="text-xs text-muted-foreground">{locale === "fr" ? "Cette preuve sera examinée manuellement. Les registres des ordres ne proposent pas tous une API publique de validation." : "This credential will be reviewed manually. Professional orders do not all provide a public verification API."}</p>
                 )}
-              </div>
-            )}
+            </div>
 
           <div className="space-y-2">
             <Label>{t.createPro.insurance}</Label>
