@@ -135,7 +135,7 @@ export default function ProClientHistoryPanel({ proProfileId, lang, clients, loa
         <h3 className="font-heading font-bold text-foreground flex items-center gap-2">
           <Users className="size-4" aria-hidden /> {c.title}
         </h3>
-        <p className="text-sm text-muted-foreground mt-1">{c.intro}</p>
+        {c.intro ? <p className="text-sm text-muted-foreground mt-1">{c.intro}</p> : null}
       </div>
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -192,7 +192,7 @@ export const GROWTH_COPY = {
     },
     crm: {
       title: "Historique clients",
-      intro: "Tous les clients qui vous ont réservé : travaux passés, totaux, dernière visite et vos notes privées. Les clients ne voient jamais vos notes.",
+      intro: "",
       empty: "Aucun client pour l’instant. Les clients apparaissent ici après leur première réservation.",
       search: "Rechercher un client",
       bookings: "Réservations",
@@ -224,7 +224,7 @@ export const GROWTH_COPY = {
     },
     reminders: {
       title: "Rappels aux clients récurrents",
-      intro: "AltShift envoie à chaque ancien client un rappel « Réserver à nouveau » au bon moment, avec un lien pour réserver en un clic.",
+      intro: "",
       enable: "Envoyer des rappels de nouvelle réservation",
       after: "Rappeler les clients après",
       weeks: "semaines",
