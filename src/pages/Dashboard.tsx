@@ -4373,9 +4373,9 @@ export default function Dashboard() {
           </div>
         </aside>
       )}
-      <div className="w-full max-w-[min(96vw,1600px)] container mx-auto">
+      <div className="mx-auto w-full min-w-0 max-w-[1600px]">
         {proProfile?.id ? (
-          <div className="relative mx-auto w-full max-w-[min(96vw,1600px)] md:h-0">
+          <div className="relative mx-auto w-full min-w-0 max-w-[1600px] md:h-0">
             <div className="mb-3 md:absolute md:right-0 md:top-0 md:z-10 md:mb-0 md:max-w-[24rem]">
               <BookingCreditsPanel proProfileId={proProfile.id} />
             </div>
@@ -4435,7 +4435,7 @@ export default function Dashboard() {
         )}
 
         <Tabs value={shellTab} onValueChange={setDashboardTab} className="relative z-0 w-full">
-          <div className="relative z-0 mb-6 w-full max-w-[min(96vw,1600px)] mx-auto px-1 sm:px-0">
+          <div className="relative z-0 mb-6 mx-auto w-full min-w-0 max-w-[1600px] px-1 sm:px-0">
             {dashboardDockReady ? (
               <Dock items={dashboardDockItems} />
             ) : (
