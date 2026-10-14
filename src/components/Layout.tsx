@@ -234,7 +234,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full min-w-0 max-w-none flex-col m-0 p-0">
-      {!isProProfilePage && !isProProfileSetupPage && (
+      {!isProProfilePage && (
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled ? "site-header--compact" : ""
@@ -392,7 +392,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <main
         className={`flex-1 min-h-screen w-full max-w-full min-w-0 bg-gradient-page m-0 p-0 ${
-          isProProfilePage || isProProfileSetupPage || isHome
+          isProProfilePage || isHome
             ? "pt-0"
             : "pt-[calc(4.25rem+env(safe-area-inset-top,0px))]"
         }`}
