@@ -59,7 +59,7 @@ export default function Auth() {
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
-  /** Login form: Member ID or username (never email). */
+  /** Login form accepts Member ID, username, or email. */
   const [identifier, setIdentifier] = useState("");
   const [username, setUsername] = useState("");
   const [usernameTouched, setUsernameTouched] = useState(false);
@@ -567,9 +567,7 @@ export default function Auth() {
                 <CardTitle className="text-center pt-2 font-heading text-2xl">
                   {mode === "login" ? t.auth.welcomeBack : t.auth.createAccount}
                 </CardTitle>
-                <CardDescription className="text-center">
-                  {mode === "login" ? t.auth.loginSubtitle : t.auth.signupSubtitle}
-                </CardDescription>
+                {mode === "signup" ? <CardDescription className="text-center">{t.auth.signupSubtitle}</CardDescription> : null}
                 {mode === "signup" ? (
                   <div className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-center text-sm space-y-2">
                     {referralCode ? (
@@ -618,16 +616,16 @@ export default function Auth() {
             )}
             {t.auth.continueWithGoogle}
           </Button>
-          <div className="relative py-1">
+          {mode === "signup" ? <div className="relative py-1">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase tracking-wide">
               <span className="bg-card px-2 text-muted-foreground">
-                {mode === "login" ? t.auth.orLogInWithMemberId : t.auth.orSignUpWithEmail}
+                {t.auth.orSignUpWithEmail}
               </span>
             </div>
-          </div>
+          </div> : null}
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "signup" && (
               <>
@@ -676,9 +674,7 @@ export default function Auth() {
                     }}
                     aria-invalid={usernameTouched && !!username && !isValidUsername(username)}
                   />
-                  <p className={`text-xs ${usernameTouched && username && !isValidUsername(username) ? "text-destructive" : "text-muted-foreground"}`}>
-                    {usernameTouched && username && !isValidUsername(username) ? t.auth.usernameInvalid : t.auth.usernameHint}
-                  </p>
+                  {usernameTouched && username && !isValidUsername(username) ? <p className="text-xs text-destructive">{t.auth.usernameInvalid}</p> : null}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-phone" className="text-foreground dark:text-white">{t.auth.phone} *</Label>
@@ -735,7 +731,7 @@ export default function Auth() {
                   autoComplete="username"
                   autoCapitalize="none"
                   spellCheck={false}
-                  maxLength={64}
+                  maxLength={254}
                   placeholder={t.auth.emailOrNamePlaceholder}
                   className="mt-1.5 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-white/60 bg-background dark:bg-card"
                   value={identifier}
@@ -743,16 +739,9 @@ export default function Auth() {
                     setIdentifier(e.target.value);
                     setLoginHint(null);
                   }}
-                  aria-describedby="loginIdentifierHint"
                   required
                 />
-                <p
-                  id="loginIdentifierHint"
-                  role={loginHint ? "alert" : undefined}
-                  className={`text-xs ${loginHint ? "text-destructive font-medium" : "text-muted-foreground"}`}
-                >
-                  {loginHint ?? t.auth.loginIdentifierHint}
-                </p>
+                {loginHint ? <p role="alert" className="text-xs font-medium text-destructive">{loginHint}</p> : null}
               </div>
             )}
             <div className="space-y-2">

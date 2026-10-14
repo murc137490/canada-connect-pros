@@ -5,8 +5,9 @@ import { getPublicSiteOrigin, getOAuthRedirectOrigin } from "@/lib/authSiteUrl";
 import { stashOAuthRedirect } from "@/lib/oauthRedirect";
 import {
   classifyLoginIdentifier,
+  LOGIN_EMAIL_NOT_CONFIRMED,
   LOGIN_INVALID_CREDENTIALS,
-  LOGIN_INVALID_TRY_MEMBER_ID,
+  LOGIN_TOO_MANY_ATTEMPTS,
   requestIdentifierSession,
   type LoginIdentifierKind,
 } from "@/lib/loginIdentifier";
@@ -123,8 +124,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (identifier: string, password: string) => {
     const parsed = classifyLoginIdentifier(identifier);
     if (!parsed) {
-      // Same generic outcome as a wrong password; emails are not accepted here.
-      throw new Error(identifier.trim().includes("@") ? LOGIN_INVALID_TRY_MEMBER_ID : LOGIN_INVALID_CREDENTIALS);
+      throw new Error(LOGIN_INVALID_CREDENTIALS);
+    }
+    if (parsed.kind === "email") {
+      const { error } = await supabase.auth.signInWithPassword({ email: parsed.value, password });
+      if (error) {
+        const message = error.message.toLowerCase();
+        if (message.includes("email not confirmed")) throw new Error(LOGIN_EMAIL_NOT_CONFIRMED);
+        if (message.includes("rate limit") || message.includes("too many requests")) throw new Error(LOGIN_TOO_MANY_ATTEMPTS);
+        throw new Error(LOGIN_INVALID_CREDENTIALS);
+      }
+      return parsed;
     }
     const tokens = await requestIdentifierSession(parsed.value, password);
     const { error } = await supabase.auth.setSession({

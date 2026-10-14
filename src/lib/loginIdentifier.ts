@@ -3,7 +3,7 @@
  * The edge function resolves the account server-side and only returns a session.
  */
 
-export type LoginIdentifierKind = "member_id" | "username";
+export type LoginIdentifierKind = "member_id" | "username" | "email";
 
 export const LOGIN_INVALID_CREDENTIALS = "LOGIN_INVALID_CREDENTIALS";
 export const LOGIN_INVALID_TRY_MEMBER_ID = "LOGIN_INVALID_TRY_MEMBER_ID";
@@ -16,7 +16,11 @@ const USERNAME_RE = /^[a-z][a-z0-9._-]{2,29}$/;
 /** Mirrors the server: "#1234" / "12 34" → member ID, "@Jane.Doe" → username. */
 export function classifyLoginIdentifier(raw: string): { kind: LoginIdentifierKind; value: string } | null {
   const trimmed = raw.trim();
-  if (!trimmed || trimmed.length > 64 || (trimmed.includes("@") && !trimmed.startsWith("@"))) return null;
+  if (!trimmed || trimmed.length > 254) return null;
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    return { kind: "email", value: trimmed.toLowerCase() };
+  }
+  if (trimmed.includes("@") && !trimmed.startsWith("@")) return null;
   const digits = trimmed.replace(/[\s#-]/g, "");
   if (/^\d+$/.test(digits)) return /^\d{4,5}$/.test(digits) ? { kind: "member_id", value: digits } : null;
   const username = trimmed.replace(/^@/, "").toLowerCase();
