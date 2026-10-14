@@ -406,7 +406,7 @@ function ElasticRadiusSlider({ value, onChange, locale }: { value: number; onCha
 
   return (
     <div className="flex items-center gap-3 rounded-lg px-2 py-1.5">
-      <MapPin className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+      <MapPin className="size-4 shrink-0 text-slate-600" aria-hidden />
       <motion.div className="min-w-0 flex-1" style={{ scaleX: stretch }}>
         <input
           aria-label={fr ? "Rayon de service en kilomètres" : "Service radius in kilometres"}
@@ -422,7 +422,7 @@ function ElasticRadiusSlider({ value, onChange, locale }: { value: number; onCha
           className="h-2 w-full cursor-pointer accent-primary"
         />
       </motion.div>
-      <span className="w-14 shrink-0 text-right text-sm font-medium tabular-nums text-foreground">{value} km</span>
+      <span className="w-16 shrink-0 whitespace-nowrap text-right text-sm font-semibold tabular-nums text-slate-900">{value} km</span>
     </div>
   );
 }

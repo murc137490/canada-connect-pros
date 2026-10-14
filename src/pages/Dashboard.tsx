@@ -4234,9 +4234,9 @@ export default function Dashboard() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="min-h-screen bg-gradient-page dark:text-white flex flex-col items-center w-full">
+      <div className="min-h-screen min-w-0 w-full bg-gradient-page dark:text-white flex flex-col items-center">
       <div
-        className={`relative w-full py-8 md:py-12 px-4 md:px-6 ${showAdminAside || (showReferralFriendAside && shellTab === "account") || (proProfile?.is_verified && !isAdminDashboardShell) ? "2xl:pl-80" : ""} ${proProfile?.is_verified && !isAdminDashboardShell ? "2xl:pr-80" : ""}`}
+        className={`relative min-w-0 w-full py-6 px-1 sm:px-4 md:py-12 md:px-6 ${showAdminAside || (showReferralFriendAside && shellTab === "account") || (proProfile?.is_verified && !isAdminDashboardShell) ? "2xl:pl-80" : ""} ${proProfile?.is_verified && !isAdminDashboardShell ? "2xl:pr-80" : ""}`}
       >
       {showAdminAside && (
         <aside className="hidden lg:block fixed left-4 top-24 z-30 w-80 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border border-amber-500/30 bg-card p-4 shadow-sm">
@@ -4447,7 +4447,7 @@ export default function Dashboard() {
           </div>
 
           {!isAdminDashboardShell && proProfile?.is_verified && (
-            <TabsContent forceMount value="pro" className="mx-auto w-full max-w-[1480px] space-y-4">
+            <TabsContent forceMount value="pro" className="mx-auto min-w-0 w-full max-w-[1480px] space-y-4">
               {proProfileLoading ? (
                 <BootLoadingScreen fullScreen={false} label={t.common?.loading ?? "Loading"} />
               ) : (
@@ -5433,7 +5433,7 @@ export default function Dashboard() {
             bookingStatusCode={claimBooking?.statusCode ?? null}
           />
 
-          <TabsContent forceMount value="account" className="mx-auto w-full max-w-[1480px] space-y-6 2xl:grid 2xl:grid-cols-12 2xl:items-start 2xl:gap-4 2xl:space-y-0">
+          <TabsContent forceMount value="account" className="mx-auto min-w-0 w-full max-w-[1480px] space-y-6 2xl:grid 2xl:grid-cols-12 2xl:items-start 2xl:gap-4 2xl:space-y-0">
             <div className="contents">
               <aside className="flex flex-col gap-4 2xl:col-start-1 2xl:col-span-3 2xl:row-span-2 2xl:self-stretch">
                 <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-6 text-center">
@@ -6007,7 +6007,7 @@ export default function Dashboard() {
 
           {!isAdminDashboardShell ? (
           <>
-          <TabsContent forceMount value="bookings" className="mx-auto w-full max-w-[1480px] space-y-4">
+          <TabsContent forceMount value="bookings" className="mx-auto min-w-0 w-full max-w-[1480px] space-y-4">
             {proProfile?.is_verified && proViewingMyRequests ? (
               <div className="rounded-xl border bg-card p-4 sm:p-6 md:p-8">
                 <div data-tour="booking-requests" className="rounded-xl">
@@ -6670,7 +6670,7 @@ export default function Dashboard() {
             )}
           </TabsContent>
 
-          <TabsContent forceMount value="favorites" className="mx-auto w-full max-w-[1480px] space-y-4">
+          <TabsContent forceMount value="favorites" className="mx-auto min-w-0 w-full max-w-[1480px] space-y-4">
             {savedProsLoading ? (
               <div className="flex justify-center py-12" data-tour="favorites-panel">
                 <Loader2 className="animate-spin text-muted-foreground" size={32} />
@@ -6723,7 +6723,7 @@ export default function Dashboard() {
             )}
           </TabsContent>
 
-          <TabsContent forceMount value="reviews" className="mx-auto w-full max-w-[1480px] space-y-4">
+          <TabsContent forceMount value="reviews" className="mx-auto min-w-0 w-full max-w-[1480px] space-y-4">
             <div data-tour="reviews-panel">
               <DashboardReviewsPanel
                 proProfileId={showProReviewSection ? proProfile?.id ?? null : null}
@@ -6739,7 +6739,7 @@ export default function Dashboard() {
             ) : null}
           </TabsContent>
 
-          <TabsContent forceMount value="invoices" className="mx-auto w-full max-w-[1480px] space-y-4">
+          <TabsContent forceMount value="invoices" className="mx-auto min-w-0 w-full max-w-[1480px] space-y-4">
             {(() => {
               const invoiceRows = [
                 ...clientBookings.filter((b) => b.status !== "declined"),
