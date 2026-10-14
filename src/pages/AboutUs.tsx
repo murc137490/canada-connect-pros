@@ -4,10 +4,26 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Handshake, Home, Sparkles } from "lucide-react";
 import ShapeGridBackground from "@/components/ShapeGridBackground";
+import AnimatedCounter from "@/components/AnimatedCounter";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 
 export default function AboutUs() {
   const { t } = useLanguage();
   const a = t.about;
+  const [counts, setCounts] = useState<{ users: number; professionals: number } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const loadCounts = async () => {
+      const { data, error } = await supabase.functions.invoke<{ users: number; professionals: number }>("public-member-count");
+      if (!active || error || !data || !Number.isFinite(data.users) || !Number.isFinite(data.professionals)) return;
+      setCounts({ users: data.users, professionals: data.professionals });
+    };
+    void loadCounts();
+    return () => { active = false; };
+  }, []);
+
   return (
     <Layout>
       <div className="relative isolate min-h-screen overflow-hidden">
@@ -25,6 +41,21 @@ export default function AboutUs() {
             </p>
           </div>
         </section>
+
+        {counts && (
+          <section className="container relative z-10 max-w-3xl px-4 md:px-6 pb-4" aria-label={a.communityTitle}>
+            <div className="grid grid-cols-2 gap-6 sm:gap-10 max-w-xl">
+              <div>
+                <AnimatedCounter value={counts.professionals} className="text-foreground text-4xl sm:text-5xl" />
+                <p className="mt-2 text-sm sm:text-base font-medium text-muted-foreground">{a.professionalsCountLabel}</p>
+              </div>
+              <div>
+                <AnimatedCounter value={counts.users} className="text-foreground text-4xl sm:text-5xl" />
+                <p className="mt-2 text-sm sm:text-base font-medium text-muted-foreground">{a.usersCountLabel}</p>
+              </div>
+            </div>
+          </section>
+        )}
 
         <div className="container relative z-10 px-4 md:px-6 py-12 md:py-16 max-w-3xl space-y-14 md:space-y-16">
           <section className="space-y-3">
