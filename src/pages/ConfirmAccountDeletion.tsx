@@ -37,8 +37,18 @@ export default function ConfirmAccountDeletion() {
         if (cancelled) return;
 
         if (error || !data?.ok) {
+          let details = data?.error || null;
+          const context = (error as { context?: unknown } | null)?.context;
+          if (!details && context instanceof Response) {
+            try {
+              const payload = await context.clone().json() as { error?: string };
+              details = payload.error || null;
+            } catch {
+              // Keep the user-facing fallback when the function response is not JSON.
+            }
+          }
           setErrorMessage(
-            data?.error ||
+            details ||
               error?.message ||
               (locale === "fr"
                 ? "Le jeton de confirmation est invalide ou a expiré."
@@ -75,12 +85,6 @@ export default function ConfirmAccountDeletion() {
   return (
     <div className="min-h-screen bg-background flex flex-col justify-center items-center px-4 py-12">
       <div className="max-w-md w-full bg-card border border-border rounded-2xl shadow-xl p-8 text-center space-y-6">
-        <div className="flex justify-center">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary text-xl">
-            P
-          </div>
-        </div>
-
         {loading ? (
           <div className="space-y-4">
             <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto" />

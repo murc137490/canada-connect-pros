@@ -9,8 +9,8 @@
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { brandAddress, brandFrom, BRAND_FROM_NAME } from "../_shared/brandSender.ts";
-import { withCorsAllowlist } from "../_shared/cors.ts";
+import { brandAddress, brandFrom, BRAND_FROM_NAME } from "./_shared/brandSender.ts";
+import { withCorsAllowlist } from "./_shared/cors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -179,6 +179,14 @@ Deno.serve(withCorsAllowlist(async (req) => {
       return json({ error: "This account has already been processed for deletion" }, 400);
     }
 
+    if (requestRow.status === "confirmed" && requestRow.scheduled_delete_at) {
+      return json({
+        ok: true,
+        message: "Account deletion was already confirmed.",
+        scheduled_delete_at: requestRow.scheduled_delete_at,
+      });
+    }
+
     const scheduledDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const scheduledIso = scheduledDate.toISOString();
 
@@ -266,15 +274,20 @@ Deno.serve(withCorsAllowlist(async (req) => {
     const scheduledIso = scheduledDate.toISOString();
 
     // Check for existing pending request
-    const { data: existing } = await adminClient
+    const { data: existing, error: existingError } = await adminClient
       .from("account_deletion_requests")
       .select("id")
       .eq("user_id", user.id)
       .in("status", ["pending_confirmation", "pending", "confirmed"])
       .maybeSingle();
 
+    if (existingError) {
+      console.error("Failed to inspect existing deletion request:", existingError);
+      return json({ error: "Could not prepare the deletion request. Please try again." }, 500);
+    }
+
     if (existing?.id) {
-      await adminClient
+      const { error: updateError } = await adminClient
         .from("account_deletion_requests")
         .update({
           status: "pending_confirmation",
@@ -284,8 +297,12 @@ Deno.serve(withCorsAllowlist(async (req) => {
           reason: String(body.reason || "user_dashboard_request"),
         })
         .eq("id", existing.id);
+      if (updateError) {
+        console.error("Failed to update deletion request:", updateError);
+        return json({ error: "Could not save the deletion request. Please try again." }, 500);
+      }
     } else {
-      await adminClient.from("account_deletion_requests").insert({
+      const { error: insertError } = await adminClient.from("account_deletion_requests").insert({
         user_id: user.id,
         status: "pending_confirmation",
         confirmation_token: token,
@@ -295,6 +312,10 @@ Deno.serve(withCorsAllowlist(async (req) => {
         retain_financial: true,
         retain_audit: true,
       });
+      if (insertError) {
+        console.error("Failed to create deletion request:", insertError);
+        return json({ error: "Could not save the deletion request. Please try again." }, 500);
+      }
     }
 
     const confirmUrl = `${SITE_URL}/confirm-deletion?token=${token}`;
