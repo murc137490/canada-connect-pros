@@ -114,28 +114,37 @@ export default function Auth() {
   useEffect(() => {
     if (authLoading || !user || loading || adminVerifyUser || signupDetails) return;
 
-    const isStaffAdmin =
-      (isPlatformAdminEmail(user.email) || canUsePlatformAdminTools(user.email, true)) &&
-      !isSuperAdminEmail(user.email);
+    let cancelled = false;
+    void (async () => {
+      const isSuperAdmin = isSuperAdminEmail(user.email);
+      const isAllowlistedAdmin = isPlatformAdminEmail(user.email);
+      let isProfileAdmin = false;
+      let memberId = "";
 
-    if (isStaffAdmin && !isUserSessionAdminVerified(user.id)) {
-      void (async () => {
-        const { data: prof } = await supabase
+      if (!isSuperAdmin) {
+        const { data: profile } = await supabase
           .from("profiles")
-          .select("public_user_number")
+          .select("is_platform_admin, public_user_number")
           .eq("user_id", user.id)
           .maybeSingle();
-        setAdminVerifyUser({
-          userId: user.id,
-          expected: String(prof?.public_user_number ?? "").trim(),
-        });
-      })();
-      return;
-    }
+        if (cancelled) return;
+        isProfileAdmin = profile?.is_platform_admin === true;
+        memberId = String(profile?.public_user_number ?? "").trim();
+      }
 
-    const adminDest =
-      isPlatformAdminEmail(user.email) || isSuperAdminEmail(user.email) ? ADMIN_DASHBOARD_PATH : null;
-    navigate(adminDest ?? redirect, { replace: true });
+      const isStaffAdmin = !isSuperAdmin && (isAllowlistedAdmin || isProfileAdmin);
+      if (isStaffAdmin && !isUserSessionAdminVerified(user.id)) {
+        setAdminVerifyUser({ userId: user.id, expected: memberId });
+        return;
+      }
+
+      const adminDest = isSuperAdmin || isStaffAdmin ? ADMIN_DASHBOARD_PATH : null;
+      navigate(adminDest ?? redirect, { replace: true });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [authLoading, user, redirect, navigate, loading, adminVerifyUser, signupDetails]);
 
   const buildAuthPath = useCallback(
