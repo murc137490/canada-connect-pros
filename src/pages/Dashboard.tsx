@@ -4278,7 +4278,7 @@ export default function Dashboard() {
       )}
       {showReferralFriendAside && (
         <aside
-          className={`${shellTab === "account" ? "block" : "hidden"} mx-auto mb-6 w-full max-w-md rounded-xl border border-primary/20 bg-card p-4 shadow-sm 2xl:fixed 2xl:left-4 2xl:top-24 2xl:z-30 2xl:mb-0 2xl:block 2xl:w-80 2xl:max-h-[calc(100vh-8rem)] 2xl:overflow-y-auto`}
+          className={`${shellTab === "account" ? "hidden 2xl:block" : "hidden"} mx-auto mb-6 w-full max-w-md rounded-xl border border-primary/20 bg-card p-4 shadow-sm 2xl:fixed 2xl:left-4 2xl:top-24 2xl:z-30 2xl:mb-0 2xl:w-80 2xl:max-h-[calc(100vh-8rem)] 2xl:overflow-y-auto`}
         >
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 via-background to-orange-500/10 p-4 pr-10">
             <button
@@ -4417,6 +4417,52 @@ export default function Dashboard() {
                 {t.footer.dashboardGuide ?? (locale === "fr" ? "Guide du tableau de bord" : "Dashboard guide")}
               </Link>
             </Button>
+            <div className="2xl:hidden">
+              <WhatsNewMenu
+                items={whatsNewItems}
+                extraContent={showReferralFriendAside && shellTab === "account" ? (
+                  <div className="rounded-xl bg-gradient-to-br from-primary/10 via-background to-orange-500/10 p-3">
+                    <div className="flex items-start gap-2.5">
+                      <div className="rounded-xl bg-primary/10 p-2 text-primary"><Gift size={18} /></div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-heading font-bold text-sm text-foreground">{locale === "fr" ? "Invitez un ami" : "Invite a friend"}</h3>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t.dashboard.referralBlurb}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 rounded-lg border border-dashed border-primary/35 bg-background/70 p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        {unlockedReferral ? t.dashboard.referralCouponUnlocked : t.dashboard.referralCouponHidden}
+                      </p>
+                      <p className="mt-1 break-all font-mono text-sm font-semibold text-foreground">
+                        {unlockedReferral ? unlockedReferral.reward_code?.trim() || EM_DASH : HIDDEN_COUPON_MASK}
+                      </p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {unlockedReferral ? t.dashboard.referralUnlockedStaysVisible : t.dashboard.referralCodeStaysHidden}
+                      </p>
+                    </div>
+                    <form className="mt-3 space-y-2" onSubmit={(event) => { event.preventDefault(); void handleSendReferralInvite(); }}>
+                      <Input
+                        type="email"
+                        value={referralEmail}
+                        onChange={(event) => setReferralEmail(event.target.value)}
+                        placeholder={locale === "fr" ? "ami@exemple.ca" : "friend@example.ca"}
+                        className="bg-background"
+                      />
+                      <Button type="submit" disabled={referralLoading} className="w-full gap-2">
+                        {referralLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                        {locale === "fr" ? "Envoyer" : "Send"}
+                      </Button>
+                    </form>
+                    {unlockedReferral ? (
+                      <Button type="button" onClick={handleClaimReferralReward} disabled={referralClaiming} className="mt-2 w-full gap-2">
+                        {referralClaiming ? <Loader2 size={16} className="animate-spin" /> : <Gift size={16} />}
+                        {t.dashboard.adminApplyGrowthDays ?? "Apply 14 Growth days"}
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : undefined}
+              />
+            </div>
           </div>
         ) : (
           <div className="mb-6 md:mb-8" />

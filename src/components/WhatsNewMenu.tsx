@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ type Props = {
   items: WhatsNewItem[];
   variant?: "desktop" | "mobileMenu";
   className?: string;
+  extraContent?: ReactNode;
 };
 
 function markAllFeedItemsRead(items: WhatsNewItem[]) {
@@ -40,7 +41,7 @@ function markAllFeedItemsRead(items: WhatsNewItem[]) {
     });
 }
 
-export default function WhatsNewMenu({ items, variant = "desktop", className }: Props) {
+export default function WhatsNewMenu({ items, variant = "desktop", className, extraContent }: Props) {
   const { t, locale } = useLanguage();
   const { refresh } = useWhatsNew();
   const { isPlatformAdmin, ready: adminReady } = usePlatformAdmin();
@@ -154,6 +155,7 @@ export default function WhatsNewMenu({ items, variant = "desktop", className }: 
             })}
           </ul>
         )}
+        {extraContent ? <div className="mt-2 border-t border-border pt-3">{extraContent}</div> : null}
       </div>
       {showAdminPanel ? <WhatsNewAdminPanel onChanged={() => void refresh()} /> : null}
     </DropdownMenuContent>
