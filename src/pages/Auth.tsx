@@ -453,7 +453,7 @@ export default function Auth() {
                       <KeyRound size={24} />
                     </div>
                     <CardTitle className="font-heading text-2xl font-bold">{t.auth.signupDetailsTitle}</CardTitle>
-                    <CardDescription>{t.auth.signupDetailsBody}</CardDescription>
+                    {t.auth.signupDetailsBody ? <CardDescription>{t.auth.signupDetailsBody}</CardDescription> : null}
                   </CardHeader>
                   <CardContent className="space-y-3 pt-2">
                     <dl className="rounded-lg border border-border bg-muted/30 divide-y divide-border">
