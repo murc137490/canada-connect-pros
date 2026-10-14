@@ -12,6 +12,7 @@ type ModerationNotice = {
   rules_reminder: string | null;
   created_at: string;
 };
+type ProApplicationNotice = { id: string; decision: "approved" | "needs_info"; review_note: string | null; created_at: string };
 
 export function useWhatsNewItems(opts: {
   clientBookings: BookingRow[];
@@ -19,6 +20,7 @@ export function useWhatsNewItems(opts: {
   pendingReviewNotices: ReviewPending[];
   platformAnnouncements: BroadcastRow[];
   jobModerationNotices: ModerationNotice[];
+  proApplicationNotices: ProApplicationNotice[];
   isVerifiedPro: boolean;
   isPlatformAdmin?: boolean;
 }) {
@@ -29,6 +31,7 @@ export function useWhatsNewItems(opts: {
     pendingReviewNotices,
     platformAnnouncements,
     jobModerationNotices,
+    proApplicationNotices,
     isVerifiedPro,
     isPlatformAdmin,
   } = opts;
@@ -91,6 +94,23 @@ export function useWhatsNewItems(opts: {
       });
     }
 
+    for (const n of proApplicationNotices) {
+      const approved = n.decision === "approved";
+      const note = n.review_note?.trim() || (t.dashboard.whatsNewProNeedsInfoFallback ?? "Please review your application details.");
+      items.push({
+        id: `pro-application-${n.id}`,
+        kind: "application",
+        title: approved
+          ? (t.dashboard.whatsNewProApprovedTitle ?? "Your pro application was approved")
+          : (t.dashboard.whatsNewProNeedsInfoTitle ?? "More information is needed for your pro application"),
+        body: approved
+          ? (t.dashboard.whatsNewProApprovedBody ?? "You are now a pro on AltShift.")
+          : (t.dashboard.whatsNewProNeedsInfoBody ?? "Please update your application: {{note}}").replace("{{note}}", note),
+        href: approved ? "/dashboard?tab=pro" : "/create-pro-account",
+        createdAt: n.created_at,
+      });
+    }
+
     if (!isPlatformAdmin) {
       items.push({
         id: "platform-welcome",
@@ -109,6 +129,7 @@ export function useWhatsNewItems(opts: {
     pendingReviewNotices,
     platformAnnouncements,
     jobModerationNotices,
+    proApplicationNotices,
     isVerifiedPro,
     isPlatformAdmin,
     t.dashboard.whatsNewBookingClient,
@@ -116,5 +137,10 @@ export function useWhatsNewItems(opts: {
     t.dashboard.whatsNewBookingPro,
     t.dashboard.whatsNewPlatformTitle,
     t.dashboard.whatsNewPlatformBody,
+    t.dashboard.whatsNewProApprovedTitle,
+    t.dashboard.whatsNewProApprovedBody,
+    t.dashboard.whatsNewProNeedsInfoTitle,
+    t.dashboard.whatsNewProNeedsInfoBody,
+    t.dashboard.whatsNewProNeedsInfoFallback,
   ]);
 }

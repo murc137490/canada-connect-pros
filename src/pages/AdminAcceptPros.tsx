@@ -30,6 +30,9 @@ export default function AdminAcceptPros() {
   const [publicNumberByUserId, setPublicNumberByUserId] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  const [requestInfoId, setRequestInfoId] = useState<string | null>(null);
+  const [requestInfoMessage, setRequestInfoMessage] = useState("");
+  const [sendingInfo, setSendingInfo] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -96,6 +99,9 @@ export default function AdminAcceptPros() {
           locale === "fr"
             ? "Pro accepté. Il apparaît maintenant dans la recherche."
             : "Pro accepted. They now appear in search.",
+        description: data.email_sent ? undefined : (locale === "fr"
+          ? "L’avis est enregistré dans Nouveautés, mais le courriel n’a pas pu être envoyé. Vérifiez la configuration de Resend."
+          : "The notice is in What’s New, but email could not be sent. Check the Resend configuration."),
       });
       setPending((prev) => prev.filter((p) => p.user_id !== proUserId));
     } catch (e) {
@@ -106,6 +112,30 @@ export default function AdminAcceptPros() {
       });
     } finally {
       setAcceptingId(null);
+    }
+  };
+
+  const handleRequestInfo = async (proUserId: string) => {
+    if (!session?.access_token || !SUPABASE_URL || requestInfoMessage.trim().length < 3) return;
+    setSendingInfo(true);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/request-pro-info`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ pro_user_id: proUserId, message: requestInfoMessage.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      toast({
+        title: d.adminInfoRequestSent ?? "Information request sent",
+        description: data.email_sent ? undefined : (d.adminInfoRequestEmailPending ?? "The in-app notice was saved, but email could not be sent. Check the Resend configuration."),
+      });
+      setRequestInfoId(null);
+      setRequestInfoMessage("");
+    } catch (error) {
+      toast({ title: locale === "fr" ? "Échec de l’envoi" : "Could not send request", description: (error as Error).message, variant: "destructive" });
+    } finally {
+      setSendingInfo(false);
     }
   };
 
@@ -155,18 +185,29 @@ export default function AdminAcceptPros() {
                     </span>
                   </p>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => handleAccept(p.user_id)}
-                  disabled={acceptingId !== null}
-                  className="shrink-0"
-                >
-                  {acceptingId === p.user_id ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    d.approve ?? "Accept"
-                  )}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => handleAccept(p.user_id)} disabled={acceptingId !== null || sendingInfo} className="shrink-0">
+                    {acceptingId === p.user_id ? <Loader2 size={16} className="animate-spin" /> : (d.approve ?? "Accept")}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => { setRequestInfoId(requestInfoId === p.user_id ? null : p.user_id); setRequestInfoMessage(""); }} disabled={acceptingId !== null || sendingInfo}>
+                    {d.adminRequestProInfo ?? "Request more information"}
+                  </Button>
+                </div>
+                {requestInfoId === p.user_id && (
+                  <div className="basis-full space-y-2">
+                    <textarea
+                      value={requestInfoMessage}
+                      onChange={(event) => setRequestInfoMessage(event.target.value)}
+                      maxLength={2000}
+                      rows={3}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                      placeholder={d.adminInfoRequestPlaceholder ?? "List the missing details the applicant should provide"}
+                    />
+                    <Button size="sm" onClick={() => void handleRequestInfo(p.user_id)} disabled={sendingInfo || requestInfoMessage.trim().length < 3}>
+                      {sendingInfo ? <Loader2 size={16} className="animate-spin" /> : (d.adminSendInfoRequest ?? "Send request")}
+                    </Button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

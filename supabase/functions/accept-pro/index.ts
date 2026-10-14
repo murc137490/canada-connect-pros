@@ -10,6 +10,7 @@ const corsHeaders = {
 
 import { callerIsPlatformModerator } from "../_shared/platformAdmin.ts";
 import { withCorsAllowlist } from "../_shared/cors.ts";
+import { sendBrandEmail } from "../_shared/sendBrandEmail.ts";
 
 Deno.serve(withCorsAllowlist(async (req) => {
   if (req.method === "OPTIONS") {
@@ -70,6 +71,24 @@ Deno.serve(withCorsAllowlist(async (req) => {
       });
     }
 
+    const { data: profile, error: profileError } = await adminClient
+      .from("pro_profiles")
+      .select("business_name, is_verified")
+      .eq("user_id", proUserId)
+      .maybeSingle();
+    if (profileError || !profile) {
+      return new Response(JSON.stringify({ error: profileError?.message ?? "Application not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (profile.is_verified) {
+      return new Response(JSON.stringify({ error: "Application is already approved" }), {
+        status: 409,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { error } = await adminClient
       .from("pro_profiles")
       .update({
@@ -87,7 +106,23 @@ Deno.serve(withCorsAllowlist(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ ok: true }), {
+    const { error: noticeError } = await adminClient.from("pro_application_review_notices").insert({
+      user_id: proUserId,
+      decision: "approved",
+    });
+    if (noticeError) console.error("Could not save pro approval notice", noticeError.message);
+
+    let emailSent = false;
+    const { data: authUser } = await adminClient.auth.admin.getUserById(proUserId);
+    const toEmail = authUser.user?.email;
+    if (toEmail) {
+      const businessName = escapeHtml(profile.business_name ?? "AltShift");
+      const href = "https://www.altshift.ca/dashboard?tab=account";
+      const html = `<p>Good news, your professional application for <strong>${businessName}</strong> has been approved. You are now a pro on AltShift.</p><p>Bonne nouvelle, votre demande de compte professionnel pour <strong>${businessName}</strong> a été approuvée. Vous êtes maintenant pro sur AltShift.</p><p><a href="${href}">Open your account / Ouvrir votre compte</a></p>`;
+      emailSent = await sendBrandEmail(toEmail, "AltShift | Pro application approved / Demande pro approuvée", html);
+    }
+
+    return new Response(JSON.stringify({ ok: true, email_sent: emailSent, notice_saved: !noticeError }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -98,3 +133,8 @@ Deno.serve(withCorsAllowlist(async (req) => {
     });
   }
 }));
+
+function escapeHtml(value: string): string {
+  const entities: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+  return value.replace(/[&<>"']/g, (char) => entities[char] ?? char);
+}

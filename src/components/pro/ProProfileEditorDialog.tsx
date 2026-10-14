@@ -1749,7 +1749,7 @@ export function ProProfileEditorDialog({
                   secondaryColor={pageSecondaryColor}
                   accentColor={pageAccentColor}
                   backgroundColor={pageBackgroundColor}
-                  businessName={form.firstNameOrBusiness || "Your business"}
+                  businessName={form.firstNameOrBusiness || (locale === "fr" ? "Votre entreprise" : "Your business")}
                   fullName=""
                   ratingLabel="5.0"
                 />
@@ -1766,49 +1766,6 @@ export function ProProfileEditorDialog({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>{t.createPro.insurance}</Label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="insurance"
-                  checked={form.insurance}
-                  onChange={() => setForm((p) => ({ ...p, insurance: true }))}
-                />
-                {t.createPro.insuranceYes}
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="insurance"
-                  checked={!form.insurance}
-                  onChange={() => setForm((p) => ({ ...p, insurance: false }))}
-                />
-                {t.createPro.insuranceNo}
-              </label>
-            </div>
-            {form.insurance && (
-              <div className="space-y-2 rounded-lg border border-border p-3">
-                <p className="text-sm text-muted-foreground">
-                  {locale === "fr"
-                    ? "Téléversez votre certificat d’assurance (PDF ou photo). Il sera conservé de façon privée et soumis à une vérification humaine."
-                    : "Upload your certificate of insurance (PDF or photo). It is stored privately and submitted for human review."}
-                </p>
-                <input
-                  ref={insuranceDocumentInputRef}
-                  type="file"
-                  accept={ACCEPT_VERIFICATION_DOCS}
-                  className="hidden"
-                  onChange={(event) => setInsuranceDocumentFile(event.target.files?.[0] ?? null)}
-                />
-                <Button type="button" variant="outline" className="gap-2" onClick={() => insuranceDocumentInputRef.current?.click()}>
-                  <Upload size={16} />
-                  {insuranceDocumentFile?.name ?? (locale === "fr" ? "Ajouter le certificat" : "Add certificate")}
-                </Button>
-                <p className="text-xs text-muted-foreground">{locale === "fr" ? "Statut après l’envoi : À vérifier. Le téléversement ne signifie pas que l’assurance est vérifiée." : "Submission status: Needs review. Uploading does not mean insurance is verified."}</p>
-              </div>
-            )}
             {needsTradeLicense && (
               <div className="space-y-2 rounded-lg border border-amber-500/40 p-3">
                 <Label htmlFor="credential-authority">{locale === "fr" ? "Ordre ou organisme de délivrance" : "Issuing regulator or order"}</Label>
@@ -1858,6 +1815,51 @@ export function ProProfileEditorDialog({
                 )}
               </div>
             )}
+
+          <div className="space-y-2">
+            <Label>{t.createPro.insurance}</Label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="insurance"
+                  checked={form.insurance}
+                  onChange={() => setForm((p) => ({ ...p, insurance: true }))}
+                />
+                {t.createPro.insuranceYes}
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="insurance"
+                  checked={!form.insurance}
+                  onChange={() => setForm((p) => ({ ...p, insurance: false }))}
+                />
+                {t.createPro.insuranceNo}
+              </label>
+            </div>
+            {form.insurance && (
+              <div className="space-y-2 rounded-lg border border-border p-3">
+                <p className="text-sm text-muted-foreground">
+                  {locale === "fr"
+                    ? "Téléversez votre certificat d’assurance (PDF ou photo). Il sera conservé de façon privée et soumis à une vérification humaine."
+                    : "Upload your certificate of insurance (PDF or photo). It is stored privately and submitted for human review."}
+                </p>
+                <input
+                  ref={insuranceDocumentInputRef}
+                  type="file"
+                  accept={ACCEPT_VERIFICATION_DOCS}
+                  className="hidden"
+                  onChange={(event) => setInsuranceDocumentFile(event.target.files?.[0] ?? null)}
+                />
+                <Button type="button" variant="outline" className="gap-2" onClick={() => insuranceDocumentInputRef.current?.click()}>
+                  <Upload size={16} />
+                  {insuranceDocumentFile?.name ?? (locale === "fr" ? "Ajouter le certificat" : "Add certificate")}
+                </Button>
+                <p className="text-xs text-muted-foreground">{locale === "fr" ? "Statut après l’envoi : À vérifier. Le téléversement ne signifie pas que l’assurance est vérifiée." : "Submission status: Needs review. Uploading does not mean insurance is verified."}</p>
+              </div>
+            )}
+
           </div>
 
           <div className="space-y-2">

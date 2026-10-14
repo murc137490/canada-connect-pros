@@ -1610,6 +1610,30 @@ export type Database = {
         }
         Relationships: []
       }
+      pro_application_review_notices: {
+        Row: {
+          created_at: string
+          decision: string
+          id: string
+          review_note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          decision: string
+          id?: string
+          review_note?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          decision?: string
+          id?: string
+          review_note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       privacy_security_incidents: {
         Row: {
           containment: string | null

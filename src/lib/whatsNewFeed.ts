@@ -1,6 +1,6 @@
 export type WhatsNewItem = {
   id: string;
-  kind: "booking" | "review" | "platform" | "announcement" | "moderation";
+  kind: "booking" | "review" | "platform" | "announcement" | "moderation" | "application";
   title: string;
   body?: string;
   href: string;
@@ -91,7 +91,7 @@ export function aggregateWhatsNewItems(
 ): WhatsNewItem[] {
   const bookings = items.filter((i) => i.kind === "booking");
   const reviews = items.filter((i) => i.kind === "review");
-  const rest = items.filter((i) => i.kind === "platform" || i.kind === "announcement" || i.kind === "moderation");
+  const rest = items.filter((i) => i.kind === "platform" || i.kind === "announcement" || i.kind === "moderation" || i.kind === "application");
 
   const out: WhatsNewItem[] = [...rest];
 

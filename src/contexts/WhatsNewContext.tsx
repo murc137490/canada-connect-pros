@@ -36,6 +36,9 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
   const [jobModerationNotices, setJobModerationNotices] = useState<
     Awaited<ReturnType<typeof fetchJobRequestModerationNotices>>
   >([]);
+  const [proApplicationNotices, setProApplicationNotices] = useState<
+    { id: string; decision: "approved" | "needs_info"; review_note: string | null; created_at: string }[]
+  >([]);
 
   const refreshFeed = useCallback(async () => {
     if (!user?.id) {
@@ -45,9 +48,10 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
       setPendingReviewNotices([]);
       setPlatformAnnouncements([]);
       setJobModerationNotices([]);
+      setProApplicationNotices([]);
       return;
     }
-    const [clientRes, proRes, announcements, moderationNotices] = await Promise.all([
+    const [clientRes, proRes, announcements, moderationNotices, applicationRes] = await Promise.all([
       supabase
         .from("bookings")
         .select("id, created_at, client_unread")
@@ -57,10 +61,16 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
       supabase.from("pro_profiles").select("id, is_verified").eq("user_id", user.id).maybeSingle(),
       fetchActivePlatformWhatsNewAnnouncements(),
       fetchJobRequestModerationNotices(user.id),
+      supabase.from("pro_application_review_notices")
+        .select("id, decision, review_note, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10),
     ]);
     setClientBookings((clientRes.data ?? []) as typeof clientBookings);
     setPlatformAnnouncements(announcements);
     setJobModerationNotices(moderationNotices);
+    setProApplicationNotices((applicationRes.data ?? []) as typeof proApplicationNotices);
     const proId = proRes.data?.id;
     const verified = proRes.data?.is_verified === true;
     setIsVerifiedPro(verified);
@@ -134,6 +144,19 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
   }, [refreshFeed]);
 
   useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`pro-application-notices-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "pro_application_review_notices", filter: `user_id=eq.${user.id}` },
+        () => void refreshFeed(),
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [user?.id, refreshFeed]);
+
+  useEffect(() => {
     if (!user?.id || !isVerifiedPro) return;
     let cancelled = false;
     let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -163,6 +186,7 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
     pendingReviewNotices,
     platformAnnouncements,
     jobModerationNotices,
+    proApplicationNotices,
     isVerifiedPro,
     isPlatformAdmin,
   });

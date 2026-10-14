@@ -3,6 +3,7 @@ import { Star } from "lucide-react";
 import Iphone from "@/components/Iphone";
 import { cn } from "@/lib/utils";
 import { bestInkOn } from "@/lib/contrastOnHex";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export type TemplateId = "classic" | "soft" | "interactive";
 
@@ -68,6 +69,7 @@ export default function ProPagePhonePreview({
   withDeviceFrame = false,
   siteTheme = "light",
 }: ProPagePhonePreviewProps) {
+  const { t } = useLanguage();
   const paint = fullScreenPaint(template, primaryColor, secondaryColor, backgroundColor);
   const sheetDark = siteTheme === "dark";
   const isSoft = template === "soft";
@@ -102,7 +104,7 @@ export default function ProPagePhonePreview({
 
         {/* Hero (text only, paint shows through) */}
         <div className={cn("shrink-0 px-3 pb-4 pt-1 text-white", inkDark && "pro-featured-ink-dark")}>
-          <div className="mb-2 text-[8px] opacity-80">← Back</div>
+          <div className="mb-2 text-[8px] opacity-80">← {t.profile.back}</div>
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 shrink-0 rounded-full border-2 border-white/35 bg-white/18" />
             <div className="min-w-0 flex-1">
@@ -114,7 +116,7 @@ export default function ProPagePhonePreview({
               >
                 {businessName}
               </h1>
-              <p className="truncate text-[9px] text-white/85">{fullName || "Pro"}</p>
+              <p className="truncate text-[9px] text-white/85">{fullName || t.common.proFallback}</p>
             </div>
             <span className="flex shrink-0 items-center gap-0.5 text-[9px] text-white/90">
               <Star size={10} /> {ratingLabel}
@@ -126,7 +128,7 @@ export default function ProPagePhonePreview({
           className={cn("flex shrink-0 items-center justify-between border-t border-white/18 px-3 py-2", inkDark && "pro-featured-ink-dark")}
           style={{ backgroundColor: hexWithAlpha(calendarColor, 0.28) }}
         >
-          <span className="text-[8px] font-medium text-white/95">Availability</span>
+          <span className="text-[8px] font-medium text-white/95">{t.profile.availability}</span>
           <div className="flex gap-0.5">
             {[1, 2, 3, 4, 5, 6, 7].map((d) => (
               <div
@@ -145,12 +147,12 @@ export default function ProPagePhonePreview({
           )}
         >
           <section>
-            <h2 className="mb-1.5 font-heading text-xs font-bold">About</h2>
+            <h2 className="mb-1.5 font-heading text-xs font-bold">{t.profile.about}</h2>
             <div className="h-2 w-full rounded-full opacity-70" style={{ backgroundColor: secondaryColor || "#2C698C" }} />
             <div className="mt-1.5 h-1.5 w-4/5 rounded-full opacity-50" style={{ backgroundColor: accentColor || "#EABB1F" }} />
           </section>
           <section className="mt-3">
-            <h2 className="mb-1.5 font-heading text-xs font-bold">Services</h2>
+            <h2 className="mb-1.5 font-heading text-xs font-bold">{t.profile.services}</h2>
             <div className="flex gap-1.5">
               <div
                 className="h-8 flex-1 rounded-md border border-neutral-200/80 shadow-sm"
