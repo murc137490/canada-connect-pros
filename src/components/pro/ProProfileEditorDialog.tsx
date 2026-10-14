@@ -56,6 +56,7 @@ import { publicShareUrl, slugifyShareName } from "@/lib/proShareSlug";
 import AddressInput, { hasGoogleAddressAutocomplete } from "@/components/AddressInput";
 import { isQuebecAddress } from "@/lib/addressSuggestions";
 import BootLoadingScreen from "@/components/BootLoadingScreen";
+import Particles from "@/components/Particles";
 import { Loader2, Upload, X, Plus } from "lucide-react";
 import { activatePendingGrowthTrial } from "@/lib/trialCheckout";
 import { referralInvite } from "@/lib/referralInvite";
@@ -953,17 +954,39 @@ export function ProProfileEditorDialog({
         <ProfileEditorShell
           fullPage={fullPage}
           className={cn(
-            "flex flex-col gap-0 overflow-hidden p-0",
+            "relative isolate flex flex-col gap-0 p-0",
             fullPage
-              ? "mx-auto flex min-h-[100dvh] w-full max-w-[1600px] max-h-none rounded-none border-0 shadow-none"
-              : "sm:max-w-3xl w-[calc(100%-1.5rem)] max-h-[min(92vh,920px)] rounded-2xl sm:rounded-3xl border-border/40 shadow-2xl",
+              ? "mx-auto min-h-[100dvh] w-full max-w-[1600px] overflow-visible rounded-none border-0 shadow-none"
+              : "overflow-hidden sm:max-w-3xl w-[calc(100%-1.5rem)] max-h-[min(92vh,920px)] rounded-2xl sm:rounded-3xl border-border/40 shadow-2xl",
           )}
         >
-          <DialogHeader className="shrink-0 space-y-1.5 border-b border-border/50 bg-muted/20 px-5 py-5 sm:px-6 sm:py-6 text-left">
-            <DialogTitle className="font-heading text-xl sm:text-2xl font-bold tracking-tight">
+          <DialogHeader className="relative isolate shrink-0 space-y-1.5 overflow-hidden border-b border-border/50 bg-muted/20 px-5 py-5 text-left sm:px-6 sm:py-6">
+            {onboarding && (
+              <Particles
+                particleColors={["#60a5fa", "#34d399", "#ffffff"]}
+                particleCount={72}
+                particleSpread={8}
+                speed={0.08}
+                particleBaseSize={52}
+                sizeRandomness={0.8}
+                glow={0.28}
+                twinkle={0.25}
+                depthOfField={0}
+                connections={false}
+                moveParticlesOnHover
+                hoverEffect="parallax"
+                particleHoverFactor={0.35}
+                hoverRadius={120}
+                clickBurst={false}
+                intro
+                className="pointer-events-none absolute inset-0 opacity-45"
+                style={{ width: "100%", height: "100%", pointerEvents: "none" }}
+              />
+            )}
+            <DialogTitle className="relative z-10 font-heading text-xl font-bold tracking-tight sm:text-2xl">
               {isEditMode ? (t.joinPros.editProfile ?? "Edit Pro Profile") : t.createPro.title}
             </DialogTitle>
-            <DialogDescription className="text-sm leading-relaxed">
+            <DialogDescription className="relative z-10 text-sm leading-relaxed">
               {isEditMode
                 ? locale === "fr"
                   ? "Modifiez les informations soumises pour approbation, puis enregistrez."
@@ -983,7 +1006,9 @@ export function ProProfileEditorDialog({
             <>
               <div
                 className={cn(
-                  "min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 sm:py-6",
+                  fullPage
+                    ? "w-full px-5 py-5 sm:px-6 sm:py-6"
+                    : "min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 py-5 sm:px-6 sm:py-6",
                   "[&_section]:rounded-2xl [&_section]:border-border/50 [&_section]:shadow-sm",
                   "[&_.rounded-lg]:rounded-2xl",
                 )}
