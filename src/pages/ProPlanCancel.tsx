@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { submitProPlanCancel, type ProPlanCancelReason } from "@/lib/proPlanCancel";
 
 export default function ProPlanCancel() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t, locale } = useLanguage();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -46,7 +46,19 @@ export default function ProPlanCancel() {
     return [...(t.plans?.growthFeatures ?? []), ...(t.plans?.proAddOnFeatures ?? [])];
   }, [plan, t.plans?.growthFeatures, t.plans?.proAddOnFeatures, t.plans?.starterFeatures]);
 
-  if (!user) return <Navigate to="/auth?mode=login&redirect=/pro-plans" replace />;
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden />
+        </div>
+      </Layout>
+    );
+  }
+  if (!user) {
+    const target = `/pro-plans/cancel${plan ? `?plan=${encodeURIComponent(plan)}` : ""}`;
+    return <Navigate to={`/auth?mode=login&redirect=${encodeURIComponent(target)}`} replace />;
+  }
   if (!validPlan) return <Navigate to="/pro-plans" replace />;
 
   const handleConfirm = async () => {

@@ -862,6 +862,12 @@ export default function ProProfilePage({ proIdOverride }: { proIdOverride?: stri
         .maybeSingle();
 
       if (!proRaw) { setLoading(false); return; }
+      // Same visibility rule as listings (junk/test/hold pros show not-found; demo, owner and moderators allowed).
+      const { data: isPublic } = (await supabase.rpc(
+        "pro_profile_is_public" as never,
+        { p_pro_profile_id: proId } as never,
+      )) as unknown as { data: boolean | null };
+      if (isPublic !== true) { setPro(null); setLoading(false); return; }
       const proPublic = proRaw as unknown as ProData & {
         latitude_approx?: number | null;
         longitude_approx?: number | null;

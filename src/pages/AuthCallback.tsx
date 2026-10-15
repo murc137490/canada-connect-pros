@@ -66,8 +66,12 @@ export default function AuthCallback() {
         if (!data.session) {
           await new Promise((r) => setTimeout(r, 400));
           const again = await supabase.auth.getSession();
+          if (cancelled) return;
           if (!again.data.session) {
-            fail(t.auth.toastError);
+            // Empty callback (no code, no error, no session): quietly go to login, no error toast.
+            clearOAuthRedirect();
+            markAltShiftAppReady();
+            navigate("/auth?mode=login", { replace: true });
             return;
           }
         }

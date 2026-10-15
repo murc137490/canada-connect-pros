@@ -48,6 +48,9 @@ import DocumentHead from "@/components/DocumentHead";
 import LegacyHostRedirect from "@/components/LegacyHostRedirect";
 import OAuthCodeForwarder from "@/components/OAuthCodeForwarder";
 import MonitorAdminGuard from "@/components/MonitorAdminGuard";
+import RequirePlatformAdmin from "@/components/RequirePlatformAdmin";
+import GetAppRedirect from "@/components/GetAppRedirect";
+import SubscriptionConfirmed from "./pages/SubscriptionConfirmed";
 import AdminMemberIdGate from "@/components/admin/AdminMemberIdGate";
 import AdminAcceptPros from "./pages/AdminAcceptPros";
 import PrivateNoIndex from "@/components/PrivateNoIndex";
@@ -114,17 +117,18 @@ const App = () => (
               <Route path="/pro-onboarding/start" element={<MonitorAdminGuard><ProOnboardingStart /></MonitorAdminGuard>} />
               <Route path="/pro-onboarding/tier" element={<MonitorAdminGuard><ProOnboardingTier /></MonitorAdminGuard>} />
               <Route path="/dashboard" element={<><PrivateNoIndex /><Dashboard /></>} />
-              <Route path="/admin/accept-pros" element={<><PrivateNoIndex /><AdminMemberIdGate><AdminAcceptPros /></AdminMemberIdGate></>} />
-              <Route path="/admin/issue-reports" element={<><PrivateNoIndex /><AdminMemberIdGate><AdminIssueReports /></AdminMemberIdGate></>} />
-              <Route path="/admin/job-requests" element={<><PrivateNoIndex /><AdminMemberIdGate><AdminJobRequests /></AdminMemberIdGate></>} />
-              <Route path="/admin/trial-tokens" element={<><PrivateNoIndex /><AdminMemberIdGate><AdminTrialTokens /></AdminMemberIdGate></>} />
+              <Route path="/admin/accept-pros" element={<><PrivateNoIndex /><RequirePlatformAdmin><AdminMemberIdGate><AdminAcceptPros /></AdminMemberIdGate></RequirePlatformAdmin></>} />
+              <Route path="/admin/issue-reports" element={<><PrivateNoIndex /><RequirePlatformAdmin><AdminMemberIdGate><AdminIssueReports /></AdminMemberIdGate></RequirePlatformAdmin></>} />
+              <Route path="/admin/job-requests" element={<><PrivateNoIndex /><RequirePlatformAdmin><AdminMemberIdGate><AdminJobRequests /></AdminMemberIdGate></RequirePlatformAdmin></>} />
+              <Route path="/admin/trial-tokens" element={<><PrivateNoIndex /><RequirePlatformAdmin><AdminMemberIdGate><AdminTrialTokens /></AdminMemberIdGate></RequirePlatformAdmin></>} />
               <Route path="/make-request" element={<MonitorAdminGuard><MakeRequest /></MonitorAdminGuard>} />
-              <Route path="/admin" element={<Navigate to="/dashboard?tab=admin" replace />} />
+              <Route path="/admin" element={<RequirePlatformAdmin><Navigate to="/dashboard?tab=admin" replace /></RequirePlatformAdmin>} />
               <Route path="/support" element={<Support />} />
-              <Route path="/front-desk" element={<FrontDesk />} />
+              <Route path="/front-desk" element={<><PrivateNoIndex /><RequirePlatformAdmin><FrontDesk /></RequirePlatformAdmin></>} />
               <Route path="/about" element={<AboutUs />} />
               <Route path="/a-propos" element={<AboutUs />} />
-              <Route path="/get-app" element={<Navigate to="/get-app/android" replace />} />
+              <Route path="/subscription-confirmed" element={<SubscriptionConfirmed />} />
+              <Route path="/get-app" element={<GetAppRedirect />} />
               <Route path="/get-app/:platform" element={<GetAppGuide />} />
               <Route path="/help/dashboard-guide" element={<DashboardGuide />} />
               <Route path="/terms" element={<TermsOfService />} />
@@ -133,7 +137,7 @@ const App = () => (
               <Route path="/politique-de-confidentialite" element={<Navigate to="/privacy" replace />} />
               <Route path="/cookies" element={<CookiePolicy />} />
               <Route path="/cookie-policy" element={<Navigate to="/cookies" replace />} />
-              <Route path="/phone-preview" element={<><PrivateNoIndex /><PhonePreview /></>} />
+              <Route path="/phone-preview" element={<><PrivateNoIndex /><RequirePlatformAdmin><PhonePreview /></RequirePlatformAdmin></>} />
               <Route path="/reset-password" element={<><PrivateNoIndex /><ResetPassword /></>} />
               <Route path="/book-again/:bookingId" element={<><PrivateNoIndex /><BookAgain /></>} />
               <Route path="/unsubscribe/rebook" element={<><PrivateNoIndex /><RebookUnsubscribe /></>} />
