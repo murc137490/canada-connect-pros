@@ -1,3 +1,4 @@
+import { fetchMyProProfile } from "@/lib/proProfileAccess";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,7 +61,7 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
         .eq("client_id", user.id)
         .order("created_at", { ascending: false })
         .limit(30),
-      supabase.from("pro_profiles").select("id, is_verified, created_at, updated_at").eq("user_id", user.id).maybeSingle(),
+      fetchMyProProfile<{ id: string; is_verified: boolean | null; created_at: string | null; updated_at: string | null }>("id, is_verified, created_at, updated_at"),
       fetchActivePlatformWhatsNewAnnouncements(),
       fetchJobRequestModerationNotices(user.id),
       supabase.from("pro_application_review_notices")

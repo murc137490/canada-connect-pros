@@ -59,8 +59,11 @@ type RpcResult<T> = { data: T | null; error: { message: string; code?: string } 
 
 /** The signed-in user's own pro_profiles row (any columns). `columns` defaults to all. */
 export async function fetchMyProProfile<T = Record<string, unknown>>(columns = "*"): Promise<RpcResult<T>> {
-  const res = await untypedDb.rpc("get_my_pro_profile").select(columns).maybeSingle();
-  return { data: (res.data as T | null) ?? null, error: res.error };
+  // Read as an array (limit 1) instead of maybeSingle(): PostgREST answers a single-object
+  // request with 406 when the caller has no pro row (every client), which floods the console.
+  const res = await untypedDb.rpc("get_my_pro_profile").select(columns).limit(1);
+  const rows = (res.data as T[] | null) ?? null;
+  return { data: rows && rows.length ? rows[0] : null, error: res.error };
 }
 
 /** Platform moderators only: full pro_profiles rows. Pass `ids` to filter, or omit for all. */

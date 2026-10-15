@@ -102,14 +102,25 @@ export default function ProPlansManagement() {
   }, [user, authLoading, navigate, refreshPlan]);
 
   useEffect(() => {
-    if (!proChecked || !proProfileId) return;
-    if (searchParams.get("onboarding") !== "1") return;
+    if (!proChecked) return;
+    if (!proProfileId) {
+      if (searchParams.get("checkout") !== "1" || isPro) return;
+      const wanted = (searchParams.get("plan") ?? "").toLowerCase() as ProPlanId;
+      if (!["starter", "growth", "pro"].includes(wanted)) return;
+      setCheckoutPlan(wanted);
+      setMissingProfileOpen(true);
+      return;
+    }
+    const fromOnboarding = searchParams.get("onboarding") === "1";
+    const fromTierCard = searchParams.get("checkout") === "1";
+    if (!fromOnboarding && !fromTierCard) return;
     const nextPlan = (searchParams.get("plan") ?? "").toLowerCase() as ProPlanId;
     if (!["starter", "growth", "pro"].includes(nextPlan)) return;
-    if (nextPlan === "starter") return;
+    if (fromOnboarding && nextPlan === "starter") return;
+    if (nextPlan === currentPlanId) return;
     setCheckoutPlan(nextPlan);
     setCheckoutOpen(true);
-  }, [proChecked, proProfileId, searchParams]);
+  }, [proChecked, proProfileId, searchParams, currentPlanId, isPro]);
 
   const isOnHold =
     !currentPlanId && (!profileTierRaw || profileTierRaw === "hold");
