@@ -13,7 +13,7 @@ import { BOOKING_CREDIT_REFILLS } from "@/lib/bookingCredits";
 import { ensureApplePaySdkLoadedSoon } from "@/lib/applePaySdk";
 
 type Tier = keyof typeof BOOKING_CREDIT_REFILLS;
-const style = { input: { backgroundColor: "#fff", color: "#171717", fontSize: "16px" }, ".input-container": { borderColor: "#d4d4d4", borderRadius: "6px", borderWidth: "1px" } } as const;
+const style = { input: { backgroundColor: "#e5e7eb", color: "#171717", fontSize: "16px" }, ".input-container": { borderColor: "#9ca3af", borderRadius: "6px", borderWidth: "1px" }, ".input-container.is-focus": { borderColor: "#2563eb" } } as const;
 
 export default function BookingCreditRefillStore() {
   const { user } = useAuth(); const { locale } = useLanguage(); const { toast } = useToast(); const fr = locale === "fr";
@@ -34,8 +34,8 @@ export default function BookingCreditRefillStore() {
     <div className="mb-5"><h3 className="text-xl font-bold">{fr ? "Recharger les Booking Credits" : "Refill Booking Credits"}</h3><p className="mt-1 text-sm text-muted-foreground">{fr ? `Tarifs ${pro.tier === "pro" ? "Pro" : pro.tier === "growth" ? "Growth" : "Starter"}. Le prix applicable est confirmé au paiement.` : `${pro.tier[0].toUpperCase()}${pro.tier.slice(1)} pricing. The final amount is confirmed at checkout.`}</p></div>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{packs.map((pack) => <button key={pack.credits} type="button" onClick={() => { setSelected(pack.credits); setRequestKey(crypto.randomUUID()); }} className={`rounded-xl border p-4 text-left transition-colors ${selected === pack.credits ? "border-primary ring-2 ring-primary/25" : "hover:border-primary/50"}`}><span className="flex items-center justify-between gap-2"><b className="text-lg">{pack.credits} <span className="text-sm font-medium text-muted-foreground">{fr ? "crédits" : "Booking Credits"}</span></b><span className="font-semibold">CA${((prices[pack.credits] ?? pack.priceCents) / 100).toFixed(2)}</span></span><span className="mt-1 block text-xs text-muted-foreground">CA${(((prices[pack.credits] ?? pack.priceCents) / 100) / pack.credits).toFixed(2)} / {fr ? "crédit" : "credit"}</span></button>)}</div>
     {selected && config ? <div className="mt-5 rounded-xl border bg-background p-4 text-foreground">
-      <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground"><CreditCardIcon className="size-4" />{fr ? `Payer CA$${(selectedPrice / 100).toFixed(2)}` : `Pay CA$${(selectedPrice / 100).toFixed(2)}`}</p>
-      <div className="rounded-lg border border-neutral-200 bg-white p-4 [color-scheme:light]" style={{ colorScheme: "light" }}>
+      <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground"><CreditCardIcon className="size-4" />{fr ? "Mode de paiement" : "Payment method"}<span className="ml-auto tabular-nums">CA${(selectedPrice / 100).toFixed(2)}</span></p>
+      <div className="rounded-lg border border-neutral-300 bg-neutral-100 p-4 text-neutral-900 [color-scheme:light] dark:border-neutral-600" style={{ colorScheme: "light" }}>
         <PaymentForm applicationId={config.applicationId} locationId={config.locationId} createPaymentRequest={createPaymentRequest} cardTokenizeResponseReceived={(token) => void buy(token as { status?: string; token?: string; errors?: unknown })}>
           <div className="space-y-4">
             <div className="grid min-w-0 grid-cols-2 gap-2.5">
@@ -46,7 +46,10 @@ export default function BookingCreditRefillStore() {
                 <GooglePay id="booking-credit-google-pay" buttonSizeMode="fill" buttonType="plain" buttonColor="black" />
               </GooglePayWalletSlot>
             </div>
-            <CreditCard style={style} />
+            <div>
+              <p className="mb-2 text-xs font-semibold text-neutral-700">{fr ? "Carte de crédit ou de débit" : "Credit or debit card"}</p>
+              <CreditCard style={style} buttonProps={{ children: fr ? "Confirmer la recharge" : "Confirm refill" }} />
+            </div>
           </div>
         </PaymentForm>
       </div>

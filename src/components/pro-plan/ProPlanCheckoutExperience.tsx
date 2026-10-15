@@ -15,22 +15,22 @@ export type { ProPlanId };
 
 const SQUARE_DEVELOPER_URL = "https://developer.squareup.com/console/en/apps";
 
-/** Always light fields: Square’s iframe keeps a light bg; dark-theme text (#fafafa) was invisible. */
+/** Soft gray Square fields with dark text stay readable in every site theme. */
 const CARD_STYLE_CHECKOUT = {
   input: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#e5e7eb",
     color: "#171717",
     fontSize: "16px",
     fontWeight: "normal" as const,
   },
   "input.is-focus": {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#e5e7eb",
     color: "#171717",
     fontSize: "16px",
     fontWeight: "normal" as const,
   },
   "input.is-error": {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#e5e7eb",
     color: "#171717",
     fontSize: "16px",
   },
@@ -38,11 +38,11 @@ const CARD_STYLE_CHECKOUT = {
   "input.is-focus::placeholder": { color: "#525252" },
   "input.is-error::placeholder": { color: "#737373" },
   ".input-container": {
-    borderColor: "#d4d4d4",
+    borderColor: "#9ca3af",
     borderRadius: "6px",
     borderWidth: "1px",
   },
-  ".input-container.is-focus": { borderColor: "#171717" },
+  ".input-container.is-focus": { borderColor: "#2563eb" },
   ".input-container.is-error": { borderColor: "#dc2626", borderWidth: "1px" },
 } as const;
 
@@ -130,9 +130,8 @@ export default function ProPlanCheckoutExperience({
         if (result.ok) {
           setPreview(result);
           if (result.charge_cents > 0) {
-            const returnDiscountCheckout =
-              result.cancel_return_discount_applied === true && result.charge_before_discount_cents != null;
-            setStep(returnDiscountCheckout ? 1 : 2);
+            // Choosing a paid subscription opens its payment methods directly.
+            setStep(2);
           }
         } else {
           setPreviewError((result as Extract<PlanPreviewResult, { ok: false }>).error);
@@ -432,7 +431,7 @@ export default function ProPlanCheckoutExperience({
 
               {needsPayment && !configLoading && squareReady ? (
                 <div
-                  className="relative rounded-md border border-neutral-200 bg-white p-4 [color-scheme:light] dark:border-neutral-600"
+                  className="relative rounded-md border border-neutral-300 bg-neutral-100 p-4 text-neutral-900 [color-scheme:light] dark:border-neutral-600"
                   style={{ colorScheme: "light" }}
                 >
                   {submitLoading && (
@@ -450,7 +449,7 @@ export default function ProPlanCheckoutExperience({
                     }}
                   >
                     <div className="space-y-4">
-                      <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">{plans?.checkoutDigitalWallet ?? "Digital wallet"}</p>
+                      <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-700">{plans?.checkoutDigitalWallet ?? "Digital wallet"}</p>
                       <div className="grid min-w-0 grid-cols-2 gap-2.5">
                         <ApplePayWalletSlot
                           className="sq-wallet-btn h-12 min-h-12 min-w-0 overflow-hidden rounded-[4px]"
@@ -467,7 +466,10 @@ export default function ProPlanCheckoutExperience({
                           <GooglePay id="pro-plan-google-pay" buttonSizeMode="fill" buttonType="plain" buttonColor="black" />
                         </GooglePayWalletSlot>
                       </div>
-                      <CreditCard style={CARD_STYLE_CHECKOUT} />
+                      <div>
+                        <p className="mb-2 text-xs font-semibold text-neutral-700">{fr ? "Carte de crédit ou de débit" : "Credit or debit card"}</p>
+                        <CreditCard style={CARD_STYLE_CHECKOUT} buttonProps={{ children: fr ? "Confirmer l’abonnement" : "Confirm subscription" }} />
+                      </div>
                     </div>
                   </PaymentForm>
                 </div>
