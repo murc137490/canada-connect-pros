@@ -165,7 +165,6 @@ import {
   getBrowsePostalLocation,
   setBrowsePostalLocation,
 } from "@/lib/browsePostalStorage";
-import { purgeStaleJobRequests } from "@/lib/purgeStaleJobRequests";
 import BookingProofUploadDialog from "@/components/BookingProofUploadDialog";
 import BookingClaimDialog from "@/components/BookingClaimDialog";
 import BookingInvoiceCard from "@/components/BookingInvoiceCard";
@@ -2727,7 +2726,6 @@ export default function Dashboard() {
       return;
     }
     let cancelled = false;
-    void purgeStaleJobRequests();
     (async () => {
       const browseOrigin = getBrowsePostalLocation();
       // Own exact coords: owner-only RPC (HIGH 1).

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 import { Button } from "@/components/ui/button";
 import { Camera, Loader2 } from "lucide-react";
 
@@ -172,27 +173,16 @@ export function SelfieLivenessCapture({
       await video.play();
       let useModel = false;
       try {
-        const loadVision = new Function(
-          "url",
-          "return import(url)",
-        ) as (url: string) => Promise<{
-          FilesetResolver: { forVisionTasks: (path: string) => Promise<unknown> };
-          FaceLandmarker: { createFromOptions: (files: unknown, options: object) => Promise<Landmarker> };
-        }>;
-        const vision = await loadVision("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.17/+esm");
-        const files = await vision.FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.17/wasm",
-        );
-        landmarkerRef.current = await vision.FaceLandmarker.createFromOptions(files, {
+        const files = await FilesetResolver.forVisionTasks("/mediapipe/wasm");
+        landmarkerRef.current = await FaceLandmarker.createFromOptions(files, {
           baseOptions: {
-            modelAssetPath:
-              "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+            modelAssetPath: "/mediapipe/face_landmarker.task",
             delegate: "GPU",
           },
           runningMode: "VIDEO",
           numFaces: 1,
           outputFaceBlendshapes: true,
-        });
+        }) as unknown as Landmarker;
         useModel = true;
       } catch {
         landmarkerRef.current = null;

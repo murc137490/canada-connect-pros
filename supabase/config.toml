@@ -1,4 +1,4 @@
-project_id = "qjiwudwzhkdekxkscuuk"
+project_id = "hptzapnrnbqlptrstjxo"
 
 [functions.verify-rbq-license]
 verify_jwt = false

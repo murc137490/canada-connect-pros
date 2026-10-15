@@ -19,7 +19,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { contentUnavailableLabel, isContentBlocked } from "@/lib/contentModeration";
-import { purgeStaleJobRequests } from "@/lib/purgeStaleJobRequests";
 import type { JobRemovalReason } from "@/lib/jobRequestRules";
 import StorageDisplayImage from "@/components/StorageDisplayImage";
 import { safeHttpUrl } from "@/lib/safeUrl";
@@ -60,11 +59,6 @@ export default function AdminJobRequests() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try {
-      await purgeStaleJobRequests();
-    } catch {
-      // Never block listing if purge fails
-    }
     const { data, error } = await supabase
       .from("job_requests")
       .select(
