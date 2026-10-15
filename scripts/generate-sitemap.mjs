@@ -31,11 +31,18 @@ async function main() {
   let rows = [];
   try {
     const res = await fetch(
-      `${url}/rest/v1/pro_profiles?select=share_slug&is_verified=eq.true&share_slug=not.is.null`,
-      { headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(8000) },
+      // Same rule as the public listings (verified, real name, paid plan, not a test account).
+      // The Rivera showcase demo and QA/test accounts are never listed.
+      `${url}/rest/v1/rpc/listed_pro_handles`,
+      {
+        method: "POST",
+        headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: "{}",
+        signal: AbortSignal.timeout(8000),
+      },
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    rows = await res.json();
+    rows = (await res.json()).map((h) => ({ share_slug: h }));
   } catch (e) {
     console.log(`[sitemap] fetch failed (${e.message}) — kept static sitemap`);
     return;

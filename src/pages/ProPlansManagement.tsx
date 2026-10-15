@@ -156,7 +156,7 @@ export default function ProPlansManagement() {
       // ignore
     }
     dispatchProPlanPaidEvent();
-    navigate("/subscription-confirmed");
+    navigate(`/subscription-confirmed?plan=${checkoutPlan ?? ""}`);
   };
 
   const renewalNote =
@@ -206,7 +206,7 @@ export default function ProPlansManagement() {
             : "Your promotional offer is active.",
       });
       await refreshPlan();
-      navigate("/subscription-confirmed");
+      navigate("/subscription-confirmed?plan=trial");
     } catch (e) {
       toast({
         title: locale === "fr" ? "Code promo" : "Promo code",
