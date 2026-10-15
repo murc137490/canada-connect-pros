@@ -48,6 +48,7 @@ import {
   BadgeCheck,
   AlertTriangle,
   HelpCircle,
+  UserRoundPlus,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -93,6 +94,7 @@ import {
   segmentForTab,
 } from "@/lib/dashboardTutorial";
 import ReviewForm from "@/components/pro/ReviewForm";
+import AdminRecruitmentPanel from "@/components/admin/AdminRecruitmentPanel";
 
 import ClientReviewPhotoPicker from "@/components/dashboard/ClientReviewPhotoPicker";
 import ClickableProfileAvatar from "@/components/dashboard/ClickableProfileAvatar";
@@ -450,7 +452,7 @@ export default function Dashboard() {
   const isAdminAccountView = isAdminDashboardShell;
   /** Force admin tab on first paint for allowlisted admins (avoids empty bookings flash). */
   const shellTab =
-    isAdminDashboardShell && activeTab !== "account" && activeTab !== "admin" && activeTab !== "staff"
+    isAdminDashboardShell && activeTab !== "account" && activeTab !== "admin" && activeTab !== "staff" && activeTab !== "recruitment"
       ? "admin"
       : activeTab;
   const { resolvedTheme } = useTheme();
@@ -967,7 +969,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (isAdminDashboardShell) {
       const tab = searchParams.get("tab");
-      if (tab === "account" || tab === "admin" || (tab === "staff" && isSuperAdmin)) {
+      if (tab === "account" || tab === "admin" || tab === "recruitment" || (tab === "staff" && isSuperAdmin)) {
         setActiveTab(tab);
         return;
       }
@@ -1028,6 +1030,13 @@ export default function Dashboard() {
           label: t.dashboard.adminJobRequestsNav ?? "Job requests",
           onClick: () => navigate("/admin/job-requests"),
           className: "",
+        },
+        {
+          id: "recruitment",
+          icon: <UserRoundPlus size={20} />,
+          label: locale === "fr" ? "Recrutement" : "Recruitment",
+          onClick: () => setDashboardTab("recruitment"),
+          className: shellTab === "recruitment" ? "dock-item-active" : "",
         },
         ...(isSuperAdmin
           ? [
@@ -4278,6 +4287,9 @@ export default function Dashboard() {
             <Button type="button" variant="outline" className="justify-start" onClick={() => setDashboardTab("admin")}>
               {t.dashboard.admin ?? "Admin"}
             </Button>
+            <Button type="button" variant="outline" className="justify-start" onClick={() => setDashboardTab("recruitment")}>
+              <UserRoundPlus className="mr-2 size-4" />{locale === "fr" ? "Recrutement" : "Recruitment"}
+            </Button>
             {isSuperAdmin ? (
               <Button type="button" variant="outline" className="justify-start" onClick={() => setDashboardTab("staff")}>
                 {locale === "fr" ? "Comptes admins" : "Admin accounts"}
@@ -6924,6 +6936,12 @@ export default function Dashboard() {
           {isAdminDashboardShell && isSuperAdmin && (
             <TabsContent forceMount value="staff" className="space-y-4">
               <AdminStaffManager />
+            </TabsContent>
+          )}
+
+          {isAdminDashboardShell && (
+            <TabsContent forceMount value="recruitment" className="space-y-4">
+              <AdminRecruitmentPanel />
             </TabsContent>
           )}
 

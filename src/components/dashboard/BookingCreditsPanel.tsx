@@ -17,6 +17,12 @@ export default function BookingCreditsPanel({ proProfileId }: { proProfileId: st
   const { locale } = useLanguage();
   const fr = locale === "fr";
   const [summary, setSummary] = useState<CreditSummary | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  useEffect(() => {
+    const refresh = () => setRefreshKey((value) => value + 1);
+    window.addEventListener("booking-credits-updated", refresh);
+    return () => window.removeEventListener("booking-credits-updated", refresh);
+  }, []);
   useEffect(() => {
     let active = true;
     const start = new Date();
@@ -53,7 +59,7 @@ export default function BookingCreditsPanel({ proProfileId }: { proProfileId: st
       });
     }).catch(() => { if (active) setSummary(null); });
     return () => { active = false; };
-  }, [proProfileId]);
+  }, [proProfileId, refreshKey]);
   return (
     <section className="flex w-full flex-wrap items-center justify-end gap-x-3 gap-y-1 text-foreground" aria-label={fr ? "Crédits de réservation" : "Booking Credits"}>
       <div className="flex items-center gap-2">

@@ -10,6 +10,8 @@ import SpotlightCard from "@/components/SpotlightCard";
 import GradientText from "@/components/GradientText";
 import type { ProPlanId } from "@/lib/proPlanPreview";
 import { PLAN_TIER_BORDER_CLASS } from "@/lib/planTierTheme";
+import { BOOKING_CREDIT_PLAN_DEFAULTS } from "@/lib/bookingCredits";
+import BookingCreditRefillStore from "@/components/pro-plan/BookingCreditRefillStore";
 import "./ProPlansContent.css";
 
 const SPOTLIGHT_STARTER = "rgba(96, 165, 250, 0.2)";   // faint blue
@@ -170,7 +172,7 @@ export default function ProPlansContent({
   const showProfileCta =
     showCompleteProfileCta && !(isDemoClientAccount(user?.email) && !hasProProfile);
   const plans = t.plans;
-  const hideCreditSummary = (features: string[] | undefined) =>
+  const hideCreditSummary = (features: readonly string[] | undefined) =>
     (features ?? []).filter((feature) => !/monthly booking credits|crédits de réservation par mois/i.test(feature));
   const starterFeatures = hideCreditSummary(plans?.starterFeatures);
   const growthFeatures = hideCreditSummary(plans?.growthFeatures);
@@ -207,8 +209,8 @@ export default function ProPlansContent({
         </div>
         <p className="mx-auto mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
           {locale === "fr"
-            ? "Ne payez pas pour des pistes. Les crédits de réservation servent lorsque vous réservez réellement du travail. Un crédit couvre jusqu’à 100 $ CA de valeur de service réservée."
-            : "Don't pay for leads. Booking Credits are used when you actually book work. One credit covers up to CA$100 in booked service value."}
+          ? "Ne payez pas pour des pistes. Un crédit couvre jusqu’à 100 $ CA de valeur de service réservée, jusqu’à un maximum de 100 crédits par réservation."
+            : "Don't pay for leads. One Booking Credit covers up to CA$100 in booked service value, capped at 100 credits per booking."}
         </p>
       </div>
 
@@ -226,7 +228,7 @@ export default function ProPlansContent({
             currentPlanLabel={plans?.currentPlanBadge}
             onSelect={interactive && onSelectPlan ? handleTierClick : undefined}
             subscribeLabel={locale === "fr" ? "Payer" : "Pay"}
-            monthlyCredits={10}
+            monthlyCredits={BOOKING_CREDIT_PLAN_DEFAULTS.starter.monthlyCredits}
             creditsLabel={locale === "fr" ? "crédits" : "Booking Credits"}
             selected={selectedTier === "starter"}
             onChoose={interactive && onSelectPlan ? (tier) => { if (currentPlanId !== tier) setSelectedTier(tier); } : undefined}
@@ -245,7 +247,7 @@ export default function ProPlansContent({
             currentPlanLabel={plans?.currentPlanBadge}
             onSelect={interactive && onSelectPlan ? handleTierClick : undefined}
             subscribeLabel={locale === "fr" ? "Payer" : "Pay"}
-            monthlyCredits={17}
+            monthlyCredits={BOOKING_CREDIT_PLAN_DEFAULTS.growth.monthlyCredits}
             creditsLabel={locale === "fr" ? "crédits" : "Booking Credits"}
             selected={selectedTier === "growth"}
             onChoose={interactive && onSelectPlan ? (tier) => { if (currentPlanId !== tier) setSelectedTier(tier); } : undefined}
@@ -265,13 +267,15 @@ export default function ProPlansContent({
             currentPlanLabel={plans?.currentPlanBadge}
             onSelect={interactive && onSelectPlan ? handleTierClick : undefined}
             subscribeLabel={locale === "fr" ? "Payer" : "Pay"}
-            monthlyCredits={22}
+            monthlyCredits={BOOKING_CREDIT_PLAN_DEFAULTS.pro.monthlyCredits}
             creditsLabel={locale === "fr" ? "crédits" : "Booking Credits"}
             selected={selectedTier === "pro"}
             onChoose={interactive && onSelectPlan ? (tier) => { if (currentPlanId !== tier) setSelectedTier(tier); } : undefined}
           />
         </div>
       </div>
+
+      <BookingCreditRefillStore />
 
       <section className="mt-16 md:mt-24 max-w-3xl mx-auto relative z-0 pt-8 pb-8">
         <h3 className="font-heading text-xl font-bold text-foreground mb-6">
