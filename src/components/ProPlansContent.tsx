@@ -5,7 +5,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isDemoClientAccount } from "@/lib/demoAccount";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Coins } from "lucide-react";
-import { useState } from "react";
 import SpotlightCard from "@/components/SpotlightCard";
 import GradientText from "@/components/GradientText";
 import type { ProPlanId } from "@/lib/proPlanPreview";
@@ -31,11 +30,8 @@ function TierCard({
   interactive,
   isCurrent,
   currentPlanLabel,
-  onSelect,
-  subscribeLabel,
   monthlyCredits,
   creditsLabel,
-  selected,
   onChoose,
 }: {
   name: string;
@@ -49,11 +45,8 @@ function TierCard({
   interactive?: boolean;
   isCurrent?: boolean;
   currentPlanLabel?: string;
-  onSelect?: (tier: ProPlanId) => void;
-  subscribeLabel?: string;
   monthlyCredits: number;
   creditsLabel: string;
-  selected?: boolean;
   onChoose?: (tier: ProPlanId) => void;
 }) {
   const nameEl =
@@ -78,7 +71,7 @@ function TierCard({
     );
 
   const inner = (
-    <div className={`relative h-full min-h-[420px] p-6 ${selected ? "pb-20" : ""} flex flex-col text-foreground`}>
+    <div className="relative flex h-full min-h-[420px] flex-col p-6 text-left text-foreground">
       <div
         className={`mb-2 flex shrink-0 min-w-0 items-start gap-3 ${isCurrent ? "justify-between" : "justify-end"}`}
       >
@@ -131,9 +124,6 @@ function TierCard({
             onClick={() => onChoose(nameVariant)}
             className="relative z-0 w-full h-full min-h-[420px] p-0 border-0 bg-transparent text-left cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >{inner}</button>
-          {selected && !isCurrent && onSelect ? (
-            <button type="button" onClick={(event) => { event.stopPropagation(); onSelect(nameVariant); }} className="absolute bottom-5 left-6 right-6 z-10 inline-flex w-[calc(100%-3rem)] items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">{subscribeLabel ?? "Pay"}</button>
-          ) : null}
         </div>
       ) : (
         inner
@@ -165,7 +155,6 @@ export default function ProPlansContent({
   currentPlanId = null,
   onSelectPlan,
 }: ProPlansContentProps = {}) {
-  const [selectedTier, setSelectedTier] = useState<ProPlanId | null>(null);
   const { t, locale } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -187,10 +176,6 @@ export default function ProPlansContent({
       toast({
         title: plans?.alreadyOnPlan ?? "You're already on this plan.",
       });
-      return;
-    }
-    if (selectedTier !== tier) {
-      setSelectedTier(tier);
       return;
     }
     onSelectPlan(tier);
@@ -226,12 +211,9 @@ export default function ProPlansContent({
             interactive={interactive}
             isCurrent={currentPlanId === "starter"}
             currentPlanLabel={plans?.currentPlanBadge}
-            onSelect={interactive && onSelectPlan ? handleTierClick : undefined}
-            subscribeLabel={locale === "fr" ? "Payer" : "Pay"}
             monthlyCredits={BOOKING_CREDIT_PLAN_DEFAULTS.starter.monthlyCredits}
             creditsLabel={locale === "fr" ? "crédits" : "Booking Credits"}
-            selected={selectedTier === "starter"}
-            onChoose={interactive && onSelectPlan ? (tier) => { if (currentPlanId !== tier) setSelectedTier(tier); } : undefined}
+            onChoose={interactive && onSelectPlan ? handleTierClick : undefined}
           />
         </div>
         <div className="min-h-[420px] flex">
@@ -245,12 +227,9 @@ export default function ProPlansContent({
             interactive={interactive}
             isCurrent={currentPlanId === "growth"}
             currentPlanLabel={plans?.currentPlanBadge}
-            onSelect={interactive && onSelectPlan ? handleTierClick : undefined}
-            subscribeLabel={locale === "fr" ? "Payer" : "Pay"}
             monthlyCredits={BOOKING_CREDIT_PLAN_DEFAULTS.growth.monthlyCredits}
             creditsLabel={locale === "fr" ? "crédits" : "Booking Credits"}
-            selected={selectedTier === "growth"}
-            onChoose={interactive && onSelectPlan ? (tier) => { if (currentPlanId !== tier) setSelectedTier(tier); } : undefined}
+            onChoose={interactive && onSelectPlan ? handleTierClick : undefined}
           />
         </div>
         <div className="min-h-[420px] flex">
@@ -265,12 +244,9 @@ export default function ProPlansContent({
             interactive={interactive}
             isCurrent={currentPlanId === "pro"}
             currentPlanLabel={plans?.currentPlanBadge}
-            onSelect={interactive && onSelectPlan ? handleTierClick : undefined}
-            subscribeLabel={locale === "fr" ? "Payer" : "Pay"}
             monthlyCredits={BOOKING_CREDIT_PLAN_DEFAULTS.pro.monthlyCredits}
             creditsLabel={locale === "fr" ? "crédits" : "Booking Credits"}
-            selected={selectedTier === "pro"}
-            onChoose={interactive && onSelectPlan ? (tier) => { if (currentPlanId !== tier) setSelectedTier(tier); } : undefined}
+            onChoose={interactive && onSelectPlan ? handleTierClick : undefined}
           />
         </div>
       </div>
