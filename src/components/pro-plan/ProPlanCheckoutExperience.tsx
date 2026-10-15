@@ -72,7 +72,8 @@ export default function ProPlanCheckoutExperience({
   onCancel,
   embedded = false,
 }: ProPlanCheckoutExperienceProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const fr = locale === "fr";
   const plans = t.plans;
   const terms = t.terms;
 

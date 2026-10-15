@@ -120,7 +120,7 @@ function TierCard({
         <div className="relative h-full min-h-[420px]">
           <button
             type="button"
-            aria-pressed={!!selected}
+            aria-pressed={!!isCurrent}
             onClick={() => onChoose(nameVariant)}
             className="relative z-0 w-full h-full min-h-[420px] p-0 border-0 bg-transparent text-left cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >{inner}</button>

@@ -1,4 +1,7 @@
 import Layout from "@/components/Layout";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import type { ProPlanId } from "@/lib/proPlanPreview";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import ProPlansContent from "@/components/ProPlansContent";
@@ -6,6 +9,13 @@ import MovingStarsBackground from "@/components/MovingStarsBackground";
 
 export default function ProPlans() {
   const { resolvedTheme } = useTheme();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  // Tier cards open checkout on /pro-plans; signed-out visitors sign up first and land back there.
+  const onSelectPlan = (plan: ProPlanId) => {
+    const target = `/pro-plans?checkout=1&plan=${plan}`;
+    navigate(user ? target : `/auth?mode=signup&redirect=${encodeURIComponent(target)}`);
+  };
 
   return (
     <Layout>
@@ -22,7 +32,7 @@ export default function ProPlans() {
         />
         <div className="relative z-10 min-h-full pb-24">
           <div className="container py-12 md:py-16 px-4 md:px-6">
-            <ProPlansContent />
+            <ProPlansContent interactive onSelectPlan={onSelectPlan} />
           </div>
         </div>
       </div>

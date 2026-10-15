@@ -4315,7 +4315,7 @@ export default function Dashboard() {
       )}
       {showReferralFriendAside && (
         <aside
-          className={`${shellTab === "account" ? "hidden 2xl:block" : "hidden"} mx-auto mb-6 w-full max-w-md rounded-xl border border-primary/20 bg-card p-4 shadow-sm 2xl:fixed 2xl:left-4 2xl:top-24 2xl:z-30 2xl:mb-0 2xl:w-80 2xl:max-h-[calc(100vh-8rem)] 2xl:overflow-y-auto`}
+          className={`${shellTab === "account" ? "block" : "hidden"} mx-auto mb-6 w-full max-w-md rounded-xl border border-primary/20 bg-card p-4 shadow-sm 2xl:fixed 2xl:left-4 2xl:top-24 2xl:z-30 2xl:mb-0 2xl:w-80 2xl:max-h-[calc(100vh-8rem)] 2xl:overflow-y-auto`}
         >
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 via-background to-orange-500/10 p-4 pr-10">
             <button
@@ -4457,7 +4457,7 @@ export default function Dashboard() {
             <div className="2xl:hidden">
               <WhatsNewMenu
                 items={whatsNewItems}
-                extraContent={showReferralFriendAside && shellTab === "account" ? (
+                extraContent={false && showReferralFriendAside && shellTab === "account" ? (
                   <div className="rounded-xl bg-gradient-to-br from-primary/10 via-background to-orange-500/10 p-3">
                     <div className="flex items-start gap-2.5">
                       <div className="rounded-xl bg-primary/10 p-2 text-primary"><Gift size={18} /></div>
