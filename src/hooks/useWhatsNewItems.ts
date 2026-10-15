@@ -9,6 +9,8 @@ type ModerationNotice = {
   id: string;
   title: string;
   body: string;
+  reason: string;
+  strike_count: number | null;
   rules_reminder: string | null;
   created_at: string;
 };
