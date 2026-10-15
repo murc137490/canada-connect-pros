@@ -8,6 +8,7 @@ import { normalizeMemberIdInput } from "@/lib/adminMemberGate";
 import { isValidUsername } from "@/lib/loginIdentifier";
 import { useToast } from "@/hooks/use-toast";
 import { isReservedHandle, publicHandleUrl } from "@/lib/publicHandle";
+import { WHATS_NEW_CHANGED_EVENT } from "@/lib/whatsNewFeed";
 
 /** Fired after a successful username change so other panels (share link, previews) refresh. */
 export const USERNAME_CHANGED_EVENT = "altshift:username-changed";
@@ -304,6 +305,7 @@ export default function MemberIdSettings({
     setHasPin(true);
     setPinDraft("");
     setPinConfirm("");
+    window.dispatchEvent(new Event(WHATS_NEW_CHANGED_EVENT));
     toast({ title: copy.pinSaved });
   };
 
@@ -319,6 +321,7 @@ export default function MemberIdSettings({
     setHasPin(false);
     setPinDraft("");
     setPinConfirm("");
+    window.dispatchEvent(new Event(WHATS_NEW_CHANGED_EVENT));
     toast({ title: copy.pinCleared });
   };
 

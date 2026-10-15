@@ -22,6 +22,7 @@ export function useWhatsNewItems(opts: {
   jobModerationNotices: ModerationNotice[];
   proApplicationNotices: ProApplicationNotice[];
   proProfileCreatedAt: string | null;
+  hasVoicePin: boolean | null;
   isVerifiedPro: boolean;
   isPlatformAdmin?: boolean;
 }) {
@@ -34,6 +35,7 @@ export function useWhatsNewItems(opts: {
     jobModerationNotices,
     proApplicationNotices,
     proProfileCreatedAt,
+    hasVoicePin,
     isVerifiedPro,
     isPlatformAdmin,
   } = opts;
@@ -113,7 +115,7 @@ export function useWhatsNewItems(opts: {
       });
     }
 
-    if (proProfileCreatedAt) {
+    if (proProfileCreatedAt && hasVoicePin === false) {
       items.push({
         id: "pro-account-details-reminder",
         kind: "platform",
@@ -146,6 +148,7 @@ export function useWhatsNewItems(opts: {
     jobModerationNotices,
     proApplicationNotices,
     proProfileCreatedAt,
+    hasVoicePin,
     isVerifiedPro,
     isPlatformAdmin,
     t.dashboard.whatsNewBookingClient,

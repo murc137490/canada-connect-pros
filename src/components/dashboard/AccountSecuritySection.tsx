@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatCanadianPhone, phoneDigits } from "@/lib/canadianPhone";
+import { WHATS_NEW_CHANGED_EVENT } from "@/lib/whatsNewFeed";
 
 type Purpose = "change_email" | "change_phone" | "change_pin";
 type Channel = "sms" | "email";
@@ -169,6 +170,7 @@ export function AccountSecuritySection({
       });
       if (purpose === "change_phone" && typeof result.phone === "string") onPhoneChanged(result.phone);
       if (purpose === "change_email" && typeof result.email === "string") onEmailChanged(result.email);
+      if (purpose === "change_pin") window.dispatchEvent(new Event(WHATS_NEW_CHANGED_EVENT));
       toast({ title: copy.securitySaved });
       close();
       await refresh();

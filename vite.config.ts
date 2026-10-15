@@ -30,7 +30,9 @@ export default defineConfig(() => ({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      // Let the open app finish its current session before new bundles take over.
+      // A waiting worker activates naturally after all open tabs are closed.
+      registerType: "prompt",
       // Static /manifest-*.webmanifest files — blob manifests break Android icons.
       manifest: false,
       includeAssets: [

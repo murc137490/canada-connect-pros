@@ -33,6 +33,7 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
   >([]);
   const [isVerifiedPro, setIsVerifiedPro] = useState(false);
   const [proProfileCreatedAt, setProProfileCreatedAt] = useState<string | null>(null);
+  const [hasVoicePin, setHasVoicePin] = useState<boolean | null>(null);
   const [pendingReviewNotices, setPendingReviewNotices] = useState<PendingReviewNotice[]>([]);
   const [platformAnnouncements, setPlatformAnnouncements] = useState<PlatformWhatsNewRow[]>([]);
   const [jobModerationNotices, setJobModerationNotices] = useState<
@@ -48,6 +49,7 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
       setProBookings([]);
       setIsVerifiedPro(false);
       setProProfileCreatedAt(null);
+      setHasVoicePin(null);
       setPendingReviewNotices([]);
       setPlatformAnnouncements([]);
       setJobModerationNotices([]);
@@ -78,6 +80,12 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
     const verified = proRes.data?.is_verified === true;
     setIsVerifiedPro(verified);
     setProProfileCreatedAt(proRes.data?.updated_at ?? proRes.data?.created_at ?? null);
+    if (proId) {
+      const { data: pinStatus } = await supabase.rpc("my_voice_pin_status");
+      setHasVoicePin((pinStatus as { has_pin?: boolean } | null)?.has_pin === true);
+    } else {
+      setHasVoicePin(null);
+    }
     if (proId && verified) {
       const { data: pb } = await supabase
         .from("bookings")
@@ -192,6 +200,7 @@ export function WhatsNewProvider({ children }: { children: ReactNode }) {
     jobModerationNotices,
     proApplicationNotices,
     proProfileCreatedAt,
+    hasVoicePin,
     isVerifiedPro,
     isPlatformAdmin,
   });
