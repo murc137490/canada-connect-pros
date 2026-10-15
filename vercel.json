@@ -105,6 +105,11 @@
   ],
   "redirects": [
     {
+      "source": "/proauth",
+      "destination": "/auth?mode=signup&redirect=%2Fcreate-pro-account%3Fonboarding%3D1",
+      "permanent": false
+    },
+    {
       "source": "/((?!\\.well-known/apple-developer-merchantid-domain-association$).*)",
       "has": [
         {
