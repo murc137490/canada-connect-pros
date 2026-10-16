@@ -1,5 +1,9 @@
 project_id = "hptzapnrnbqlptrstjxo"
 
+# Resend verifies this endpoint with its Svix signing secret in the function body.
+[functions.recruitment-inbound]
+verify_jwt = false
+
 [functions.verify-rbq-license]
 verify_jwt = false
 

@@ -10,9 +10,7 @@ const response = (body: unknown, status = 200, origin = "https://www.altshift.ca
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   const key = Deno.env.get("RESEND_API_KEY")?.trim();
   if (!key) return false;
-  const from = (Deno.env.get("FROM_EMAIL") ?? "support@altshift.ca").trim().toLowerCase();
-  const sender = /^[a-z0-9._%+-]+@altshift\.ca$/.test(from) ? from : "support@altshift.ca";
-  const res = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify({ from: `AltShift <${sender}>`, to: [to], subject, html }) });
+  const res = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify({ from: "AltShift <grok@altshift.com>", reply_to: "grok@altshift.com", to: [to], subject, html }) });
   if (!res.ok) console.error("Recruitment email delivery failed", res.status, await res.text());
   return res.ok;
 }
@@ -49,11 +47,12 @@ Deno.serve(async (req) => {
   const action = clip(body.action, 24);
 
   if (action === "list") {
-    const [{ data: contacts, error: contactError }, { data: drafts, error: draftError }] = await Promise.all([
+    const [{ data: contactRows, error: contactError }, { data: drafts, error: draftError }, { data: replies, error: replyError }] = await Promise.all([
       db.from("professional_recruitment_contacts").select("*").order("created_at", { ascending: false }).limit(500),
       db.from("professional_recruitment_email_drafts").select("*").order("created_at", { ascending: false }).limit(100),
+      db.from("professional_recruitment_replies").select("*").order("received_at", { ascending: false }).limit(100),
     ]);
-    return contactError || draftError ? response({ error: "Unable to load recruitment data" }, 500, allowed) : response({ contacts: contacts ?? [], drafts: drafts ?? [] }, 200, allowed);
+    return contactError || draftError || replyError ? response({ error: "Unable to load recruitment data" }, 500, allowed) : response({ contacts: contactRows ?? [], drafts: drafts ?? [], replies: replies ?? [] }, 200, allowed);
   }
 
   if (action === "save") {
@@ -121,7 +120,7 @@ Deno.serve(async (req) => {
     }).select("*").single();
     if (draftError || !draft) return response({ error: "Could not save the draft" }, 500, allowed);
 
-    const approvalEmail = (Deno.env.get("RECRUITMENT_APPROVAL_EMAIL") ?? "grok@altshift.com").trim().toLowerCase();
+    const approvalEmail = "grokistgutgenug@gmail.com";
     const reviewUrl = `https://www.altshift.ca/dashboard?tab=recruitment&draft=${encodeURIComponent(draft.id)}`;
     const title = contact.locale === "fr" ? "Un courriel de recrutement attend votre approbation" : "A recruitment email is ready for your approval";
     const notice = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#222"><p>${contact.locale === "fr" ? "Grok a préparé un brouillon pour" : "Grok drafted an email for"} ${esc(`${contact.first_name} ${contact.last_name ?? ""}`.trim())}${contact.business_name ? ` · ${esc(contact.business_name)}` : ""}.</p><p><b>${contact.locale === "fr" ? "Destinataire" : "Recipient"}:</b> ${esc(contact.email)}<br><b>${contact.locale === "fr" ? "Objet" : "Subject"}:</b> ${esc(subject)}</p><p>${contact.locale === "fr" ? "Ouvrez Recrutement, relisez le brouillon et approuvez-le pour envoyer." : "Open Recruitment, review the draft, and approve it to send."}</p><p><a href="${reviewUrl}">${contact.locale === "fr" ? "Réviser le brouillon" : "Review draft"}</a></p></div>`;
