@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CalendarPlus, Check, Link2, Mail, Pencil, Plus, Save, Trash2, UserRoundPlus, X } from "lucide-react";
+import { CalendarPlus, Check, CircleCheck, CircleX, Link2, Mail, Pencil, Plus, Save, Trash2, UserRoundPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,8 +23,8 @@ export default function AdminRecruitmentPanel() {
   const [contacts, setContacts] = useState<Contact[]>([]); const [drafts, setDrafts] = useState<Draft[]>([]); const [replies, setReplies] = useState<Reply[]>([]); const [form, setForm] = useState<Form>(empty); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [zohoBusy, setZohoBusy] = useState(false); const [zohoStatus, setZohoStatus] = useState<ZohoStatus | null>(null);
   const scrolledDraft = useRef("");
   const copy = fr
-    ? { title: "Recrutement", first: "Prénom", last: "Nom", business: "Entreprise", email: "Courriel", phone: "Téléphone", website: "Site Web", notes: "Notes", lang: "Langue du courriel", meeting: "Rencontre prévue", link: "Lien Google Meet (facultatif)", save: "Enregistrer le contact", new: "Nouveau contact", firstDraft: "Rédiger le premier courriel", followDraft: "Rédiger le suivi après appel", noContacts: "Aucun contact pour le moment.", sent: "Dernier courriel", draftReady: "Brouillon créé. Il attend votre approbation.", saved: "Contact enregistré", error: "Impossible de terminer l’opération.", pending: "Brouillons à approuver", approve: "Approuver et envoyer", reject: "Refuser", edit: "Objet et message modifiables", approved: "Courriel envoyé", noticeFailed: "Brouillon créé, mais l’avis par courriel n’a pas pu être envoyé.", noDrafts: "Aucun brouillon à approuver.", inbox: "Réponses reçues", noReplies: "Aucune réponse reçue.", zoho: "Zoho Mail", connectZoho: "Connecter Zoho Mail", reconnectZoho: "Reconnecter Zoho Mail", connectedZoho: "Connecté", zohoFailed: "La connexion Zoho n’a pas abouti. Vous pouvez réessayer.", zohoStarted: "Redirection vers Zoho…", zohoSetup: "Configurez d’abord ZOHO_CLIENT_ID et ZOHO_CLIENT_SECRET dans les secrets Supabase." }
-    : { title: "Recruitment", first: "First name", last: "Last name", business: "Business", email: "Email", phone: "Phone", website: "Website", notes: "Notes", lang: "Email language", meeting: "Meeting time", link: "Google Meet link (optional)", save: "Save contact", new: "New contact", firstDraft: "Draft first-contact email", followDraft: "Draft post-call follow-up", noContacts: "No contacts yet.", sent: "Last email", draftReady: "Draft created. It is waiting for your approval.", saved: "Contact saved", error: "Could not complete the action.", pending: "Drafts awaiting approval", approve: "Approve and send", reject: "Reject", edit: "Editable subject and message", approved: "Email sent", noticeFailed: "Draft created, but the email notice could not be delivered.", noDrafts: "No drafts to review.", inbox: "Prospect replies", noReplies: "No replies received.", zoho: "Zoho Mail", connectZoho: "Connect Zoho Mail", reconnectZoho: "Reconnect Zoho Mail", connectedZoho: "Connected", zohoFailed: "Zoho authorization did not complete. You can try again.", zohoStarted: "Redirecting to Zoho…", zohoSetup: "First add ZOHO_CLIENT_ID and ZOHO_CLIENT_SECRET to Supabase Edge Function secrets." };
+    ? { title: "Recrutement", first: "Prénom", last: "Nom", business: "Entreprise", email: "Courriel", phone: "Téléphone", website: "Site Web", notes: "Notes", lang: "Langue du courriel", meeting: "Rencontre prévue", link: "Lien Google Meet (facultatif)", save: "Enregistrer le contact", new: "Nouveau contact", firstDraft: "Rédiger le premier courriel", followDraft: "Rédiger le suivi après appel", noContacts: "Aucun contact pour le moment.", sent: "Dernier courriel", draftReady: "Brouillon créé. Il attend votre approbation.", saved: "Contact enregistré", error: "Impossible de terminer l’opération.", pending: "Brouillons à approuver", approve: "Approuver et envoyer", reject: "Refuser", edit: "Objet et message modifiables", approved: "Courriel envoyé", noticeFailed: "Brouillon créé, mais l’avis par courriel n’a pas pu être envoyé.", noDrafts: "Aucun brouillon à approuver.", inbox: "Réponses reçues", noReplies: "Aucune réponse reçue.", zoho: "Zoho Mail", reconnectZoho: "Reconnecter Zoho Mail", zohoFailed: "La connexion Zoho n’a pas abouti. Vous pouvez réessayer.", zohoStarted: "Redirection vers Zoho…", zohoSetup: "Configurez d’abord ZOHO_CLIENT_ID et ZOHO_CLIENT_SECRET dans les secrets Supabase." }
+    : { title: "Recruitment", first: "First name", last: "Last name", business: "Business", email: "Email", phone: "Phone", website: "Website", notes: "Notes", lang: "Email language", meeting: "Meeting time", link: "Google Meet link (optional)", save: "Save contact", new: "New contact", firstDraft: "Draft first-contact email", followDraft: "Draft post-call follow-up", noContacts: "No contacts yet.", sent: "Last email", draftReady: "Draft created. It is waiting for your approval.", saved: "Contact saved", error: "Could not complete the action.", pending: "Drafts awaiting approval", approve: "Approve and send", reject: "Reject", edit: "Editable subject and message", approved: "Email sent", noticeFailed: "Draft created, but the email notice could not be delivered.", noDrafts: "No drafts to review.", inbox: "Prospect replies", noReplies: "No replies received.", zoho: "Zoho Mail", reconnectZoho: "Reconnect Zoho Mail", zohoFailed: "Zoho authorization did not complete. You can try again.", zohoStarted: "Redirecting to Zoho…", zohoSetup: "First add ZOHO_CLIENT_ID and ZOHO_CLIENT_SECRET to Supabase Edge Function secrets." };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -42,14 +42,13 @@ export default function AdminRecruitmentPanel() {
     const params = new URLSearchParams(window.location.search);
     const result = params.get("zoho");
     if (result) {
-      if (result === "connected") toast({ title: copy.connectedZoho });
-      else toast({ title: copy.zohoFailed, variant: "destructive" });
+      if (result !== "connected") toast({ title: copy.zohoFailed, variant: "destructive" });
       params.delete("zoho");
       const query = params.toString();
       window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
     }
     return () => { active = false; };
-  }, [copy.connectedZoho, copy.zohoFailed, toast]);
+  }, [copy.zohoFailed, toast]);
 
   const connectZoho = async () => {
     setZohoBusy(true);
@@ -99,8 +98,7 @@ export default function AdminRecruitmentPanel() {
   const pendingDrafts = drafts.filter((draft) => draft.status === "pending");
 
   return <section className="mx-auto w-full max-w-6xl space-y-6 rounded-2xl border bg-card p-4 text-foreground sm:p-6">
-    <header className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="flex items-center gap-2 text-2xl font-bold"><UserRoundPlus className="size-6" />{copy.title}</h2></div><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={zohoBusy} onClick={() => void connectZoho()}><Link2 className="mr-2 size-4" />{zohoBusy ? copy.zohoStarted : zohoStatus?.connected ? copy.reconnectZoho : copy.connectZoho}</Button><Button variant="outline" onClick={() => setForm(empty)}><Plus className="mr-2 size-4" />{copy.new}</Button></div></header>
-    {zohoStatus?.connected ? <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm"><p className="font-medium text-emerald-700 dark:text-emerald-300">{copy.connectedZoho}</p></div> : null}
+    <header className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="flex items-center gap-2 text-2xl font-bold"><UserRoundPlus className="size-6" />{copy.title}</h2></div><div className="flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm"><Link2 className="size-4" />{copy.zoho}{zohoStatus?.connected ? <CircleCheck aria-label="Connected" className="size-4 text-emerald-500" /> : <CircleX aria-label="Not connected" className="size-4 text-red-500" />}</span><Button variant="outline" disabled={zohoBusy} onClick={() => void connectZoho()}>{zohoBusy ? copy.zohoStarted : <><Link2 className="mr-2 size-4" />{copy.reconnectZoho}</>}</Button><Button variant="outline" onClick={() => setForm(empty)}><Plus className="mr-2 size-4" />{copy.new}</Button></div></header>
     <section className="space-y-3 rounded-xl border p-4">
       <h3 className="font-semibold">{copy.inbox} ({replies.length})</h3>
       {replies.length === 0 ? <p className="text-sm text-muted-foreground">{copy.noReplies}</p> : <div className="grid gap-3 md:grid-cols-2">{replies.map((reply) => {
