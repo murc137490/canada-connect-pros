@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CalendarPlus, Check, Mail, Pencil, Plus, Save, Trash2, UserRoundPlus, X } from "lucide-react";
+import { CalendarPlus, Check, Link2, Mail, Pencil, Plus, Save, Trash2, UserRoundPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { safeHttpUrl } from "@/lib/safeUrl";
 type Contact = { id: string; first_name: string; last_name: string | null; business_name: string | null; email: string | null; phone: string | null; website: string | null; locale: "fr" | "en"; notes: string | null; meeting_at: string | null; meeting_url: string | null; last_email_template: string | null; last_email_sent_at: string | null };
 type Draft = { id: string; contact_id: string; template: "first_contact" | "post_call"; recipient_email: string; subject: string; body: string; status: "pending" | "sending" | "sent" | "rejected"; created_at: string };
 type Reply = { id: string; contact_id: string | null; sender_email: string; subject: string; body_text: string; received_at: string };
+type ZohoStatus = { connected: boolean; data_center?: string; mailbox_hint?: string; mailbox_verified?: boolean; connected_at?: string; granted_scopes?: string[] };
 type Form = Omit<Contact, "id" | "last_email_template" | "last_email_sent_at"> & { id?: string };
 const empty: Form = { first_name: "", last_name: "", business_name: "", email: "", phone: "", website: "", locale: "fr", notes: "", meeting_at: "", meeting_url: "" };
 const localDateTime = (value: string | null) => { if (!value) return ""; const date = new Date(value); return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16); };
@@ -19,11 +20,11 @@ const googleCalendarDraft = (form: Form) => { if (!form.meeting_at) return "http
 
 export default function AdminRecruitmentPanel() {
   const { locale } = useLanguage(); const fr = locale === "fr"; const { toast } = useToast();
-  const [contacts, setContacts] = useState<Contact[]>([]); const [drafts, setDrafts] = useState<Draft[]>([]); const [replies, setReplies] = useState<Reply[]>([]); const [form, setForm] = useState<Form>(empty); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>([]); const [drafts, setDrafts] = useState<Draft[]>([]); const [replies, setReplies] = useState<Reply[]>([]); const [form, setForm] = useState<Form>(empty); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [zohoBusy, setZohoBusy] = useState(false); const [zohoStatus, setZohoStatus] = useState<ZohoStatus | null>(null);
   const scrolledDraft = useRef("");
   const copy = fr
-    ? { title: "Recrutement", intro: "Suivez les professionnels contactés et préparez des courriels à approuver avant l’envoi.", first: "Prénom", last: "Nom", business: "Entreprise", email: "Courriel", phone: "Téléphone", website: "Site Web", notes: "Notes", lang: "Langue du courriel", meeting: "Rencontre prévue", link: "Lien Google Meet (facultatif)", save: "Enregistrer le contact", new: "Nouveau contact", firstDraft: "Rédiger le premier courriel", followDraft: "Rédiger le suivi après appel", noContacts: "Aucun contact pour le moment.", sent: "Dernier courriel", draftReady: "Brouillon créé. Il attend votre approbation.", saved: "Contact enregistré", error: "Impossible de terminer l’opération.", pending: "Brouillons à approuver", approve: "Approuver et envoyer", reject: "Refuser", edit: "Objet et message modifiables", approved: "Courriel envoyé", noticeFailed: "Brouillon créé, mais l’avis par courriel n’a pas pu être envoyé.", noDrafts: "Aucun brouillon à approuver.", inbox: "Réponses reçues", noReplies: "Aucune réponse reçue." }
-    : { title: "Recruitment", intro: "Track professionals you contacted and prepare emails for approval before sending.", first: "First name", last: "Last name", business: "Business", email: "Email", phone: "Phone", website: "Website", notes: "Notes", lang: "Email language", meeting: "Meeting time", link: "Google Meet link (optional)", save: "Save contact", new: "New contact", firstDraft: "Draft first-contact email", followDraft: "Draft post-call follow-up", noContacts: "No contacts yet.", sent: "Last email", draftReady: "Draft created. It is waiting for your approval.", saved: "Contact saved", error: "Could not complete the action.", pending: "Drafts awaiting approval", approve: "Approve and send", reject: "Reject", edit: "Editable subject and message", approved: "Email sent", noticeFailed: "Draft created, but the email notice could not be delivered.", noDrafts: "No drafts to review.", inbox: "Prospect replies", noReplies: "No replies received." };
+    ? { title: "Recrutement", intro: "Suivez les professionnels contactés et préparez des courriels à approuver avant l’envoi.", first: "Prénom", last: "Nom", business: "Entreprise", email: "Courriel", phone: "Téléphone", website: "Site Web", notes: "Notes", lang: "Langue du courriel", meeting: "Rencontre prévue", link: "Lien Google Meet (facultatif)", save: "Enregistrer le contact", new: "Nouveau contact", firstDraft: "Rédiger le premier courriel", followDraft: "Rédiger le suivi après appel", noContacts: "Aucun contact pour le moment.", sent: "Dernier courriel", draftReady: "Brouillon créé. Il attend votre approbation.", saved: "Contact enregistré", error: "Impossible de terminer l’opération.", pending: "Brouillons à approuver", approve: "Approuver et envoyer", reject: "Refuser", edit: "Objet et message modifiables", approved: "Courriel envoyé", noticeFailed: "Brouillon créé, mais l’avis par courriel n’a pas pu être envoyé.", noDrafts: "Aucun brouillon à approuver.", inbox: "Réponses reçues", noReplies: "Aucune réponse reçue.", zoho: "Zoho Mail", connectZoho: "Connecter Zoho Mail", reconnectZoho: "Reconnecter Zoho Mail", connectedZoho: "Connexion Zoho autorisée", mailboxCheck: "Boîte cible prévue : aymen@altshift.ca. L’adresse sera confirmée lors de la phase suivante.", zohoFailed: "La connexion Zoho n’a pas abouti. Vous pouvez réessayer.", zohoStarted: "Redirection vers Zoho…", zohoSetup: "Configurez d’abord ZOHO_CLIENT_ID et ZOHO_CLIENT_SECRET dans les secrets Supabase." }
+    : { title: "Recruitment", intro: "Track professionals you contacted and prepare emails for approval before sending.", first: "First name", last: "Last name", business: "Business", email: "Email", phone: "Phone", website: "Website", notes: "Notes", lang: "Email language", meeting: "Meeting time", link: "Google Meet link (optional)", save: "Save contact", new: "New contact", firstDraft: "Draft first-contact email", followDraft: "Draft post-call follow-up", noContacts: "No contacts yet.", sent: "Last email", draftReady: "Draft created. It is waiting for your approval.", saved: "Contact saved", error: "Could not complete the action.", pending: "Drafts awaiting approval", approve: "Approve and send", reject: "Reject", edit: "Editable subject and message", approved: "Email sent", noticeFailed: "Draft created, but the email notice could not be delivered.", noDrafts: "No drafts to review.", inbox: "Prospect replies", noReplies: "No replies received.", zoho: "Zoho Mail", connectZoho: "Connect Zoho Mail", reconnectZoho: "Reconnect Zoho Mail", connectedZoho: "Zoho connection authorized", mailboxCheck: "Intended mailbox: aymen@altshift.ca. The actual account will be confirmed in a later phase.", zohoFailed: "Zoho authorization did not complete. You can try again.", zohoStarted: "Redirecting to Zoho…", zohoSetup: "First add ZOHO_CLIENT_ID and ZOHO_CLIENT_SECRET to Supabase Edge Function secrets." };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -33,6 +34,35 @@ export default function AdminRecruitmentPanel() {
     setLoading(false);
   }, [copy.error, toast]);
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    void supabase.functions.invoke("zoho-oauth-start", { body: { action: "status" } }).then(({ data }) => {
+      if (active && data && typeof data.connected === "boolean") setZohoStatus(data as ZohoStatus);
+    });
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get("zoho");
+    if (result) {
+      if (result === "connected") toast({ title: copy.connectedZoho, description: copy.mailboxCheck });
+      else toast({ title: copy.zohoFailed, variant: "destructive" });
+      params.delete("zoho");
+      const query = params.toString();
+      window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+    }
+    return () => { active = false; };
+  }, [copy.connectedZoho, copy.mailboxCheck, copy.zohoFailed, toast]);
+
+  const connectZoho = async () => {
+    setZohoBusy(true);
+    const { data, error } = await supabase.functions.invoke("zoho-oauth-start", { body: { action: "start" } });
+    setZohoBusy(false);
+    if (error || !data?.authorize_url) {
+      const description = data?.error === "Zoho OAuth credentials are not configured" ? copy.zohoSetup : data?.error;
+      toast({ title: copy.zohoFailed, description, variant: "destructive" });
+      return;
+    }
+    toast({ title: copy.zohoStarted });
+    window.location.assign(data.authorize_url);
+  };
   useEffect(() => {
     if (loading) return;
     const target = new URLSearchParams(window.location.search).get("draft");
@@ -69,7 +99,8 @@ export default function AdminRecruitmentPanel() {
   const pendingDrafts = drafts.filter((draft) => draft.status === "pending");
 
   return <section className="mx-auto w-full max-w-6xl space-y-6 rounded-2xl border bg-card p-4 text-foreground sm:p-6">
-    <header className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="flex items-center gap-2 text-2xl font-bold"><UserRoundPlus className="size-6" />{copy.title}</h2><p className="mt-1 text-sm text-muted-foreground">{copy.intro}</p></div><Button variant="outline" onClick={() => setForm(empty)}><Plus className="mr-2 size-4" />{copy.new}</Button></header>
+    <header className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="flex items-center gap-2 text-2xl font-bold"><UserRoundPlus className="size-6" />{copy.title}</h2><p className="mt-1 text-sm text-muted-foreground">{copy.intro}</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={zohoBusy} onClick={() => void connectZoho()}><Link2 className="mr-2 size-4" />{zohoBusy ? copy.zohoStarted : zohoStatus?.connected ? copy.reconnectZoho : copy.connectZoho}</Button><Button variant="outline" onClick={() => setForm(empty)}><Plus className="mr-2 size-4" />{copy.new}</Button></div></header>
+    {zohoStatus?.connected ? <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm"><p className="font-medium text-emerald-700 dark:text-emerald-300">{copy.connectedZoho}</p><p className="mt-1 text-muted-foreground">{copy.mailboxCheck}</p></div> : null}
     <section className="space-y-3 rounded-xl border p-4">
       <h3 className="font-semibold">{copy.inbox} ({replies.length})</h3>
       {replies.length === 0 ? <p className="text-sm text-muted-foreground">{copy.noReplies}</p> : <div className="grid gap-3 md:grid-cols-2">{replies.map((reply) => {

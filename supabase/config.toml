@@ -90,6 +90,13 @@ verify_jwt = false
 [functions.square-oauth-callback]
 verify_jwt = false
 
+# OAuth callbacks are external redirects; start validates an AltShift admin JWT in-function.
+[functions.zoho-oauth-start]
+verify_jwt = false
+
+[functions.zoho-oauth-callback]
+verify_jwt = false
+
 [functions.square-oauth-disconnect]
 verify_jwt = false
 
