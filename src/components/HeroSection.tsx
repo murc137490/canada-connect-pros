@@ -594,55 +594,58 @@ export default function HeroSection() {
       transition={{ duration: MOTION.base, ease: MOTION.ease }}
     >
       <div className="container-page">
-        <div className="grid items-start gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-14 xl:gap-20">
-          <div className="min-w-0">
-            <h1 className="sr-only">{t.index.heroProjectTitle.replace("\n", " ")}</h1>
-            <div className="hero-project-title mt-2 w-full text-foreground" aria-hidden="true">
-              {t.index.heroProjectTitle.split("\n").map((line, index) => (
-                <TechText
-                  key={`${index}-${line}`}
-                  text={line}
-                  className="h-[clamp(6rem,10vw,9rem)] w-full"
-                  fontSize={138}
-                  align="left"
-                  fontWeight={800}
-                  color="currentColor"
-                  accentColor="#B39445"
-                  reach={145}
-                  softness={0.8}
-                  specks={0}
-                  selection={false}
-                  labels={false}
-                  draggable={false}
-                  sweep
-                />
-              ))}
-            </div>
-            <p className="mt-6 max-w-[28rem] text-[17px] md:text-lg text-muted-foreground leading-relaxed">
-              {t.index.heroSupport}
-            </p>
+        <div className="grid items-start gap-x-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-x-14 xl:gap-x-20">
+          <div className="contents lg:block lg:min-w-0">
+            <div className="order-1 min-w-0">
+              <h1 className="sr-only">{t.index.heroProjectTitle.replace("\n", " ")}</h1>
+              <div className="hero-project-title mt-2 w-full text-foreground" aria-hidden="true">
+                {t.index.heroProjectTitle.split("\n").map((line, index) => (
+                  <TechText
+                    key={`${index}-${line}`}
+                    text={line}
+                    className="h-[clamp(6rem,10vw,9rem)] w-full"
+                    fontSize={138}
+                    align="left"
+                    fontWeight={800}
+                    color="currentColor"
+                    accentColor="#B39445"
+                    reach={145}
+                    softness={0.8}
+                    specks={0}
+                    selection={false}
+                    labels={false}
+                    draggable={false}
+                    sweep
+                  />
+                ))}
+              </div>
+              <p className="mt-6 max-w-[28rem] text-[17px] md:text-lg text-muted-foreground leading-relaxed">
+                {t.index.heroSupport}
+              </p>
 
-            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-              <Button size="lg" className="group h-11 px-6" asChild>
-                <Link to="/make-request">
-                  {t.index.ctaPublish}
-                  <ArrowRight className="cta-arrow h-4 w-4" />
-                </Link>
-              </Button>
-              <motion.button
-                type="button"
-                onClick={goBrowseServices}
-                disabled={browseLeaving}
-                className="group inline-flex items-center gap-1.5 text-[15px] font-semibold text-foreground/80 underline-offset-4 transition-colors hover:text-foreground hover:underline disabled:opacity-70"
-                whileTap={{ scale: 0.97 }}
-                transition={{ duration: MOTION.fast, ease: MOTION.ease }}
-              >
-                {t.index.ctaFindPro}
-                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
-              </motion.button>
+              <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+                <Button size="lg" className="group h-11 px-6" asChild>
+                  <Link to="/make-request">
+                    {t.index.ctaPublish}
+                    <ArrowRight className="cta-arrow h-4 w-4" />
+                  </Link>
+                </Button>
+                <motion.button
+                  type="button"
+                  onClick={goBrowseServices}
+                  disabled={browseLeaving}
+                  className="group inline-flex items-center gap-1.5 text-[15px] font-semibold text-foreground/80 underline-offset-4 transition-colors hover:text-foreground hover:underline disabled:opacity-70"
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: MOTION.fast, ease: MOTION.ease }}
+                >
+                  {t.index.ctaFindPro}
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+                </motion.button>
+              </div>
+
             </div>
 
-            <div className="mt-8 max-w-xl scroll-mt-28">
+            <div className="order-3 mt-8 min-w-0 max-w-xl scroll-mt-28">
               <div className="border border-border bg-card p-3 sm:p-3.5 space-y-2.5" style={{ borderRadius: "10px" }}>
                 <label htmlFor="hero-postal" className="text-[12px] font-medium text-muted-foreground">
                   {t.index.heroPostalHint}
@@ -704,82 +707,83 @@ export default function HeroSection() {
             </div>
           </div>
 
-          <div className="relative mt-6 flex justify-center lg:mt-0 lg:justify-end">
+          <div className="relative z-20 order-2 mx-auto mt-8 w-full min-w-0 max-w-4xl lg:order-3 lg:col-span-2 lg:mt-9 lg:-translate-y-[30rem]">
+            <form
+              id="hero-search"
+              onSubmit={handleSubmit}
+              className="hero-how-pill relative scale-[0.95] origin-center overflow-hidden rounded-full border border-white/75 bg-white/35 px-5 py-2.5 shadow-[0_20px_70px_rgba(24,27,31,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-[30px] backdrop-saturate-150 transition-[background-color,box-shadow,transform] duration-500 hover:bg-white/45 hover:shadow-[0_24px_76px_rgba(24,27,31,0.15),inset_0_1px_0_rgba(255,255,255,0.95)] focus-within:bg-white/50 focus-within:shadow-[0_24px_76px_rgba(24,27,31,0.16),inset_0_1px_0_rgba(255,255,255,1)] dark:border-white/20 dark:bg-white/[0.08] dark:shadow-[0_20px_70px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] dark:hover:bg-white/[0.11] dark:focus-within:bg-white/[0.12]">
+              <span className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+                <SpecularButton
+                  className="h-full w-full pointer-events-none"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  size="md"
+                  radius={999}
+                  tint="#ffffff"
+                  tintOpacity={0.015}
+                  textColor="transparent"
+                  lineColor="#49658A"
+                  baseColor="#31594D"
+                  intensity={0.85}
+                  idleIntensity={0.2}
+                  shineSize={8}
+                  shineFade={36}
+                  thickness={1.1}
+                  glow={0.7}
+                  followMouse={false}
+                  autoAnimate
+                  speed={0.45}
+                  proximity={220}
+                />
+              </span>
+              <label htmlFor="hero-need" className="sr-only">{t.index.heroProjectPlaceholder}</label>
+              <input
+                id="hero-need"
+                type="text"
+                autoComplete="off"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t.index.heroProjectPlaceholder}
+                className={`relative z-10 min-h-[4.6rem] w-full bg-transparent px-3 py-3 text-center font-semibold tracking-tight text-foreground outline-none placeholder:text-foreground/70 ${locale === "fr" ? "text-[clamp(0.86rem,3.8vw,2rem)] sm:text-[2rem]" : "text-[clamp(1.05rem,4.8vw,2rem)] sm:text-[2rem]"} sm:min-h-[5.2rem]`}
+                aria-describedby="hero-service-recommendations"
+              />
+              <button type="submit" className="sr-only">{locale === "fr" ? "Rechercher" : "Search"}</button>
+            </form>
+            <div id="hero-service-recommendations" aria-live="polite" className="mx-auto mt-4 max-w-4xl">
+              {loading && query.trim().length >= 2 ? <p className="text-center text-sm text-muted-foreground">{t.index.heroAiThinking}</p> : null}
+              {error && !loading ? <p className="text-center text-sm text-muted-foreground">{t.index.heroAiError}</p> : null}
+              {!loading && !error && query.trim().length >= 2 && hasResults ? (
+                <div className="flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-border/60 bg-background/75 p-3 shadow-lg backdrop-blur-xl">
+                  {clarifyingMessage ? <p className="w-full text-center text-sm text-muted-foreground">{clarifyingMessage}</p> : null}
+                  {bestMatch?.serviceName ? (
+                    <button type="button" onClick={() => bestMatch.categorySlug && bestMatch.serviceSlug ? goToProsFromSlugs(bestMatch.categorySlug, bestMatch.serviceSlug) : goToService(bestMatch.serviceName!)} className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-sm hover:opacity-90">
+                      {proOfferedRecords.some((record) => record.name === bestMatch.serviceName && record.slug === bestMatch.serviceSlug && record.categorySlug === bestMatch.categorySlug)
+                        ? bestMatch.serviceName
+                        : getServiceName(bestMatch.serviceSlug ?? "", locale, bestMatch.serviceName)}<ArrowRight size={15} />
+                    </button>
+                  ) : null}
+                  {followUpMatches.slice(0, 3).map((item) => (
+                    <button key={`${item.categorySlug}/${item.serviceSlug}`} type="button" onClick={() => goToProsFromSlugs(item.categorySlug, item.serviceSlug)} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">
+                      {getServiceName(item.serviceSlug, locale, item.serviceName)}<ArrowRight size={14} />
+                    </button>
+                  ))}
+                  {suggestions.slice(0, 3).map((item, index) => {
+                    const service = findServiceByName(item);
+                    return (
+                      <button key={`${item}-${index}`} type="button" onClick={() => service ? goToProsFromSlugs(service.categorySlug, service.serviceSlug) : goToService(item)} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">
+                        {service ? getServiceName(service.serviceSlug, locale, item) : item}<ArrowRight size={14} />
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          </div>
+          <div className="relative order-4 mt-6 flex justify-center lg:order-2 lg:mt-0 lg:justify-end">
             <BookingPhoneMock alwaysLive />
           </div>
         </div>
-        <div className="relative z-20 mx-auto mt-9 w-full max-w-4xl -translate-y-20 lg:-translate-y-[30rem]">
-          <form
-            id="hero-search"
-            onSubmit={handleSubmit}
-            className="hero-how-pill relative scale-[0.95] origin-center overflow-hidden rounded-full border border-white/75 bg-white/35 px-5 py-2.5 shadow-[0_20px_70px_rgba(24,27,31,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-[30px] backdrop-saturate-150 transition-[background-color,box-shadow,transform] duration-500 hover:bg-white/45 hover:shadow-[0_24px_76px_rgba(24,27,31,0.15),inset_0_1px_0_rgba(255,255,255,0.95)] focus-within:bg-white/50 focus-within:shadow-[0_24px_76px_rgba(24,27,31,0.16),inset_0_1px_0_rgba(255,255,255,1)] dark:border-white/20 dark:bg-white/[0.08] dark:shadow-[0_20px_70px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] dark:hover:bg-white/[0.11] dark:focus-within:bg-white/[0.12]">
-            <span className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
-              <SpecularButton
-                className="h-full w-full pointer-events-none"
-                aria-hidden="true"
-                tabIndex={-1}
-                size="md"
-                radius={999}
-                tint="#ffffff"
-                tintOpacity={0.015}
-                textColor="transparent"
-                lineColor="#49658A"
-                baseColor="#31594D"
-                intensity={0.85}
-                idleIntensity={0.2}
-                shineSize={8}
-                shineFade={36}
-                thickness={1.1}
-                glow={0.7}
-                followMouse={false}
-                autoAnimate
-                speed={0.45}
-                proximity={220}
-              />
-            </span>
-            <label htmlFor="hero-need" className="sr-only">{t.index.heroProjectPlaceholder}</label>
-            <input
-              id="hero-need"
-              type="text"
-              autoComplete="off"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={t.index.heroProjectPlaceholder}
-              className={`relative z-10 min-h-[4.6rem] w-full bg-transparent px-3 py-3 text-center font-semibold tracking-tight text-foreground outline-none placeholder:text-foreground/70 ${locale === "fr" ? "text-[clamp(0.86rem,3.8vw,2rem)] sm:text-[2rem]" : "text-[clamp(1.05rem,4.8vw,2rem)] sm:text-[2rem]"} sm:min-h-[5.2rem]`}
-              aria-describedby="hero-service-recommendations"
-            />
-            <button type="submit" className="sr-only">{locale === "fr" ? "Rechercher" : "Search"}</button>
-          </form>
-          <div id="hero-service-recommendations" aria-live="polite" className="mx-auto mt-4 max-w-4xl">
-            {loading && query.trim().length >= 2 ? <p className="text-center text-sm text-muted-foreground">{t.index.heroAiThinking}</p> : null}
-            {error && !loading ? <p className="text-center text-sm text-muted-foreground">{t.index.heroAiError}</p> : null}
-            {!loading && !error && query.trim().length >= 2 && hasResults ? (
-              <div className="flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-border/60 bg-background/75 p-3 shadow-lg backdrop-blur-xl">
-                {clarifyingMessage ? <p className="w-full text-center text-sm text-muted-foreground">{clarifyingMessage}</p> : null}
-                {bestMatch?.serviceName ? (
-                  <button type="button" onClick={() => bestMatch.categorySlug && bestMatch.serviceSlug ? goToProsFromSlugs(bestMatch.categorySlug, bestMatch.serviceSlug) : goToService(bestMatch.serviceName!)} className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-sm hover:opacity-90">
-                    {proOfferedRecords.some((record) => record.name === bestMatch.serviceName && record.slug === bestMatch.serviceSlug && record.categorySlug === bestMatch.categorySlug)
-                      ? bestMatch.serviceName
-                      : getServiceName(bestMatch.serviceSlug ?? "", locale, bestMatch.serviceName)}<ArrowRight size={15} />
-                  </button>
-                ) : null}
-                {followUpMatches.slice(0, 3).map((item) => (
-                  <button key={`${item.categorySlug}/${item.serviceSlug}`} type="button" onClick={() => goToProsFromSlugs(item.categorySlug, item.serviceSlug)} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">
-                    {getServiceName(item.serviceSlug, locale, item.serviceName)}<ArrowRight size={14} />
-                  </button>
-                ))}
-                {suggestions.slice(0, 3).map((item, index) => {
-                  const service = findServiceByName(item);
-                  return (
-                    <button key={`${item}-${index}`} type="button" onClick={() => service ? goToProsFromSlugs(service.categorySlug, service.serviceSlug) : goToService(item)} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">
-                      {service ? getServiceName(service.serviceSlug, locale, item) : item}<ArrowRight size={14} />
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
-          </div>
-        </div>
+
       </div>
     </motion.section>
   );
