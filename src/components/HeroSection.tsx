@@ -595,119 +595,56 @@ export default function HeroSection() {
     >
       <div className="container-page">
         <div className="grid items-start gap-x-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-x-14 xl:gap-x-20">
-          <div className="contents lg:block lg:min-w-0">
-            <div className="order-1 min-w-0">
-              <h1 className="sr-only">{t.index.heroProjectTitle.replace("\n", " ")}</h1>
-              <div className="hero-project-title mt-2 w-full text-foreground" aria-hidden="true">
-                {t.index.heroProjectTitle.split("\n").map((line, index) => (
-                  <TechText
-                    key={`${index}-${line}`}
-                    text={line}
-                    className="h-[clamp(6rem,10vw,9rem)] w-full"
-                    fontSize={138}
-                    align="left"
-                    fontWeight={800}
-                    color="currentColor"
-                    accentColor="#B39445"
-                    reach={145}
-                    softness={0.8}
-                    specks={0}
-                    selection={false}
-                    labels={false}
-                    draggable={false}
-                    sweep
-                  />
-                ))}
-              </div>
-              <p className="mt-6 max-w-[28rem] text-[17px] md:text-lg text-muted-foreground leading-relaxed">
-                {t.index.heroSupport}
-              </p>
+          <div className="min-w-0 lg:col-start-1 lg:row-start-1">
+            <h1 className="sr-only">{t.index.heroProjectTitle.replace("\n", " ")}</h1>
+            <div className="hero-project-title mt-2 w-full text-foreground" aria-hidden="true">
+              {t.index.heroProjectTitle.split("\n").map((line, index) => (
+                <TechText
+                  key={`${index}-${line}`}
+                  text={line}
+                  className="h-[clamp(6rem,10vw,9rem)] w-full"
+                  fontSize={138}
+                  align="left"
+                  fontWeight={800}
+                  color="currentColor"
+                  accentColor="#B39445"
+                  reach={145}
+                  softness={0.8}
+                  specks={0}
+                  selection={false}
+                  labels={false}
+                  draggable={false}
+                  sweep
+                />
+              ))}
+            </div>
+            <p className="mt-6 max-w-[28rem] text-[17px] md:text-lg text-muted-foreground leading-relaxed">
+              {t.index.heroSupport}
+            </p>
 
-              <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-                <Button size="lg" className="group h-11 px-6" asChild>
-                  <Link to="/make-request">
-                    {t.index.ctaPublish}
-                    <ArrowRight className="cta-arrow h-4 w-4" />
-                  </Link>
-                </Button>
-                <motion.button
-                  type="button"
-                  onClick={goBrowseServices}
-                  disabled={browseLeaving}
-                  className="group inline-flex items-center gap-1.5 text-[15px] font-semibold text-foreground/80 underline-offset-4 transition-colors hover:text-foreground hover:underline disabled:opacity-70"
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ duration: MOTION.fast, ease: MOTION.ease }}
-                >
-                  {t.index.ctaFindPro}
-                  <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
-                </motion.button>
-              </div>
-
+            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <Button size="lg" className="group h-11 px-6" asChild>
+                <Link to="/make-request">
+                  {t.index.ctaPublish}
+                  <ArrowRight className="cta-arrow h-4 w-4" />
+                </Link>
+              </Button>
+              <motion.button
+                type="button"
+                onClick={goBrowseServices}
+                disabled={browseLeaving}
+                className="group inline-flex items-center gap-1.5 text-[15px] font-semibold text-foreground/80 underline-offset-4 transition-colors hover:text-foreground hover:underline disabled:opacity-70"
+                whileTap={{ scale: 0.97 }}
+                transition={{ duration: MOTION.fast, ease: MOTION.ease }}
+              >
+                {t.index.ctaFindPro}
+                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+              </motion.button>
             </div>
 
-            <div className="order-3 mt-8 min-w-0 max-w-xl scroll-mt-28">
-              <div className="border border-border bg-card p-3 sm:p-3.5 space-y-2.5" style={{ borderRadius: "10px" }}>
-                <label htmlFor="hero-postal" className="text-[12px] font-medium text-muted-foreground">
-                  {t.index.heroPostalHint}
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    id="hero-postal"
-                    type="text"
-                    inputMode="text"
-                    autoComplete="postal-code"
-                    placeholder={t.index.heroPostalExample}
-                    value={postalCode}
-                    onChange={(e) => {
-                      postalEditedRef.current = true;
-                      const next = formatCanadianPostalInput(e.target.value);
-                      setPostalCode(next);
-                      setPostalResolved(null);
-                      setPostalError(null);
-                      if (!next.trim()) clearBrowsePostalLocation();
-                    }}
-                    onFocus={() => {
-                      if (!postalCode.trim()) void applyDetectedLocation({ fromEmptyFocus: true });
-                    }}
-                    onBlur={() => {
-                      postalEditedRef.current = false;
-                      if (normalizedPostal) void resolvePostal();
-                    }}
-                    maxLength={7}
-                    className={`w-full sm:max-w-[9.5rem] border bg-background px-3 py-2.5 text-sm font-semibold tracking-wide text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 ${postalError ? "border-destructive" : "border-border"}`}
-                    style={{ borderRadius: "7px" }}
-                    disabled={locating}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void applyDetectedLocation()}
-                    disabled={locating || postalLoading}
-                    title={t.index.heroPostalUseLocation}
-                    aria-label={t.index.heroPostalUseLocation}
-                    className="inline-flex h-[2.75rem] w-[2.75rem] shrink-0 items-center justify-center border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
-                    style={{ borderRadius: "7px" }}
-                  >
-                    {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
-                  </button>
-                </div>
-                {postalResolved ? <p className="px-0.5 text-xs text-muted-foreground">{normalizedPostal}</p> : null}
-                {postalLoading || locating ? (
-                  <p className="px-0.5 text-xs text-muted-foreground">{t.makeRequest.step3Detecting}</p>
-                ) : postalError ? (
-                  <p className="px-0.5 text-xs text-destructive">{postalError}</p>
-                ) : null}
-                {postalResolved ? (
-                  <HeroPostalTiltMap
-                    lat={postalResolved.lat}
-                    lng={postalResolved.lng}
-                    className="mt-2"
-                  />
-                ) : null}
-              </div>
-            </div>
           </div>
 
-          <div className="relative z-20 order-2 mx-auto mt-8 w-full min-w-0 max-w-4xl lg:order-3 lg:col-span-2 lg:mt-9 lg:-translate-y-[30rem]">
+          <div className="relative z-20 mx-auto mt-8 w-full min-w-0 max-w-4xl lg:col-span-2 lg:row-start-3 lg:mt-9 lg:-translate-y-[30rem]">
             <form
               id="hero-search"
               onSubmit={handleSubmit}
@@ -779,7 +716,69 @@ export default function HeroSection() {
               ) : null}
             </div>
           </div>
-          <div className="relative order-4 mt-6 flex justify-center lg:order-2 lg:mt-0 lg:justify-end">
+
+          <div className="mt-8 min-w-0 max-w-xl scroll-mt-28 lg:col-start-1 lg:row-start-2">
+            <div className="border border-border bg-card p-3 sm:p-3.5 space-y-2.5" style={{ borderRadius: "10px" }}>
+              <label htmlFor="hero-postal" className="text-[12px] font-medium text-muted-foreground">
+                {t.index.heroPostalHint}
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="hero-postal"
+                  type="text"
+                  inputMode="text"
+                  autoComplete="postal-code"
+                  placeholder={t.index.heroPostalExample}
+                  value={postalCode}
+                  onChange={(e) => {
+                    postalEditedRef.current = true;
+                    const next = formatCanadianPostalInput(e.target.value);
+                    setPostalCode(next);
+                    setPostalResolved(null);
+                    setPostalError(null);
+                    if (!next.trim()) clearBrowsePostalLocation();
+                  }}
+                  onFocus={() => {
+                    if (!postalCode.trim()) void applyDetectedLocation({ fromEmptyFocus: true });
+                  }}
+                  onBlur={() => {
+                    postalEditedRef.current = false;
+                    if (normalizedPostal) void resolvePostal();
+                  }}
+                  maxLength={7}
+                  className={`w-full sm:max-w-[9.5rem] border bg-background px-3 py-2.5 text-sm font-semibold tracking-wide text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 ${postalError ? "border-destructive" : "border-border"}`}
+                  style={{ borderRadius: "7px" }}
+                  disabled={locating}
+                />
+                <button
+                  type="button"
+                  onClick={() => void applyDetectedLocation()}
+                  disabled={locating || postalLoading}
+                  title={t.index.heroPostalUseLocation}
+                  aria-label={t.index.heroPostalUseLocation}
+                  className="inline-flex h-[2.75rem] w-[2.75rem] shrink-0 items-center justify-center border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                  style={{ borderRadius: "7px" }}
+                >
+                  {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+                </button>
+              </div>
+              {postalResolved ? <p className="px-0.5 text-xs text-muted-foreground">{normalizedPostal}</p> : null}
+              {postalLoading || locating ? (
+                <p className="px-0.5 text-xs text-muted-foreground">{t.makeRequest.step3Detecting}</p>
+              ) : postalError ? (
+                <p className="px-0.5 text-xs text-destructive">{postalError}</p>
+              ) : null}
+              {postalResolved ? (
+                <HeroPostalTiltMap
+                  lat={postalResolved.lat}
+                  lng={postalResolved.lng}
+                  className="mt-2"
+                />
+              ) : null}
+            </div>
+          </div>
+
+          <div className="relative mt-6 flex justify-center lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:mt-0 lg:justify-end">
             <BookingPhoneMock alwaysLive />
           </div>
         </div>
