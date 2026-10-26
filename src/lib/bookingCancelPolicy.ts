@@ -46,18 +46,13 @@ export function resolveServiceCancelPolicy(input: {
   };
 }
 
-function moneyCad(cents: number, locale: "en" | "fr"): string {
-  const dollars = (cents / 100).toFixed(cents % 100 === 0 ? 0 : 2);
-  return locale === "fr" ? `${dollars} $ CA` : `CA$${dollars}`;
-}
-
 /** Client-facing plain language (EN/FR). */
 export function formatResolvedCancelPolicyText(
   resolved: ResolvedCancelPolicy,
   locale: "en" | "fr",
-  servicePriceCents?: number | null,
+  _servicePriceCents?: number | null,
 ): { title: string; body: string; short: string } {
-  const { policy, feeType, feePercent, feeCents } = resolved;
+  const { policy } = resolved;
 
   if (locale === "fr") {
     if (policy === "free") {
@@ -69,27 +64,15 @@ export function formatResolvedCancelPolicyText(
     }
     if (policy === "no_cancel") {
       return {
-        title: "Annulation : non remboursable",
-        short: "Aucune annulation, frais complets",
-        body: "Une fois la réservation confirmée, elle ne peut pas être annulée sans être facturée au complet (100 % du prix du service). En continuant, vous acceptez cette condition.",
-      };
-    }
-    if (feeType === "fixed") {
-      const fee = moneyCad(feeCents, "fr");
-      const refundHint =
-        servicePriceCents != null && servicePriceCents > feeCents
-          ? ` Exemple : si le service est ${moneyCad(servicePriceCents, "fr")} et que vous avez déjà payé, un remboursement d’environ ${moneyCad(servicePriceCents - feeCents, "fr")} peut s’appliquer après déduction des frais (sous réserve du traitement du paiement).`
-          : "";
-      return {
-        title: `Annulation : frais fixes de ${fee} si moins de 24 h`,
-        short: `${fee} de frais si annulation < 24 h`,
-        body: `Si vous annulez moins de 24 heures avant le début du service, des frais d’annulation de ${fee} s’appliquent.${refundHint} Une annulation plus de 24 heures à l’avance peut éviter ces frais de retard. En continuant, vous acceptez cette politique.`,
+        title: "Annulation après confirmation",
+        short: "Annulation permise, dommages réels seulement",
+        body: "Vous pouvez annuler après la confirmation. Le Pro peut réclamer uniquement les dommages réels qu’il a subis, raisonnablement prouvés et causés par l’annulation. Aucun pourcentage prédéterminé ni prix intégral automatique ne s’applique du seul fait de l’annulation. Tout montant perçu au-delà des dommages prouvés doit être remboursé.",
       };
     }
     return {
-      title: `Annulation : frais de ${feePercent} % si moins de 24 h`,
-      short: `${feePercent} % de frais si annulation < 24 h`,
-      body: `Si vous annulez moins de 24 heures avant le début du service, des frais d’annulation de ${feePercent} % du prix du service s’appliquent. Une annulation plus de 24 heures à l’avance peut être sans ces frais de retard. En continuant, vous acceptez cette politique.`,
+      title: "Annulation gratuite jusqu’à 24 h avant",
+      short: "Gratuite jusqu’à 24 h avant",
+      body: "Vous pouvez annuler sans frais jusqu’à 24 heures avant le début du service. Après cette échéance, vous pouvez toujours annuler, mais le Pro peut réclamer uniquement les dommages réels qu’il a subis, raisonnablement prouvés et causés par l’annulation tardive. Aucun pourcentage prédéterminé ni prix intégral automatique ne s’applique du seul fait de l’annulation. Tout montant perçu au-delà des dommages prouvés doit être remboursé.",
     };
   }
 
@@ -102,27 +85,15 @@ export function formatResolvedCancelPolicyText(
   }
   if (policy === "no_cancel") {
     return {
-      title: "Cancellation: non-refundable",
-      short: "No cancellation, full charge",
-      body: "Once this booking is confirmed, it cannot be cancelled without being charged in full (100% of the service price). By continuing, you accept this condition.",
-    };
-  }
-  if (feeType === "fixed") {
-    const fee = moneyCad(feeCents, "en");
-    const refundHint =
-      servicePriceCents != null && servicePriceCents > feeCents
-        ? ` Example: if the service is ${moneyCad(servicePriceCents, "en")} and you already paid, about ${moneyCad(servicePriceCents - feeCents, "en")} may be refunded after the fee is deducted (subject to payment processing).`
-        : "";
-    return {
-      title: `Cancellation: ${fee} fee if under 24 hours`,
-      short: `${fee} fee if cancel < 24h`,
-      body: `If you cancel less than 24 hours before the service start time, a ${fee} cancellation fee applies.${refundHint} Cancelling more than 24 hours ahead may avoid this late fee. By continuing, you accept this policy.`,
+      title: "Cancellation after confirmation",
+      short: "Cancellation allowed, actual damages only",
+      body: "You may cancel after confirmation. The Pro may claim only actual, reasonably proven damages caused by the cancellation. No preset percentage or automatic full service price applies solely because you cancel. Any amount collected above proven damages must be refunded.",
     };
   }
   return {
-    title: `Cancellation: ${feePercent}% fee if under 24 hours`,
-    short: `${feePercent}% fee if cancel < 24h`,
-    body: `If you cancel less than 24 hours before the service start time, a ${feePercent}% cancellation fee of the service price applies. Cancelling more than 24 hours ahead may avoid this late fee. By continuing, you accept this policy.`,
+    title: "Free cancellation until 24 hours before",
+    short: "Free until 24 hours before",
+    body: "You may cancel without charge until 24 hours before the service starts. After that cutoff, you may still cancel, but the Pro may claim only actual, reasonably proven damages caused by the late cancellation. No preset percentage or automatic full service price applies solely because you cancel. Any amount collected above proven damages must be refunded.",
   };
 }
 

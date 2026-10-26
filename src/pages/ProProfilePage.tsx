@@ -2058,8 +2058,8 @@ export default function ProProfilePage({ proIdOverride }: { proIdOverride?: stri
                           {resolved.policy === "late_fee" ? (
                             <p className="text-sm text-foreground/90">
                               {locale === "fr"
-                                ? "Annulation moins de 24 h avant le début du service = frais ci-dessus."
-                                : "Cancel less than 24 hours before start = the fee above applies."}
+                                ? "Après cette échéance, seuls les dommages réels et raisonnablement prouvés peuvent être réclamés."
+                                : "After this cutoff, only actual, reasonably proven damages may be claimed."}
                             </p>
                           ) : null}
                           <button
